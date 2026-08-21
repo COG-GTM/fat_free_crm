@@ -1,0 +1,82 @@
+name: Devin PR Test Coverage Audit
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+
+jobs:
+  notify-devin:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    env:
+      DEVIN_WEBHOOK_URL: ${{ secrets.DEVIN_WEBHOOK_URL }}
+      DEVIN_WEBHOOK_SECRET: ${{ secrets.DEVIN_WEBHOOK_SECRET }}
+    steps:
+      - name: Notify Devin automation webhook
+        env:
+          REPOSITORY: ${{ github.event.repository.full_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HTML_URL: ${{ github.event.pull_request.html_url }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          AUTHOR_LOGIN: ${{ github.event.pull_request.user.login }}
+          ACTION: ${{ github.event.action }}
+          EVENT_TYPE: ${{ github.event_name }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${DEVIN_WEBHOOK_URL:-}" || -z "${DEVIN_WEBHOOK_SECRET:-}" ]]; then
+            echo "::notice::Skipping Devin PR Test Coverage Audit: DEVIN_WEBHOOK_URL and DEVIN_WEBHOOK_SECRET must be configured."
+            exit 0
+          fi
+
+          payload="$(
+            jq -n \
+              --arg repository "$REPOSITORY" \
+              --argjson pull_request_number "$PR_NUMBER" \
+              --arg pull_request_html_url "$PR_HTML_URL" \
+              --arg title "$PR_TITLE" \
+              --arg head_ref "$HEAD_REF" \
+              --arg head_sha "$HEAD_SHA" \
+              --arg base_ref "$BASE_REF" \
+              --arg author_login "$AUTHOR_LOGIN" \
+              --arg action "$ACTION" \
+              --arg event_type "$EVENT_TYPE" \
+              --argjson draft "$DRAFT" \
+              '{
+                repository: $repository,
+                pull_request_number: $pull_request_number,
+                pull_request_html_url: $pull_request_html_url,
+                title: $title,
+                head_ref: $head_ref,
+                head_sha: $head_sha,
+                base_ref: $base_ref,
+                author_login: $author_login,
+                action: $action,
+                event_type: $event_type,
+                draft: $draft
+              }'
+          )"
+
+          curl \
+            --fail-with-body \
+            --silent \
+            --show-error \
+            --retry 3 \
+            --retry-connrefused \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --header "X-Webhook-Secret: ${DEVIN_WEBHOOK_SECRET}" \
+            --data "$payload" \
+            "$DEVIN_WEBHOOK_URL"
