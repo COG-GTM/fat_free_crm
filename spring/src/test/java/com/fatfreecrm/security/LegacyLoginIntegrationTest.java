@@ -12,6 +12,7 @@ import com.fatfreecrm.support.AbstractPostgresIntegrationTest;
 import com.fatfreecrm.support.RailsUserFixtures;
 import com.fatfreecrm.support.RailsUserFixtures.LegacyUser;
 import java.time.OffsetDateTime;
+import java.util.Locale;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -91,6 +92,23 @@ class LegacyLoginIntegrationTest extends AbstractPostgresIntegrationTest {
     void acceptsEmailAsTheLoginKeyLikeDevise() throws Exception {
         LegacyUser user = RailsUserFixtures.user("legacy_user");
         login(user.email(), user.password()).andExpect(status().isOk());
+    }
+
+    @Test
+    void acceptsUsernameCaseInsensitivelyLikeDevise() throws Exception {
+        LegacyUser user = RailsUserFixtures.user("legacy_user");
+        login(user.username().toUpperCase(Locale.ROOT), user.password()).andExpect(status().isOk());
+    }
+
+    @Test
+    void prefersUsernameMatchWhenAnotherUsersEmailMatchesTheLogin() throws Exception {
+        LegacyUser user = RailsUserFixtures.user("legacy_user");
+        LegacyUser other = RailsUserFixtures.user("legacy_admin");
+        jdbcTemplate.update(INSERT_USER, "email_collision_user",
+            user.username().toUpperCase(Locale.ROOT), other.encryptedPassword(), other.passwordSalt(),
+            false, null);
+
+        login(user.username().toUpperCase(Locale.ROOT), user.password()).andExpect(status().isOk());
     }
 
     @Test

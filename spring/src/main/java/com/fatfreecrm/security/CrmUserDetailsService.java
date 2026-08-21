@@ -3,6 +3,7 @@ package com.fatfreecrm.security;
 import com.fatfreecrm.domain.User;
 import com.fatfreecrm.repository.GroupRepository;
 import com.fatfreecrm.repository.UserRepository;
+import java.util.Locale;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -26,8 +27,8 @@ public class CrmUserDetailsService implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public CrmUserDetails loadUserByUsername(String login) {
-        User user = userRepository.findByUsername(login)
-            .or(() -> userRepository.findByEmailIgnoreCase(login))
+        String normalizedLogin = login.toLowerCase(Locale.ROOT);
+        User user = userRepository.findByLogin(normalizedLogin).stream().findFirst()
             .orElseThrow(() -> new UsernameNotFoundException("No user for login " + login));
         return new CrmUserDetails(user, groupRepository.findGroupsForUser(user.getId()));
     }
