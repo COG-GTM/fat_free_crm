@@ -1,0 +1,30 @@
+{
+  "devise": {
+    "encryptor": "authlogic_sha512",
+    "stretches": 20
+  },
+  "users": [
+    {
+      "username": "legacy_admin",
+      "email": "legacy_admin@example.com",
+      "admin": true,
+      "password": "CorrectHorse!42",
+      "encrypted_password": "682323d915f651f56df3074dc28e6b24bf466f1e118c0d5eb40483f20171432236eb8381a9b3f4ec1feb2d634c3c5ef6c8313bc36332b101d26feb2ea2f5194a",
+      "password_salt": "JUssKuGrdkqCQim_JYeb",
+      "encryptor": "authlogic_sha512",
+      "stretches": 20,
+      "pepper": null
+    },
+    {
+      "username": "legacy_user",
+      "email": "legacy_user@example.com",
+      "admin": false,
+      "password": "p@ssw0rd-simple",
+      "encrypted_password": "4302165fce2c7bc593acdf53b05c85953bcd577b48ddec56f5e34ec22cffeb5e4e9ac6ad54c1758b48f585035a047b56b8a683936b13513dfb105926fd743e57",
+      "password_salt": "KbA4Ghn2PSkEWsg8uTyf",
+      "encryptor": "authlogic_sha512",
+      "stretches": 20,
+      "pepper": null
+    }
+  ]
+}

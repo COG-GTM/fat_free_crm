@@ -1,0 +1,37 @@
+name: Spring API
+
+on:
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'spring/**'
+      - '.github/workflows/spring-api.yml'
+  push:
+    branches: [ master ]
+    paths:
+      - 'spring/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+    - name: Set up Gradle
+      uses: gradle/actions/setup-gradle@v4
+    # Testcontainers needs the runner's Docker daemon for the PostgreSQL 14
+    # integration tests (Flyway baseline + Hibernate schema validation).
+    - name: Build, test, checkstyle and spotbugs
+      run: ./gradlew build --no-daemon
+      working-directory: spring
+    - name: Upload reports
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: spring-reports
+        path: spring/build/reports
