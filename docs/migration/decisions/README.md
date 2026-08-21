@@ -7,7 +7,7 @@ decision, what it costs elsewhere, and how it can be revisited.
 | ADR | Decision | Status | Phases it constrains |
 |---|---|---|---|
 | [0001](0001-api-response-format-scope.md) | Response-format scope for `/api/v1` (JSON kept, XML/Atom/RSS deprecated, CSV/XLS/vCard kept) | Accepted, pending log confirmation | 4, 6 (H6b) |
-| [0002](0002-auth-model-and-ui-ownership.md) | Session cookies during the strangler, JWT at cutover; Rails keeps the UI | **Proposed — needs product sign-off** | 1 (C1), 7 (C7), 8 |
+| [0002](0002-auth-model-and-ui-ownership.md) | JWT for `/api/v1` from Phase 1; Rails keeps its own cookie sessions and the UI | Accepted (API auth); UI ownership **pending product sign-off** | 1 (C1), 7 (C7), 8 |
 | [0003](0003-custom-field-storage.md) | `cf_*` dynamic columns → single `custom_fields jsonb` per table | Accepted | 2 (G2), 4 (G4), 7 |
 | [0004](0004-build-toolchain-and-platform-baselines.md) | Gradle + Java 21 + Spring Boot 3.x, PostgreSQL 14 floor | Accepted | 1 (A1), all |
 | [0005](0005-openapi-compatibility-baseline.md) | `openapi.yaml` frozen at tag `openapi-baseline-v1` as the compatibility contract | Accepted | 2 (A2), 4, 5 |
