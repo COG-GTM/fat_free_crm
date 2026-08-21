@@ -10,8 +10,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 class CrmPasswordVerifierTest {
 
+    private static final int CONFIGURED_STRETCHES = 20;
+
     private final AuthlogicSha512PasswordEncoder legacyEncoder =
-        new AuthlogicSha512PasswordEncoder(RailsUserFixtures.stretches());
+        new AuthlogicSha512PasswordEncoder(CONFIGURED_STRETCHES);
     private final PasswordEncoder delegating = PasswordEncoderFactories.createDelegatingPasswordEncoder();
     private final CrmPasswordVerifier verifier = new CrmPasswordVerifier(delegating, legacyEncoder);
 

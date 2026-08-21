@@ -11,7 +11,7 @@ import java.util.List;
  * Loads {@code fixtures/rails-legacy-users.json}: rows produced by running the
  * real Rails app (Devise {@code :authlogic_sha512}, {@code stretches = 20})
  * against PostgreSQL. Regenerate with the script in
- * {@code spring/LEGACY_AUTH_FIXTURE.md} if Devise settings change.
+ * {@code docs/migration/legacy-auth-fixture.md} if Devise settings change.
  */
 public final class RailsUserFixtures {
 
@@ -26,10 +26,6 @@ public final class RailsUserFixtures {
                              String password,
                              String encryptedPassword,
                              String passwordSalt) {
-    }
-
-    public static int stretches() {
-        return root().path("devise").path("stretches").asInt();
     }
 
     public static String encryptor() {

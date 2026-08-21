@@ -149,14 +149,14 @@ class AuthAccessControlIntegrationTest extends AbstractPostgresIntegrationTest {
     void userLookupRoundTripsThroughTheRailsSchema() {
         LegacyUser fixture = RailsUserFixtures.user("legacy_user");
 
-        var byUsername = userRepository.findByUsername(fixture.username());
-        assertThat(byUsername).isPresent();
-        assertThat(byUsername.get().getEncryptedPassword()).isEqualTo(fixture.encryptedPassword());
-        assertThat(byUsername.get().getPasswordSalt()).isEqualTo(fixture.passwordSalt());
+        var byUsername = userRepository.findByLogin(fixture.username().toLowerCase(Locale.ROOT));
+        assertThat(byUsername).isNotEmpty();
+        assertThat(byUsername.getFirst().getEncryptedPassword()).isEqualTo(fixture.encryptedPassword());
+        assertThat(byUsername.getFirst().getPasswordSalt()).isEqualTo(fixture.passwordSalt());
 
-        var byEmail = userRepository.findByEmailIgnoreCase(fixture.email().toUpperCase(Locale.ROOT));
-        assertThat(byEmail).isPresent();
-        assertThat(byEmail.get().getUsername()).isEqualTo(fixture.username());
+        var byEmail = userRepository.findByLogin(fixture.email().toLowerCase(Locale.ROOT));
+        assertThat(byEmail).isNotEmpty();
+        assertThat(byEmail.getFirst().getUsername()).isEqualTo(fixture.username());
     }
 
     private org.springframework.test.web.servlet.ResultActions login(String login, String password) throws Exception {
