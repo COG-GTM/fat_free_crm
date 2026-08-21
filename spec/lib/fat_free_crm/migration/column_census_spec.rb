@@ -119,6 +119,65 @@ describe FatFreeCRM::Migration::ColumnCensus do
     expect(report[:summary][:by_field_as]).to eq('string' => 1, 'check_boxes' => 1)
   end
 
+  it "reports no custom columns when the entity table does not exist" do
+    census = census_for([])
+    allow(census.connection).to receive(:table_exists?).and_return(false)
+
+    report = census.report
+    expect(columns_of[report, 'Contact']).to be_empty
+    expect(report[:summary]).to include(custom_columns: 0, mapped: 0, orphaned: 0)
+  end
+
+  it "reports a nil schema version when schema_migrations cannot be queried" do
+    census = census_for([])
+    allow(census.connection).to receive(:select_value)
+      .with('SELECT MAX(version) FROM schema_migrations')
+      .and_raise(ActiveRecord::StatementInvalid)
+
+    expect(census.report[:schema_version]).to be_nil
+    expect(census.to_markdown).to include('Schema version: unknown')
+  end
+
+  it "annotates type mismatches and YAML serialization in the Markdown status cell" do
+    contact_field('cf_amount', as: 'integer')
+    contact_field('cf_interests', as: 'check_boxes')
+    markdown = census_for([column('cf_amount'), column('cf_interests', type: :text, sql_type: 'text')]).to_markdown
+
+    expect(markdown).to include('| `cf_amount` | mapped (type mismatch) |')
+    expect(markdown).to include('| `cf_interests` | mapped (YAML) |')
+  end
+
+  it "renders unattached fields in their own Markdown section" do
+    field = contact_field('cf_homeless')
+    Field.where(id: field.id).update_all(field_group_id: nil)
+
+    markdown = census_for([]).to_markdown
+    expect(markdown).to include('## Fields with no field group')
+    expect(markdown).to include('| `cf_homeless` |')
+  end
+
+  it "omits the unattached fields section when every field has a group" do
+    contact_field('cf_hobby')
+
+    expect(census_for([column('cf_hobby')]).to_markdown)
+      .not_to include('## Fields with no field group')
+  end
+
+  it "does not flag a mismatch when the field type has no expected column type" do
+    field = contact_field('cf_mystery')
+    Field.where(id: field.id).update_all(as: 'unregistered_widget')
+    entry = columns_of[census_for([column('cf_mystery')]).report, 'Contact'].first
+
+    expect(entry).to include(type_mismatch: false, expected_column_type: nil)
+  end
+
+  it "memoizes the report across serializations" do
+    census = census_for([column('cf_hobby')])
+
+    expect(census.report).to equal(census.report)
+    expect(JSON.parse(census.to_json)['generated_at']).to eq(census.report[:generated_at])
+  end
+
   it "covers every model that declares has_fields by default" do
     expect(described_class::DEFAULT_KLASS_NAMES).to eq(%w[Account Campaign Contact Lead Opportunity Task])
     described_class::DEFAULT_KLASS_NAMES.each do |klass_name|

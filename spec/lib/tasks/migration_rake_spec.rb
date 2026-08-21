@@ -54,6 +54,19 @@ describe "ffcrm:migration rake tasks" do # rubocop:disable RSpec/DescribeClass
       .to output(/## Summary/).to_stdout
   end
 
+  it "accepts the md format alias" do
+    run('ffcrm:migration:column_census', 'OUTPUT' => output_path.to_s, 'FORMAT' => 'md',
+                                         'COUNT_ROWS' => 'false')
+
+    expect(File.read(output_path)).to include('# Custom field (`cf_*`) column census')
+  end
+
+  it "includes row counts by default" do
+    run('ffcrm:migration:column_census', 'OUTPUT' => output_path.to_s, 'FORMAT' => 'json')
+
+    expect(JSON.parse(File.read(output_path))['row_counts_included']).to be true
+  end
+
   it "rejects an unknown format" do
     expect { run('ffcrm:migration:column_census', 'FORMAT' => 'yaml') }
       .to raise_error(SystemExit).and output(/Unknown FORMAT/).to_stderr
