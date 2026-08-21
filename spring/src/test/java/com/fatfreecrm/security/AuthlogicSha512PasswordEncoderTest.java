@@ -17,8 +17,10 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 class AuthlogicSha512PasswordEncoderTest {
 
+    private static final int CONFIGURED_STRETCHES = 20;
+
     private final AuthlogicSha512PasswordEncoder encoder =
-        new AuthlogicSha512PasswordEncoder(RailsUserFixtures.stretches());
+        new AuthlogicSha512PasswordEncoder(CONFIGURED_STRETCHES);
 
     static List<LegacyUser> railsUsers() {
         return RailsUserFixtures.users();
@@ -27,7 +29,18 @@ class AuthlogicSha512PasswordEncoderTest {
     @Test
     void fixtureWasGeneratedByTheEncryptorWeReproduce() {
         assertThat(RailsUserFixtures.encryptor()).isEqualTo("authlogic_sha512");
-        assertThat(RailsUserFixtures.stretches()).isEqualTo(20);
+        assertThat(RailsUserFixtures.declaredStretches()).isEqualTo(encoder.getStretches());
+        assertThat(RailsUserFixtures.pepper()).isNull();
+        assertThat(RailsUserFixtures.deviseVersion()).isNotBlank();
+        assertThat(RailsUserFixtures.deviseEncryptableVersion()).isEqualTo("0.2.0");
+    }
+
+    @Test
+    void fixtureContainsRailsGenerationProvenance() {
+        assertThat(RailsUserFixtures.generatedAt()).isNotBlank();
+        assertThat(RailsUserFixtures.railsEnv()).isEqualTo("development");
+        assertThat(RailsUserFixtures.source()).isEqualTo("persisted User rows created with User.create!");
+        assertThat(RailsUserFixtures.transaction()).isEqualTo("rolled_back_after_reading_rows");
     }
 
     @ParameterizedTest
@@ -53,7 +66,7 @@ class AuthlogicSha512PasswordEncoderTest {
     @Test
     void digestIsSensitiveToStretchCount() {
         LegacyUser user = RailsUserFixtures.users().getFirst();
-        String withOneFewerStretch = new AuthlogicSha512PasswordEncoder(RailsUserFixtures.stretches() - 1)
+        String withOneFewerStretch = new AuthlogicSha512PasswordEncoder(encoder.getStretches() - 1)
             .digest(user.password(), user.passwordSalt());
         assertThat(withOneFewerStretch).isNotEqualTo(user.encryptedPassword());
     }

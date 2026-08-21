@@ -1,7 +1,17 @@
 {
+  "provenance": {
+    "generated_at": "2026-08-21T18:42:18.880Z",
+    "rails_env": "development",
+    "database": "fat_free_crm_development",
+    "source": "persisted User rows created with User.create!",
+    "transaction": "rolled_back_after_reading_rows"
+  },
   "devise": {
     "encryptor": "authlogic_sha512",
-    "stretches": 20
+    "stretches": 20,
+    "pepper": null,
+    "devise_version": "5.0.3",
+    "devise_encryptable_version": "0.2.0"
   },
   "users": [
     {
@@ -9,22 +19,16 @@
       "email": "legacy_admin@example.com",
       "admin": true,
       "password": "CorrectHorse!42",
-      "encrypted_password": "682323d915f651f56df3074dc28e6b24bf466f1e118c0d5eb40483f20171432236eb8381a9b3f4ec1feb2d634c3c5ef6c8313bc36332b101d26feb2ea2f5194a",
-      "password_salt": "JUssKuGrdkqCQim_JYeb",
-      "encryptor": "authlogic_sha512",
-      "stretches": 20,
-      "pepper": null
+      "encrypted_password": "ebae2b7e817d35543aabfeb5046dfa89cfe04e94cfe102f2306f3f696114ef7233af3ca35402f15178d3188926cf2b7802ca1c77c50d07a5761da9fcdad33c00",
+      "password_salt": "tcWGDJfM8ynaw6X_jf2G"
     },
     {
       "username": "legacy_user",
       "email": "legacy_user@example.com",
       "admin": false,
       "password": "p@ssw0rd-simple",
-      "encrypted_password": "4302165fce2c7bc593acdf53b05c85953bcd577b48ddec56f5e34ec22cffeb5e4e9ac6ad54c1758b48f585035a047b56b8a683936b13513dfb105926fd743e57",
-      "password_salt": "KbA4Ghn2PSkEWsg8uTyf",
-      "encryptor": "authlogic_sha512",
-      "stretches": 20,
-      "pepper": null
+      "encrypted_password": "f439e12a04b6b77273c6817c8d9594e53a86fa9dc5abd4d9f9d1d376d67a39c6c00ac2cea78d5470aed4ea77a07db363edf4d72d2dac8c34a782e99768c0b837",
+      "password_salt": "uzVut9GJKmAaQBXiJ4TN"
     }
   ]
 }

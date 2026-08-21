@@ -11,7 +11,7 @@ import java.util.List;
  * Loads {@code fixtures/rails-legacy-users.json}: rows produced by running the
  * real Rails app (Devise {@code :authlogic_sha512}, {@code stretches = 20})
  * against PostgreSQL. Regenerate with the script in
- * {@code docs/migration/phase1-spring-foundation.md} if Devise settings change.
+ * {@code spring/LEGACY_AUTH_FIXTURE.md} if Devise settings change.
  */
 public final class RailsUserFixtures {
 
@@ -34,6 +34,39 @@ public final class RailsUserFixtures {
 
     public static String encryptor() {
         return root().path("devise").path("encryptor").asText();
+    }
+
+    public static int declaredStretches() {
+        return root().path("devise").path("stretches").asInt();
+    }
+
+    public static String pepper() {
+        JsonNode pepper = root().path("devise").path("pepper");
+        return pepper.isNull() || pepper.isMissingNode() ? null : pepper.asText();
+    }
+
+    public static String deviseVersion() {
+        return root().path("devise").path("devise_version").asText(null);
+    }
+
+    public static String deviseEncryptableVersion() {
+        return root().path("devise").path("devise_encryptable_version").asText(null);
+    }
+
+    public static String generatedAt() {
+        return root().path("provenance").path("generated_at").asText(null);
+    }
+
+    public static String railsEnv() {
+        return root().path("provenance").path("rails_env").asText(null);
+    }
+
+    public static String source() {
+        return root().path("provenance").path("source").asText(null);
+    }
+
+    public static String transaction() {
+        return root().path("provenance").path("transaction").asText(null);
     }
 
     public static List<LegacyUser> users() {
