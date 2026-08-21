@@ -17,6 +17,7 @@
 | Tests | JUnit 5 + Testcontainers-PostgreSQL; no H2 | The app depends on Postgres-specific behaviour (JSONB, `ILIKE`, arrays); an in-memory substitute would make the Phase 2 fidelity tests meaningless. |
 | Static analysis | Checkstyle + SpotBugs in CI, build fails on violations | Cheap to adopt at skeleton time, expensive to retrofit across parallel Phase 4/5 branches. |
 | Java package root | `com.fatfreecrm` with the layout in `target-architecture.md` §2.2 | — |
+| Repository layout | Java module in a new top-level `spring/` directory of this repo (monorepo) | the two apps share one schema for the whole strangler window; splitting repositories would put the Flyway baseline and `db/schema.rb` under separate review |
 
 ## Consequences
 
@@ -28,5 +29,5 @@
 - The Rails app keeps `sqlite3` for local development; the two apps therefore cannot share a
   local development database unless the developer runs Postgres. Phase 1 should ship a compose
   file with Postgres and point `config/database.yml` at it for anyone working across both apps.
-- Checkstyle/SpotBugs configuration lives in the repository root so all Phase 4/5 branches
-  inherit identical rules.
+- Checkstyle/SpotBugs configuration lives with the Java module (`spring/config/`) so all
+  Phase 4/5 branches inherit identical rules from one place.
