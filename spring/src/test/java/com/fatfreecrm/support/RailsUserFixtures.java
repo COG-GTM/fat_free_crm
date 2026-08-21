@@ -28,10 +28,6 @@ public final class RailsUserFixtures {
                              String passwordSalt) {
     }
 
-    public static int stretches() {
-        return root().path("devise").path("stretches").asInt();
-    }
-
     public static String encryptor() {
         return root().path("devise").path("encryptor").asText();
     }
