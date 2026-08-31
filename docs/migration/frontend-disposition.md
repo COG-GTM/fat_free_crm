@@ -69,7 +69,7 @@ Assets are compiled by **Sprockets** (`sprockets-rails`), with directives in
 The ERB manifests iterate `Gem.loaded_specs` to auto-include assets from `ffcrm_*`
 plugin gems — the plugin/hook system reaches into the asset pipeline too.
 
-### JavaScript (CoffeeScript, ~1,065 LOC in 18 files)
+### JavaScript (CoffeeScript, ~1,140 LOC in 16 files)
 
 | File | Responsibility |
 |---|---|
@@ -167,7 +167,7 @@ bulk of the frontend migration effort.
 - All 107 SJR templates and the UJS `remote: true` pattern.
 - Rails view helpers used pervasively: `simple_form`, `will_paginate`, `dynamic_form`,
   `link_to_remote`-style helpers, `dom_id`, I18n `t()` lookups (locale files under
-  `config/locales/` — 20+ languages — need a strategy in either option).
+  `config/locales/` — 18 locale files — need a strategy in either option).
 - Sprockets pipeline incl. ERB manifests and plugin asset auto-inclusion.
 - CoffeeScript sources (would be transpiled/rewritten to modern JS/TS in either option).
 - Devise-rendered auth pages (login, password reset, registration) — tied to whatever
@@ -222,7 +222,7 @@ library (htmx or similar) — the closest analogue to the current SJR pattern.
   templates and fragments; incremental page-by-page porting is feasible.
 - Single deployable; no separate frontend build/team/toolchain.
 - Session-based auth, CSRF, and i18n (Spring `MessageSource`) work out of the box,
-  mirroring current behavior.
+  mirroring current behavior (18 locale files today).
 - Lower JS skill requirement; htmx attribute-driven AJAX replaces UJS `remote: true`
   quite directly.
 
