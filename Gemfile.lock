@@ -163,7 +163,7 @@ GEM
       unaccent (~> 0.3)
     country_select (10.0.1)
       countries (> 5.0, < 8.0)
-    crass (1.0.6)
+    crass (1.0.7)
     css_parser (1.19.0)
       addressable
     csv (3.3.5)
