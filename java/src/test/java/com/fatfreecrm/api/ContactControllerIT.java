@@ -2,6 +2,7 @@ package com.fatfreecrm.api;
 
 import static com.fatfreecrm.security.AccessControlSpecifications.ACCESS_PRIVATE;
 import static com.fatfreecrm.security.AccessControlSpecifications.ACCESS_PUBLIC;
+import static com.fatfreecrm.security.AccessControlSpecifications.ACCESS_SHARED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -320,6 +321,273 @@ class ContactControllerIT extends AbstractIntegrationTest {
         assertProblem(get("/api/v1/contacts/10", null), HttpStatus.UNAUTHORIZED, "/api/v1/contacts/10");
         assertProblem(get("/api/v1/contacts/autocomplete?term=a", null), HttpStatus.UNAUTHORIZED,
                 "/api/v1/contacts/autocomplete");
+    }
+
+    // ---- list: Rails text_search parity ----------------------------------------------------
+
+    @Test
+    void queryPassesSqlWildcardsThroughUnescapedLikeArelMatches() {
+        // Contact.text_search uses Arel#matches without escaping (unlike Account's Ransack path)
+        assertThat(ids(getJson("/api/v1/contacts?query=_lice", C).get("items"))).containsExactly(10L);
+        assertThat(ids(getJson("/api/v1/contacts?query=%25&sortBy=first_name", C).get("items")))
+                .containsExactly(10L, 11L, 12L, 13L, 14L, 16L);
+        assertThat(ids(getJson("/api/v1/contacts?query=d_v", C).get("items"))).containsExactly(13L);
+    }
+
+    @Test
+    void queryWithSingleQuoteAndSpecialCharactersDoesNotBreak() {
+        // spec/models/entities/contact_spec.rb "should not break with a single quote / on special characters"
+        seeder.insertContact(row(30, "Shamus", "O'Connell", Z, null, ACCESS_PUBLIC, null, null, null, null));
+
+        assertThat(ids(getJson("/api/v1/contacts?query=O'Connell", C).get("items"))).containsExactly(30L);
+        assertThat(ids(getJson("/api/v1/contacts?query=Shamus%20O'Connell", C).get("items"))).containsExactly(30L);
+        assertThat(getJson("/api/v1/contacts?query=%40%24%25%23%5E%40%21", C).get("items")).isEmpty();
+    }
+
+    @Test
+    void queryWithThreeWordsTriesEveryFirstLastSplitInBothOrders() {
+        seeder.insertContact(row(31, "Mary Ann", "Smith", Z, null, ACCESS_PUBLIC, null, null, null, null));
+
+        assertThat(ids(getJson("/api/v1/contacts?query=Mary%20Ann%20Smith", C).get("items"))).containsExactly(31L);
+        assertThat(ids(getJson("/api/v1/contacts?query=Smith%20Mary%20Ann", C).get("items"))).containsExactly(31L);
+        assertThat(ids(getJson("/api/v1/contacts?query=mary%20smith", C).get("items"))).containsExactly(31L);
+        // no contiguous split gives first=%Ann Mary% or last=%Ann Mary%
+        assertThat(getJson("/api/v1/contacts?query=Ann%20Mary%20Smith", C).get("items")).isEmpty();
+    }
+
+    @Test
+    void queryWithSpacesRequiresBothHalvesToMatchTheSameRow() {
+        // Carol (12) and Clark (12) exist, but "Carol Anderson" pairs Carol with Alice's surname
+        assertThat(getJson("/api/v1/contacts?query=Carol%20Anderson", C).get("items")).isEmpty();
+        assertThat(getJson("/api/v1/contacts?query=Anderson%20Carol", C).get("items")).isEmpty();
+        // a phone number containing a space still hits the whole-query email/phone alternatives
+        seeder.insertContact(row(32, "Ivy", "Irwin", Z, null, ACCESS_PUBLIC, null, null, "+1 123 456 789", null));
+        assertThat(ids(getJson("/api/v1/contacts?query=123%20456", C).get("items"))).containsExactly(32L);
+    }
+
+    @Test
+    void blankAndRepeatedWhitespaceQueriesBehaveLikeRails() {
+        assertThat(ids(getJson("/api/v1/contacts?query=&sortBy=first_name", C).get("items")))
+                .containsExactly(10L, 11L, 12L, 13L, 14L, 16L);
+        assertThat(ids(getJson("/api/v1/contacts?query=%20%20&sortBy=first_name", C).get("items")))
+                .containsExactly(10L, 11L, 12L, 13L, 14L, 16L);
+        // Ruby String#split(" ") collapses runs of whitespace
+        assertThat(ids(getJson("/api/v1/contacts?query=Carol%20%20%20Clark", C).get("items"))).containsExactly(12L);
+    }
+
+    @Test
+    void queryMatchesMobileColumn() {
+        seeder.insertContact(new ContactRow(33, Z, null, null, null, "Jack", "Jones", ACCESS_PUBLIC, null, null, null,
+                null, null, null, "+44 7700 900123", null, null, null, null, null, null, false, null, null, null, null,
+                null, null, null, null, null, T0, T0));
+
+        assertThat(ids(getJson("/api/v1/contacts?query=7700%20900", C).get("items"))).containsExactly(33L);
+    }
+
+    // ---- list: parameter precedence and envelope --------------------------------------------
+
+    @Test
+    void camelCaseWinsOverSnakeCaseAliasWhenBothAreSent() {
+        JsonNode body = getJson("/api/v1/contacts?perPage=2&per_page=5&sortBy=first_name&sort_by=updated_at", C);
+
+        assertThat(body.get("perPage").asInt()).isEqualTo(2);
+        assertThat(ids(body.get("items"))).containsExactly(10L, 11L);
+    }
+
+    @Test
+    void listItemsUseTheSameSnakeCaseShapeAsShow() {
+        JsonNode items = getJson("/api/v1/contacts?perPage=1", C).get("items");
+
+        assertThat(items).hasSize(1);
+        assertThat(fieldNames(items.get(0))).containsExactlyElementsOf(OPENAPI_CONTACT_FIELDS);
+        assertThat(fieldNames(getJson("/api/v1/contacts", C))).containsExactly("items", "page", "perPage", "totalCount");
+    }
+
+    @Test
+    void pageFarBeyondTheEndIsEmptyButKeepsTotalCount() {
+        JsonNode body = getJson("/api/v1/contacts?page=100000&perPage=200", A);
+
+        assertThat(body.get("items")).isEmpty();
+        assertThat(body.get("page").asInt()).isEqualTo(100000);
+        assertThat(body.get("perPage").asInt()).isEqualTo(200);
+        assertThat(body.get("totalCount").asLong()).isEqualTo(2);
+    }
+
+    @Test
+    void negativePagingAndNonNumericPerPageAre400ProblemJson() {
+        assertProblem(get("/api/v1/contacts?page=-1", C), HttpStatus.BAD_REQUEST, "/api/v1/contacts");
+        assertProblem(get("/api/v1/contacts?perPage=-5", C), HttpStatus.BAD_REQUEST, "/api/v1/contacts");
+        assertProblem(get("/api/v1/contacts?per_page=0", C), HttpStatus.BAD_REQUEST, "/api/v1/contacts");
+        assertProblem(get("/api/v1/contacts?perPage=ten", C), HttpStatus.BAD_REQUEST, "/api/v1/contacts");
+    }
+
+    @Test
+    void sortByIsCaseSensitiveAndRejectsWhitespaceVariants() {
+        assertProblem(get("/api/v1/contacts?sortBy=first_name%20asc", C), HttpStatus.BAD_REQUEST, "/api/v1/contacts");
+        assertProblem(get("/api/v1/contacts?sortBy=FIRST_NAME", C), HttpStatus.BAD_REQUEST, "/api/v1/contacts");
+        assertProblem(get("/api/v1/contacts?sortBy=id", C), HttpStatus.BAD_REQUEST, "/api/v1/contacts");
+        assertProblem(get("/api/v1/contacts?sortBy=created_at%20ASC", C), HttpStatus.BAD_REQUEST, "/api/v1/contacts");
+    }
+
+    @Test
+    void sortByTiesAreBrokenByIdAscending() {
+        for (long id = 40; id < 44; id++) {
+            seeder.insertContact(new ContactRow(id, Z, null, null, null, "Same", "Name", ACCESS_PUBLIC, null, null,
+                    null, null, null, null, null, null, null, null, null, null, null, false, null, null, null, null,
+                    null, null, null, null, null, T0.plusYears(1), T0.plusYears(1)));
+        }
+
+        assertThat(ids(getJson("/api/v1/contacts?query=Same&sortBy=first_name", C).get("items")))
+                .containsExactly(40L, 41L, 42L, 43L);
+        assertThat(ids(getJson("/api/v1/contacts?query=Same", C).get("items"))).containsExactly(40L, 41L, 42L, 43L);
+        assertThat(ids(getJson("/api/v1/contacts?query=Same&sortBy=updated_at", C).get("items")))
+                .containsExactly(40L, 41L, 42L, 43L);
+    }
+
+    // ---- authorization: Shared access and cross-asset permissions ---------------------------
+
+    @Test
+    void sharedContactIsVisibleOnlyToItsUserGrantee() {
+        seeder.insertContact(row(50, "Shared", "ToB", Z, null, ACCESS_SHARED, null, null, null, null));
+        seeder.insertPermission("Contact", 50, B, null);
+
+        assertThat(getJson("/api/v1/contacts?query=ToB", A).get("items")).isEmpty();
+        assertProblem(get("/api/v1/contacts/50", A), HttpStatus.NOT_FOUND, "/api/v1/contacts/50");
+        assertThat(getJson("/api/v1/contacts/autocomplete?term=ToB", A).get("results")).isEmpty();
+
+        assertThat(ids(getJson("/api/v1/contacts?query=ToB", B).get("items"))).containsExactly(50L);
+        assertThat(getJson("/api/v1/contacts/50", B).get("access").asText()).isEqualTo("Shared");
+        assertThat(ids(getJson("/api/v1/contacts/autocomplete?term=ToB", B).get("results"))).containsExactly(50L);
+        assertThat(getJson("/api/v1/contacts/50", Z).get("id").asLong()).isEqualTo(50L);
+        assertThat(getJson("/api/v1/contacts/50", C).get("id").asLong()).isEqualTo(50L);
+    }
+
+    @Test
+    void sharedContactIsVisibleOnlyToMembersOfItsGranteeGroup() {
+        seeder.insertContact(row(51, "Shared", "ToG", Z, null, ACCESS_SHARED, null, null, null, null));
+        seeder.insertPermission("Contact", 51, null, G);
+
+        assertProblem(get("/api/v1/contacts/51", A), HttpStatus.NOT_FOUND, "/api/v1/contacts/51");
+        assertThat(getJson("/api/v1/contacts?query=ToG", A).get("totalCount").asLong()).isZero();
+        assertThat(getJson("/api/v1/contacts/autocomplete?term=ToG", A).get("results")).isEmpty();
+
+        assertThat(getJson("/api/v1/contacts/51", B).get("id").asLong()).isEqualTo(51L);
+        assertThat(ids(getJson("/api/v1/contacts/autocomplete?term=ToG", B).get("results"))).containsExactly(51L);
+    }
+
+    @Test
+    void permissionsOnOtherAssetTypesDoNotLeakContacts() {
+        // an Account grant with the same asset_id must not make Private contact 16 visible to A
+        seeder.insertPermission("Account", 16, A, null);
+        seeder.insertPermission("Opportunity", 16, null, G);
+
+        assertProblem(get("/api/v1/contacts/16", A), HttpStatus.NOT_FOUND, "/api/v1/contacts/16");
+        assertProblem(get("/api/v1/contacts/16", B), HttpStatus.NOT_FOUND, "/api/v1/contacts/16");
+        assertThat(getJson("/api/v1/contacts?query=Grace", A).get("items")).isEmpty();
+        assertThat(getJson("/api/v1/contacts/autocomplete?term=Grace", B).get("results")).isEmpty();
+    }
+
+    @Test
+    void assigneeSeesPrivateContactButOtherNonOwnersDoNot() {
+        assertThat(getJson("/api/v1/contacts/12", B).get("assigned_to").asLong()).isEqualTo(B);
+        assertThat(getJson("/api/v1/contacts/12", Z).get("user_id").asLong()).isEqualTo(Z);
+        assertProblem(get("/api/v1/contacts/12", A), HttpStatus.NOT_FOUND, "/api/v1/contacts/12");
+        assertThat(getJson("/api/v1/contacts?query=Carol", A).get("items")).isEmpty();
+    }
+
+    @Test
+    void totalCountNeverCountsInvisibleRows() {
+        assertThat(getJson("/api/v1/contacts?perPage=1", A).get("totalCount").asLong()).isEqualTo(2);
+        assertThat(getJson("/api/v1/contacts?perPage=1", B).get("totalCount").asLong()).isEqualTo(4);
+        assertThat(getJson("/api/v1/contacts?perPage=1", Z).get("totalCount").asLong()).isEqualTo(5);
+        assertThat(getJson("/api/v1/contacts?perPage=1", C).get("totalCount").asLong()).isEqualTo(6);
+    }
+
+    // ---- show: id edge cases ----------------------------------------------------------------
+
+    @Test
+    void nonNumericNegativeAndZeroIdsAre404ProblemJson() {
+        for (String id : new String[] {"abc", "-1", "0", "10abc"}) {
+            ResponseEntity<String> response = get("/api/v1/contacts/" + id, C);
+            assertThat(response.getStatusCode()).as(id).isEqualTo(HttpStatus.NOT_FOUND);
+            assertThat(response.getHeaders().getContentType()).isNotNull();
+            assertThat(response.getHeaders().getContentType().isCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                    .as(id).isTrue();
+            assertThat(json(response).get("status").asInt()).isEqualTo(404);
+        }
+    }
+
+    @Test
+    void showDoesNotDistinguishInvisibleFromMissing() {
+        ResponseEntity<String> invisible = get("/api/v1/contacts/16", A);
+        ResponseEntity<String> missing = get("/api/v1/contacts/999", A);
+
+        assertThat(invisible.getStatusCode()).isEqualTo(missing.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(json(invisible).get("title").asText()).isEqualTo(json(missing).get("title").asText());
+        assertThat(json(invisible).get("detail").asText().replace("16", "999"))
+                .isEqualTo(json(missing).get("detail").asText());
+    }
+
+    // ---- autocomplete: parity ---------------------------------------------------------------
+
+    @Test
+    void autocompleteBlankTermMatchesEverythingVisible() {
+        // Rails: params[:term] || '' -> text_search('') matches every row
+        assertThat(ids(getJson("/api/v1/contacts/autocomplete?term=", A).get("results"))).containsExactly(10L, 11L);
+        assertThat(ids(getJson("/api/v1/contacts/autocomplete?term=%20", A).get("results"))).containsExactly(10L, 11L);
+        assertThat(ids(getJson("/api/v1/contacts/autocomplete", C).get("results")))
+                .containsExactly(10L, 11L, 12L, 13L, 14L, 16L);
+    }
+
+    @Test
+    void autocompleteIgnoresTheRailsRelatedParameter() {
+        // `related` exclusion is deferred; it must neither filter nor fail
+        assertThat(ids(getJson("/api/v1/contacts/autocomplete?term=a&related=10", B).get("results")))
+                .containsExactly(10L, 12L, 13L, 14L);
+        assertThat(ids(getJson("/api/v1/contacts/autocomplete?term=a&related=accounts/1", B).get("results")))
+                .containsExactly(10L, 12L, 13L, 14L);
+    }
+
+    @Test
+    void autocompleteNeverReturnsSoftDeletedRowsEvenForAdmins() {
+        assertThat(getJson("/api/v1/contacts/autocomplete?term=Frank", C).get("results")).isEmpty();
+        assertThat(getJson("/api/v1/contacts/autocomplete?term=Foster", C).get("results")).isEmpty();
+    }
+
+    @Test
+    void autocompleteTextIsFirstSpaceLastEvenWhenLastNameIsEmpty() {
+        seeder.insertContact(row(60, "Cher", "", Z, null, ACCESS_PUBLIC, null, null, null, null));
+
+        JsonNode results = getJson("/api/v1/contacts/autocomplete?term=Cher", A).get("results");
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).get("id").asLong()).isEqualTo(60L);
+        assertThat(results.get(0).get("text").asText()).isEqualTo("Cher ");
+    }
+
+    @Test
+    void autocompleteMatchesEmailPhoneAndWildcardsLikeList() {
+        assertThat(ids(getJson("/api/v1/contacts/autocomplete?term=bobby%40home", A).get("results")))
+                .containsExactly(11L);
+        assertThat(ids(getJson("/api/v1/contacts/autocomplete?term=555-0102", B).get("results"))).containsExactly(12L);
+        assertThat(ids(getJson("/api/v1/contacts/autocomplete?term=_lice", A).get("results"))).containsExactly(10L);
+    }
+
+    // ---- read-only surface ------------------------------------------------------------------
+
+    @Test
+    void writeMethodsAreNotExposed() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(TrustedHeaderAuthenticationFilter.HEADER, String.valueOf(C));
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        for (HttpMethod method : new HttpMethod[] {HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH, HttpMethod.DELETE}) {
+            String path = method == HttpMethod.POST ? "/api/v1/contacts" : "/api/v1/contacts/10";
+            ResponseEntity<String> response = rest.exchange(URI.create(url(path)), method,
+                    new HttpEntity<>("{\"first_name\":\"X\"}", headers), String.class);
+            assertThat(response.getStatusCode()).as(method + " " + path).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
+        }
+        assertThat(get("/api/v1/contacts/10", C).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getJson("/api/v1/contacts/10", C).get("first_name").asText()).isEqualTo("Alice");
     }
 
     // ---- helpers ----------------------------------------------------------------------------
