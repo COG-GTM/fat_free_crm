@@ -27,7 +27,7 @@ import java.util.List;
  * </pre>
  * yields {@code [1, 2]}; {@code NULL}, blank text and {@code --- []} yield {@code []}. Any other
  * shape (unexpected YAML, non-integer items) also yields {@code []} rather than failing the
- * request. See {@link ContactMapper#parseSubscribedUsers(String)}.
+ * request. See {@link SubscribedUsersParser}.
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record ContactDto(

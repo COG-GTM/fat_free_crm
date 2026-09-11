@@ -40,7 +40,7 @@ import org.springframework.http.ResponseEntity;
  * created_at descends with the id (10 newest ... 16 oldest); updated_at ascends with the id.
  * </pre>
  */
-class ContactControllerTest extends AbstractIntegrationTest {
+class ContactControllerIT extends AbstractIntegrationTest {
 
     private static final long A = 1;
     private static final long B = 2;
