@@ -5,18 +5,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fatfreecrm.domain.Contact;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
 /**
  * {@link ContactMapper#toDto} in isolation: every column of the entity lands on the
- * same-named DTO property, {@code null}s survive untouched and the YAML
- * {@code subscribed_users} text is routed through {@link ContactMapper#parseSubscribedUsers}.
+ * same-named DTO property, {@code null}s survive untouched, the YAML {@code subscribed_users}
+ * text is routed through {@link SubscribedUsersParser} and the zone-less column timestamps
+ * (UTC by Rails convention) come out as UTC {@link OffsetDateTime}s.
  */
 class ContactMapperToDtoTest {
 
     private static final LocalDateTime T0 = LocalDateTime.of(2024, 5, 1, 9, 30, 0);
+    private static final OffsetDateTime T0_UTC = T0.atOffset(ZoneOffset.UTC);
 
     private final ContactMapper mapper = Mappers.getMapper(ContactMapper.class);
 
@@ -63,7 +67,7 @@ class ContactMapperToDtoTest {
                 "Engineering", "Referral", "hank@corp.example", "hank@home.example", "+1-555-0200", "+1-555-0201",
                 "+1-555-0202", "https://blog.example", "hank-hill", "hank.hill", "@hank", "hank-zoom", "hank-teams",
                 "hank-signal", "hank_ig", "@hank@mastodon.example", "hank.bsky.example", LocalDate.of(1970, 2, 3),
-                true, "Met at a conference.", List.of(1L, 2L), null, T0, T0.plusHours(1)));
+                true, "Met at a conference.", List.of(1L, 2L), null, T0_UTC, T0_UTC.plusHours(1)));
     }
 
     @Test
@@ -112,6 +116,21 @@ class ContactMapperToDtoTest {
         contact.setDoNotCall(false);
         contact.setDeletedAt(T0.plusDays(30));
 
-        assertThat(mapper.toDto(contact).deletedAt()).isEqualTo(T0.plusDays(30));
+        assertThat(mapper.toDto(contact).deletedAt()).isEqualTo(T0_UTC.plusDays(30));
+    }
+
+    @Test
+    void timestampsAreInterpretedAsUtcNotTheJvmZone() {
+        Contact contact = new Contact();
+        contact.setId(16L);
+        contact.setFirstName("Uma");
+        contact.setLastName("Utc");
+        contact.setDoNotCall(false);
+        contact.setCreatedAt(T0);
+
+        OffsetDateTime createdAt = mapper.toDto(contact).createdAt();
+
+        assertThat(createdAt.getOffset()).isEqualTo(ZoneOffset.UTC);
+        assertThat(createdAt.toLocalDateTime()).isEqualTo(T0);
     }
 }
