@@ -94,9 +94,9 @@ denials are HTTP **401** in Rails today and **403** here (target-architecture.md
 | Endpoint | Status |
 |---|---|
 | `GET /api/v1/ping` | this PR (smoke test; may be removed later) |
-| `GET /api/v1/accounts` | added by follow-up PR |
-| `GET /api/v1/accounts/{id}` | added by follow-up PR |
-| `GET /api/v1/accounts/autocomplete?term=` | added by follow-up PR |
+| `GET /api/v1/accounts` | `page`, `perPage`/`per_page` (clamped to 200), `query` (name/email substring), `sortBy`/`sort_by` (`name ASC`, `rating DESC`, `created_at DESC` default, `updated_at DESC`) |
+| `GET /api/v1/accounts/{id}` | 404 problem+json when missing, soft-deleted or not visible to the caller |
+| `GET /api/v1/accounts/autocomplete?term=` | `term` (name/email substring), max 10 results by `name ASC`; `related` exclusion deferred |
 | `GET /api/v1/contacts` | `page`, `perPage`/`per_page` (1..200, default 20), `query`, `sortBy`/`sort_by` (`first_name ASC`, `last_name ASC`, `created_at DESC`, `updated_at DESC`) |
 | `GET /api/v1/contacts/{id}` | 404 problem+json when missing, soft-deleted or not visible |
 | `GET /api/v1/contacts/autocomplete?term=` | `term`; `{results:[{id,text}]}`, max 10, `text` = full name (`related` ignored) |
