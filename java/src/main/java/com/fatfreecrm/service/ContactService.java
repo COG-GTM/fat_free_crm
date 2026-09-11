@@ -56,8 +56,8 @@ public class ContactService {
 
     /**
      * @param page    1-based page number; values below 1 are treated as 1
-     * @param perPage requested page size, clamped to {@code 1..maxPageSize} (the controller
-     *                already rejects out-of-range values with 400; this is a safety net)
+     * @param perPage requested page size, clamped to {@code 1..maxPageSize}
+     *                ({@link PaginationProperties#clampPageSize})
      * @param query   Rails {@code text_search} query; blank means no filtering
      * @param sortBy  one of {@link ContactSort}'s accepted values; blank means the default
      * @throws IllegalArgumentException for an unknown {@code sortBy}

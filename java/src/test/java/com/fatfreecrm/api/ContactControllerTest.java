@@ -130,9 +130,9 @@ class ContactControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void perPageAbove200IsRejectedWith400() {
-        assertProblem(get("/api/v1/contacts?perPage=500", C), HttpStatus.BAD_REQUEST, "/api/v1/contacts");
-        assertProblem(get("/api/v1/contacts?per_page=500", C), HttpStatus.BAD_REQUEST, "/api/v1/contacts");
+    void perPageAbove200IsClampedAndOtherBadParamsAre400() {
+        assertThat(getJson("/api/v1/contacts?perPage=500", C).get("perPage").asInt()).isEqualTo(200);
+        assertThat(getJson("/api/v1/contacts?per_page=500", C).get("perPage").asInt()).isEqualTo(200);
         assertProblem(get("/api/v1/contacts?perPage=0", C), HttpStatus.BAD_REQUEST, "/api/v1/contacts");
         assertProblem(get("/api/v1/contacts?page=0", C), HttpStatus.BAD_REQUEST, "/api/v1/contacts");
         assertProblem(get("/api/v1/contacts?page=abc", C), HttpStatus.BAD_REQUEST, "/api/v1/contacts");
@@ -250,8 +250,8 @@ class ContactControllerTest extends AbstractIntegrationTest {
         assertThat(body.get("subscribed_users").isArray()).isTrue();
         assertThat(ids(body.get("subscribed_users"))).containsExactly(1L, 2L);
         assertThat(body.get("deleted_at").isNull()).isTrue();
-        assertThat(body.get("created_at").asText()).isEqualTo("2024-05-01T09:30:00.000");
-        assertThat(body.get("updated_at").asText()).isEqualTo("2024-05-01T10:30:00.000");
+        assertThat(body.get("created_at").asText()).isEqualTo("2024-05-01T09:30:00Z");
+        assertThat(body.get("updated_at").asText()).isEqualTo("2024-05-01T10:30:00Z");
     }
 
     @Test

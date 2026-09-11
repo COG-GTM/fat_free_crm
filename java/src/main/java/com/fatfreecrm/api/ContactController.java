@@ -6,7 +6,6 @@ import com.fatfreecrm.api.dto.PageResponse;
 import com.fatfreecrm.config.PaginationProperties;
 import com.fatfreecrm.service.ContactService;
 import com.fatfreecrm.service.ContactSort;
-import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.validation.annotation.Validated;
@@ -23,8 +22,9 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>Query parameters accept both the camelCase names used by this API and the Rails snake_case
  * names ({@code per_page}, {@code sort_by}); the camelCase spelling wins when both are sent.
- * Validation failures (page &lt; 1, perPage outside 1..200, unknown sortBy) are 400
- * {@code application/problem+json} via {@link ApiExceptionHandler}.
+ * Validation failures (page &lt; 1, perPage &lt; 1, unknown sortBy) are 400
+ * {@code application/problem+json} via {@link ApiExceptionHandler}; {@code perPage} above the
+ * maximum is clamped, not rejected.
  */
 @RestController
 @RequestMapping("/api/v1/contacts")
@@ -43,10 +43,8 @@ public class ContactController {
     @GetMapping
     public PageResponse<ContactDto> list(
             @RequestParam(name = "page", required = false) @Min(1) Integer page,
-            @RequestParam(name = "perPage", required = false)
-            @Min(1) @Max(PaginationProperties.MAX_PAGE_SIZE) Integer perPage,
-            @RequestParam(name = "per_page", required = false)
-            @Min(1) @Max(PaginationProperties.MAX_PAGE_SIZE) Integer perPageAlias,
+            @RequestParam(name = "perPage", required = false) @Min(1) Integer perPage,
+            @RequestParam(name = "per_page", required = false) @Min(1) Integer perPageAlias,
             @RequestParam(name = "query", required = false) String query,
             @RequestParam(name = "sortBy", required = false)
             @Pattern(regexp = ContactSort.PATTERN, message = SORT_BY_MESSAGE) String sortBy,
