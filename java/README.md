@@ -97,9 +97,9 @@ denials are HTTP **401** in Rails today and **403** here (target-architecture.md
 | `GET /api/v1/accounts` | added by follow-up PR |
 | `GET /api/v1/accounts/{id}` | added by follow-up PR |
 | `GET /api/v1/accounts/autocomplete?term=` | added by follow-up PR |
-| `GET /api/v1/contacts` | added by follow-up PR |
-| `GET /api/v1/contacts/{id}` | added by follow-up PR |
-| `GET /api/v1/contacts/autocomplete?term=` | added by follow-up PR |
+| `GET /api/v1/contacts` | `page`, `perPage`/`per_page` (1..200, default 20), `query`, `sortBy`/`sort_by` (`first_name ASC`, `last_name ASC`, `created_at DESC`, `updated_at DESC`) |
+| `GET /api/v1/contacts/{id}` | 404 problem+json when missing, soft-deleted or not visible |
+| `GET /api/v1/contacts/autocomplete?term=` | `term`; `{results:[{id,text}]}`, max 10, `text` = full name (`related` ignored) |
 
 ### List envelope
 
