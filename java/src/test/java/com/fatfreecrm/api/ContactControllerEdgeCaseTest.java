@@ -27,7 +27,7 @@ import org.springframework.http.ResponseEntity;
 
 /**
  * Edge cases, Rails-parity details and access-control isolation for {@code /api/v1/contacts}
- * that {@link ContactControllerTest} does not pin down.
+ * that {@link ContactControllerIT} does not pin down.
  *
  * <pre>
  * users:    A (1), B (2, member of group G=100), admin C (3), Z (4)
@@ -146,11 +146,22 @@ class ContactControllerEdgeCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void perPageAboveMaximumIsClampedOnBothSpellingsLikeRailsPerPageParam() {
+        JsonNode snake = getJson("/api/v1/contacts?per_page=999&sortBy=first_name", C);
+        JsonNode camel = getJson("/api/v1/contacts?perPage=201&per_page=1&sortBy=first_name", C);
+
+        assertThat(snake.get("perPage").asInt()).isEqualTo(200);
+        assertThat(snake.get("totalCount").asLong()).isEqualTo(8);
+        assertThat(snake.get("items")).hasSize(8);
+        assertThat(camel.get("perPage").asInt()).as("clamped camelCase value still wins over the alias").isEqualTo(200);
+    }
+
+    @Test
     void validationProblemDetailNamesTheOffendingParameter() {
-        ResponseEntity<String> response = get("/api/v1/contacts?per_page=999", C);
+        ResponseEntity<String> response = get("/api/v1/contacts?per_page=0", C);
 
         assertProblem(response, HttpStatus.BAD_REQUEST, "/api/v1/contacts");
-        assertThat(json(response).get("detail").asText()).contains("200");
+        assertThat(json(response).get("detail").asText()).contains("must be greater than or equal to 1");
 
         ResponseEntity<String> typeMismatch = get("/api/v1/contacts?page=abc", C);
         assertProblem(typeMismatch, HttpStatus.BAD_REQUEST, "/api/v1/contacts");
