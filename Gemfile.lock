@@ -202,6 +202,7 @@ GEM
       factory_bot (~> 6.5)
       railties (>= 6.1.0)
     ffaker (2.25.0)
+    ffi (1.17.2)
     ffi (1.17.2-aarch64-linux-gnu)
     ffi (1.17.2-aarch64-linux-musl)
     ffi (1.17.2-arm-linux-gnu)
@@ -304,7 +305,7 @@ GEM
     nenv (0.3.0)
     net-http-persistent (4.0.6)
       connection_pool (~> 2.2, >= 2.2.4)
-    net-imap (0.6.3)
+    net-imap (0.6.7)
       date
       net-protocol
     net-pop (0.1.2)
