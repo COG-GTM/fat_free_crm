@@ -1,10 +1,9 @@
 package com.fatfreecrm.api.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -13,21 +12,12 @@ import java.util.List;
  * {@code to_json} of the Rails record, minus dynamic {@code cf_*} custom-field columns).
  *
  * <p>Property names are snake_case; {@code null} columns are emitted as JSON {@code null}
- * (never omitted), as ActiveModel does. Timestamps are ISO-8601 without a zone designator
- * because Rails stores them in {@code timestamp without time zone} columns (UTC by
- * convention). {@code born_on} is an ISO date.
+ * (never omitted), as ActiveModel does. Timestamps are ISO-8601 UTC ({@code ...Z}); Rails stores
+ * them in {@code timestamp without time zone} columns that hold UTC by convention.
+ * {@code born_on} is an ISO date.
  *
- * <p>{@code subscribed_users} is stored by Rails as YAML text
- * ({@code serialize :subscribed_users, type: Array}). Only the trivial array form written by
- * Rails is decoded, without a YAML library:
- * <pre>
- * ---
- * - 1
- * - 2
- * </pre>
- * yields {@code [1, 2]}; {@code NULL}, blank text and {@code --- []} yield {@code []}. Any other
- * shape (unexpected YAML, non-integer items) also yields {@code []} rather than failing the
- * request. See {@link ContactMapper#parseSubscribedUsers(String)}.
+ * <p>{@code subscribed_users} is stored by Rails as YAML text and decoded by
+ * {@link SubscribedUsersParser}.
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record ContactDto(
@@ -61,10 +51,7 @@ public record ContactDto(
         boolean doNotCall,
         String backgroundInfo,
         List<Long> subscribedUsers,
-        @JsonFormat(pattern = TIMESTAMP_PATTERN) LocalDateTime deletedAt,
-        @JsonFormat(pattern = TIMESTAMP_PATTERN) LocalDateTime createdAt,
-        @JsonFormat(pattern = TIMESTAMP_PATTERN) LocalDateTime updatedAt) {
-
-    /** ISO-8601 local date-time with millisecond precision, e.g. {@code 2024-05-01T09:30:00.000}. */
-    public static final String TIMESTAMP_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS";
+        OffsetDateTime deletedAt,
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt) {
 }

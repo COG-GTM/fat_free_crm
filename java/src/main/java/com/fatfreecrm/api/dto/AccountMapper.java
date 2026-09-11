@@ -1,6 +1,6 @@
 package com.fatfreecrm.api.dto;
 
-import com.fatfreecrm.domain.Contact;
+import com.fatfreecrm.domain.Account;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -8,14 +8,16 @@ import java.util.List;
 import org.mapstruct.Mapper;
 
 /**
- * {@link Contact} entity → {@link ContactDto}. All properties map by name; the only conversions
- * are the Rails-serialized {@code subscribed_users} YAML text → {@code List<Long>}
- * ({@link SubscribedUsersParser}) and the UTC timestamps → {@link OffsetDateTime}.
+ * {@link Account} entity → {@link AccountDto}. Property names line up one-to-one, so only the
+ * two type conversions need helpers: the YAML {@code subscribedUsers} column and the zone-less
+ * Rails timestamps (stored as UTC, see {@code config.active_record.default_timezone}).
  */
 @Mapper(config = CentralMapperConfig.class)
-public interface ContactMapper {
+public interface AccountMapper {
 
-    ContactDto toDto(Contact contact);
+    AccountDto toDto(Account account);
+
+    List<AccountDto> toDtos(List<Account> accounts);
 
     default List<Long> subscribedUsers(String yaml) {
         return SubscribedUsersParser.parse(yaml);
