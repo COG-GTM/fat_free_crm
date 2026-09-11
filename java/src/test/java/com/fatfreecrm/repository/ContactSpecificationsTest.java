@@ -14,6 +14,30 @@ class ContactSpecificationsTest {
     }
 
     @Test
+    void threeWordsGiveFourPermutationsInRailsOrder() {
+        // Rails "A B C".name_permutations => [["A","B C"],["B C","A"],["A B","C"],["C","A B"]]
+        assertThat(ContactSpecifications.namePermutations(new String[] {"A", "B", "C"})).containsExactly(
+                new String[] {"A", "B C"}, new String[] {"B C", "A"},
+                new String[] {"A B", "C"}, new String[] {"C", "A B"});
+    }
+
+    @Test
+    void singleWordGivesNoPermutations() {
+        assertThat(ContactSpecifications.namePermutations(new String[] {"Alice"})).isEmpty();
+    }
+
+    @Test
+    void permutationCountIsTwiceWordsMinusOne() {
+        for (int n = 2; n <= 6; n++) {
+            String[] words = new String[n];
+            for (int i = 0; i < n; i++) {
+                words[i] = "w" + i;
+            }
+            assertThat(ContactSpecifications.namePermutations(words)).as(n + " words").hasSize(2 * (n - 1));
+        }
+    }
+
+    @Test
     void fourWordsGiveSixPermutationsLikeRails() {
         List<String[]> perms = ContactSpecifications.namePermutations(new String[] {"A", "B", "C", "D"});
         assertThat(perms).containsExactly(
