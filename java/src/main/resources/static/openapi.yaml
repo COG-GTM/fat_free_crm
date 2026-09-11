@@ -1,0 +1,1971 @@
+openapi: 3.1.0
+info:
+  title: Fat Free CRM — Current JSON/XML API Surface
+  version: "0.1.0"
+  description: |
+    This contract documents the CURRENT behavior of the Fat Free CRM Rails application
+    (Rails 8, Devise + CanCanCan), restricted to the machine-readable formats it serves
+    (JSON and XML). It is descriptive, not aspirational: response shapes are the default
+    ActiveModel `to_json` / `to_xml` serializations of the records, and error responses
+    mirror `ApplicationController#respond_to_not_found` / `#respond_to_access_denied`.
+
+    Notes on scope:
+    - HTML pages, `.js.haml` AJAX responses, and export formats (csv/xls/rss/atom/vcf)
+      exist in the app but are not modeled here except where noted in descriptions.
+    - `edit`-family actions respond only to `js` and are therefore excluded
+      (ApplicationController: `respond_to :json, :xml, except: :edit`).
+    - Devise auth endpoints (`/users/sign_in`, sign_up, password, confirmation) respond
+      to HTML only and are excluded; they are documented in target-architecture.md §1.1.
+    - Authentication is a Devise session cookie (`_ffcrm_session`); non-GET requests
+      additionally require the Rails CSRF token (`X-CSRF-Token`).
+    - Every endpoint (except `/home/timezone`) requires an authenticated user and
+      returns 401 (text body "You are not authorized to take this action.") on
+      CanCanCan denial, and 404 with a warning-message body when a record is missing.
+    - CORS: all responses carry `Access-Control-Allow-Origin: *`; OPTIONS preflight on
+      any path returns 200 with an empty body.
+servers:
+  - url: /
+security:
+  - cookieAuth: []
+
+tags:
+  - name: accounts
+  - name: campaigns
+  - name: contacts
+  - name: leads
+  - name: opportunities
+  - name: tasks
+  - name: comments
+  - name: emails
+  - name: lists
+  - name: users
+  - name: home
+  - name: admin
+
+paths:
+  # ---------------------------------------------------------------- accounts
+  /accounts:
+    get:
+      tags: [accounts]
+      summary: List accounts (AccountsController#index)
+      description: >
+        Also serves html/js/atom/rss/csv/xls. Session-persisted category filter
+        (set via POST /accounts/filter) applies unless a Ransack advanced search
+        (`q[...]`) is present.
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/query'
+        - $ref: '#/components/parameters/ransackQ'
+      responses:
+        '200':
+          description: Array of accounts (paginated for json/xml).
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Account' } }
+            application/xml:
+              schema: { type: array, items: { $ref: '#/components/schemas/Account' } }
+        '401': { $ref: '#/components/responses/AccessDenied' }
+    post:
+      tags: [accounts]
+      summary: Create account (AccountsController#create)
+      requestBody: { $ref: '#/components/requestBodies/AccountBody' }
+      responses:
+        '201':
+          description: Created (Location header points at the account).
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Account' } }
+            application/xml: { schema: { $ref: '#/components/schemas/Account' } }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+        '401': { $ref: '#/components/responses/AccessDenied' }
+  /accounts/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    get:
+      tags: [accounts]
+      summary: Show account (AccountsController#show)
+      description: Records a "view" version (recently-viewed tracking) as a side effect.
+      responses:
+        '200':
+          description: The account.
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Account' } }
+            application/xml: { schema: { $ref: '#/components/schemas/Account' } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/AccessDenied' }
+    put:
+      tags: [accounts]
+      summary: Update account (AccountsController#update)
+      description: PATCH is also accepted. `account[access]` is applied before other attributes.
+      requestBody: { $ref: '#/components/requestBodies/AccountBody' }
+      responses:
+        '200':
+          description: Updated account.
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Account' } }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [accounts]
+      summary: Delete account (AccountsController#destroy)
+      responses:
+        '204': { description: Deleted. }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/AccessDenied' }
+  /accounts/{id}/attach:
+    put:
+      tags: [accounts]
+      summary: Attach an asset to the account (EntitiesController#attach)
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      requestBody: { $ref: '#/components/requestBodies/AttachBody' }
+      responses:
+        '200': { description: Reloaded account after attach. }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /accounts/{id}/discard:
+    post:
+      tags: [accounts]
+      summary: Discard an attached asset (EntitiesController#discard)
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      requestBody: { $ref: '#/components/requestBodies/DiscardBody' }
+      responses:
+        '200': { description: Reloaded account after discard. }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /accounts/{id}/subscribe:
+    post:
+      tags: [accounts]
+      summary: Subscribe current user to change notifications
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses: { '200': { description: Subscribed. } }
+  /accounts/{id}/unsubscribe:
+    post:
+      tags: [accounts]
+      summary: Unsubscribe current user
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses: { '200': { description: Unsubscribed. } }
+  /accounts/auto_complete:
+    get:
+      tags: [accounts]
+      summary: Autocomplete accounts (ApplicationController#auto_complete)
+      description: POST is also accepted with the same parameters.
+      parameters:
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/related'
+      responses:
+        '200':
+          description: Up to 10 matches scoped to records visible to the current user.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AutoCompleteResults' }
+
+  # ---------------------------------------------------------------- campaigns
+  /campaigns:
+    get:
+      tags: [campaigns]
+      summary: List campaigns (CampaignsController#index)
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/query'
+        - $ref: '#/components/parameters/ransackQ'
+      responses:
+        '200':
+          description: Array of campaigns. Session status filter (POST /campaigns/filter) applies.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Campaign' } }
+            application/xml:
+              schema: { type: array, items: { $ref: '#/components/schemas/Campaign' } }
+    post:
+      tags: [campaigns]
+      summary: Create campaign (CampaignsController#create)
+      requestBody: { $ref: '#/components/requestBodies/CampaignBody' }
+      responses:
+        '201':
+          description: Created campaign.
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Campaign' } }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+  /campaigns/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    get:
+      tags: [campaigns]
+      summary: Show campaign (CampaignsController#show)
+      description: >
+        xls/csv/rss/atom variants of this endpoint render the campaign's LEADS
+        rather than the campaign itself.
+      responses:
+        '200':
+          description: The campaign.
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Campaign' } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [campaigns]
+      summary: Update campaign (CampaignsController#update)
+      requestBody: { $ref: '#/components/requestBodies/CampaignBody' }
+      responses:
+        '200': { description: Updated campaign. }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+    delete:
+      tags: [campaigns]
+      summary: Delete campaign
+      responses:
+        '204': { description: Deleted. }
+  /campaigns/{id}/attach:
+    put:
+      tags: [campaigns]
+      summary: Attach asset (lead/opportunity) to campaign
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      requestBody: { $ref: '#/components/requestBodies/AttachBody' }
+      responses: { '200': { description: Attached. } }
+  /campaigns/{id}/discard:
+    post:
+      tags: [campaigns]
+      summary: Discard attached asset from campaign
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      requestBody: { $ref: '#/components/requestBodies/DiscardBody' }
+      responses: { '200': { description: Discarded. } }
+  /campaigns/{id}/subscribe:
+    post:
+      tags: [campaigns]
+      summary: Subscribe current user
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses: { '200': { description: Subscribed. } }
+  /campaigns/{id}/unsubscribe:
+    post:
+      tags: [campaigns]
+      summary: Unsubscribe current user
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses: { '200': { description: Unsubscribed. } }
+  /campaigns/auto_complete:
+    get:
+      tags: [campaigns]
+      summary: Autocomplete campaigns
+      parameters:
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/related'
+      responses:
+        '200':
+          description: Matches.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AutoCompleteResults' }
+
+  # ---------------------------------------------------------------- contacts
+  /contacts:
+    get:
+      tags: [contacts]
+      summary: List contacts (ContactsController#index)
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/query'
+        - $ref: '#/components/parameters/ransackQ'
+      responses:
+        '200':
+          description: Array of contacts.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Contact' } }
+            application/xml:
+              schema: { type: array, items: { $ref: '#/components/schemas/Contact' } }
+    post:
+      tags: [contacts]
+      summary: Create contact (ContactsController#create)
+      description: >
+        Uses `save_with_account_and_permissions`: an `account` sub-hash (or
+        `account[id]`/`account[name]`) links or creates the related account.
+      requestBody: { $ref: '#/components/requestBodies/ContactBody' }
+      responses:
+        '201':
+          description: Created contact.
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Contact' } }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+  /contacts/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    get:
+      tags: [contacts]
+      summary: Show contact (also serves text/x-vcard)
+      responses:
+        '200':
+          description: The contact.
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Contact' } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [contacts]
+      summary: Update contact (update_with_account_and_permissions)
+      requestBody: { $ref: '#/components/requestBodies/ContactBody' }
+      responses:
+        '200': { description: Updated contact. }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+    delete:
+      tags: [contacts]
+      summary: Delete contact
+      responses: { '204': { description: Deleted. } }
+  /contacts/{id}/attach:
+    put:
+      tags: [contacts]
+      summary: Attach asset (task/opportunity) to contact
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      requestBody: { $ref: '#/components/requestBodies/AttachBody' }
+      responses: { '200': { description: Attached. } }
+  /contacts/{id}/discard:
+    post:
+      tags: [contacts]
+      summary: Discard attached asset from contact
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      requestBody: { $ref: '#/components/requestBodies/DiscardBody' }
+      responses: { '200': { description: Discarded. } }
+  /contacts/{id}/subscribe:
+    post:
+      tags: [contacts]
+      summary: Subscribe current user
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses: { '200': { description: Subscribed. } }
+  /contacts/{id}/unsubscribe:
+    post:
+      tags: [contacts]
+      summary: Unsubscribe current user
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses: { '200': { description: Unsubscribed. } }
+  /contacts/auto_complete:
+    get:
+      tags: [contacts]
+      summary: Autocomplete contacts (text is full_name)
+      parameters:
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/related'
+      responses:
+        '200':
+          description: Matches.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AutoCompleteResults' }
+
+  # ---------------------------------------------------------------- leads
+  /leads:
+    get:
+      tags: [leads]
+      summary: List leads (LeadsController#index)
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/query'
+        - $ref: '#/components/parameters/ransackQ'
+      responses:
+        '200':
+          description: Array of leads. Session status filter (POST /leads/filter) applies.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Lead' } }
+            application/xml:
+              schema: { type: array, items: { $ref: '#/components/schemas/Lead' } }
+    post:
+      tags: [leads]
+      summary: Create lead (save_with_permissions)
+      requestBody: { $ref: '#/components/requestBodies/LeadBody' }
+      responses:
+        '201':
+          description: Created lead.
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Lead' } }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+  /leads/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    get:
+      tags: [leads]
+      summary: Show lead (also serves text/x-vcard)
+      responses:
+        '200':
+          description: The lead.
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Lead' } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [leads]
+      summary: Update lead (update_with_lead_counters — keeps campaign lead counters in sync)
+      requestBody: { $ref: '#/components/requestBodies/LeadBody' }
+      responses:
+        '200': { description: Updated lead. }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+    delete:
+      tags: [leads]
+      summary: Delete lead
+      responses: { '204': { description: Deleted. } }
+  /leads/{id}/promote:
+    put:
+      tags: [leads]
+      summary: Promote (convert) lead into Contact + optional Account/Opportunity
+      description: >
+        PATCH is also accepted. Creates a Contact from the lead; `account` and
+        `opportunity` sub-hashes optionally create/link an Account and Opportunity.
+        On success the lead status becomes "converted". On failure returns the
+        combined account+opportunity+contact errors.
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                account:
+                  type: object
+                  description: "{id} to link an existing account, or {name, access, …} to create one"
+                opportunity:
+                  type: object
+                  description: "{name, stage, amount, probability, closes_on, …} — omit to skip opportunity"
+                access: { type: string, enum: [Public, Private, Shared] }
+      responses:
+        '200': { description: Lead promoted; contact/account/opportunity created. }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /leads/{id}/reject:
+    put:
+      tags: [leads]
+      summary: Reject lead (sets status to "rejected")
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses:
+        '200': { description: Lead rejected. }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /leads/{id}/attach:
+    put:
+      tags: [leads]
+      summary: Attach asset to lead
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      requestBody: { $ref: '#/components/requestBodies/AttachBody' }
+      responses: { '200': { description: Attached. } }
+  /leads/{id}/discard:
+    post:
+      tags: [leads]
+      summary: Discard attached asset from lead
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      requestBody: { $ref: '#/components/requestBodies/DiscardBody' }
+      responses: { '200': { description: Discarded. } }
+  /leads/{id}/subscribe:
+    post:
+      tags: [leads]
+      summary: Subscribe current user
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses: { '200': { description: Subscribed. } }
+  /leads/{id}/unsubscribe:
+    post:
+      tags: [leads]
+      summary: Unsubscribe current user
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses: { '200': { description: Unsubscribed. } }
+  /leads/auto_complete:
+    get:
+      tags: [leads]
+      summary: Autocomplete leads (text is full_name)
+      parameters:
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/related'
+      responses:
+        '200':
+          description: Matches.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AutoCompleteResults' }
+
+  # ---------------------------------------------------------------- opportunities
+  /opportunities:
+    get:
+      tags: [opportunities]
+      summary: List opportunities (OpportunitiesController#index; weighted sort)
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/query'
+        - $ref: '#/components/parameters/ransackQ'
+        - name: stage
+          in: query
+          description: Comma-separated stage filter, persisted in the session.
+          schema: { type: string }
+      responses:
+        '200':
+          description: Array of opportunities.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Opportunity' } }
+            application/xml:
+              schema: { type: array, items: { $ref: '#/components/schemas/Opportunity' } }
+    post:
+      tags: [opportunities]
+      summary: Create opportunity (save_with_account_and_permissions)
+      requestBody: { $ref: '#/components/requestBodies/OpportunityBody' }
+      responses:
+        '201':
+          description: Created opportunity.
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Opportunity' } }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+  /opportunities/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    get:
+      tags: [opportunities]
+      summary: Show opportunity
+      responses:
+        '200':
+          description: The opportunity.
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Opportunity' } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [opportunities]
+      summary: Update opportunity (update_with_account_and_permissions)
+      requestBody: { $ref: '#/components/requestBodies/OpportunityBody' }
+      responses:
+        '200': { description: Updated opportunity. }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+    delete:
+      tags: [opportunities]
+      summary: Delete opportunity
+      responses: { '204': { description: Deleted. } }
+  /opportunities/{id}/attach:
+    put:
+      tags: [opportunities]
+      summary: Attach asset (contact/task) to opportunity
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      requestBody: { $ref: '#/components/requestBodies/AttachBody' }
+      responses: { '200': { description: Attached. } }
+  /opportunities/{id}/discard:
+    post:
+      tags: [opportunities]
+      summary: Discard attached asset from opportunity
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      requestBody: { $ref: '#/components/requestBodies/DiscardBody' }
+      responses: { '200': { description: Discarded. } }
+  /opportunities/{id}/subscribe:
+    post:
+      tags: [opportunities]
+      summary: Subscribe current user
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses: { '200': { description: Subscribed. } }
+  /opportunities/{id}/unsubscribe:
+    post:
+      tags: [opportunities]
+      summary: Unsubscribe current user
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses: { '200': { description: Unsubscribed. } }
+  /opportunities/auto_complete:
+    get:
+      tags: [opportunities]
+      summary: Autocomplete opportunities
+      parameters:
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/related'
+      responses:
+        '200':
+          description: Matches.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AutoCompleteResults' }
+
+  # ---------------------------------------------------------------- tasks
+  /tasks:
+    get:
+      tags: [tasks]
+      summary: List tasks grouped by bucket (TasksController#index)
+      parameters:
+        - name: view
+          in: query
+          description: One of Task::ALLOWED_VIEWS; defaults to the first (pending).
+          schema: { type: string, enum: [pending, assigned, completed] }
+      responses:
+        '200':
+          description: >
+            Tasks grouped by temporal bucket. XML serialization excludes
+            `subscribed_users`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GroupedTasks' }
+            application/xml:
+              schema: { $ref: '#/components/schemas/GroupedTasks' }
+    post:
+      tags: [tasks]
+      summary: Create task (TasksController#create)
+      description: Validation failures do NOT surface messages in the UI, but json/xml receive 422 with errors.
+      requestBody: { $ref: '#/components/requestBodies/TaskBody' }
+      responses:
+        '201':
+          description: Created task.
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Task' } }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+  /tasks/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    get:
+      tags: [tasks]
+      summary: Show task (scoped to tasks tracked by the current user)
+      responses:
+        '200':
+          description: The task.
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Task' } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [tasks]
+      summary: Update task
+      requestBody: { $ref: '#/components/requestBodies/TaskBody' }
+      responses:
+        '200': { description: Updated task (bucket recomputed). }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+    delete:
+      tags: [tasks]
+      summary: Delete task
+      parameters:
+        - name: bucket
+          in: query
+          required: false
+          description: Bucket the task was displayed in (UI bookkeeping only).
+          schema: { type: string }
+      responses: { '204': { description: Deleted. } }
+  /tasks/{id}/complete:
+    put:
+      tags: [tasks]
+      summary: Mark task complete (sets completed_at/completed_by)
+      parameters:
+        - $ref: '#/components/parameters/id'
+        - name: bucket
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '200': { description: Completed task. }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /tasks/{id}/uncomplete:
+    put:
+      tags: [tasks]
+      summary: Reopen a completed task (clears completed_at/completed_by)
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses:
+        '200': { description: Reopened task. }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /tasks/auto_complete:
+    get:
+      tags: [tasks]
+      summary: Autocomplete tasks
+      parameters:
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/related'
+      responses:
+        '200':
+          description: Matches.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AutoCompleteResults' }
+
+  # ---------------------------------------------------------------- comments
+  /comments:
+    get:
+      tags: [comments]
+      summary: List comments for one commentable (CommentsController#index)
+      description: >
+        Exactly one of `account_id`, `campaign_id`, `contact_id`, `lead_id`,
+        `opportunity_id`, `task_id` selects the parent; comments are returned
+        newest first. HTML redirects to the parent record.
+      parameters:
+        - name: account_id
+          in: query
+          schema: { type: integer }
+        - name: campaign_id
+          in: query
+          schema: { type: integer }
+        - name: contact_id
+          in: query
+          schema: { type: integer }
+        - name: lead_id
+          in: query
+          schema: { type: integer }
+        - name: opportunity_id
+          in: query
+          schema: { type: integer }
+        - name: task_id
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Comments, newest first.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Comment' } }
+            application/xml:
+              schema: { type: array, items: { $ref: '#/components/schemas/Comment' } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [comments]
+      summary: Create comment (CommentsController#create)
+      description: 404 if the commentable record is not visible to the current user.
+      requestBody: { $ref: '#/components/requestBodies/CommentBody' }
+      responses:
+        '201':
+          description: Created comment (user_id forced to current user).
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Comment' } }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /comments/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    put:
+      tags: [comments]
+      summary: Update comment
+      requestBody: { $ref: '#/components/requestBodies/CommentBody' }
+      responses:
+        '200': { description: Updated comment. }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+    delete:
+      tags: [comments]
+      summary: Delete comment
+      responses: { '204': { description: Deleted. } }
+
+  # ---------------------------------------------------------------- emails
+  /emails/{id}:
+    delete:
+      tags: [emails]
+      summary: Delete an archived email (EmailsController#destroy — only exposed action)
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses:
+        '204': { description: Deleted. }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------------------------------------------------------------- lists
+  /lists:
+    post:
+      tags: [lists]
+      summary: Create or update a saved list (ListsController#create — upsert by name)
+      description: >
+        If a list with the same (case-insensitive) name exists for the same owner it
+        is updated. `is_global=1` creates the list without a user_id (visible to all).
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [list]
+              properties:
+                list:
+                  type: object
+                  properties:
+                    name: { type: string }
+                    url: { type: string, description: Relative URL of the saved search }
+                is_global:
+                  type: string
+                  enum: ["0", "1"]
+      responses:
+        '201':
+          description: Created/updated list.
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/List' } }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+  /lists/{id}:
+    delete:
+      tags: [lists]
+      summary: Delete saved list (ListsController#destroy)
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses:
+        '204': { description: Deleted. }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------------------------------------------------------------- users
+  /users/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    get:
+      tags: [users]
+      summary: Show user profile (UsersController#show; /profile shows current user)
+      responses:
+        '200':
+          description: The user (Devise credential columns are not serialized).
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/User' } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [users]
+      summary: Update own profile (UsersController#update)
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                user: { $ref: '#/components/schemas/UserProfileParams' }
+      responses:
+        '200': { description: Updated user. }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+        '401': { $ref: '#/components/responses/AccessDenied' }
+  /users/{id}/change_password:
+    patch:
+      tags: [users]
+      summary: Change password (UsersController#change_password)
+      description: >
+        Requires `current_password`; if `user[password]` is blank the password is left
+        unchanged (with a notice). Invalid current password adds a validation error.
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                current_password: { type: string }
+                user:
+                  type: object
+                  properties:
+                    password: { type: string }
+                    password_confirmation: { type: string }
+      responses:
+        '200': { description: Password changed (or unchanged with notice). }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+  /users/auto_complete:
+    get:
+      tags: [users]
+      summary: Autocomplete users (UsersController#auto_complete)
+      description: POST also accepted. Returns a plain JSON array of escaped strings.
+      parameters: [ { $ref: '#/components/parameters/term' } ]
+      responses:
+        '200':
+          description: Up to 10 matches.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  examples: ["Aaron Assigned (@aaron)"]
+
+  # ---------------------------------------------------------------- home
+  /:
+    get:
+      tags: [home]
+      summary: Dashboard activity stream (HomeController#index; also GET /activities)
+      responses:
+        '200':
+          description: Latest activity (PaperTrail versions) visible to the current user, max 500.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Version' } }
+            application/xml:
+              schema: { type: array, items: { $ref: '#/components/schemas/Version' } }
+  /home/timeline:
+    put:
+      tags: [home]
+      summary: Expand/collapse timeline items (HomeController#timeline; GET/POST also routed)
+      parameters:
+        - name: state
+          in: query
+          required: true
+          schema: { type: string, enum: [Collapsed, Expanded] }
+        - name: type
+          in: query
+          description: '"comment" or "email" for a single item; omit for bulk `id=commentIds+emailIds`.'
+          schema: { type: string, enum: [comment, email] }
+        - name: id
+          in: query
+          required: true
+          description: Item id, or bulk form "1,2,3+4,5" (comment ids + email ids).
+          schema: { type: string }
+      responses:
+        '200': { description: Empty body (head :ok). }
+  /home/timezone:
+    put:
+      tags: [home]
+      summary: Store browser timezone offset in session (unauthenticated; GET/POST also routed)
+      security: []
+      parameters:
+        - name: offset
+          in: query
+          description: JavaScript getTimezoneOffset() minutes (UTC - localtime).
+          schema: { type: integer }
+      responses:
+        '200': { description: Empty body (head :ok). }
+  /home/toggle:
+    get:
+      tags: [home]
+      summary: Toggle a UI section's collapsed state in the session
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Empty body (head :ok). }
+
+  # ---------------------------------------------------------------- admin
+  /admin/users:
+    get:
+      tags: [admin]
+      summary: List users (Admin::UsersController#index; admin only)
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/query'
+        - $ref: '#/components/parameters/ransackQ'
+      responses:
+        '200':
+          description: Paginated users ordered by id.
+          content:
+            application/xml:
+              schema: { type: array, items: { $ref: '#/components/schemas/User' } }
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/User' } }
+        '302': { description: Redirect to root when not an admin. }
+    post:
+      tags: [admin]
+      summary: Create user (may be auto-suspended pending approval)
+      requestBody: { $ref: '#/components/requestBodies/AdminUserBody' }
+      responses:
+        '201':
+          description: Created user.
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/User' } }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+  /admin/users/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    get:
+      tags: [admin]
+      summary: Show user (admin)
+      responses:
+        '200':
+          description: The user.
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/User' } }
+    put:
+      tags: [admin]
+      summary: Update user (admin; can set admin flag, password, groups)
+      requestBody: { $ref: '#/components/requestBodies/AdminUserBody' }
+      responses:
+        '200': { description: Updated user. }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+    delete:
+      tags: [admin]
+      summary: Delete user
+      description: Fails with a flash warning (still 2xx for js) if the user owns assets or is the current user.
+      responses:
+        '204': { description: Deleted (when destroyable). }
+  /admin/users/{id}/suspend:
+    put:
+      tags: [admin]
+      summary: Suspend user (no-op when suspending yourself)
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses: { '200': { description: Suspended. } }
+  /admin/users/{id}/reactivate:
+    put:
+      tags: [admin]
+      summary: Reactivate suspended user
+      parameters: [ { $ref: '#/components/parameters/id' } ]
+      responses: { '200': { description: Reactivated. } }
+  /admin/leads/import:
+    post:
+      tags: [admin]
+      summary: Import leads from CSV (Admin::LeadsController#import)
+      description: >
+        Multipart upload; header row is mapped to Lead columns by name or
+        human attribute name. Always redirects (302) back to /admin/leads with
+        flash counts/errors — no JSON body.
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, contentMediaType: text/csv }
+      responses:
+        '302': { description: Redirect to /admin/leads with import results in flash. }
+  /admin/groups:
+    get:
+      tags: [admin]
+      summary: List groups (paginated)
+      parameters: [ { $ref: '#/components/parameters/page' } ]
+      responses:
+        '200':
+          description: Groups.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Group' } }
+    post:
+      tags: [admin]
+      summary: Create group
+      requestBody: { $ref: '#/components/requestBodies/GroupBody' }
+      responses:
+        '201': { description: Created group. }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+  /admin/groups/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    get:
+      tags: [admin]
+      summary: Show group
+      responses:
+        '200':
+          description: The group.
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Group' } }
+    put:
+      tags: [admin]
+      summary: Update group
+      requestBody: { $ref: '#/components/requestBodies/GroupBody' }
+      responses:
+        '200': { description: Updated group. }
+    delete:
+      tags: [admin]
+      summary: Delete group
+      responses: { '204': { description: Deleted. } }
+  /admin/field_groups:
+    post:
+      tags: [admin]
+      summary: Create custom-field group
+      requestBody: { $ref: '#/components/requestBodies/FieldGroupBody' }
+      responses:
+        '201': { description: Created field group. }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+  /admin/field_groups/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    put:
+      tags: [admin]
+      summary: Update field group
+      requestBody: { $ref: '#/components/requestBodies/FieldGroupBody' }
+      responses:
+        '200': { description: Updated field group. }
+    delete:
+      tags: [admin]
+      summary: Delete field group
+      responses: { '204': { description: Deleted. } }
+  /admin/field_groups/sort:
+    post:
+      tags: [admin]
+      summary: Reorder field groups (positions from array order)
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                asset: { type: string, description: e.g. "contact" }
+                "{asset}_field_groups":
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200': { description: Reordered. }
+  /admin/fields:
+    get:
+      tags: [admin]
+      summary: List custom fields (also aliased at /admin/custom_fields, /admin/core_fields)
+      responses:
+        '200':
+          description: Fields.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Field' } }
+    post:
+      tags: [admin]
+      summary: Create custom field (or field pair, e.g. date ranges)
+      requestBody: { $ref: '#/components/requestBodies/FieldBody' }
+      responses:
+        '201': { description: Created field. Adds a real DB column to the entity table. }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+  /admin/fields/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    get:
+      tags: [admin]
+      summary: Show field
+      responses:
+        '200':
+          description: The field.
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Field' } }
+    put:
+      tags: [admin]
+      summary: Update field (pair-aware)
+      requestBody: { $ref: '#/components/requestBodies/FieldBody' }
+      responses:
+        '200': { description: Updated field. }
+    delete:
+      tags: [admin]
+      summary: Delete field
+      responses: { '204': { description: Deleted. } }
+  /admin/fields/sort:
+    post:
+      tags: [admin]
+      summary: Reorder fields within a field group
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                field_group_id: { type: integer }
+                "fields_field_group_{id}":
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200': { description: Reordered. }
+  /admin/tags:
+    get:
+      tags: [admin]
+      summary: List tags
+      responses:
+        '200':
+          description: All tags.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Tag' } }
+    post:
+      tags: [admin]
+      summary: Create tag
+      requestBody: { $ref: '#/components/requestBodies/TagBody' }
+      responses:
+        '201': { description: Created tag. }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+  /admin/tags/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    put:
+      tags: [admin]
+      summary: Update tag
+      requestBody: { $ref: '#/components/requestBodies/TagBody' }
+      responses:
+        '200': { description: Updated tag. }
+    delete:
+      tags: [admin]
+      summary: Delete tag
+      responses: { '204': { description: Deleted. } }
+  /admin/research_tools:
+    get:
+      tags: [admin]
+      summary: List research tools
+      responses:
+        '200':
+          description: All research tools.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/ResearchTool' } }
+    post:
+      tags: [admin]
+      summary: Create research tool
+      requestBody: { $ref: '#/components/requestBodies/ResearchToolBody' }
+      responses:
+        '201': { description: Created research tool. }
+        '422': { $ref: '#/components/responses/ValidationErrors' }
+  /admin/research_tools/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    put:
+      tags: [admin]
+      summary: Update research tool
+      requestBody: { $ref: '#/components/requestBodies/ResearchToolBody' }
+      responses:
+        '200': { description: Updated research tool. }
+    delete:
+      tags: [admin]
+      summary: Delete research tool
+      responses: { '204': { description: Deleted. } }
+  /admin/settings:
+    put:
+      tags: [admin]
+      summary: Bulk-update application settings (Admin::SettingsController#update)
+      description: >
+        Accepts a large nested `settings[...]` form payload (booleans as "1"/"0",
+        arrays as newline-separated strings, smtp/email_dropbox/email_comment_replies
+        sub-hashes). Always redirects (302) to /admin/settings — no JSON body.
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                settings: { type: object }
+      responses:
+        '302': { description: Redirect back to /admin/settings. }
+  /admin/plugins:
+    get:
+      tags: [admin]
+      summary: List installed plugins
+      responses:
+        '200':
+          description: Plugin list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: object }
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: _ffcrm_session
+      description: >
+        Devise session cookie obtained via the HTML login form (POST /users/sign_in).
+        Non-GET requests also require the Rails CSRF token (X-CSRF-Token header or
+        authenticity_token param).
+
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, minimum: 1 }
+    page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+      description: Page number; defaults to session-remembered page.
+    perPage:
+      name: per_page
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 200 }
+      description: Page size (clamped to 1..200); defaults to user preference.
+    query:
+      name: query
+      in: query
+      schema: { type: string }
+      description: 'Full-text search; tokens prefixed with "#" are treated as tags.'
+    ransackQ:
+      name: q
+      in: query
+      style: deepObject
+      explode: true
+      schema: { type: object }
+      description: Ransack advanced-search predicate hash (q[name_cont]=... etc.).
+    term:
+      name: term
+      in: query
+      schema: { type: string }
+      description: Autocomplete query string.
+    related:
+      name: related
+      in: query
+      schema: { type: string }
+      description: '"5" or "campaigns/7" — ids already related are excluded from results.'
+
+  responses:
+    NotFound:
+      description: Record not found (flash warning message as body).
+      content:
+        text/plain:
+          schema: { type: string }
+        application/xml:
+          schema:
+            type: array
+            items: { type: string }
+    AccessDenied:
+      description: >
+        CanCanCan denial. NOTE — the current app returns HTTP 401 (not 403) with the
+        message "You are not authorized to take this action."
+      content:
+        text/plain:
+          schema: { type: string }
+        application/xml:
+          schema:
+            type: array
+            items: { type: string }
+    ValidationErrors:
+      description: ActiveModel validation errors.
+      content:
+        application/json:
+          schema:
+            type: object
+            description: Map of attribute name to array of error messages.
+            additionalProperties:
+              type: array
+              items: { type: string }
+        application/xml:
+          schema:
+            type: object
+            description: '<errors><error>message</error>...</errors>'
+
+  requestBodies:
+    AttachBody:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            type: object
+            required: [assets, asset_id]
+            properties:
+              assets:
+                type: string
+                description: Asset class name in plural/underscore form (e.g. "contacts", "tasks").
+              asset_id: { type: integer }
+    DiscardBody:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            type: object
+            required: [attachment, attachment_id]
+            properties:
+              attachment:
+                type: string
+                description: Attached class name (e.g. "Contact", "Task").
+              attachment_id: { type: integer }
+    AccountBody:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            type: object
+            properties:
+              account: { $ref: '#/components/schemas/AccountParams' }
+              comment_body: { type: string, description: Optional first comment. }
+        application/json:
+          schema:
+            type: object
+            properties:
+              account: { $ref: '#/components/schemas/AccountParams' }
+    CampaignBody:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            type: object
+            properties:
+              campaign: { $ref: '#/components/schemas/CampaignParams' }
+              comment_body: { type: string }
+        application/json:
+          schema:
+            type: object
+            properties:
+              campaign: { $ref: '#/components/schemas/CampaignParams' }
+    ContactBody:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            type: object
+            properties:
+              contact: { $ref: '#/components/schemas/ContactParams' }
+              account:
+                type: object
+                description: '{id} to link, or {name,...} to create the related account.'
+              comment_body: { type: string }
+        application/json:
+          schema:
+            type: object
+            properties:
+              contact: { $ref: '#/components/schemas/ContactParams' }
+    LeadBody:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            type: object
+            properties:
+              lead: { $ref: '#/components/schemas/LeadParams' }
+              comment_body: { type: string }
+        application/json:
+          schema:
+            type: object
+            properties:
+              lead: { $ref: '#/components/schemas/LeadParams' }
+    OpportunityBody:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            type: object
+            properties:
+              opportunity: { $ref: '#/components/schemas/OpportunityParams' }
+              account:
+                type: object
+                description: '{id} to link, or {name,...} to create the related account.'
+              campaign: { type: integer, description: Related campaign id. }
+              contact: { type: integer, description: Related contact id. }
+              comment_body: { type: string }
+        application/json:
+          schema:
+            type: object
+            properties:
+              opportunity: { $ref: '#/components/schemas/OpportunityParams' }
+    TaskBody:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            type: object
+            properties:
+              task: { $ref: '#/components/schemas/TaskParams' }
+        application/json:
+          schema:
+            type: object
+            properties:
+              task: { $ref: '#/components/schemas/TaskParams' }
+    CommentBody:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            type: object
+            properties:
+              comment: { $ref: '#/components/schemas/CommentParams' }
+        application/json:
+          schema:
+            type: object
+            properties:
+              comment: { $ref: '#/components/schemas/CommentParams' }
+    AdminUserBody:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            type: object
+            properties:
+              user: { $ref: '#/components/schemas/AdminUserParams' }
+    GroupBody:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            type: object
+            properties:
+              group:
+                type: object
+                properties:
+                  name: { type: string }
+                  user_ids: { type: array, items: { type: integer } }
+    FieldGroupBody:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            type: object
+            properties:
+              field_group:
+                type: object
+                properties:
+                  name: { type: string }
+                  label: { type: string }
+                  position: { type: integer }
+                  hint: { type: string }
+                  tag_id: { type: integer }
+                  klass_name: { type: string, description: Entity class the group belongs to. }
+    FieldBody:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            type: object
+            properties:
+              field:
+                type: object
+                properties:
+                  as: { type: string, description: Field kind (string, text, select, date_pair, ...). }
+                  name: { type: string }
+                  label: { type: string }
+                  hint: { type: string }
+                  placeholder: { type: string }
+                  field_group_id: { type: integer }
+                  position: { type: integer }
+                  required: { type: boolean }
+                  disabled: { type: boolean }
+                  maxlength: { type: integer }
+                  minlength: { type: integer }
+                  collection_string: { type: string, description: Newline/comma list for selects. }
+                  pair_id: { type: integer }
+                  settings: { type: object }
+              pair:
+                type: object
+                description: For paired fields — sub-hashes "0" and "1" with hint/required/disabled/id.
+    TagBody:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            type: object
+            properties:
+              tag:
+                type: object
+                properties:
+                  name: { type: string }
+                  taggings_count: { type: integer }
+    ResearchToolBody:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            type: object
+            properties:
+              research_tool:
+                type: object
+                properties:
+                  name: { type: string }
+                  url_template: { type: string }
+                  enabled: { type: boolean }
+
+  schemas:
+    AccessLevel:
+      type: string
+      enum: [Public, Private, Shared]
+
+    AutoCompleteResults:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              text: { type: string, description: name (or full_name for people) }
+
+    Account:
+      type: object
+      description: Default ActiveModel serialization of Account (custom-field columns may also appear).
+      properties:
+        id: { type: integer }
+        user_id: { type: [integer, "null"] }
+        assigned_to: { type: [integer, "null"] }
+        name: { type: string, maxLength: 64 }
+        access: { $ref: '#/components/schemas/AccessLevel' }
+        website: { type: [string, "null"] }
+        toll_free_phone: { type: [string, "null"] }
+        phone: { type: [string, "null"] }
+        fax: { type: [string, "null"] }
+        email: { type: [string, "null"] }
+        background_info: { type: [string, "null"] }
+        rating: { type: integer }
+        category: { type: [string, "null"] }
+        subscribed_users: { type: array, items: { type: integer } }
+        contacts_count: { type: integer }
+        opportunities_count: { type: integer }
+        wikidata_id: { type: [string, "null"] }
+        latitude: { type: [number, "null"] }
+        longitude: { type: [number, "null"] }
+        blog: { type: [string, "null"] }
+        linkedin: { type: [string, "null"] }
+        facebook: { type: [string, "null"] }
+        twitter: { type: [string, "null"] }
+        bluesky: { type: [string, "null"] }
+        instagram: { type: [string, "null"] }
+        mastodon: { type: [string, "null"] }
+        deleted_at: { type: [string, "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    AccountParams:
+      type: object
+      description: Permitted create/update attributes (params.permit! — effectively open).
+      properties:
+        name: { type: string }
+        access: { $ref: '#/components/schemas/AccessLevel' }
+        assigned_to: { type: [integer, "null"] }
+        website: { type: string }
+        phone: { type: string }
+        toll_free_phone: { type: string }
+        fax: { type: string }
+        email: { type: string }
+        rating: { type: integer }
+        category: { type: string }
+        background_info: { type: string }
+        billing_address_attributes: { $ref: '#/components/schemas/AddressParams' }
+        shipping_address_attributes: { $ref: '#/components/schemas/AddressParams' }
+        user_ids: { type: array, items: { type: integer }, description: For Shared access. }
+        group_ids: { type: array, items: { type: integer } }
+        tag_list: { type: string, description: Comma-separated tags. }
+
+    AddressParams:
+      type: object
+      properties:
+        street1: { type: string }
+        street2: { type: string }
+        city: { type: string }
+        state: { type: string }
+        zipcode: { type: string }
+        country: { type: string }
+        full_address: { type: string }
+
+    Campaign:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: [integer, "null"] }
+        assigned_to: { type: [integer, "null"] }
+        name: { type: string, maxLength: 64 }
+        access: { $ref: '#/components/schemas/AccessLevel' }
+        status: { type: [string, "null"], description: One of Setting.campaign_status (planned/started/on_hold/completed by default). }
+        budget: { type: [number, "null"] }
+        target_leads: { type: [integer, "null"] }
+        target_conversion: { type: [number, "null"] }
+        target_revenue: { type: [number, "null"] }
+        leads_count: { type: [integer, "null"] }
+        opportunities_count: { type: [integer, "null"] }
+        revenue: { type: [number, "null"] }
+        starts_on: { type: [string, "null"], format: date }
+        ends_on: { type: [string, "null"], format: date }
+        objectives: { type: [string, "null"] }
+        background_info: { type: [string, "null"] }
+        subscribed_users: { type: array, items: { type: integer } }
+        deleted_at: { type: [string, "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    CampaignParams:
+      type: object
+      properties:
+        name: { type: string }
+        access: { $ref: '#/components/schemas/AccessLevel' }
+        assigned_to: { type: [integer, "null"] }
+        status: { type: string }
+        budget: { type: number }
+        target_leads: { type: integer }
+        target_conversion: { type: number }
+        target_revenue: { type: number }
+        starts_on: { type: string, format: date }
+        ends_on: { type: string, format: date }
+        objectives: { type: string }
+        background_info: { type: string }
+        user_ids: { type: array, items: { type: integer } }
+        group_ids: { type: array, items: { type: integer } }
+        tag_list: { type: string }
+
+    Contact:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: [integer, "null"] }
+        lead_id: { type: [integer, "null"] }
+        assigned_to: { type: [integer, "null"] }
+        reports_to: { type: [integer, "null"] }
+        first_name: { type: string, maxLength: 64 }
+        last_name: { type: string, maxLength: 64 }
+        access: { $ref: '#/components/schemas/AccessLevel' }
+        title: { type: [string, "null"] }
+        department: { type: [string, "null"] }
+        source: { type: [string, "null"] }
+        email: { type: [string, "null"] }
+        alt_email: { type: [string, "null"] }
+        phone: { type: [string, "null"] }
+        mobile: { type: [string, "null"] }
+        fax: { type: [string, "null"] }
+        blog: { type: [string, "null"] }
+        linkedin: { type: [string, "null"] }
+        facebook: { type: [string, "null"] }
+        twitter: { type: [string, "null"] }
+        zoom: { type: [string, "null"] }
+        teams: { type: [string, "null"] }
+        signal: { type: [string, "null"] }
+        instagram: { type: [string, "null"] }
+        mastodon: { type: [string, "null"] }
+        bluesky: { type: [string, "null"] }
+        born_on: { type: [string, "null"], format: date }
+        do_not_call: { type: boolean }
+        background_info: { type: [string, "null"] }
+        subscribed_users: { type: array, items: { type: integer } }
+        deleted_at: { type: [string, "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ContactParams:
+      type: object
+      properties:
+        first_name: { type: string }
+        last_name: { type: string }
+        access: { $ref: '#/components/schemas/AccessLevel' }
+        assigned_to: { type: [integer, "null"] }
+        reports_to: { type: [integer, "null"] }
+        title: { type: string }
+        department: { type: string }
+        source: { type: string }
+        email: { type: string }
+        alt_email: { type: string }
+        phone: { type: string }
+        mobile: { type: string }
+        fax: { type: string }
+        born_on: { type: string, format: date }
+        do_not_call: { type: boolean }
+        background_info: { type: string }
+        business_address_attributes: { $ref: '#/components/schemas/AddressParams' }
+        user_ids: { type: array, items: { type: integer } }
+        group_ids: { type: array, items: { type: integer } }
+        tag_list: { type: string }
+
+    Lead:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: [integer, "null"] }
+        campaign_id: { type: [integer, "null"] }
+        assigned_to: { type: [integer, "null"] }
+        first_name: { type: string, maxLength: 64 }
+        last_name: { type: string, maxLength: 64 }
+        access: { $ref: '#/components/schemas/AccessLevel' }
+        title: { type: [string, "null"] }
+        company: { type: [string, "null"] }
+        source: { type: [string, "null"], description: One of Setting.lead_source. }
+        status: { type: [string, "null"], description: One of Setting.lead_status plus converted/rejected. }
+        referred_by: { type: [string, "null"] }
+        email: { type: [string, "null"] }
+        alt_email: { type: [string, "null"] }
+        phone: { type: [string, "null"] }
+        mobile: { type: [string, "null"] }
+        blog: { type: [string, "null"] }
+        linkedin: { type: [string, "null"] }
+        facebook: { type: [string, "null"] }
+        twitter: { type: [string, "null"] }
+        zoom: { type: [string, "null"] }
+        teams: { type: [string, "null"] }
+        signal: { type: [string, "null"] }
+        instagram: { type: [string, "null"] }
+        mastodon: { type: [string, "null"] }
+        bluesky: { type: [string, "null"] }
+        rating: { type: integer }
+        do_not_call: { type: boolean }
+        background_info: { type: [string, "null"] }
+        subscribed_users: { type: array, items: { type: integer } }
+        deleted_at: { type: [string, "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    LeadParams:
+      type: object
+      properties:
+        first_name: { type: string }
+        last_name: { type: string }
+        access: { $ref: '#/components/schemas/AccessLevel' }
+        assigned_to: { type: [integer, "null"] }
+        campaign_id: { type: [integer, "null"] }
+        title: { type: string }
+        company: { type: string }
+        source: { type: string }
+        status: { type: string }
+        referred_by: { type: string }
+        email: { type: string }
+        alt_email: { type: string }
+        phone: { type: string }
+        mobile: { type: string }
+        rating: { type: integer }
+        do_not_call: { type: boolean }
+        background_info: { type: string }
+        business_address_attributes: { $ref: '#/components/schemas/AddressParams' }
+        user_ids: { type: array, items: { type: integer } }
+        group_ids: { type: array, items: { type: integer } }
+        tag_list: { type: string }
+
+    Opportunity:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: [integer, "null"] }
+        campaign_id: { type: [integer, "null"] }
+        assigned_to: { type: [integer, "null"] }
+        name: { type: string, maxLength: 64 }
+        access: { $ref: '#/components/schemas/AccessLevel' }
+        source: { type: [string, "null"] }
+        stage: { type: [string, "null"], description: One of Setting.opportunity_stage (prospecting..won/lost). }
+        probability: { type: [integer, "null"], minimum: 0, maximum: 100 }
+        amount: { type: [number, "null"] }
+        discount: { type: [number, "null"] }
+        closes_on: { type: [string, "null"], format: date }
+        background_info: { type: [string, "null"] }
+        subscribed_users: { type: array, items: { type: integer } }
+        deleted_at: { type: [string, "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    OpportunityParams:
+      type: object
+      properties:
+        name: { type: string }
+        access: { $ref: '#/components/schemas/AccessLevel' }
+        assigned_to: { type: [integer, "null"] }
+        campaign_id: { type: [integer, "null"] }
+        source: { type: string }
+        stage: { type: string }
+        probability: { type: integer }
+        amount: { type: number }
+        discount: { type: number }
+        closes_on: { type: string, format: date }
+        background_info: { type: string }
+        user_ids: { type: array, items: { type: integer } }
+        group_ids: { type: array, items: { type: integer } }
+        tag_list: { type: string }
+
+    Task:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: [integer, "null"] }
+        assigned_to: { type: [integer, "null"] }
+        completed_by: { type: [integer, "null"] }
+        name: { type: string }
+        asset_type: { type: [string, "null"], description: Account/Campaign/Contact/Lead/Opportunity }
+        asset_id: { type: [integer, "null"] }
+        priority: { type: [string, "null"] }
+        category: { type: [string, "null"], description: One of Setting.task_category. }
+        bucket: { type: [string, "null"], description: overdue/due_asap/due_today/due_tomorrow/due_this_week/due_next_week/due_later/specific_time }
+        due_at: { type: [string, "null"], format: date-time }
+        completed_at: { type: [string, "null"], format: date-time }
+        background_info: { type: [string, "null"] }
+        subscribed_users: { type: array, items: { type: integer }, description: Omitted from XML index serialization. }
+        deleted_at: { type: [string, "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    TaskParams:
+      type: object
+      properties:
+        name: { type: string }
+        user_id: { type: integer }
+        assigned_to: { type: [integer, "null"] }
+        completed_by: { type: [integer, "null"] }
+        asset_type: { type: string }
+        asset_id: { type: integer }
+        priority: { type: string }
+        category: { type: string }
+        bucket: { type: string }
+        due_at: { type: string, format: date-time }
+        completed_at: { type: string, format: date-time }
+        background_info: { type: string }
+        calendar: { type: string, description: Specific date/time string when bucket=specific_time. }
+    GroupedTasks:
+      type: object
+      description: Map of bucket name to task array (Task.find_all_grouped).
+      additionalProperties:
+        type: array
+        items: { $ref: '#/components/schemas/Task' }
+
+    Comment:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: integer }
+        commentable_type: { type: string, description: Account/Campaign/Contact/Lead/Opportunity/Task }
+        commentable_id: { type: integer }
+        private: { type: [boolean, "null"] }
+        title: { type: string }
+        comment: { type: string }
+        state: { type: string, enum: [Collapsed, Expanded] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    CommentParams:
+      type: object
+      required: [commentable_type, commentable_id, comment]
+      properties:
+        commentable_type: { type: string }
+        commentable_id: { type: integer }
+        private: { type: boolean }
+        title: { type: string }
+        comment: { type: string }
+        state: { type: string, enum: [Collapsed, Expanded] }
+
+    List:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        url: { type: string }
+        user_id: { type: [integer, "null"], description: null for global lists. }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    User:
+      type: object
+      description: Serialized user; Devise credential/token columns are excluded.
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        email: { type: [string, "null"] }
+        first_name: { type: [string, "null"] }
+        last_name: { type: [string, "null"] }
+        title: { type: [string, "null"] }
+        company: { type: [string, "null"] }
+        alt_email: { type: [string, "null"] }
+        phone: { type: [string, "null"] }
+        mobile: { type: [string, "null"] }
+        google: { type: [string, "null"] }
+        admin: { type: boolean }
+        suspended_at: { type: [string, "null"], format: date-time }
+        subscribe_to_comment_replies: { type: boolean }
+        receive_assigned_notifications: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    UserProfileParams:
+      type: object
+      properties:
+        username: { type: string }
+        email: { type: string }
+        first_name: { type: string }
+        last_name: { type: string }
+        title: { type: string }
+        company: { type: string }
+        alt_email: { type: string }
+        phone: { type: string }
+        mobile: { type: string }
+        google: { type: string }
+        blog: { type: string }
+        facebook: { type: string }
+        twitter: { type: string }
+        linkedin: { type: string }
+        zoom: { type: string }
+        teams: { type: string }
+        signal: { type: string }
+        instagram: { type: string }
+        mastodon: { type: string }
+        bluesky: { type: string }
+        subscribe_to_comment_replies: { type: boolean }
+        receive_assigned_notifications: { type: boolean }
+    AdminUserParams:
+      type: object
+      properties:
+        admin: { type: boolean }
+        username: { type: string }
+        email: { type: string }
+        first_name: { type: string }
+        last_name: { type: string }
+        title: { type: string }
+        company: { type: string }
+        alt_email: { type: string }
+        phone: { type: string }
+        mobile: { type: string }
+        google: { type: string }
+        password: { type: string }
+        password_confirmation: { type: string }
+        group_ids: { type: array, items: { type: integer } }
+
+    Group:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    Field:
+      type: object
+      properties:
+        id: { type: integer }
+        type: { type: [string, "null"], description: CustomField subclass name. }
+        field_group_id: { type: [integer, "null"] }
+        position: { type: [integer, "null"] }
+        name: { type: string }
+        label: { type: string }
+        hint: { type: [string, "null"] }
+        placeholder: { type: [string, "null"] }
+        as: { type: [string, "null"] }
+        collection: { type: array, items: { type: string } }
+        disabled: { type: boolean }
+        required: { type: boolean }
+        maxlength: { type: [integer, "null"] }
+        minlength: { type: [integer, "null"] }
+        pair_id: { type: [integer, "null"] }
+        settings: { type: [object, "null"] }
+
+    Tag:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        taggings_count: { type: integer }
+
+    ResearchTool:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        url_template: { type: string }
+        enabled: { type: boolean }
+
+    Version:
+      type: object
+      description: PaperTrail version record powering the activity stream.
+      properties:
+        id: { type: integer }
+        item_type: { type: string }
+        item_id: { type: integer }
+        event: { type: string, enum: [create, update, destroy, view] }
+        whodunnit: { type: [string, "null"] }
+        object: { type: [string, "null"] }
+        object_changes: { type: [string, "null"] }
+        created_at: { type: string, format: date-time }

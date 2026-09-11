@@ -1,0 +1,56 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: fat-free-crm-api
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:fat_free_crm_development}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:}
+  mvc:
+    # Framework errors not covered by ApiExceptionHandler (404 unmapped path, 405, 415, ...)
+    # are rendered as RFC 9457 application/problem+json too.
+    problemdetails:
+      enabled: true
+  jpa:
+    # The schema is owned and migrated by the Rails app (db/schema.rb). Hibernate must never
+    # create, alter or validate it. `validate` is deliberately not used: Rails maps `integer`
+    # to int4 and `datetime` to `timestamp without time zone`, and Hibernate's validator is
+    # strict about type/precision mismatches, which makes it brittle across Rails upgrades.
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        default_batch_fetch_size: 50
+  flyway:
+    # Flyway is wired in for later phases but DISABLED: this service is read-only against the
+    # live Rails database and must not author or apply migrations to Rails-managed tables.
+    enabled: false
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+springdoc:
+  swagger-ui:
+    # Serve the FROZEN contract (docs/migration/openapi.yaml copied to static/openapi.yaml),
+    # not the auto-generated one. Java paths are prefixed with /api/v1 relative to the Rails
+    # paths documented in that file (see README).
+    url: /openapi.yaml
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+fatfreecrm:
+  pagination:
+    default-page-size: 20
+    max-page-size: 200
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
