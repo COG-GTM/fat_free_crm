@@ -208,7 +208,7 @@ JSON API.
 - Requires API completeness up front — the SPA can't ship until endpoints for
   everything (incl. Ransack-equivalent advanced search, exports, avatar upload) exist.
 - New concerns Rails handled implicitly: client-side routing, auth token handling,
-  CSRF, i18n (20+ locales), error handling, SEO (minor for an internal CRM).
+  CSRF, i18n (18 locales), error handling, SEO (minor for an internal CRM).
 - Two deployables to build, version, and operate.
 
 ### Option B — Server-side templating in Spring (Thymeleaf)
