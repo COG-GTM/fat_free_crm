@@ -112,6 +112,29 @@ feature 'Contacts', '
     expect(contacts_element).not_to have_content('Test Subject #1')
   end
 
+  scenario 'should explain how to recover when a search returns no contacts' do
+    create(:contact, first_name: "Test", last_name: "Subject")
+    visit contacts_path(query: 'Fake contact')
+    expect(empty_element).to have_content("Couldn't find any contacts matching Fake contact; please try a different search term or clear the search.")
+    expect(contacts_element).not_to have_content('Test Subject')
+    expect(empty_element).not_to have_content('please try another query')
+  end
+
+  scenario 'should explain how to recover when a live search returns no contacts', js: true do
+    create(:contact, first_name: "Test", last_name: "Subject")
+    visit contacts_page
+    expect(contacts_element).to have_content('Test Subject')
+    fill_in 'query', with: "Fake contact"
+    expect(contacts_element).not_to have_content('Test Subject')
+    expect(empty_element).to have_content("Couldn't find any contacts matching Fake contact; please try a different search term or clear the search.")
+  end
+
+  scenario 'should not show the retry hint when there are no contacts and no search' do
+    visit contacts_page
+    expect(empty_element).to have_content("Couldn't find any Contacts. Feel free to create a new contact.")
+    expect(empty_element).not_to have_content('please try a different search term')
+  end
+
   def main_element
     find('#main')
   end
@@ -126,6 +149,10 @@ feature 'Contacts', '
 
   def contacts_element
     find('#contacts')
+  end
+
+  def empty_element
+    find('#empty')
   end
 
   def activities_element

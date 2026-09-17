@@ -663,7 +663,7 @@ en-US:
   no_recent_items: There are no recent items to display yet.
   options: Options
   permissions: Permissions
-  please_retry: please try another query.
+  please_retry: please try a different search term or clear the search.
   recent_items: Recent Items
   select_contact: Select Contact
   select_lead: Select Lead
