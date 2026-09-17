@@ -13,9 +13,11 @@ permissions:
 
 jobs:
   notify-devin:
-    if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && !contains(github.actor, 'devin-ai-integration')
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     env:
+      GH_TOKEN: ${{ github.token }}
       DEVIN_QA_WEBHOOK_URL: ${{ secrets.DEVIN_QA_WEBHOOK_URL }}
       DEVIN_QA_WEBHOOK_SECRET: ${{ secrets.DEVIN_QA_WEBHOOK_SECRET }}
     steps:
@@ -38,6 +40,12 @@ jobs:
 
           if [[ -z "${DEVIN_QA_WEBHOOK_URL:-}" || -z "${DEVIN_QA_WEBHOOK_SECRET:-}" ]]; then
             echo "::notice::Skipping Devin PR QA Tests: DEVIN_QA_WEBHOOK_URL and DEVIN_QA_WEBHOOK_SECRET must be configured."
+            exit 0
+          fi
+
+          head_message="$(gh api "repos/${REPOSITORY}/commits/${HEAD_SHA}" --jq '.commit.message' || true)"
+          if [[ "$head_message" == *"[devin-qa]"* ]]; then
+            echo "::notice::Skipping Devin PR QA Tests: head commit was pushed by the QA automation."
             exit 0
           fi
 
@@ -75,6 +83,8 @@ jobs:
             --show-error \
             --retry 3 \
             --retry-connrefused \
+            --connect-timeout 10 \
+            --max-time 60 \
             --request POST \
             --header "Content-Type: application/json" \
             --header "X-Webhook-Secret: ${DEVIN_QA_WEBHOOK_SECRET}" \
