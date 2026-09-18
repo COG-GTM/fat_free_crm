@@ -1,0 +1,19 @@
+# Test profile: datasource is supplied by the Testcontainers @ServiceConnection in
+# AbstractIntegrationTest. The Rails-owned schema is stood in for by schema-test.sql.
+spring:
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-test.sql
+  jpa:
+    hibernate:
+      ddl-auto: none
+    defer-datasource-initialization: false
+    show-sql: false
+  flyway:
+    enabled: false
+
+logging:
+  level:
+    org.testcontainers: WARN
+    com.github.dockerjava: WARN

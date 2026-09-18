@@ -1,0 +1,28 @@
+name: Java API
+
+on:
+  pull_request:
+    paths:
+      - "java/**"
+      - ".github/workflows/java.yml"
+  push:
+    branches: [master]
+    paths:
+      - "java/**"
+      - ".github/workflows/java.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: java
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: java/pom.xml
+      - run: ./mvnw -B verify
