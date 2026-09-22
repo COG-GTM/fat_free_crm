@@ -47,9 +47,57 @@ feature 'Devise Sign-up' do
     expect(page).to have_button("Sign Up")
   end
 
+  context 'when user signup needs approval' do
+    background do
+      Setting.user_signup = :needs_approval
+    end
+
+    scenario 'shows the sign up link on the login page' do
+      visit "/users/sign_in"
+
+      expect(page).to have_link("Sign Up Now!", href: "/users/sign_up")
+    end
+
+    scenario 'lets a visitor sign up and creates a suspended account' do
+      visit "/users/sign_up"
+
+      fill_in "user[email]", with: "jane@example.com"
+      fill_in "user[username]", with: "jane"
+      fill_in "user[password]", with: "password"
+      fill_in "user[password_confirmation]", with: "password"
+      click_button("Sign Up")
+
+      expect(current_path).to eq "/users/sign_in"
+      expect(page).to have_content("A message with a confirmation link has been sent to your email address.")
+
+      user = User.find_by(username: "jane")
+      expect(user).to be_present
+      expect(user).to be_suspended
+    end
+  end
+
   context 'when user signup is not allowed' do
     background do
       Setting.user_signup = :not_allowed
+    end
+
+    scenario 'redirects the /signup shortcut to the login page' do
+      visit "/signup"
+
+      expect(current_path).to eq "/users/sign_in"
+      expect(page).to have_button("Login")
+    end
+
+    scenario 'does not create a user when the sign up form is submitted with invalid data' do
+      page.driver.submit :post, "/users", user: {
+        email: "",
+        username: "",
+        password: "",
+        password_confirmation: ""
+      }
+
+      expect(current_path).to eq "/users/sign_in"
+      expect(page).to have_no_content("prohibited this User from being saved")
     end
 
     scenario 'hides the sign up link on the login page' do
