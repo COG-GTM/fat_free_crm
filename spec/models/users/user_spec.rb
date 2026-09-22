@@ -116,6 +116,33 @@ describe User do
     end
   end
 
+  describe '.can_signup?' do
+    it "is true when signup is allowed" do
+      allow(Setting).to receive(:user_signup).and_return(:allowed)
+      expect(User.can_signup?).to eq(true)
+    end
+
+    it "is true when signup needs approval" do
+      allow(Setting).to receive(:user_signup).and_return(:needs_approval)
+      expect(User.can_signup?).to eq(true)
+    end
+
+    it "is false when signup is not allowed" do
+      allow(Setting).to receive(:user_signup).and_return(:not_allowed)
+      expect(User.can_signup?).to eq(false)
+    end
+
+    it "is false when the setting is missing" do
+      allow(Setting).to receive(:user_signup).and_return(nil)
+      expect(User.can_signup?).to eq(false)
+    end
+
+    it "is false when the setting is a string rather than a symbol" do
+      allow(Setting).to receive(:user_signup).and_return("allowed")
+      expect(User.can_signup?).to eq(false)
+    end
+  end
+
   describe '#suspend_if_needs_approval' do
     it "should set suspended timestamp upon creation if signups need approval and the user is not an admin" do
       allow(Setting).to receive(:user_signup).and_return(:needs_approval)
