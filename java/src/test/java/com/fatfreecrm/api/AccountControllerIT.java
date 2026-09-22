@@ -146,6 +146,17 @@ class AccountControllerIT extends AbstractIntegrationTest {
         }
 
         @Test
+        void ignoredSnakeCaseAliasIsNotValidated() {
+            JsonNode body = ok(get("/api/v1/accounts?perPage=2&per_page=0&sortBy=name&sort_by=bogus", C)).getBody();
+            assertThat(body.get("perPage").asInt()).isEqualTo(2);
+            assertThat(ids(body)).containsExactly(10L, 11L);
+
+            body = ok(get("/api/v1/accounts?perPage=1&per_page=abc&sortBy=rating&sort_by=name%20DESC", A)).getBody();
+            assertThat(body.get("perPage").asInt()).isEqualTo(1);
+            assertThat(ids(body)).containsExactly(11L);
+        }
+
+        @Test
         void queryMatchesNameOrEmailSubstringCaseInsensitively() {
             assertThat(listIds(A, "?query=ACM")).containsExactly(10L);
             assertThat(listIds(A, "?query=lph")).containsExactly(11L);
@@ -194,6 +205,8 @@ class AccountControllerIT extends AbstractIntegrationTest {
             assertProblem(get("/api/v1/accounts?perPage=0", A), HttpStatus.BAD_REQUEST, "/api/v1/accounts");
             assertProblem(get("/api/v1/accounts?per_page=-1", A), HttpStatus.BAD_REQUEST, "/api/v1/accounts");
             assertProblem(get("/api/v1/accounts?page=abc", A), HttpStatus.BAD_REQUEST, "/api/v1/accounts");
+            assertProblem(get("/api/v1/accounts?perPage=abc", A), HttpStatus.BAD_REQUEST, "/api/v1/accounts");
+            assertProblem(get("/api/v1/accounts?per_page=1.5", A), HttpStatus.BAD_REQUEST, "/api/v1/accounts");
         }
 
         @Test
