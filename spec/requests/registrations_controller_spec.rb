@@ -8,6 +8,8 @@
 require 'spec_helper'
 
 RSpec.describe RegistrationsController do
+  before { Rack::Attack.cache.store = ActiveSupport::Cache::MemoryStore.new }
+
   let(:params) do
     { user: { username: "newuser", email: "newuser@example.com", password: "password1", password_confirmation: "password1" } }
   end
@@ -24,6 +26,60 @@ RSpec.describe RegistrationsController do
       get new_user_registration_path
       expect(response).to redirect_to(new_user_session_path)
     end
+
+    it "redirects POST /users before validating the submitted attributes" do
+      invalid_params = { user: params[:user].merge(password_confirmation: "mismatch") }
+
+      expect { post user_registration_path, params: invalid_params }.not_to change(User, :count)
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
+    it "does not set a flash message when redirecting" do
+      get new_user_registration_path
+      expect(flash).to be_empty
+    end
+
+    it "still redirects GET /users/edit to the profile page for a signed in user" do
+      login_as(create(:user), scope: :user)
+
+      get edit_user_registration_path
+      expect(response).to redirect_to(profile_path)
+    end
+  end
+
+  context "when the signup setting is not one of the known values" do
+    [nil, :unknown].each do |value|
+      context "with #{value.inspect}" do
+        before { allow(Setting).to receive(:user_signup).and_return(value) }
+
+        it "treats signup as disabled" do
+          get new_user_registration_path
+          expect(response).to redirect_to(new_user_session_path)
+
+          expect { post user_registration_path, params: params }.not_to change(User, :count)
+          expect(response).to redirect_to(new_user_session_path)
+        end
+      end
+    end
+  end
+
+  context "when user signup needs approval" do
+    before { allow(Setting).to receive(:user_signup).and_return(:needs_approval) }
+
+    it "renders the sign up page" do
+      get new_user_registration_path
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "creates a suspended user awaiting approval on POST /users" do
+      expect { post user_registration_path, params: params }.to change(User, :count).by(1)
+
+      user = User.find_by(username: "newuser")
+      expect(user).to be_suspended
+      expect(user).to be_awaits_approval
+      expect(user).not_to be_active_for_authentication
+      expect(response).to redirect_to(new_user_session_path)
+    end
   end
 
   context "when user signup is allowed" do
@@ -36,6 +92,32 @@ RSpec.describe RegistrationsController do
     it "renders the sign up page" do
       get new_user_registration_path
       expect(response).to have_http_status(:ok)
+    end
+
+    it "persists the submitted attributes without suspending the user" do
+      post user_registration_path, params: params
+
+      user = User.find_by(username: "newuser")
+      expect(user.email).to eq("newuser@example.com")
+      expect(user).not_to be_suspended
+      expect(user).not_to be_confirmed
+      expect(user.valid_password?("password1")).to be(true)
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
+    it "does not create a user when the submitted attributes are invalid" do
+      invalid_params = { user: params[:user].merge(password_confirmation: "mismatch") }
+
+      expect { post user_registration_path, params: invalid_params }.not_to change(User, :count)
+      expect(response).not_to be_redirect
+      expect(response.body).to include("Password confirmation doesn&#39;t match Password")
+    end
+
+    it "does not create a duplicate user when the username is already taken" do
+      create(:user, username: "newuser")
+
+      expect { post user_registration_path, params: params }.not_to change(User, :count)
+      expect(response).not_to be_redirect
     end
   end
 end
