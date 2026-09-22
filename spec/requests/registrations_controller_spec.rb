@@ -8,7 +8,13 @@
 require 'spec_helper'
 
 RSpec.describe RegistrationsController do
-  before { Rack::Attack.cache.store = ActiveSupport::Cache::MemoryStore.new }
+  around do |example|
+    original_store = Rack::Attack.cache.store
+    Rack::Attack.cache.store = ActiveSupport::Cache::MemoryStore.new
+    example.run
+  ensure
+    Rack::Attack.cache.store = original_store
+  end
 
   let(:params) do
     { user: { username: "newuser", email: "newuser@example.com", password: "password1", password_confirmation: "password1" } }
