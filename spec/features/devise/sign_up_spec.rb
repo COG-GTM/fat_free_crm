@@ -81,4 +81,33 @@ feature 'Devise Sign-up' do
       expect(page).to have_no_content("A message with a confirmation link has been sent to your email address.")
     end
   end
+
+  context 'when user signup needs approval' do
+    background do
+      Setting.user_signup = :needs_approval
+    end
+
+    scenario 'shows the sign up link on the login page' do
+      visit "/users/sign_in"
+
+      expect(page).to have_link("Sign Up Now!", href: "/users/sign_up")
+    end
+
+    scenario 'creates a suspended user awaiting approval' do
+      visit "/users/sign_up"
+
+      fill_in "user[email]", with: "john@example.com"
+      fill_in "user[username]", with: "john"
+      fill_in "user[password]", with: "password"
+      fill_in "user[password_confirmation]", with: "password"
+      click_button("Sign Up")
+
+      expect(current_path).to eq "/users/sign_in"
+      expect(page).to have_content("A message with a confirmation link has been sent to your email address.")
+
+      user = User.find_by(username: "john")
+      expect(user).to be_suspended
+      expect(user).to be_awaits_approval
+    end
+  end
 end
