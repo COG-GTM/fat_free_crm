@@ -8,8 +8,12 @@
 require 'spec_helper'
 
 RSpec.describe RegistrationsController do
-  before do
+  around do |example|
+    original_store = Rack::Attack.cache.store
     Rack::Attack.cache.store = ActiveSupport::Cache::MemoryStore.new
+    example.run
+  ensure
+    Rack::Attack.cache.store = original_store
   end
 
   let(:params) do
