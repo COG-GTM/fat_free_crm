@@ -27,6 +27,29 @@ class SubscribedUsersParserTest {
     }
 
     @Test
+    void toleratesSurroundingWhitespaceAndBlankLines() {
+        assertThat(SubscribedUsersParser.parse("---\n\n  - 5  \n\t- 6\n\n")).containsExactly(5L, 6L);
+        assertThat(SubscribedUsersParser.parse("  ---  \n- 1\n")).containsExactly(1L);
+    }
+
+    @Test
+    void integersOutsideLongRangeBecomeEmptyList() {
+        assertThat(SubscribedUsersParser.parse("---\n- 99999999999999999999\n")).isEmpty();
+        assertThat(SubscribedUsersParser.parse("---\n- " + Long.MAX_VALUE + "\n")).containsExactly(Long.MAX_VALUE);
+    }
+
+    @Test
+    void oneBadItemDiscardsTheWholeList() {
+        assertThat(SubscribedUsersParser.parse("---\n- 1\n- 2\n- \n")).isEmpty();
+        assertThat(SubscribedUsersParser.parse("---\n- 1\n-2\n")).isEmpty();
+    }
+
+    @Test
+    void documentMarkerIsOnlyRecognisedOnTheFirstLine() {
+        assertThat(SubscribedUsersParser.parse("- 1\n---\n- 2\n")).isEmpty();
+    }
+
+    @Test
     void anythingElseBecomesEmptyList() {
         assertThat(SubscribedUsersParser.parse("---\n- alice\n")).isEmpty();
         assertThat(SubscribedUsersParser.parse("---\n- 1\n- x\n")).isEmpty();

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import java.util.regex.Pattern;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -47,6 +48,38 @@ class AccountSortTest {
     void rejectsUnknownOrdersConsistentlyWithPattern(String input) {
         assertThatIllegalArgumentException().isThrownBy(() -> AccountSort.parse(input));
         assertThat(PATTERN.matcher(input).matches()).as("PATTERN rejects %s", input).isFalse();
+    }
+
+    /** app/models/entities/account.rb: {@code sortable by: [...], default: "created_at DESC"}. */
+    @Test
+    void railsValuesMatchTheAccountSortableDeclarationInOrder() {
+        assertThat(AccountSort.values()).extracting(AccountSort::railsValue)
+                .containsExactly("name ASC", "rating DESC", "created_at DESC", "updated_at DESC");
+        assertThat(AccountSort.DEFAULT.railsValue()).isEqualTo("created_at DESC");
+        assertThat(AccountSort.PATTERN_MESSAGE)
+                .isEqualTo("must be one of: name ASC, rating DESC, created_at DESC, updated_at DESC");
+    }
+
+    @Test
+    void everyRailsValueRoundTripsThroughParse() {
+        for (AccountSort sort : AccountSort.values()) {
+            assertThat(AccountSort.parse(sort.railsValue())).isEqualTo(sort);
+            assertThat(PATTERN.matcher(sort.railsValue()).matches()).isTrue();
+        }
+    }
+
+    @Test
+    void unknownOrderMessageNamesTheValueAndTheAllowedList() {
+        assertThatIllegalArgumentException().isThrownBy(() -> AccountSort.parse("email"))
+                .withMessage("sortBy 'email' " + AccountSort.PATTERN_MESSAGE);
+    }
+
+    @Test
+    void sortNeverContainsMoreThanTheColumnAndTheIdTiebreaker() {
+        for (AccountSort sort : AccountSort.values()) {
+            assertThat(sort.toSort()).hasSize(2);
+            assertThat(sort.toSort().stream().reduce((a, b) -> b).orElseThrow().getProperty()).isEqualTo("id");
+        }
     }
 
     @ParameterizedTest
