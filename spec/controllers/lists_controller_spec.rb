@@ -56,5 +56,58 @@ describe ListsController do
       expect(assigns(:list).persisted?).to eql(true)
       expect(response).to render_template("lists/create")
     end
+    it "should not save a personal list with a javascript: url" do
+      post :create, params: { list: { name: list_name, url: "javascript:alert(document.cookie)" }, is_global: is_global }, xhr: true
+      expect(assigns(:list).persisted?).to eql(false)
+      expect(assigns(:list).errors[:url]).not_to be_empty
+      expect(List.where(name: list_name)).to be_empty
+    end
+    it "should not update an existing personal list with a javascript: url" do
+      @list = List.create!(name: list_name, url: "/test", user_id: current_user.id)
+      post :create, params: { list: { name: list_name, url: "javascript:alert(document.cookie)" }, is_global: is_global }, xhr: true
+      expect(assigns(:list).id).to eql(@list.id)
+      expect(assigns(:list).errors[:url]).not_to be_empty
+      expect(@list.reload.url).to eql("/test")
+    end
+  end
+
+  describe "rejected urls" do
+    render_views
+
+    let(:list_name) { "Rejected list item" }
+
+    ["//evil.example.com/", "http://evil.example.com/", "data:text/html,<script>alert(1)</script>", "leads"].each do |bad_url|
+      it "should not save a list with the url #{bad_url.inspect}" do
+        post :create, params: { list: { name: list_name, url: bad_url }, is_global: "1" }, xhr: true
+        expect(assigns(:list).persisted?).to eql(false)
+        expect(List.where(name: list_name)).to be_empty
+      end
+    end
+
+    it "should render the create template so the client can re-enable the form" do
+      post :create, params: { list: { name: list_name, url: "javascript:alert(1)" }, is_global: "1" }, xhr: true
+      expect(response).to be_successful
+      expect(response).to render_template("lists/create")
+      expect(response.body).to include("[type=submit]")
+      expect(response.body).not_to include("javascript:alert(1)")
+    end
+
+    it "should not save a list with a blank url" do
+      post :create, params: { list: { name: list_name, url: "" }, is_global: "1" }, xhr: true
+      expect(assigns(:list).persisted?).to eql(false)
+      expect(List.where(name: list_name)).to be_empty
+    end
+  end
+
+  describe "when not logged in" do
+    before(:each) do
+      sign_out :user
+    end
+
+    it "should not create a list" do
+      post :create, params: { list: { name: "Anonymous list", url: list_url }, is_global: "1" }, xhr: true
+      expect(response).to have_http_status(:unauthorized)
+      expect(List.where(name: "Anonymous list")).to be_empty
+    end
   end
 end
