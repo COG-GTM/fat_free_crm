@@ -67,13 +67,26 @@ public class AccountController {
         return accountService.autocomplete(term);
     }
 
-    /** The alias-resolved list parameters; validated as a whole once the preferred spelling has won. */
+    /**
+     * The alias-resolved list parameters; validated as a whole once the preferred spelling has won.
+     * {@code perPage} is any positive integer; values beyond {@code Integer.MAX_VALUE} saturate so the
+     * service clamps them to the configured maximum like any other oversized page size.
+     */
     record ListParams(
-            @Pattern(regexp = "\\s*[1-9]\\d{0,8}\\s*", message = "must be a positive integer") String perPage,
+            @Pattern(regexp = "\\s*[1-9]\\d*\\s*", message = "must be a positive integer") String perPage,
             @Pattern(regexp = AccountSort.PATTERN, message = AccountSort.PATTERN_MESSAGE) String sortBy) {
 
+        private static final int MAX_INT_DIGITS = String.valueOf(Integer.MAX_VALUE).length();
+
         Integer perPageValue() {
-            return perPage == null ? null : Integer.valueOf(perPage.strip());
+            if (perPage == null) {
+                return null;
+            }
+            String digits = perPage.strip();
+            if (digits.length() > MAX_INT_DIGITS) {
+                return Integer.MAX_VALUE;
+            }
+            return (int) Math.min(Long.parseLong(digits), Integer.MAX_VALUE);
         }
     }
 

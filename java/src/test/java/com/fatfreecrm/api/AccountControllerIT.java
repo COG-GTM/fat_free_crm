@@ -125,8 +125,14 @@ class AccountControllerIT extends AbstractIntegrationTest {
         @Test
         void perPageAboveMaximumIsClampedTo200() {
             JsonNode body = ok(get("/api/v1/accounts?perPage=500", C)).getBody();
-
             assertThat(body.get("perPage").asInt()).isEqualTo(200);
+
+            body = ok(get("/api/v1/accounts?perPage=1000000000", C)).getBody();
+            assertThat(body.get("perPage").asInt()).isEqualTo(200);
+
+            body = ok(get("/api/v1/accounts?per_page=99999999999999999999", C)).getBody();
+            assertThat(body.get("perPage").asInt()).isEqualTo(200);
+            assertThat(body.get("totalCount").asLong()).isEqualTo(6);
         }
 
         @Test
