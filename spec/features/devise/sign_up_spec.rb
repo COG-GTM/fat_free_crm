@@ -8,6 +8,10 @@
 require 'features/acceptance_helper'
 
 feature 'Devise Sign-up' do
+  background do
+    Setting.user_signup = :allowed
+  end
+
   scenario 'with valid credentials' do
     visit "/users/sign_up"
 
