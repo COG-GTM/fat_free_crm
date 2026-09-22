@@ -35,6 +35,16 @@ describe ListsController do
       expect { List.find(@list.id) }.to raise_error(ActiveRecord::RecordNotFound)
       expect(response).to render_template("lists/destroy")
     end
+    it "should not save a list with a javascript: url" do
+      post :create, params: { list: { name: list_name, url: "javascript:alert(document.cookie)" }, is_global: is_global }, xhr: true
+      expect(assigns(:list).persisted?).to eql(false)
+      expect(List.where(name: list_name)).to be_empty
+    end
+    it "should not update an existing list with a javascript: url" do
+      @list = List.create!(name: list_name, url: "/test")
+      post :create, params: { list: { name: list_name, url: "javascript:alert(document.cookie)" }, is_global: is_global }, xhr: true
+      expect(@list.reload.url).to eql("/test")
+    end
   end
 
   describe "personal list items" do
