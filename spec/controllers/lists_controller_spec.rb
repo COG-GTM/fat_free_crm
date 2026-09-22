@@ -56,5 +56,80 @@ describe ListsController do
       expect(assigns(:list).persisted?).to eql(true)
       expect(response).to render_template("lists/create")
     end
+
+    it "should not save a personal list with a javascript: url" do
+      post :create, params: { list: { name: list_name, url: "javascript:alert(document.cookie)" }, is_global: is_global }, xhr: true
+      expect(assigns(:list).persisted?).to eql(false)
+      expect(assigns(:list).errors[:url]).to eql(["is invalid"])
+      expect(List.where(name: list_name)).to be_empty
+    end
+
+    it "should not overwrite an existing personal list with a javascript: url" do
+      @list = List.create!(name: list_name, url: "/test", user_id: current_user.id)
+      post :create, params: { list: { name: list_name, url: "javascript:alert(document.cookie)" }, is_global: is_global }, xhr: true
+      expect(assigns(:list)).to eql(@list)
+      expect(@list.reload.url).to eql("/test")
+      expect(List.where(name: list_name).count).to eql(1)
+    end
+
+    it "should not touch another user's personal list of the same name" do
+      other = create(:user)
+      other_list = List.create!(name: list_name, url: "/test", user_id: other.id)
+      post :create, params: { list: { name: list_name, url: "javascript:alert(document.cookie)" }, is_global: is_global }, xhr: true
+      expect(assigns(:list).persisted?).to eql(false)
+      expect(other_list.reload.url).to eql("/test")
+      expect(List.where(user_id: current_user.id)).to be_empty
+    end
+  end
+
+  describe "rejected urls" do
+    let(:list_name) { "Rejected list item" }
+
+    [
+      "http://evil.example.com/",
+      "//evil.example.com/",
+      "/\\evil.example.com/",
+      "/\t/evil.example.com/",
+      "/leads?q=1\njavascript:alert(1)",
+      "data:text/html,<script>alert(1)</script>",
+      "leads"
+    ].each do |bad_url|
+      it "should not save a global or personal list with url #{bad_url.inspect}" do
+        post :create, params: { list: { name: list_name, url: bad_url }, is_global: "1" }, xhr: true
+        expect(assigns(:list).persisted?).to eql(false)
+        post :create, params: { list: { name: list_name, url: bad_url }, is_global: "0" }, xhr: true
+        expect(assigns(:list).persisted?).to eql(false)
+        expect(List.where(name: list_name)).to be_empty
+      end
+    end
+
+    it "should render the create template with a successful status so the form is re-enabled" do
+      post :create, params: { list: { name: list_name, url: "javascript:alert(document.cookie)" }, is_global: "0" }, xhr: true
+      expect(response).to be_successful
+      expect(response).to render_template("lists/create")
+      expect(assigns(:list)).not_to be_valid
+    end
+
+    it "should not save a list with a blank url" do
+      post :create, params: { list: { name: list_name, url: "" }, is_global: "0" }, xhr: true
+      expect(assigns(:list).persisted?).to eql(false)
+      expect(assigns(:list).errors[:url]).to eql(["can't be blank"])
+      expect(List.where(name: list_name)).to be_empty
+    end
+
+    it "should not accept a url that is only whitespace" do
+      post :create, params: { list: { name: list_name, url: "   " }, is_global: "0" }, xhr: true
+      expect(assigns(:list).persisted?).to eql(false)
+      expect(List.where(name: list_name)).to be_empty
+    end
+
+    it "should allow a legacy list with a javascript: url to be overwritten with a relative url" do
+      @list = List.create!(name: list_name, url: "/test")
+      @list.update_column(:url, "javascript:alert(document.cookie)")
+      post :create, params: { list: { name: list_name, url: list_url }, is_global: "1" }, xhr: true
+      expect(assigns(:list)).to eql(@list)
+      expect(@list.reload.url).to eql(list_url)
+      expect(assigns(:list)).to be_valid
+    end
   end
 end
