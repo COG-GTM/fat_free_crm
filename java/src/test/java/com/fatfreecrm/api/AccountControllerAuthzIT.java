@@ -171,10 +171,14 @@ class AccountControllerAuthzIT extends AbstractIntegrationTest {
         }
 
         @Test
-        void perPageToleratesSurroundingWhitespaceButNotSignsOrOverflow() {
+        void perPageToleratesSurroundingWhitespaceAndOverflowButNotSignsOrLeadingZeros() {
             assertThat(ok(get("/api/v1/accounts?perPage=%205%20", C)).getBody().get("perPage").asInt()).isEqualTo(5);
+            assertThat(ok(get("/api/v1/accounts?perPage=2147483648", C)).getBody().get("perPage").asInt())
+                    .isEqualTo(200);
+            assertThat(ok(get("/api/v1/accounts?perPage=" + "9".repeat(40), C)).getBody().get("perPage").asInt())
+                    .isEqualTo(200);
             assertProblem(get("/api/v1/accounts?perPage=%2B5", C), HttpStatus.BAD_REQUEST, "/api/v1/accounts");
-            assertProblem(get("/api/v1/accounts?perPage=1000000000", C), HttpStatus.BAD_REQUEST, "/api/v1/accounts");
+            assertProblem(get("/api/v1/accounts?perPage=-5", C), HttpStatus.BAD_REQUEST, "/api/v1/accounts");
             assertProblem(get("/api/v1/accounts?perPage=05", C), HttpStatus.BAD_REQUEST, "/api/v1/accounts");
         }
 
