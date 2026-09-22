@@ -110,4 +110,21 @@ feature 'Saved lists', '
     end
     expect(List.where(name: 'Phishing list')).to be_empty
   end
+
+  scenario 'should link saved lists to their stored relative url' do
+    create(:list, name: 'Hot leads', url: '/leads?q%5Bs%5D=first_name+asc')
+    create(:list, name: 'My contacts', url: '/contacts?page=2', user: @user)
+
+    visit leads_page
+
+    within('.lists', text: 'Global lists') do
+      expect(page).to have_link('Hot leads', href: '/leads?q%5Bs%5D=first_name+asc')
+    end
+    within('.lists', text: 'My lists') do
+      expect(page).to have_link('My contacts', href: '/contacts?page=2')
+    end
+
+    click_link 'My contacts'
+    expect(page).to have_current_path('/contacts?page=2')
+  end
 end
