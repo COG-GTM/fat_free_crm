@@ -7,9 +7,10 @@
 #------------------------------------------------------------------------------
 class List < ActiveRecord::Base
   # Only relative application paths are allowed ("/leads?..."). Anything with
-  # a scheme (javascript:, http:) or a protocol-relative prefix (//, /\) is
+  # a scheme (javascript:, http:), a protocol-relative prefix (//, /\) or raw
+  # whitespace/control characters (which browsers strip, e.g. "/\t/host") is
   # rejected since the url is rendered as a link for every user.
-  RELATIVE_PATH_FORMAT = %r{\A/(?![/\\]).*\z}m
+  RELATIVE_PATH_FORMAT = %r{\A/(?![/\\])[^[:cntrl:][:space:]]*\z}
 
   validates_presence_of :name
   validates_presence_of :url

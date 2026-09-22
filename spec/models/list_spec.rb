@@ -33,6 +33,10 @@ describe List do
         "http://evil.example.com/",
         "//evil.example.com/",
         "/\\evil.example.com/",
+        "/\t/evil.example.com/",
+        "/\n/evil.example.com/",
+        "/\r\n/evil.example.com/",
+        "/leads?q=1\njavascript:alert(1)",
         "leads"
       ].each do |url|
         list = build(:list, url: url)
