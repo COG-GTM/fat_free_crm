@@ -46,10 +46,14 @@ class SafeHttpFetcher
     ff00::/8
   ].map { |cidr| IPAddr.new(cidr) }.freeze
 
+  MAX_ADDRESSES_TRIED = 3
+
   NETWORK_ERRORS = [
     SocketError, IOError, SystemCallError, Timeout::Error,
     Net::HTTPBadResponse, Net::ProtocolError, OpenSSL::SSL::SSLError
   ].freeze
+
+  CONNECT_ERRORS = [Net::OpenTimeout, SystemCallError].freeze
 
   def initialize(url)
     @url = url.to_s.strip
@@ -61,8 +65,8 @@ class SafeHttpFetcher
   def fetch
     uri = validate_uri!(parse(@url))
 
-    MAX_REDIRECTS.times do
-      response, body = request(uri, pinned_address!(uri))
+    (MAX_REDIRECTS + 1).times do
+      response, body = request_any(uri, pinned_addresses!(uri))
 
       case response
       when Net::HTTPSuccess
@@ -79,7 +83,7 @@ class SafeHttpFetcher
 
     nil
   rescue *NETWORK_ERRORS => e
-    Rails.logger.warn("SafeHttpFetcher: #{e.class} fetching #{@url.inspect}: #{e.message}")
+    Rails.logger.warn("SafeHttpFetcher: #{e.class} fetching from #{uri&.host.inspect}: #{e.message}")
     nil
   end
 
@@ -100,7 +104,7 @@ class SafeHttpFetcher
     uri
   end
 
-  def pinned_address!(uri)
+  def pinned_addresses!(uri)
     host = uri.hostname
     addresses = literal_ip(host) ? [literal_ip(host)] : resolve(host)
     raise DisallowedUrl, "could not resolve #{host.inspect}" if addresses.empty?
@@ -109,7 +113,7 @@ class SafeHttpFetcher
       raise DisallowedUrl, "#{host} resolves to disallowed address #{ip}" if blocked?(ip)
     end
 
-    addresses.first.to_s
+    addresses.first(MAX_ADDRESSES_TRIED).map(&:to_s)
   end
 
   def literal_ip(host)
@@ -127,8 +131,18 @@ class SafeHttpFetcher
     BLOCKED_RANGES.any? { |range| range.include?(ip) }
   end
 
+  # Tries each vetted address in turn, moving on only when the connection
+  # itself fails (refused, unreachable, open timeout).
+  def request_any(uri, ipaddrs)
+    ipaddrs.each_with_index do |ipaddr, index|
+      return request(uri, ipaddr)
+    rescue *CONNECT_ERRORS
+      raise if index == ipaddrs.size - 1
+    end
+  end
+
   def request(uri, ipaddr)
-    http = Net::HTTP.new(uri.host, uri.port)
+    http = Net::HTTP.new(uri.host, uri.port, nil)
     http.ipaddr = ipaddr
     http.use_ssl = uri.scheme.casecmp?('https')
     http.open_timeout = OPEN_TIMEOUT

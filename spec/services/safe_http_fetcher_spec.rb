@@ -44,17 +44,50 @@ RSpec.describe SafeHttpFetcher do
       stub_http(build_response(Net::HTTPOK, '200', body: 'ok'))
 
       expect(described_class.new('example.com').fetch).to eq('ok')
-      expect(Net::HTTP).to have_received(:new).with('example.com', 80)
+      expect(Net::HTTP).to have_received(:new).with('example.com', 80, nil)
     end
 
-    it 'pins the connection to the resolved address' do
+    it 'pins the connection to the resolved address and bypasses environment proxies' do
       stub_http(build_response(Net::HTTPOK, '200', body: 'ok'))
 
       described_class.new('https://example.com/').fetch
 
-      expect(Net::HTTP).to have_received(:new).with('example.com', 443)
+      expect(Net::HTTP).to have_received(:new).with('example.com', 443, nil)
       expect(http).to have_received(:ipaddr=).with(public_ip)
       expect(http).to have_received(:use_ssl=).with(true)
+    end
+
+    it 'falls back to the next vetted address when the connection fails' do
+      allow(Resolv).to receive(:getaddresses).with('example.com').and_return(['203.0.114.1', public_ip])
+      stub_http(build_response(Net::HTTPOK, '200', body: 'ok'))
+      allow(http).to receive(:start) do |&block|
+        raise Errno::ECONNREFUSED if http.ipaddr == '203.0.114.1'
+
+        block.call(http)
+      end
+      allow(http).to receive(:ipaddr=) { |addr| allow(http).to receive(:ipaddr).and_return(addr) }
+
+      expect(described_class.new('http://example.com/').fetch).to eq('ok')
+      expect(http).to have_received(:ipaddr=).with('203.0.114.1').ordered
+      expect(http).to have_received(:ipaddr=).with(public_ip).ordered
+    end
+
+    it 'returns nil when every vetted address is unreachable' do
+      allow(Resolv).to receive(:getaddresses).with('example.com').and_return(['203.0.114.1', public_ip])
+      stub_http
+      allow(http).to receive(:start).and_raise(Errno::EHOSTUNREACH)
+
+      expect(described_class.new('http://example.com/').fetch).to be_nil
+      expect(http).to have_received(:ipaddr=).twice
+    end
+
+    it 'does not log the full URL on network errors' do
+      allow(Net::HTTP).to receive(:new).and_raise(Net::OpenTimeout)
+      allow(Rails.logger).to receive(:warn)
+
+      described_class.new('http://example.com/callback?token=secret123').fetch
+
+      expect(Rails.logger).to have_received(:warn).with(a_string_including('example.com').and(satisfy { |m| m.exclude?('secret123') }))
     end
 
     it 'returns nil for non-success responses' do
@@ -89,7 +122,16 @@ RSpec.describe SafeHttpFetcher do
       )
 
       expect(described_class.new('http://example.com/').fetch).to eq('redirected')
-      expect(Net::HTTP).to have_received(:new).with('www.example.com', 443)
+      expect(Net::HTTP).to have_received(:new).with('www.example.com', 443, nil)
+    end
+
+    it 'fetches the destination after the maximum number of redirects' do
+      responses = Array.new(described_class::MAX_REDIRECTS) do
+        build_response(Net::HTTPFound, '302', headers: { 'Location' => 'http://example.com/again' })
+      end
+      stub_http(*responses, build_response(Net::HTTPOK, '200', body: 'finally'))
+
+      expect(described_class.new('http://example.com/').fetch).to eq('finally')
     end
 
     it 'refuses redirects to internal addresses' do
@@ -100,7 +142,7 @@ RSpec.describe SafeHttpFetcher do
     end
 
     it 'gives up after too many redirects' do
-      responses = Array.new(described_class::MAX_REDIRECTS) do
+      responses = Array.new(described_class::MAX_REDIRECTS + 1) do
         build_response(Net::HTTPFound, '302', headers: { 'Location' => 'http://example.com/again' })
       end
       stub_http(*responses)
