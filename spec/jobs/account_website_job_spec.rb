@@ -167,6 +167,49 @@ RSpec.describe AccountWebsiteJob do
       expect { AccountWebsiteJob.perform_now(account) }.not_to raise_error
     end
   end
+
+  describe 'SafeHttpFetcher integration' do
+    it 'fetches through SafeHttpFetcher with the stored website value, never Net::HTTP directly' do
+      expect(Net::HTTP).not_to receive(:get_response)
+
+      AccountWebsiteJob.perform_now(account)
+
+      expect(SafeHttpFetcher).to have_received(:new).with(account.website)
+      expect(fetcher).to have_received(:fetch).once
+    end
+
+    it 'does not fetch when the website is blank' do
+      account.update_column(:website, '')
+
+      AccountWebsiteJob.perform_now(account)
+
+      expect(SafeHttpFetcher).not_to have_received(:new)
+    end
+
+    it 'logs and skips the account when the URL is disallowed' do
+      allow(fetcher).to receive(:fetch).and_raise(SafeHttpFetcher::DisallowedUrl, 'scheme not allowed: "ftp"')
+      allow(Rails.logger).to receive(:warn)
+      expect(WikidataJob).not_to receive(:perform_later)
+
+      expect { AccountWebsiteJob.perform_now(account) }.not_to raise_error
+      expect(Rails.logger).to have_received(:warn).with("AccountWebsiteJob: skipping account #{account.id}: scheme not allowed: \"ftp\"")
+      expect(account.reload).to have_attributes(phone: nil, email: nil, fax: nil)
+    end
+
+    it 'leaves the account untouched when the fetch yields no body' do
+      allow(fetcher).to receive(:fetch).and_return('')
+      expect(WikidataJob).not_to receive(:perform_later)
+
+      expect { AccountWebsiteJob.perform_now(account) }.not_to(change { account.reload.updated_at })
+      expect(account).to have_attributes(phone: nil, email: nil, fax: nil)
+    end
+
+    it 'only rescues DisallowedUrl so unexpected fetcher failures still surface' do
+      allow(fetcher).to receive(:fetch).and_raise(RuntimeError, 'unexpected')
+
+      expect { AccountWebsiteJob.perform_now(account) }.to raise_error(RuntimeError, 'unexpected')
+    end
+  end
 end
 
 RSpec.describe 'Account Callback', type: :model do
