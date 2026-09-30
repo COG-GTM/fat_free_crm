@@ -26,6 +26,21 @@ feature 'Contacts', '
     expect(page).to have_content('Create Contact')
   end
 
+  scenario 'should not render unsafe web presence URLs on the contact page' do
+    contact = create(:contact, first_name: "Evil", last_name: "Blogger",
+                               blog: "javascript:alert(document.domain)//\nhttp://x",
+                               twitter: "twitter.com/ffcrm",
+                               linkedin: "data:text/html,<script>alert(1)</script>",
+                               facebook: nil)
+    visit contact_path(contact)
+    expect(page).to have_content('Evil Blogger')
+    expect(page).not_to have_css("a[href^='javascript']")
+    expect(page).not_to have_css("a[href^='data']")
+    expect(page).to have_css("a[href='http://twitter.com/ffcrm'][data-popup='true']")
+    expect(page).to have_css("span.web-presence-icons a[data-popup='true']", count: 1)
+    expect(page.html).not_to include("javascript:alert")
+  end
+
   scenario 'should create a contact', js: true do
     with_versioning do
       visit contacts_page

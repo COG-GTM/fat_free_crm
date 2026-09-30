@@ -26,6 +26,19 @@ feature 'Leads', '
     expect(page).to have_content('Create Lead')
   end
 
+  scenario 'should not render unsafe web presence URLs on the lead page' do
+    lead = create(:lead, first_name: "Evil", last_name: "Lead",
+                         blog: "javascript:alert(document.domain)",
+                         linkedin: "linkedin.com/in/ffcrm",
+                         twitter: nil, facebook: nil)
+    visit lead_path(lead)
+    expect(page).to have_content('Evil Lead')
+    expect(page).not_to have_css("a[href^='javascript']")
+    expect(page).to have_css("a[href='http://linkedin.com/in/ffcrm'][data-popup='true']")
+    expect(page).to have_css("span.web-presence-icons a[data-popup='true']", count: 1)
+    expect(page.html).not_to include("javascript:alert")
+  end
+
   scenario 'should create a new lead', js: true do
     with_versioning do
       visit leads_page
