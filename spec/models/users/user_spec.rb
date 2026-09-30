@@ -253,4 +253,31 @@ describe User do
       expect(user.emailable?).to eql(false)
     end
   end
+
+  describe '.can_signup?' do
+    it "returns true when signup is allowed" do
+      allow(Setting).to receive(:user_signup).and_return(:allowed)
+      expect(User.can_signup?).to be(true)
+    end
+
+    it "returns true when signup needs approval" do
+      allow(Setting).to receive(:user_signup).and_return(:needs_approval)
+      expect(User.can_signup?).to be(true)
+    end
+
+    it "returns false when signup is not allowed" do
+      allow(Setting).to receive(:user_signup).and_return(:not_allowed)
+      expect(User.can_signup?).to be(false)
+    end
+
+    it "returns false when the setting is missing" do
+      allow(Setting).to receive(:user_signup).and_return(nil)
+      expect(User.can_signup?).to be(false)
+    end
+
+    it "returns false for an unrecognised setting value" do
+      allow(Setting).to receive(:user_signup).and_return(:anything_goes)
+      expect(User.can_signup?).to be(false)
+    end
+  end
 end
