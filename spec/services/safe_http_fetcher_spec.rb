@@ -344,7 +344,7 @@ RSpec.describe SafeHttpFetcher do
 
     it 'does not fall back when the connected server times out on read' do
       stub_http
-      allow(http).to receive(:start).and_raise(Net::ReadTimeout)
+      allow(http).to receive(:request).and_raise(Net::ReadTimeout)
 
       expect(described_class.new('http://example.com/').fetch).to be_nil
       expect(http).to have_received(:ipaddr=).once
@@ -352,7 +352,7 @@ RSpec.describe SafeHttpFetcher do
 
     it 'does not fall back on a malformed response' do
       stub_http
-      allow(http).to receive(:start).and_raise(Net::HTTPBadResponse)
+      allow(http).to receive(:request).and_raise(Net::HTTPBadResponse)
 
       expect(described_class.new('http://example.com/').fetch).to be_nil
       expect(http).to have_received(:ipaddr=).once
