@@ -49,4 +49,18 @@ feature 'Devise Sign-up' do
     expect(current_path).to eq "/users/sign_in"
     expect(page).to have_content("User signup is not allowed")
   end
+
+  scenario 'sign in page hides the sign up link when signup is not allowed' do
+    Setting.user_signup = :not_allowed
+    visit "/users/sign_in"
+
+    expect(page).to have_button("Login")
+    expect(page).to have_no_link("Sign Up Now!")
+  end
+
+  scenario 'sign in page shows the sign up link when signup is allowed' do
+    visit "/users/sign_in"
+
+    expect(page).to have_link("Sign Up Now!", href: "/users/sign_up")
+  end
 end
