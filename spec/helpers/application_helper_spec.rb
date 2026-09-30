@@ -168,6 +168,59 @@ describe ApplicationHelper do
       expect(helper.web_presence_url(nil)).to be_nil
       expect(helper.web_presence_url("  ")).to be_nil
     end
+
+    it "should strip surrounding whitespace before normalizing" do
+      expect(helper.web_presence_url("  example.com  ")).to eq("http://example.com")
+      expect(helper.web_presence_url("\thttps://example.com\n")).to eq("https://example.com")
+    end
+
+    it "should reject dangerous schemes regardless of case" do
+      expect(helper.web_presence_url("JavaScript:alert(1)")).to be_nil
+      expect(helper.web_presence_url("JAVASCRIPT:alert(1)")).to be_nil
+      expect(helper.web_presence_url("vbscript:msgbox(1)")).to be_nil
+      expect(helper.web_presence_url("javascript:alert(1)//http://x")).to be_nil
+    end
+
+    it "should reject values containing a null byte" do
+      expect(helper.web_presence_url("\u0000javascript:alert(1)")).to be_nil
+      expect(helper.web_presence_url("http://exam\u0000ple.com")).to be_nil
+    end
+
+    it "should reject protocol-relative URLs" do
+      expect(helper.web_presence_url("//evil.example/path")).to be_nil
+    end
+
+    it "should reject URLs without a host" do
+      expect(helper.web_presence_url("https:///example.com")).to be_nil
+      expect(helper.web_presence_url("http:example.com")).to be_nil
+    end
+
+    it "should reject values containing HTML special characters" do
+      expect(helper.web_presence_url("http://example.com/<script>alert(1)</script>")).to be_nil
+      expect(helper.web_presence_url('twitter.com/ffcrm"onmouseover="alert(1)')).to be_nil
+    end
+
+    it "should keep userinfo, port, query and fragment of valid http URLs" do
+      expect(helper.web_presence_url("http://user:pw@example.com:8080/path?q=1#frag")).to eq("http://user:pw@example.com:8080/path?q=1#frag")
+      expect(helper.web_presence_url("example.com/blog?a=1&b=2")).to eq("http://example.com/blog?a=1&b=2")
+    end
+
+    it "should keep IPv6 hosts and internationalized domain names" do
+      expect(helper.web_presence_url("http://[::1]/")).to eq("http://[::1]/")
+      expect(helper.web_presence_url("http://例え.jp/")).to eq("http://例え.jp/")
+    end
+
+    it "should only ever return http or https URLs" do
+      inputs = [
+        "example.com", "https://example.com", "HTTPS://Example.COM", "ftp://example.com", "file:///etc/passwd",
+        "mailto:foo@example.com", "javascript://example.com/%0aalert(1)", "javascript:alert(1)", "data:text/html,x",
+        "//evil.example", "@ffcrm", "twitter.com/ffcrm", "  münchen.example  "
+      ]
+      inputs.each do |input|
+        url = helper.web_presence_url(input)
+        expect(url).to satisfy("be nil or start with http(s)://") { |u| u.nil? || u.match?(%r{\Ahttps?://}i) }, "expected #{input.inspect} to yield nil or an http(s) URL, got #{url.inspect}"
+      end
+    end
   end
 
   describe "web_presence_icons" do
@@ -178,6 +231,90 @@ describe ApplicationHelper do
       html = helper.web_presence_icons(contact)
       expect(html).not_to include("javascript:")
       expect(html).to include('href="http://twitter.com/ffcrm"')
+    end
+
+    it "should drop unsafe URLs in every web presence field and keep the safe ones" do
+      unsafe = "javascript:alert(1)"
+      contact = build_stubbed(:contact, blog: unsafe, linkedin: unsafe, facebook: unsafe, twitter: unsafe,
+                                        zoom: unsafe, teams: unsafe, signal: unsafe, instagram: unsafe,
+                                        mastodon: "mastodon.social/@ffcrm", bluesky: "https://bsky.app/profile/ffcrm")
+      html = helper.web_presence_icons(contact)
+      expect(html).not_to include("javascript")
+      expect(html).to include('href="http://mastodon.social/@ffcrm"><i class="fa fa-retweet">')
+      expect(html).to include('href="https://bsky.app/profile/ffcrm"><i class="fa fa-cloud">')
+      expect(html.scan('data-popup="true"').size).to eq(2)
+    end
+
+    it "should use the normalized URL in both href and title" do
+      contact = build_stubbed(:contact, blog: "example.com/blog", linkedin: nil, facebook: nil, twitter: nil,
+                                        zoom: nil, teams: nil, signal: nil, instagram: nil, mastodon: nil, bluesky: nil)
+      html = helper.web_presence_icons(contact)
+      expect(html).to include(%(title="#{I18n.t(:open_in_window, value: 'http://example.com/blog')}" href="http://example.com/blog"><i class="fa fa-external-link">))
+    end
+
+    it "should HTML-escape safe URLs containing ampersands" do
+      contact = build_stubbed(:contact, blog: "example.com/blog?a=1&b=2", linkedin: nil, facebook: nil, twitter: nil,
+                                        zoom: nil, teams: nil, signal: nil, instagram: nil, mastodon: nil, bluesky: nil)
+      html = helper.web_presence_icons(contact)
+      expect(html).to include('href="http://example.com/blog?a=1&amp;b=2"')
+      expect(html).not_to include("&b=2\"")
+    end
+
+    it "should still render the VCard link for a contact when all URLs are unsafe" do
+      unsafe = "javascript:alert(1)"
+      contact = create(:contact, blog: unsafe, linkedin: unsafe, facebook: unsafe, twitter: unsafe,
+                                zoom: nil, teams: nil, signal: nil, instagram: nil, mastodon: nil, bluesky: nil)
+      html = helper.web_presence_icons(contact)
+      expect(html).not_to include("data-popup")
+      expect(html).to include(%(<a title="VCard" href="#{contact_path(contact, format: :vcf)}">))
+    end
+
+    it "should not modify the stored web presence values" do
+      contact = create(:contact, blog: "javascript:alert(1)", twitter: "twitter.com/ffcrm", linkedin: nil, facebook: nil,
+                                zoom: nil, teams: nil, signal: nil, instagram: nil, mastodon: nil, bluesky: nil)
+      helper.web_presence_icons(contact)
+      expect(contact.blog).to eq("javascript:alert(1)")
+      expect(contact.twitter).to eq("twitter.com/ffcrm")
+      expect(contact.reload.blog).to eq("javascript:alert(1)")
+    end
+
+    it "should filter unsafe URLs for a lead and keep its VCard link" do
+      lead = create(:lead, blog: "data:text/html,<script>alert(1)</script>", linkedin: "linkedin.com/in/ffcrm",
+                           facebook: nil, twitter: nil, zoom: nil, teams: nil, signal: nil,
+                           instagram: nil, mastodon: nil, bluesky: nil)
+      html = helper.web_presence_icons(lead)
+      expect(html).not_to include("data:text/html")
+      expect(html).not_to include("<script>")
+      expect(html).to include('href="http://linkedin.com/in/ffcrm"><i class="fa fa-linkedin">')
+      expect(html).to include(%(<a title="VCard" href="#{lead_path(lead, format: :vcf)}">))
+    end
+
+    it "should filter unsafe URLs for an account without rendering a VCard link" do
+      account = build_stubbed(:account, blog: "javascript:alert(1)", twitter: "https://twitter.com/ffcrm",
+                                        linkedin: nil, facebook: nil, instagram: nil, mastodon: nil, bluesky: nil)
+      html = helper.web_presence_icons(account)
+      expect(html).not_to include("javascript")
+      expect(html).to include('href="https://twitter.com/ffcrm"><i class="fa fa-twitter">')
+      expect(html).not_to include("VCard")
+      expect(html.scan("<a ").size).to eq(1)
+    end
+
+    it "should filter unsafe URLs for a user without rendering a VCard link" do
+      user = build_stubbed(:user, blog: "javascript:alert(1)", linkedin: "www.linkedin.com/in/ffcrm",
+                                  facebook: nil, twitter: nil, zoom: nil, teams: nil, signal: nil,
+                                  instagram: nil, mastodon: nil, bluesky: nil)
+      html = helper.web_presence_icons(user)
+      expect(html).not_to include("javascript")
+      expect(html).to include('href="http://www.linkedin.com/in/ffcrm"><i class="fa fa-linkedin">')
+      expect(html).not_to include("VCard")
+      expect(html.scan("<a ").size).to eq(1)
+    end
+
+    it "should render an empty span when a person has no web presence" do
+      account = build_stubbed(:account, blog: nil, twitter: nil, linkedin: nil, facebook: nil,
+                                        instagram: nil, mastodon: nil, bluesky: nil)
+      html = helper.web_presence_icons(account)
+      expect(html).to eq('<span class="web-presence-icons"></span>')
     end
   end
 end

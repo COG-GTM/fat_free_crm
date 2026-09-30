@@ -28,4 +28,17 @@ describe "leads/_sidebar_show" do
     expect(rendered).to have_tag("a[href='http://twitter.com/account']")
     expect(rendered).not_to have_tag("a[href='http://www.facebook/profile']")
   end
+
+  it "should not render web presence links with unsafe URLs" do
+    assign(:lead, build_stubbed(:lead,
+                                blog: "javascript:alert(1)//\nhttp://x",
+                                linkedin: "data:text/html,<script>alert(1)</script>",
+                                twitter: "twitter.com/account",
+                                facebook: nil))
+    render
+    expect(rendered).not_to include("javascript:")
+    expect(rendered).not_to include("data:text/html")
+    expect(rendered).to have_tag("a[href='http://twitter.com/account']")
+    expect(rendered).to have_tag("span.web-presence-icons a[data-popup='true']", count: 1)
+  end
 end
