@@ -32,6 +32,6 @@ class RegistrationsController < Devise::RegistrationsController
   def require_signup_allowed
     return if User.can_signup?
 
-    redirect_to new_user_session_path, alert: t(:msg_signup_not_allowed)
+    redirect_to new_user_session_path, alert: t(:msg_signup_not_allowed, default: 'User signup is not allowed. Please contact your system administrator.')
   end
 end
