@@ -54,6 +54,24 @@ shared_examples "attach" do
     expect(response).to render_template("entities/attach")
   end
 
+  it "should not attach the asset the user is not authorized to update" do
+    @attachment.update_columns(user_id: create(:user).id, assigned_to: nil)
+    @attachment.update_column(:access, 'Private') if @attachment.respond_to?(:access)
+
+    put :attach, params: { id: @model.id, assets: @attachment.class.name.tableize, asset_id: @attachment.id }, xhr: true
+    expect(@model.reload.send(@attachment.class.name.tableize)).not_to include(@attachment)
+    expect(assigns[:attached]).to eq(nil)
+    expect(flash[:warning]).not_to eq(nil)
+    expect(response.body).to eq("window.location.reload();")
+  end
+
+  it "should not attach an asset of a non-attachable class" do
+    put :attach, params: { id: @model.id, assets: "users", asset_id: current_user.id }, xhr: true
+    expect(assigns[:attached]).to eq(nil)
+    expect(flash[:warning]).not_to eq(nil)
+    expect(response.body).to eq("window.location.reload();")
+  end
+
   it "should display flash warning when the model is no longer available" do
     @model.destroy
 
@@ -79,6 +97,16 @@ shared_examples "discard" do
     expect(assigns[:campaign]).to eq(@model) if @model.is_a?(Campaign)
 
     expect(response).to render_template("entities/discard")
+  end
+
+  it "should not discard the attachment the user is not authorized to update" do
+    @attachment.update_columns(user_id: create(:user).id, assigned_to: nil)
+    @attachment.update_column(:access, 'Private') if @attachment.respond_to?(:access)
+
+    post :discard, params: { id: @model.id, attachment: @attachment.class.name, attachment_id: @attachment.id }, xhr: true
+    expect(@model.reload.send(@attachment.class.name.tableize.to_s)).to include(@attachment)
+    expect(flash[:warning]).not_to eq(nil)
+    expect(response.body).to eq("window.location.reload();")
   end
 
   it "should display flash warning when the model is no longer available" do

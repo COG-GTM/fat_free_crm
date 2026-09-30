@@ -504,7 +504,7 @@ describe CampaignsController do
     describe "tasks" do
       before do
         @model = create(:campaign)
-        @attachment = create(:task, asset: nil)
+        @attachment = create(:task, asset: nil, user: current_user)
       end
       it_should_behave_like("attach")
     end
@@ -533,7 +533,7 @@ describe CampaignsController do
     describe "tasks" do
       before do
         @model = create(:campaign)
-        @attachment = create(:task, asset: nil)
+        @attachment = create(:task, asset: nil, user: current_user)
       end
       it_should_behave_like("attach")
     end
@@ -562,7 +562,7 @@ describe CampaignsController do
     describe "tasks" do
       before do
         @model = create(:campaign)
-        @attachment = create(:task, asset: @model)
+        @attachment = create(:task, asset: @model, user: current_user)
       end
       it_should_behave_like("discard")
     end
