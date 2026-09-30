@@ -253,4 +253,36 @@ describe User do
       expect(user.emailable?).to eql(false)
     end
   end
+
+  describe ".can_signup?" do
+    it "should be true when user_signup is :allowed" do
+      allow(Setting).to receive(:user_signup).and_return(:allowed)
+      expect(User.can_signup?).to be(true)
+    end
+
+    it "should be true when user_signup is :needs_approval" do
+      allow(Setting).to receive(:user_signup).and_return(:needs_approval)
+      expect(User.can_signup?).to be(true)
+    end
+
+    it "should be false when user_signup is :not_allowed" do
+      allow(Setting).to receive(:user_signup).and_return(:not_allowed)
+      expect(User.can_signup?).to be(false)
+    end
+
+    it "should be false when user_signup is not set" do
+      allow(Setting).to receive(:user_signup).and_return(nil)
+      expect(User.can_signup?).to be(false)
+    end
+
+    it "should be false when user_signup is a string rather than a symbol" do
+      allow(Setting).to receive(:user_signup).and_return("allowed")
+      expect(User.can_signup?).to be(false)
+    end
+
+    it "should default to false from config/settings.default.yml" do
+      Setting.clear_cache!
+      expect(User.can_signup?).to be(false)
+    end
+  end
 end
