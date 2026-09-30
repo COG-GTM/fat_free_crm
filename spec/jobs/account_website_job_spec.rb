@@ -187,6 +187,7 @@ RSpec.describe AccountWebsiteJob do
     end
 
     it 'logs and skips the account when the URL is disallowed' do
+      account.update_column(:wikidata_id, 'Q42')
       allow(fetcher).to receive(:fetch).and_raise(SafeHttpFetcher::DisallowedUrl, 'scheme not allowed: "ftp"')
       allow(Rails.logger).to receive(:warn)
       expect(WikidataJob).not_to receive(:perform_later)
@@ -197,6 +198,7 @@ RSpec.describe AccountWebsiteJob do
     end
 
     it 'leaves the account untouched when the fetch yields no body' do
+      account.update_column(:wikidata_id, 'Q42')
       allow(fetcher).to receive(:fetch).and_return('')
       expect(WikidataJob).not_to receive(:perform_later)
 
