@@ -64,6 +64,23 @@ feature 'Contacts', '
     expect(page).to have_field("comment_body", with: 'This is a very important person.')
   end
 
+  scenario 'should not render unsafe web presence URLs as links on the contact page' do
+    contact = create(:contact, first_name: "Testy", last_name: "McTest",
+                               blog: "javascript:alert(document.domain)//\nhttp://x",
+                               linkedin: "data:text/html,<script>alert(1)</script>",
+                               twitter: "twitter.com/testy",
+                               facebook: nil, zoom: nil, teams: nil, signal: nil, instagram: nil, mastodon: nil, bluesky: nil)
+    visit contact_path(contact)
+    expect(page).to have_content('Testy McTest')
+    within('span.web-presence-icons') do
+      expect(page).to have_link(href: "http://twitter.com/testy")
+      expect(page).to have_css("a[data-popup]", count: 1)
+      expect(page).not_to have_css("a[href^='javascript:']")
+      expect(page).not_to have_css("a[href^='data:']")
+    end
+    expect(page.html).not_to include("javascript:alert")
+  end
+
   scenario 'should view and edit a contact', js: true do
     create(:contact, first_name: "Testy", last_name: "McTest", account: create(:account, name: "Toast"))
     with_versioning do

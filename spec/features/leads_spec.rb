@@ -72,6 +72,23 @@ feature 'Leads', '
     expect(page).to have_field('comment_body', with: 'This is an important lead.')
   end
 
+  scenario 'should not render unsafe web presence URLs as links on the lead page' do
+    lead = create(:lead, first_name: "Mr", last_name: "Lead",
+                         blog: "javascript:alert(document.domain)//\nhttp://x",
+                         facebook: "//evil.example.com",
+                         linkedin: "https://www.linkedin.com/in/mrlead",
+                         twitter: nil, zoom: nil, teams: nil, signal: nil, instagram: nil, mastodon: nil, bluesky: nil)
+    visit lead_path(lead)
+    expect(page).to have_content('Mr Lead')
+    within('span.web-presence-icons') do
+      expect(page).to have_link(href: "https://www.linkedin.com/in/mrlead")
+      expect(page).to have_css("a[data-popup]", count: 1)
+      expect(page).not_to have_css("a[href^='javascript:']")
+    end
+    expect(page.html).not_to include("javascript:alert")
+    expect(page.html).not_to include("evil.example.com")
+  end
+
   scenario 'should view and edit a lead', js: true do
     create(:lead, first_name: "Mr", last_name: "Lead", email: "mr_lead@example.com")
     with_versioning do
