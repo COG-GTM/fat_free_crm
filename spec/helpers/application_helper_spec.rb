@@ -137,7 +137,12 @@ describe ApplicationHelper do
 
     it "should keep http and https URLs" do
       expect(helper.web_presence_url("https://example.com")).to eq("https://example.com")
-      expect(helper.web_presence_url("HTTP://example.com")).to eq("http://example.com")
+      expect(helper.web_presence_url("HTTP://example.com")).to eq("HTTP://example.com")
+    end
+
+    it "should keep URLs containing non-ASCII characters" do
+      expect(helper.web_presence_url("https://example.com/café")).to eq("https://example.com/café")
+      expect(helper.web_presence_url("münchen.example/blog")).to eq("http://münchen.example/blog")
     end
 
     it "should reject javascript: URLs with an embedded newline" do

@@ -308,13 +308,14 @@ module ApplicationHelper
     return nil if value.blank?
 
     url = value.to_s.strip
-    return nil if url.match?(/[[:cntrl:]\s]/)
+    return nil if url.match?(/[[:cntrl:][:space:]]/)
 
     url = "http://" + url unless url.match?(%r{\Ahttps?://}i)
-    uri = URI.parse(url)
+    ascii_url = url.gsub(/[^[:ascii:]]/) { |char| char.bytes.map { |byte| format("%%%02X", byte) }.join }
+    uri = URI.parse(ascii_url)
     return nil unless uri.is_a?(URI::HTTP) && uri.host.present?
 
-    uri.to_s
+    url
   rescue URI::InvalidURIError
     nil
   end
