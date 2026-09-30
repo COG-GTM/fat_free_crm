@@ -910,7 +910,7 @@ describe LeadsController do
     describe "tasks" do
       before do
         @model = create(:lead)
-        @attachment = create(:task, asset: nil)
+        @attachment = create(:task, asset: nil, user: current_user)
       end
       it_should_behave_like("attach")
     end
@@ -923,7 +923,7 @@ describe LeadsController do
     describe "tasks" do
       before do
         @model = create(:lead)
-        @attachment = create(:task, asset: nil)
+        @attachment = create(:task, asset: nil, user: current_user)
       end
       it_should_behave_like("attach")
     end
@@ -934,7 +934,7 @@ describe LeadsController do
   #----------------------------------------------------------------------------
   describe "responding to POST discard" do
     before(:each) do
-      @attachment = create(:task, assigned_to: current_user)
+      @attachment = create(:task, assigned_to: current_user.id)
       @model = create(:lead)
       @model.tasks << @attachment
     end

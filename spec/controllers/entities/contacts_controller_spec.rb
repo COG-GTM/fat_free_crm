@@ -602,7 +602,7 @@ describe ContactsController do
     describe "tasks" do
       before do
         @model = create(:contact)
-        @attachment = create(:task, asset: nil)
+        @attachment = create(:task, asset: nil, user: current_user)
       end
       it_should_behave_like("attach")
     end
@@ -623,7 +623,7 @@ describe ContactsController do
     describe "tasks" do
       before do
         @model = create(:contact)
-        @attachment = create(:task, asset: nil)
+        @attachment = create(:task, asset: nil, user: current_user)
       end
       it_should_behave_like("attach")
     end
@@ -644,7 +644,7 @@ describe ContactsController do
     describe "tasks" do
       before do
         @model = create(:contact)
-        @attachment = create(:task, asset: @model)
+        @attachment = create(:task, asset: @model, user: current_user)
       end
       it_should_behave_like("discard")
     end

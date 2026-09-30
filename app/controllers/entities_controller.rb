@@ -18,10 +18,12 @@ class EntitiesController < ApplicationController
 
   helper_method :entity, :entities
 
+  ATTACHABLE_CLASSES = %w[Contact Lead Opportunity Task].freeze
+
   # Common attach handler for all core controllers.
   #----------------------------------------------------------------------------
   def attach
-    @attachment = find_class(params[:assets]).find(params[:asset_id])
+    @attachment = find_attachment(params[:assets], params[:asset_id])
     @attached = entity.attach!(@attachment)
     entity.reload
 
@@ -31,7 +33,7 @@ class EntitiesController < ApplicationController
   # Common discard handler for all core controllers.
   #----------------------------------------------------------------------------
   def discard
-    @attachment = find_class(params[:attachment]).find(params[:attachment_id])
+    @attachment = find_attachment(params[:attachment], params[:attachment_id])
     entity.discard!(@attachment)
     entity.reload
 
@@ -126,6 +128,18 @@ class EntitiesController < ApplicationController
   end
 
   private
+
+  # Load a record to be attached to or discarded from the current entity,
+  # restricted to attachable classes and to records the user may update.
+  #----------------------------------------------------------------------------
+  def find_attachment(asset, asset_id)
+    klass_name = asset.to_s.classify
+    raise ActiveRecord::RecordNotFound unless ATTACHABLE_CLASSES.include?(klass_name)
+
+    attachment = klass_name.constantize.find(asset_id)
+    authorize!(:update, attachment)
+    attachment
+  end
 
   def ransack_search
     @ransack_search ||= load_ransack_search
