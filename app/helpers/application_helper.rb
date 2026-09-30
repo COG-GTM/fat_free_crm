@@ -283,10 +283,9 @@ module ApplicationHelper
     %i[blog linkedin facebook twitter zoom teams signal instagram mastodon bluesky].each do |site|
       next unless person.respond_to?(site)
 
-      url = person.send(site)
+      url = web_presence_url(person.send(site))
       next if url.blank?
 
-      url = "http://" + url unless url.match?(%r{^https?://})
       sites << if icon_for_site[site]
                  link_to(content_tag(:i, "", { class: "fa fa-#{icon_for_site[site]}" }), h(url), "data-popup": true, title: t(:open_in_window, h(url)))
                else
@@ -300,6 +299,24 @@ module ApplicationHelper
       sites << link_to(content_tag(:i, "", { class: "fa fa-address-card" }), lead_path(person, format: :vcf), title: "VCard")
     end
     content_tag(:span, class: "web-presence-icons") { safe_join(sites, "\n") }
+  end
+
+  # Returns a normalized http(s) URL for a web presence field, or nil when the
+  # value is not a safe absolute http(s) URL.
+  #----------------------------------------------------------------------------
+  def web_presence_url(value)
+    return nil if value.blank?
+
+    url = value.to_s.strip
+    return nil if url.match?(/[[:cntrl:]\s]/)
+
+    url = "http://" + url unless url.match?(%r{\Ahttps?://}i)
+    uri = URI.parse(url)
+    return nil unless uri.is_a?(URI::HTTP) && uri.host.present?
+
+    uri.to_s
+  rescue URI::InvalidURIError
+    nil
   end
 
   # Ajax helper to refresh current index page once the user selects an option.
