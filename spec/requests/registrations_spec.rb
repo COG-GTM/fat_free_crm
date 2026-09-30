@@ -8,6 +8,8 @@
 require 'spec_helper'
 
 RSpec.describe "Registrations" do
+  before { Rack::Attack.reset! }
+
   let(:params) do
     { user: { username: "newuser", email: "newuser@example.com",
               password: "password", password_confirmation: "password" } }
