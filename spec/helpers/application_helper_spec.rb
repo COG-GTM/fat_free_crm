@@ -210,6 +210,13 @@ describe ApplicationHelper do
       expect(helper.web_presence_url("http://例え.jp/")).to eq("http://例え.jp/")
     end
 
+    it "should treat harmless non-http schemes as bare hosts and prefix http://" do
+      expect(helper.web_presence_url("ftp://example.com")).to eq("http://ftp://example.com")
+      expect(helper.web_presence_url("mailto:foo@example.com")).to eq("http://mailto:foo@example.com")
+      expect(helper.web_presence_url("file:///etc/passwd")).to eq("http://file:///etc/passwd")
+      expect(helper.web_presence_url("javascript://example.com/%0aalert(1)")).to eq("http://javascript://example.com/%0aalert(1)")
+    end
+
     it "should only ever return http or https URLs" do
       inputs = [
         "example.com", "https://example.com", "HTTPS://Example.COM", "ftp://example.com", "file:///etc/passwd",
