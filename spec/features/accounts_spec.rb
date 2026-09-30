@@ -126,4 +126,28 @@ feature 'Accounts', '
       expect(find('#tasks')).to have_content('Task re: Account')
     end
   end
+
+  scenario 'should attach a public contact owned by another user to account', js: true do
+    other_user = create(:user)
+    create(:contact, first_name: 'Alice', last_name: 'Attachable', access: 'Public', user: other_user)
+    create(:account, name: 'Account')
+    visit accounts_page
+    click_link 'Account'
+    click_link 'Select Contact'
+    fill_autocomplete('auto_complete_query', with: 'Ali')
+    expect(find('#contacts')).to have_content('Alice Attachable')
+    expect(Contact.find_by(first_name: 'Alice').account.name).to eq('Account')
+  end
+
+  scenario 'should discard a contact from account without deleting it', js: true do
+    account = create(:account, name: 'Account')
+    contact = create(:contact, first_name: 'Bob', last_name: 'Discardable', account: account, user: @user)
+    visit accounts_page
+    click_link 'Account'
+    expect(find('#contacts')).to have_content('Bob Discardable')
+    find("#contact_#{contact.id}").hover
+    within("#contact_#{contact.id}") { click_link 'Discard', exact: true }
+    expect(find('#contacts')).not_to have_content('Bob Discardable')
+    expect(contact.reload.account).to eq(nil)
+  end
 end
