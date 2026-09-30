@@ -396,7 +396,7 @@ describe EntitiesController do
     describe "responding to POST discard" do
       it "should not discard a Private lead owned by another user nor touch the counter" do
         lead = create(:lead, user: other_user, access: "Private", campaign: @campaign)
-        @campaign.update_column(:leads_count, 1)
+        expect(@campaign.reload.leads_count).to eq(1)
         post :discard, params: { id: @campaign.id, attachment: "Lead", attachment_id: lead.id }, xhr: true
         expect(lead.reload.campaign).to eq(@campaign)
         expect(@campaign.reload.leads_count).to eq(1)
@@ -406,7 +406,7 @@ describe EntitiesController do
 
       it "should discard a Shared lead the user has permission to and update the counter" do
         lead = create_shared(:lead, user: other_user, campaign: @campaign, user_ids: [current_user.id])
-        @campaign.update_column(:leads_count, 1)
+        expect(@campaign.reload.leads_count).to eq(1)
         post :discard, params: { id: @campaign.id, attachment: "Lead", attachment_id: lead.id }, xhr: true
         expect(lead.reload.campaign).to eq(nil)
         expect(@campaign.reload.leads_count).to eq(0)
