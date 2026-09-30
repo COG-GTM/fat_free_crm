@@ -123,11 +123,13 @@ RSpec.describe "Registrations" do
       get new_user_registration_path
       expect(response).to have_http_status(:ok)
 
-      Setting.user_signup = :not_allowed
+      Setting.find_by(name: 'user_signup').update!(value: :not_allowed)
+      expect(Setting.user_signup).to eq(:allowed)
       get new_user_registration_path
       expect(response).to redirect_to(new_user_session_path)
 
-      Setting.user_signup = :needs_approval
+      Setting.find_by(name: 'user_signup').update!(value: :needs_approval)
+      expect(Setting.user_signup).to eq(:not_allowed)
       get new_user_registration_path
       expect(response).to have_http_status(:ok)
     end
