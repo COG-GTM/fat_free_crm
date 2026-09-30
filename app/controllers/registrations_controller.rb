@@ -15,12 +15,12 @@ class RegistrationsController < Devise::RegistrationsController
     super
   end
 
-  def create
-    super
-  end
-
   def edit
     redirect_to profile_path
+  end
+
+  def create
+    super
   end
 
   def after_inactive_sign_up_path_for(*)
