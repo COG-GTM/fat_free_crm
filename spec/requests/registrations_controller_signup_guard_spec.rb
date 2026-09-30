@@ -90,14 +90,16 @@ RSpec.describe RegistrationsController do
     end
 
     it "falls back to the English message when the current locale lacks msg_signup_not_allowed" do
+      original = I18n.t(:msg_signup_not_allowed, locale: :"en-US")
       I18n.backend.store_translations(:"en-US", msg_signup_not_allowed: nil)
       begin
         expect(I18n.t(:msg_signup_not_allowed, default: nil)).to be_nil
         get new_user_registration_path
         expect(flash[:alert]).to eq(not_allowed_message)
       ensure
-        I18n.backend.reload!
+        I18n.backend.store_translations(:"en-US", msg_signup_not_allowed: original)
       end
+      expect(I18n.t(:msg_signup_not_allowed, locale: :"en-US")).to eq(original)
     end
 
     it "does not alter the sign in page itself" do
