@@ -15,7 +15,7 @@ describe "contacts/_sidebar_show" do
     assign(:users, [current_user])
     assign(:comment, Comment.new)
     assign(:contact, create(:contact,
-                            blog: 'javascript:alert(document.domain)//\nhttp://x',
+                            blog: "javascript:alert(document.domain)//\nhttp://x",
                             linkedin: 'data:text/html,<script>alert(1)</script>',
                             facebook: '//evil.example.com',
                             twitter: 'twitter.com/account',

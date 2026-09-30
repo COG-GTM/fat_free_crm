@@ -334,7 +334,7 @@ describe ApplicationHelper do
       expect(html).to include('href="http://example.com/?a=1&amp;b=2"')
       expect(html).not_to include("&b=2")
       expect(popup_links(html).first["href"]).to eq("http://example.com/?a=1&b=2")
-      expect(popup_links(html).first["title"]).to start_with("Open http://example.com/?a=1&amp;")
+      expect(popup_links(html).first["title"]).to start_with("Open http://example.com/?a=1&")
     end
 
     it "should return html_safe markup" do

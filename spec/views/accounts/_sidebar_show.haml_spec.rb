@@ -16,7 +16,7 @@ describe "accounts/_sidebar_show" do
     assign(:comment, Comment.new)
     assign(:account, create(:account,
                             website: 'www.example.com',
-                            blog: 'javascript:alert(document.domain)//\nhttp://x',
+                            blog: "javascript:alert(document.domain)//\nhttp://x",
                             linkedin: 'www.linkedin.com/company/ffcrm',
                             facebook: 'JAVASCRIPT:alert(1)',
                             twitter: 'https://twitter.com/ffcrm',
