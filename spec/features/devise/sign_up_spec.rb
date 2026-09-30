@@ -12,6 +12,10 @@ feature 'Devise Sign-up' do
     Setting.user_signup = :allowed
   end
 
+  after do
+    Setting.clear_cache!
+  end
+
   scenario 'with valid credentials' do
     visit "/users/sign_up"
 
