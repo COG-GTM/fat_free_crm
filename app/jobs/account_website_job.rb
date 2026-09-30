@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'net/http'
 require 'nokogiri'
 require 'json'
 
@@ -10,18 +9,17 @@ class AccountWebsiteJob < ApplicationJob
   def perform(account)
     return if account.website.blank?
 
-    uri = URI.parse(account.website)
-    uri = URI.parse("http://#{account.website}") unless uri.scheme
+    body = SafeHttpFetcher.new(account.website).fetch
+    return if body.blank?
 
-    response = Net::HTTP.get_response(uri)
-    return unless response.is_a?(Net::HTTPSuccess)
-
-    doc = Nokogiri::HTML(response.body)
+    doc = Nokogiri::HTML(body)
     json_ld_scripts = doc.css('script[type="application/ld+json"]')
 
     json_ld_scripts.each do |script|
       process_json_ld(account, script.content)
     end
+  rescue SafeHttpFetcher::DisallowedUrl => e
+    Rails.logger.warn("AccountWebsiteJob: skipping account #{account.id}: #{e.message}")
   end
 
   private

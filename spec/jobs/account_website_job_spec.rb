@@ -35,16 +35,10 @@ RSpec.describe AccountWebsiteJob do
     HTML
   end
 
+  let(:fetcher) { instance_double(SafeHttpFetcher, fetch: html_body) }
+
   before do
-    @http_double = instance_double(Net::HTTP)
-    allow(Net::HTTP).to receive(:new).and_return(@http_double)
-    allow(@http_double).to receive(:use_ssl=)
-    allow(@http_double).to receive(:open_timeout=)
-    allow(@http_double).to receive(:read_timeout=)
-    # Net::HTTP.get_response(uri) eventually calls start
-    allow(@http_double).to receive(:start).and_yield(@http_double)
-    # Mocking request_get because get_response uses it
-    allow(@http_double).to receive_messages(get: double(is_a?: true, body: html_body), request_get: double(is_a?: true, body: html_body))
+    allow(SafeHttpFetcher).to receive(:new).and_return(fetcher)
   end
 
   it 'updates account fields from JSON-LD Organization data' do
@@ -89,7 +83,7 @@ RSpec.describe AccountWebsiteJob do
         </body>
       </html>
     HTML
-    allow(@http_double).to receive_messages(get: double(is_a?: true, body: html), request_get: double(is_a?: true, body: html))
+    allow(fetcher).to receive(:fetch).and_return(html)
 
     expect do
       AccountWebsiteJob.perform_now(account)
@@ -115,7 +109,7 @@ RSpec.describe AccountWebsiteJob do
         </body>
       </html>
     HTML
-    allow(@http_double).to receive_messages(get: double(is_a?: true, body: html), request_get: double(is_a?: true, body: html))
+    allow(fetcher).to receive(:fetch).and_return(html)
 
     expect do
       AccountWebsiteJob.perform_now(account)
@@ -130,8 +124,13 @@ RSpec.describe AccountWebsiteJob do
   end
 
   describe 'Error handling and safety' do
-    it 'handles HTTP timeouts gracefully' do
-      allow(@http_double).to receive(:get).and_raise(Net::OpenTimeout)
+    before do
+      allow(SafeHttpFetcher).to receive(:new).and_call_original
+      allow(Net::HTTP).to receive(:new).and_call_original
+    end
+
+    it 'handles fetch failures gracefully' do
+      allow(fetcher).to receive(:fetch).and_return(nil)
 
       expect do
         AccountWebsiteJob.perform_now(account)
@@ -140,16 +139,32 @@ RSpec.describe AccountWebsiteJob do
 
     it 'rejects internal IP addresses (SSRF mitigation)' do
       account.update(website: 'http://192.168.1.1')
-      expect(@http_double).not_to receive(:get)
+      expect(Net::HTTP).not_to receive(:new)
 
-      AccountWebsiteJob.perform_now(account)
+      expect { AccountWebsiteJob.perform_now(account) }.not_to raise_error
     end
 
     it 'rejects localhost (SSRF mitigation)' do
+      allow(Resolv).to receive(:getaddresses).with('localhost').and_return(['127.0.0.1'])
       account.update(website: 'http://localhost')
-      expect(@http_double).not_to receive(:get)
+      expect(Net::HTTP).not_to receive(:new)
 
-      AccountWebsiteJob.perform_now(account)
+      expect { AccountWebsiteJob.perform_now(account) }.not_to raise_error
+    end
+
+    it 'rejects the cloud metadata endpoint (SSRF mitigation)' do
+      account.update(website: 'http://169.254.169.254/latest/meta-data/')
+      expect(Net::HTTP).not_to receive(:new)
+
+      expect { AccountWebsiteJob.perform_now(account) }.not_to raise_error
+    end
+
+    it 'rejects hostnames that resolve to internal addresses (SSRF mitigation)' do
+      allow(Resolv).to receive(:getaddresses).with('internal.example.com').and_return(['10.0.0.5'])
+      account.update(website: 'http://internal.example.com')
+      expect(Net::HTTP).not_to receive(:new)
+
+      expect { AccountWebsiteJob.perform_now(account) }.not_to raise_error
     end
   end
 end
