@@ -8,6 +8,14 @@
 require 'features/acceptance_helper'
 
 feature 'Devise Sign-up' do
+  background do
+    Setting.user_signup = :allowed
+  end
+
+  after do
+    Setting.clear_cache!
+  end
+
   scenario 'with valid credentials' do
     visit "/users/sign_up"
 
@@ -32,5 +40,13 @@ feature 'Devise Sign-up' do
     expect(page).to have_content("Please specify username")
     expect(page).to have_content("Username is invalid")
     expect(page).to have_content("Password can't be blank")
+  end
+
+  scenario 'when signup is not allowed' do
+    Setting.user_signup = :not_allowed
+    visit "/users/sign_up"
+
+    expect(current_path).to eq "/users/sign_in"
+    expect(page).to have_content("User signup is not allowed")
   end
 end
