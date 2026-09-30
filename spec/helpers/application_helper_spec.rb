@@ -129,4 +129,55 @@ describe ApplicationHelper do
       end
     end
   end
+
+  describe "web_presence_url" do
+    it "should prepend http:// to bare hosts" do
+      expect(helper.web_presence_url("example.com/blog")).to eq("http://example.com/blog")
+    end
+
+    it "should keep http and https URLs" do
+      expect(helper.web_presence_url("https://example.com")).to eq("https://example.com")
+      expect(helper.web_presence_url("HTTP://example.com")).to eq("HTTP://example.com")
+    end
+
+    it "should keep URLs containing non-ASCII characters" do
+      expect(helper.web_presence_url("https://example.com/café")).to eq("https://example.com/café")
+      expect(helper.web_presence_url("münchen.example/blog")).to eq("http://münchen.example/blog")
+    end
+
+    it "should reject javascript: URLs with an embedded newline" do
+      expect(helper.web_presence_url("javascript:alert(document.domain)//\nhttp://x")).to be_nil
+    end
+
+    it "should reject javascript: and data: URLs" do
+      expect(helper.web_presence_url("javascript:alert(1)")).to be_nil
+      expect(helper.web_presence_url("data:text/html,<script>alert(1)</script>")).to be_nil
+    end
+
+    it "should reject values containing control characters or whitespace" do
+      expect(helper.web_presence_url("http://example.com/\tfoo")).to be_nil
+      expect(helper.web_presence_url("http://exa mple.com")).to be_nil
+    end
+
+    it "should reject invalid URLs" do
+      expect(helper.web_presence_url("http://")).to be_nil
+      expect(helper.web_presence_url("http://exa%mple.com")).to be_nil
+    end
+
+    it "should return nil for blank values" do
+      expect(helper.web_presence_url(nil)).to be_nil
+      expect(helper.web_presence_url("  ")).to be_nil
+    end
+  end
+
+  describe "web_presence_icons" do
+    it "should not render a link for an unsafe URL" do
+      contact = create(:contact, blog: "javascript:alert(1)//\nhttp://x", twitter: "twitter.com/ffcrm",
+                                linkedin: nil, facebook: nil, zoom: nil, teams: nil, signal: nil,
+                                instagram: nil, mastodon: nil, bluesky: nil)
+      html = helper.web_presence_icons(contact)
+      expect(html).not_to include("javascript:")
+      expect(html).to include('href="http://twitter.com/ffcrm"')
+    end
+  end
 end
