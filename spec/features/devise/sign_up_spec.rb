@@ -49,4 +49,34 @@ feature 'Devise Sign-up' do
     expect(current_path).to eq "/users/sign_in"
     expect(page).to have_content("User signup is not allowed")
   end
+
+  scenario 'when signup is disabled after the form was rendered' do
+    visit "/users/sign_up"
+
+    Setting.user_signup = :not_allowed
+
+    fill_in "user[email]", with: "john@example.com"
+    fill_in "user[username]", with: "john"
+    fill_in "user[password]", with: "password"
+    fill_in "user[password_confirmation]", with: "password"
+    click_button("Sign Up")
+
+    expect(current_path).to eq "/users/sign_in"
+    expect(page).to have_content("User signup is not allowed")
+    expect(User.find_by(username: "john")).to be_nil
+  end
+
+  scenario 'sign in page hides the sign up link when signup is not allowed' do
+    Setting.user_signup = :not_allowed
+    visit "/users/sign_in"
+
+    expect(page).not_to have_link("Sign up now")
+    expect(page).not_to have_link(href: "/users/sign_up")
+  end
+
+  scenario 'sign in page shows the sign up link when signup is allowed' do
+    visit "/users/sign_in"
+
+    expect(page).to have_link(href: "/users/sign_up")
+  end
 end

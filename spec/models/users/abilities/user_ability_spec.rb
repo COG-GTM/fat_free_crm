@@ -66,5 +66,10 @@ describe User do
       allow(User).to receive(:can_signup?).and_return(true)
       is_expected.to be_able_to(:create, User)
     end
+
+    it "and signup disabled" do
+      allow(User).to receive(:can_signup?).and_return(false)
+      is_expected.not_to be_able_to(:create, User)
+    end
   end
 end
