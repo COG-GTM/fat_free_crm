@@ -9,6 +9,7 @@ require 'features/acceptance_helper'
 
 feature 'Devise Sign-up' do
   background do
+    Rack::Attack.reset!
     Setting.user_signup = :allowed
   end
 
