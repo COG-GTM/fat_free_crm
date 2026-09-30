@@ -116,6 +116,25 @@ describe User do
     end
   end
 
+  describe '.can_signup?' do
+    { allowed: true, needs_approval: true, not_allowed: false }.each do |value, expected|
+      it "returns #{expected} when Setting.user_signup is #{value.inspect}" do
+        allow(Setting).to receive(:user_signup).and_return(value)
+        expect(User.can_signup?).to eq(expected)
+      end
+    end
+
+    it "returns false when Setting.user_signup is nil" do
+      allow(Setting).to receive(:user_signup).and_return(nil)
+      expect(User.can_signup?).to eq(false)
+    end
+
+    it "returns false for string values" do
+      allow(Setting).to receive(:user_signup).and_return("allowed")
+      expect(User.can_signup?).to eq(false)
+    end
+  end
+
   describe '#suspend_if_needs_approval' do
     it "should set suspended timestamp upon creation if signups need approval and the user is not an admin" do
       allow(Setting).to receive(:user_signup).and_return(:needs_approval)
