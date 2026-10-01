@@ -1,0 +1,19 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    baseline-on-migrate: true
+
+ffcrm:
+  security:
+    # Matches the Devise settings used to generate fixtures/rails-legacy-users.json.
+    legacy-stretches: 20
+    jwt:
+      secret: test-only-hmac-secret-that-is-long-enough-for-hs256
+      access-token-ttl: 5m
+      refresh-token-ttl: 1h
+
+logging:
+  level:
+    org.hibernate.tool.schema: WARN

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <!-- JPA entities need mutable date/collection fields and non-final setters. -->
+  <Match>
+    <Package name="com.fatfreecrm.domain"/>
+    <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+  </Match>
+  <!-- Response DTOs are records holding immutable collections. -->
+  <Match>
+    <Package name="com.fatfreecrm.api.dto"/>
+    <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+  </Match>
+  <!-- Nested @ConfigurationProperties are bound by Spring, not shared state. -->
+  <Match>
+    <Class name="com.fatfreecrm.security.SecurityProperties"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+  <!-- Spring injects singletons; SpotBugs cannot see the framework contract. -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP2,SPRING_ENDPOINT_MASS_ASSIGNMENT"/>
+  </Match>
+</FindBugsFilter>

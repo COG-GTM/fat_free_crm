@@ -1,0 +1,66 @@
+spring:
+  application:
+    name: fat-free-crm-api
+  datasource:
+    url: ${FFCRM_DB_URL:jdbc:postgresql://localhost:5432/fat_free_crm_development}
+    username: ${FFCRM_DB_USER:postgres}
+    password: ${FFCRM_DB_PASSWORD:postgres}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Rails owns the schema until cutover, then Flyway does. Hibernate never does.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    # The Rails-migrated database already has the V1 schema; baseline instead of replaying it.
+    baseline-on-migrate: true
+    baseline-version: 1
+    baseline-description: baseline_rails_schema
+    validate-on-migrate: true
+
+server:
+  port: ${FFCRM_API_PORT:8080}
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,flyway
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: rails-baseline-contract
+        url: /openapi.yaml
+      - name: spring-implemented
+        url: /v3/api-docs
+
+ffcrm:
+  security:
+    # Must match Devise's config.stretches in the Rails deployment.
+    legacy-stretches: ${FFCRM_LEGACY_STRETCHES:20}
+    rehash-on-login: false
+    jwt:
+      issuer: fat-free-crm
+      secret: ${FFCRM_JWT_SECRET:}
+      access-token-ttl: 30m
+      refresh-token-ttl: 14d
+
+logging:
+  pattern:
+    # Key=value single-line format; swap for a JSON encoder once a log sink is chosen.
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} level=%-5level app=${spring.application.name:-} trace=%X{traceId:-} span=%X{spanId:-} logger=%logger{40} msg=%msg%n"
+  level:
+    org.flywaydb: INFO

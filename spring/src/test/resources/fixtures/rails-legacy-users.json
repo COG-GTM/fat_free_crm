@@ -1,0 +1,34 @@
+{
+  "provenance": {
+    "generated_at": "2026-08-21T18:42:18.880Z",
+    "rails_env": "development",
+    "database": "fat_free_crm_development",
+    "source": "persisted User rows created with User.create!",
+    "transaction": "rolled_back_after_reading_rows"
+  },
+  "devise": {
+    "encryptor": "authlogic_sha512",
+    "stretches": 20,
+    "pepper": null,
+    "devise_version": "5.0.3",
+    "devise_encryptable_version": "0.2.0"
+  },
+  "users": [
+    {
+      "username": "legacy_admin",
+      "email": "legacy_admin@example.com",
+      "admin": true,
+      "password": "CorrectHorse!42",
+      "encrypted_password": "ebae2b7e817d35543aabfeb5046dfa89cfe04e94cfe102f2306f3f696114ef7233af3ca35402f15178d3188926cf2b7802ca1c77c50d07a5761da9fcdad33c00",
+      "password_salt": "tcWGDJfM8ynaw6X_jf2G"
+    },
+    {
+      "username": "legacy_user",
+      "email": "legacy_user@example.com",
+      "admin": false,
+      "password": "p@ssw0rd-simple",
+      "encrypted_password": "f439e12a04b6b77273c6817c8d9594e53a86fa9dc5abd4d9f9d1d376d67a39c6c00ac2cea78d5470aed4ea77a07db363edf4d72d2dac8c34a782e99768c0b837",
+      "password_salt": "uzVut9GJKmAaQBXiJ4TN"
+    }
+  ]
+}
