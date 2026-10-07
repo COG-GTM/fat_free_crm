@@ -21,7 +21,11 @@ class SortWhitelistTest {
     void railsPreferenceFormResolves() {
         assertThat(whitelist.resolve("accounts.name ASC")).isNotNull();
         assertThat(whitelist.resolve("accounts.name asc")).isNotNull();
-        assertThat(whitelist.resolve("name DESC")).isNotNull();
+        // Explicit direction must match the whitelist entry's direction.
+        assertThat(whitelist.resolve("name DESC")).isNull();
+        assertThat(whitelist.resolve("name ASC")).isNotNull();
+        assertThat(whitelist.resolve("rating DESC")).isNotNull();
+        assertThat(whitelist.resolve("rating ASC")).isNull();
     }
 
     @Test

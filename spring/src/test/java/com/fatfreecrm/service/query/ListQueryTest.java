@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Map;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -56,6 +58,35 @@ class ListQueryTest {
             .isEqualTo(Map.of("s", "name desc"));
         assertThat(ListQuery.fromParameters(params("q[s][]=name desc", "q[s][]=rating asc")).q())
             .isEqualTo(Map.of("s", List.of("name desc", "rating asc")));
+    }
+
+    @Test
+    void repeatedScalarKeyKeepsTheLastValue() {
+        ListQuery query = ListQuery.fromParameters(params("q[name_cont]=a", "q[name_cont]=b"));
+        assertThat(query.q()).isEqualTo(Map.of("name_cont", "b"));
+    }
+
+    @Test
+    void arrayKeysAccumulateAcrossSeparateParameters() {
+        ListQuery query = ListQuery.fromParameters(params("q[rating_in][]=2", "q[rating_in][]=3"));
+        assertThat(query.q()).isEqualTo(Map.of("rating_in", List.of("2", "3")));
+    }
+
+    @Test
+    void excessiveParamDepthThrows() {
+        StringBuilder deep = new StringBuilder("q[a]");
+        for (int index = 0; index < 31; index++) {
+            deep.append("[b]");
+        }
+        deep.append("=1");
+        assertThat(ListQuery.fromParameters(params(deep.toString())).q()).isNotEmpty();
+        StringBuilder tooDeep = new StringBuilder("q[a]");
+        for (int index = 0; index < 32; index++) {
+            tooDeep.append("[b]");
+        }
+        tooDeep.append("=1");
+        assertThatThrownBy(() -> ListQuery.fromParameters(params(tooDeep.toString())))
+            .isInstanceOf(InvalidSearchQueryException.class);
     }
 
     @Test

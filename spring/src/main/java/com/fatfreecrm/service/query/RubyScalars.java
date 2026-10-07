@@ -97,7 +97,7 @@ public final class RubyScalars {
         String normalized = value.replace(' ', 'T');
         try {
             if (normalized.endsWith("Z")) {
-                return Instant.parse(normalized);
+                return java.time.OffsetDateTime.parse(normalized).toInstant();
             }
             if (normalized.matches(".*[+-]\\d{2}:\\d{2}$")) {
                 return java.time.OffsetDateTime.parse(normalized).toInstant();

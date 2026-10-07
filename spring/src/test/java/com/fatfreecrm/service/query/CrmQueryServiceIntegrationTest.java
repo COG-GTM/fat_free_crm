@@ -9,10 +9,13 @@ import com.fatfreecrm.domain.Contact;
 import com.fatfreecrm.domain.Tag;
 import com.fatfreecrm.domain.Tagging;
 import com.fatfreecrm.domain.User;
+import com.fatfreecrm.domain.Opportunity;
+import com.fatfreecrm.domain.Setting;
 import com.fatfreecrm.repository.AccountContactRepository;
 import com.fatfreecrm.repository.AccountRepository;
 import com.fatfreecrm.repository.ContactRepository;
 import com.fatfreecrm.repository.TagRepository;
+import com.fatfreecrm.repository.SettingRepository;
 import com.fatfreecrm.repository.TaggingRepository;
 import com.fatfreecrm.repository.UserRepository;
 import com.fatfreecrm.security.AuthenticatedUser;
@@ -55,6 +58,9 @@ class CrmQueryServiceIntegrationTest extends AbstractPostgresIntegrationTest {
 
     @Autowired
     private CrmQueryService queryService;
+
+    @Autowired
+    private SettingRepository settingRepository;
 
     private AuthenticatedUser alice;
 
@@ -373,6 +379,45 @@ class CrmQueryServiceIntegrationTest extends AbstractPostgresIntegrationTest {
             assertThatThrownBy(() -> queryService.list(alice, Account.class, query("page=" + badPage)))
                 .isInstanceOf(InvalidPageException.class);
         }
+    }
+
+    @Test
+    void facetKeysStripYamlSymbolsFromSettings() {
+        Setting setting = new Setting();
+        setting.setName("account_category");
+        setting.setValue("---\n- :affiliate\n- :custom\n");
+        settingRepository.save(setting);
+        Map<String, Long> category = queryService.list(alice, Account.class, query("per_page=1"))
+            .facets().get("category");
+        assertThat(category).containsKey("affiliate").containsKey("custom");
+        assertThat(category.get("affiliate")).isEqualTo(0);
+        assertThat(category).doesNotContainKey(":affiliate");
+    }
+
+    @Test
+    void repeatedScalarKeyKeepsLastValue() {
+        assertThat(ids("q[name_cont]=a&q[name_cont]=widgets", "per_page=200"))
+            .containsExactlyInAnyOrder(idOf("acme_widgets"));
+    }
+
+    @Test
+    void excessiveParamDepthThrows() {
+        StringBuilder tooDeep = new StringBuilder("q[a]");
+        for (int index = 0; index < 32; index++) {
+            tooDeep.append("[b]");
+        }
+        assertThatThrownBy(() -> queryService.list(alice, Account.class, query(tooDeep + "=1")))
+            .isInstanceOf(InvalidSearchQueryException.class);
+        assertThat(queryService.list(alice, Account.class,
+            query("q[g][0][name_cont]=acme", "per_page=200")).totalCount()).isEqualTo(2);
+    }
+
+    @Test
+    void opportunityNumericQueryOverflowFallsBackToNameMatch() {
+        ListResult<Opportunity> result = queryService.list(alice, Opportunity.class,
+            query("query=9999999999999999999999999"));
+        assertThat(result.items()).isEmpty();
+        assertThat(result.totalCount()).isZero();
     }
 
     @Test

@@ -11,6 +11,16 @@ namespace :ffcrm do
 
       output = Rails.root.join(ENV.fetch("OUTPUT", "spring/src/test/resources/search/accounts_search_matrix.json"))
 
+      corpus_tables = %w[users accounts contacts tags taggings account_contacts]
+      non_empty = corpus_tables.select do |table|
+        ActiveRecord::Base.connection.select_value(
+          "SELECT COUNT(*) FROM #{ActiveRecord::Base.connection.quote_table_name(table)}"
+        ).to_i.positive?
+      end
+      unless non_empty.empty?
+        abort "ffcrm:migration:search_matrix requires empty corpus tables; found rows in: #{non_empty.join(", ")}"
+      end
+
       result = nil
       ActiveRecord::Base.transaction(requires_new: true) do
         include Warden::Test::Helpers

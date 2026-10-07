@@ -37,6 +37,10 @@ public record ListQuery(
         for (Map.Entry<String, List<String>> entry : params.entrySet()) {
             String key = entry.getKey();
             List<String> segments = bracketSegments(key);
+            if (segments != null && segments.size() > 32) {
+                throw new InvalidSearchQueryException(
+                    "Parameter depth exceeds limit.", List.of(key));
+            }
             if (segments == null) {
                 continue;
             }
@@ -87,14 +91,14 @@ public record ListQuery(
         }
         String head = segments.getFirst();
         if (segments.size() == 1) {
-            putValue(tree, head, values);
+            putValue(tree, head, values, false);
             return;
         }
         if (head.isEmpty()) {
             return;
         }
         if ("".equals(segments.get(1))) {
-            putValue(tree, head, values);
+            putValue(tree, head, values, true);
             return;
         }
         Object child = tree.get(head);
@@ -105,20 +109,25 @@ public record ListQuery(
         insert((Map<String, Object>) child, segments.subList(1, segments.size()), values);
     }
 
-    @SuppressWarnings("unchecked")
-    private static void putValue(Map<String, Object> tree, String key, List<String> values) {
+    private static void putValue(Map<String, Object> tree, String key, List<String> values, boolean listKey) {
         Object existing = tree.get(key);
         if (existing instanceof List) {
-            ((List<Object>) existing).addAll(values);
-        } else if (existing != null) {
-            List<Object> merged = new ArrayList<>();
-            merged.add(existing);
-            merged.addAll(values);
-            tree.put(key, merged);
-        } else if (values.size() > 1) {
-            tree.put(key, new ArrayList<>(values));
-        } else {
-            tree.put(key, values.isEmpty() ? "" : values.get(0));
+            @SuppressWarnings("unchecked")
+            List<Object> list = (List<Object>) existing;
+            list.addAll(values);
+            return;
         }
+        if (listKey) {
+            // q[x][] accumulates into a list, even across separate parameters.
+            List<Object> list = new ArrayList<>();
+            if (existing != null) {
+                list.add(existing);
+            }
+            list.addAll(values);
+            tree.put(key, list);
+            return;
+        }
+        // Rack semantics: a repeated non-[] key keeps the last value.
+        tree.put(key, values.isEmpty() ? "" : values.get(values.size() - 1));
     }
 }

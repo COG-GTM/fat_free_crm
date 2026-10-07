@@ -75,7 +75,10 @@ public final class SortWhitelist {
             String qualified = parts[0];
             int dot = qualified.indexOf('.');
             String attribute = dot >= 0 ? qualified.substring(dot + 1) : qualified;
-            return byKey.get(attribute);
+            SortKey match = byKey.get(attribute);
+            return match != null && match.descending() == parts[1].equalsIgnoreCase("desc")
+                ? match
+                : null;
         }
         return null;
     }

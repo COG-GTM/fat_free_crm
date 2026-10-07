@@ -55,6 +55,11 @@ class RubyScalarsTest {
         assertThat(RubyScalars.toInstant("2025-01-02")).isEqualTo(Instant.parse("2025-01-02T12:00:00Z"));
         assertThat(RubyScalars.toInstant("2025-01-02T03:04:05")).isEqualTo(Instant.parse("2025-01-02T03:04:05Z"));
         assertThat(RubyScalars.toInstant("2025-01-02 03:04:05")).isEqualTo(Instant.parse("2025-01-02T03:04:05Z"));
+        assertThat(RubyScalars.toInstant("2024-01-01T10:00Z")).isEqualTo(Instant.parse("2024-01-01T10:00:00Z"));
+        assertThat(RubyScalars.toInstant("2024-01-01 10:00")).isEqualTo(Instant.parse("2024-01-01T10:00:00Z"));
+        assertThat(RubyScalars.toInstant("2024-01-01T10:00+02:00")).isEqualTo(Instant.parse("2024-01-01T08:00:00Z"));
+        assertThat(RubyScalars.toInstant("2025-01-02T03:04:05.123"))
+            .isEqualTo(Instant.parse("2025-01-02T03:04:05.123Z"));
         assertThat(RubyScalars.toInstant("yesterday")).isNull();
     }
 }

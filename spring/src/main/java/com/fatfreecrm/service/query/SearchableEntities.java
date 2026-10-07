@@ -222,7 +222,9 @@ public class SearchableEntities {
             .map(Setting::getValue)
             .map(value -> {
                 try {
-                    List<String> categories = RailsYaml.readStringList(value);
+                    List<String> categories = RailsYaml.readStringList(value).stream()
+                        .map(category -> category.startsWith(":") ? category.substring(1) : category)
+                        .toList();
                     return categories.isEmpty() ? DEFAULT_ACCOUNT_CATEGORIES : categories;
                 } catch (IllegalArgumentException exception) {
                     return DEFAULT_ACCOUNT_CATEGORIES;
@@ -292,7 +294,11 @@ public class SearchableEntities {
         if (query.matches("\\d+")) {
             Expression<String> upper = cb.upper(root.get("name"));
             Predicate nameMatch = cb.like(upper, "%" + query.toUpperCase(java.util.Locale.ROOT) + "%");
-            return cb.or(nameMatch, cb.equal(root.get("id"), Long.valueOf(query)));
+            try {
+                return cb.or(nameMatch, cb.equal(root.get("id"), Long.valueOf(query)));
+            } catch (NumberFormatException overflow) {
+                return nameMatch;
+            }
         }
         return likeEscaped(root, cb, "name", query);
     }
