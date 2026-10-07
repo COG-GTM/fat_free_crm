@@ -11,7 +11,12 @@ The default database command creates or reuses a PostgreSQL 16 container named
 
 ```sh
 PG_IMAGE=mirror.gcr.io/library/postgres:16 spring/scripts/contract-db.sh
+CONTRACT_FIXTURES_RESET=1 spring/scripts/contract-db.sh
 ```
+
+The script reuses the container; after the first fixture load, the database is populated and the
+guard refuses to overwrite it. Use the reset command only when a deliberate wipe and reload is
+intended.
 
 The script prints the connection exports. Export those values in the shell where Spring will run,
 then start Rails and Spring in separate terminals:

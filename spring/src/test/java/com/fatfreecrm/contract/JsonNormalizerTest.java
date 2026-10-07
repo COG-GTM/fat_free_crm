@@ -51,6 +51,60 @@ class JsonNormalizerTest {
     }
 
     @Test
+    void duplicateKeysKeepInputOrderWhenIgnoredFieldsDiffer() throws Exception {
+        JsonNode options = JSON.readTree("""
+            {
+              "unorderedArrays":[{"pointer":"/items","key":"/id"}],
+              "ignore":["/items/*/ignored"]
+            }
+            """);
+        CaseResult result = compare(
+            JSON.readTree("""
+                {"items":[
+                  {"id":1,"ignored":"a","value":"one"},
+                  {"id":1,"ignored":"z","value":"two"}
+                ]}
+                """),
+            JSON.readTree("""
+                {"items":[
+                  {"id":1,"ignored":"z","value":"one"},
+                  {"id":1,"ignored":"a","value":"two"}
+                ]}
+                """),
+            options
+        );
+        assertEquals(CaseResult.Outcome.CLEAN, result.outcome());
+        assertTrue(result.differences().isEmpty());
+    }
+
+    @Test
+    void ignoreRulesSuppressMissingKeyDiagnosticsAtIgnoredAncestors() throws Exception {
+        JsonNode railsJson = JSON.readTree("""
+            {"items":[{"name":"x"}]}
+            """);
+        JsonNode springJson = JSON.readTree("""
+            {"items":[{"name":"x"}]}
+            """);
+        JsonNode ignoredOptions = JSON.readTree("""
+            {
+              "unorderedArrays":[{"pointer":"/items","key":"/id"}],
+              "ignore":["/items"]
+            }
+            """);
+        CaseResult ignored = compare(railsJson, springJson, ignoredOptions);
+        assertEquals(CaseResult.Outcome.CLEAN, ignored.outcome());
+        assertTrue(ignored.differences().isEmpty());
+
+        JsonNode visibleOptions = JSON.readTree("""
+            {"unorderedArrays":[{"pointer":"/items","key":"/id"}]}
+            """);
+        CaseResult visible = compare(railsJson, springJson, visibleOptions);
+        assertEquals(CaseResult.Outcome.DIFF, visible.outcome());
+        assertEquals(2, visible.differences().stream()
+            .filter(difference -> difference.kind() == Difference.Kind.MISSING_KEY).count());
+    }
+
+    @Test
     void sortsKeylessItemsLastAndReportsMissingKeysForBothSides() throws Exception {
         JsonNode options = JSON.readTree("""
             {"unorderedArrays":[{"pointer":"/items","key":"/id"}]}

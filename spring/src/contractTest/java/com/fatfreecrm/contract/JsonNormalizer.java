@@ -146,9 +146,8 @@ public final class JsonNormalizer {
             values.sort(Comparator.comparingInt((JsonNode value) -> get(value, selectedKey) == null ? 1 : 0)
                 .thenComparing(value -> {
                     JsonNode key = get(value, selectedKey);
-                    return key == null ? "" : canonical(key);
-                })
-                .thenComparing(JsonNormalizer::canonical));
+                    return key == null ? canonical(value) : canonical(key);
+                }));
         }
         array.removeAll();
         values.forEach(array::add);

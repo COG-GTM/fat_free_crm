@@ -145,6 +145,23 @@ class ContractDifferTest {
     }
 
     @Test
+    void errorBodyAllowsRailsPlainTextNotFoundAgainstSpringProblemJson() throws Exception {
+        Allowlist allowlist = new Allowlist(List.of(
+            entry("error-body-problem-json", "errorBody", "**", JSON.createObjectNode())
+        ));
+        CaseResult result = diff(response(404, "text/plain", "Not found"),
+            response(404, "application/problem+json", """
+                {"title":"Not Found","status":404}
+                """), allowlist, JSON.createObjectNode(), "/accounts/404");
+
+        assertEquals(CaseResult.Outcome.CLEAN, result.outcome());
+        assertEquals(0, result.differences().stream().filter(difference -> !difference.allowed()).count());
+        assertTrue(result.differences().stream()
+            .flatMap(difference -> difference.allowedBy().stream())
+            .anyMatch("error-body-problem-json"::equals));
+    }
+
+    @Test
     void matchesCaseAndPathGlobsAndTracksStaleEntries() throws Exception {
         Allowlist allowlist = new Allowlist(List.of(
             entry("narrow", "pointer", "/accounts/*", JSON.readTree("""
