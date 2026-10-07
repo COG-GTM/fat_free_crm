@@ -117,7 +117,7 @@ class CustomField < Field
   # Returns options for ActiveRecord operations
   #------------------------------------------------------------------------------
   def column_options
-    Field.field_types[as][:column_options] || {}
+    (Field.field_types[as][:column_options] || {}).symbolize_keys
   end
 
   # Create a new column to hold the custom field data
