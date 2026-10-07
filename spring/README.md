@@ -290,3 +290,46 @@ reading account 102 is then a 403, which the `authz-denied-401-vs-403` entry all
 
 The `authz-matrix` job in `spring-api.yml` regenerates both matrices on a PostgreSQL service,
 fails if the committed files drift, and runs `spec/lib/tasks/authz_matrix_spec.rb`.
+
+## List queries (AB-269)
+
+`CrmQueryService.list(AuthenticatedUser, Class<T>, ListQuery)` is the only list path. It composes
+`accessPolicy.accessibleBy(user, type)` — the `CrmAccessPolicy` from AB-268 — with the parsed search
+specification (`accessibleBy(...).and(searchSpec)`). `CrmAccessPolicy.supports(Class)` must cover the
+listed type (Account, Contact, Lead, Opportunity, Campaign are registered; Task/User lists are AB-270's);
+unsupported types propagate the policy's `IllegalArgumentException`.
+
+Parameters mirror Rails `EntitiesController#get_list_of_records`: `page` (Ruby `to_i`; `<1` -> 404
+problem+json, beyond-last -> empty page), `per_page` (Ruby `to_i` clamped to 1..200, default 20 or the
+record's `preferredPerPage`), `query` (text + `#tag` syntax per `parse_query_and_tags`), `sort_by`
+(Spring-only replacement for the Rails session sort preference, additive) and `q[...]` Ransack trees
+(predicates `eq not_eq cont not_cont i_cont start not_start end not_end matches does_not_match lt lteq
+gt gteq in not_in null not_null present blank true false`, `_any`/`_all` compounds, `_or_`/`_and_`
+attribute splits, `m`/`g`/`c`/`s` combinator form). `ListQuery.withPreferences(perPage, sortBy)` exists
+for AB-270's preference handling; preferences are not part of the OpenAPI contract.
+
+The response envelope is `ListResult` (`{items, page, perPage, totalCount, totalPages, facets}`), which
+intentionally differs from Rails' bare JSON array — the AB-266 contract-diff harness must unwrap `items`
+to compare row lists. The pending cases in
+`spring/src/contractTest/resources/contract/cases/ab-269-accounts-search.yml` pin this down and flip to
+`enforced` once AB-270 settles the unwrap.
+
+Unknown attributes/predicates are dropped like Rails (`ignore_unknown_conditions`); set
+`ffcrm.search.ignore-unknown-conditions=false` to get a 400 with an `invalidParameters` problem property
+instead. Structurally malformed `q` trees always 400.
+
+Intentional deviations: no Chronic natural-language dates (ISO only; ISO dates become noon UTC, matching
+Rails' cast); association traversal stops at the CRM whitelists — Task/Address/Email/Comment/Tag columns
+are searchable but expose no further hops (Rails could reach `users` through `comments`, a security
+deviation); association sorts inside `q[s]` are ignored as Rails ignores invalid sorts; `id ASC` is
+appended as a deterministic tiebreaker; the session category filter and preference reads are AB-270.
+
+`DynamicAttributePredicates` is an extension point for non-static attributes (Rails custom fields,
+`cf_*`): the Ransack parser consults registered beans — in order — for root-level attributes after the
+static-column and association-traversal lookups, passing the predicate suffix string and the stripped
+raw values. AB-271 implements it; this branch ships no bean.
+
+The Rails parity matrix `rake ffcrm:migration:search_matrix
+OUTPUT=spring/src/test/resources/search/accounts_search_matrix.json` (PostgreSQL only, seeds a fixed
+corpus in a rolled-back transaction, runs every case through `AccountsController#index`) feeds
+`RailsSearchParityTest`, which replays the same corpus and cases against `/api/v1/accounts`.

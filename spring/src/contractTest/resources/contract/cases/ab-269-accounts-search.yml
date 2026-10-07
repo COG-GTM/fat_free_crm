@@ -1,0 +1,56 @@
+- id: accounts-index-search-text-alice
+  ticket: AB-270
+  status: pending
+  method: GET
+  path: /accounts
+  params: {query: acme}
+  auth: alice
+  description: AB-269 text search (name_or_email_cont) through CrmQueryService; Spring wraps rows in the list envelope, so flip once AB-270 settles the envelope unwrap.
+- id: accounts-index-search-tag-alice
+  ticket: AB-270
+  status: pending
+  method: GET
+  path: /accounts
+  params: {query: "#vip"}
+  auth: alice
+  description: AB-269 #tag search (acts-as-taggable-on tagged_with on tags context).
+- id: accounts-index-ransack-cont-alice
+  ticket: AB-270
+  status: pending
+  method: GET
+  path: /accounts
+  params: {"q[name_cont]": a, "q[s]": name asc}
+  auth: alice
+  description: AB-269 Ransack predicate plus q[s] sort.
+- id: accounts-index-ransack-association-alice
+  ticket: AB-270
+  status: pending
+  method: GET
+  path: /accounts
+  params: {"q[contacts_first_name_cont]": a, "q[s]": name asc}
+  auth: alice
+  description: AB-269 association traversal without fan-out (DISTINCT in Rails, IN-subquery in Spring).
+- id: accounts-index-paging-alice
+  ticket: AB-270
+  status: pending
+  method: GET
+  path: /accounts
+  params: {page: 2, per_page: 1}
+  auth: alice
+  description: AB-269 page/per_page with Rails default sort (created_at DESC).
+- id: accounts-index-per-page-clamp-alice
+  ticket: AB-270
+  status: pending
+  method: GET
+  path: /accounts
+  params: {per_page: 0}
+  auth: alice
+  description: AB-269 per_page clamp to 1..200 (0 becomes 1).
+- id: accounts-index-page-zero-alice
+  ticket: AB-270
+  status: pending
+  method: GET
+  path: /accounts
+  params: {page: 0}
+  auth: alice
+  description: AB-269 invalid page returns 404 on both sides (Rails WillPaginate::InvalidPage; Spring problem+json).

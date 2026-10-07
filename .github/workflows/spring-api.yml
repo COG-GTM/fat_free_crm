@@ -15,6 +15,8 @@ on:
       - "lib/tasks/ffcrm/entity_fixture.rake"
       - "spec/lib/tasks/legacy_auth_fixture_spec.rb"
       - "spec/lib/tasks/entity_fixture_spec.rb"
+      - "lib/tasks/ffcrm/search_matrix.rake"
+      - "spec/lib/tasks/search_matrix_spec.rb"
       - "app/models/users/ability.rb"
       - "lib/fat_free_crm/permissions.rb"
       - "lib/fat_free_crm/migration/authz_matrix.rb"
@@ -34,6 +36,8 @@ on:
       - "lib/tasks/ffcrm/entity_fixture.rake"
       - "spec/lib/tasks/legacy_auth_fixture_spec.rb"
       - "spec/lib/tasks/entity_fixture_spec.rb"
+      - "lib/tasks/ffcrm/search_matrix.rake"
+      - "spec/lib/tasks/search_matrix_spec.rb"
       - "app/models/users/ability.rb"
       - "lib/fat_free_crm/permissions.rb"
       - "lib/fat_free_crm/migration/authz_matrix.rb"
@@ -216,3 +220,47 @@ jobs:
           PGPASSWORD=postgres createdb -h localhost -U postgres ffcrm_authz_test
           bundle exec rails db:schema:load
           bundle exec rspec spec/lib/tasks/authz_matrix_spec.rb
+
+  search-matrix:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      FFCRM_ENTITY_FIXTURE: "1"
+      SECRET_KEY_BASE: entity-fixture-only-secret-key-base-0123456789abcdef
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ruby/setup-ruby@v1
+        env:
+          BUNDLE_FROZEN: "false"
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - name: Use PostgreSQL database.yml
+        run: cp config/database.postgres.yml config/database.yml
+      - name: Verify committed Rails search matrix
+        env:
+          RAILS_ENV: development
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ffcrm_search
+        # Rails initializers query the database during boot, so db:create cannot create it.
+        run: |
+          PGPASSWORD=postgres createdb -h localhost -U postgres ffcrm_search
+          bundle exec rails db:schema:load
+          bundle exec rake ffcrm:migration:search_matrix
+          git diff --exit-code -- spring/src/test/resources/search
+      - name: Rails search matrix spec
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ffcrm_search_test
+        # Rails initializers query the database during boot, so db:create cannot create it.
+        run: |
+          PGPASSWORD=postgres createdb -h localhost -U postgres ffcrm_search_test
+          bundle exec rails db:schema:load
+          bundle exec rspec spec/lib/tasks/search_matrix_spec.rb

@@ -1,5 +1,7 @@
 package com.fatfreecrm.api;
 
+import com.fatfreecrm.service.query.InvalidPageException;
+import com.fatfreecrm.service.query.InvalidSearchQueryException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -39,6 +41,23 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Object> handleAccessDenied(AccessDeniedException exception, HttpServletRequest request) {
         return problemResponse(HttpStatus.FORBIDDEN, "You are not allowed to access this resource.", request);
+    }
+
+    @ExceptionHandler(InvalidPageException.class)
+    public ResponseEntity<Object> handleInvalidPage(InvalidPageException exception, HttpServletRequest request) {
+        return problemResponse(HttpStatus.NOT_FOUND, "The requested page is invalid.", request);
+    }
+
+    @ExceptionHandler(InvalidSearchQueryException.class)
+    public ResponseEntity<Object> handleInvalidSearchQuery(
+        InvalidSearchQueryException exception,
+        HttpServletRequest request
+    ) {
+        ProblemDetail problem = createProblemDetail(HttpStatus.BAD_REQUEST, exception.getMessage(), request);
+        problem.setProperty("invalidParameters", exception.invalidParameters());
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PROBLEM_JSON);
+        return new ResponseEntity<>(problem, headers, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
