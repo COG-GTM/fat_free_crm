@@ -11,6 +11,7 @@ how it can be revisited.
 | [0003](0003-custom-field-storage.md) | `cf_*` dynamic columns → one `custom_fields jsonb NOT NULL DEFAULT '{}'` column per `has_fields` table | Accepted target; go/no-go deferred to AB-267 benchmark | 2 (AB-267), 4 (G4), 7 |
 | [0004](0004-build-toolchain-and-platform-baselines.md) | Gradle Kotlin DSL, Java 21, Spring Boot 3.x, PostgreSQL 14 floor | Accepted | 1 (A1), all |
 | [0005](0005-openapi-compatibility-baseline.md) | Freeze `openapi.yaml` at `openapi-baseline-v1` | Accepted | 2 (AB-267), 4, 5 |
+| [0006](0006-arb-spring-boot-strangler-service.md) | ARB submission for the strangler Spring Boot service (rolls up 0001–0005) | Proposed | all |
 
 **Status legend:** Accepted decisions are implementation inputs. Any pending confirmation or
 sub-decision is explicitly called out above and in its ADR; it is not silently assumed.
