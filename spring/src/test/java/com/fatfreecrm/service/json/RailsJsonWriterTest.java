@@ -21,8 +21,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
+@TestPropertySource(properties = "spring.datasource.hikari.data-source-properties.prepareThreshold=0")
 @Transactional
 class RailsJsonWriterTest extends AbstractPostgresIntegrationTest {
 
@@ -101,6 +103,7 @@ class RailsJsonWriterTest extends AbstractPostgresIntegrationTest {
             String.class
         );
         List<String> expected = new ArrayList<>(columns);
+        expected.removeAll(railsResources.account.excludedColumns());
         expected.add("tag_list");
 
         assertThat(fieldNames(json)).containsExactlyElementsOf(expected);
@@ -156,24 +159,43 @@ class RailsJsonWriterTest extends AbstractPostgresIntegrationTest {
 
     @Test
     void omitsRailsIgnoredCustomFieldsFromListAndShow() {
+        boolean preexisting = customFieldsColumnExists();
+        assertCustomFieldsOmittedFromWriters(preexisting);
+        assertThat(customFieldsColumnExists()).isEqualTo(preexisting);
+    }
+
+    @Test
+    void preservesPreexistingCustomFieldsColumnAndValue() {
+        boolean preexisting = customFieldsColumnExists();
+        String preexistingValue = preexisting ? customFieldsValue() : null;
+        if (!preexisting) {
+            jdbcTemplate.execute("ALTER TABLE accounts ADD COLUMN custom_fields jsonb");
+        }
         try {
-            jdbcTemplate.execute("ALTER TABLE accounts ADD COLUMN IF NOT EXISTS custom_fields jsonb");
             jdbcTemplate.update(
-                "UPDATE accounts SET custom_fields = ?::jsonb WHERE id = ?",
-                "{\"x\":1}",
+                "UPDATE accounts SET custom_fields = CAST(? AS jsonb) WHERE id = ?",
+                "{\"original\":true}",
                 account.getId()
             );
+            String originalValue = customFieldsValue();
 
-            List<ObjectNode> items = jsonWriter.write(railsResources.account, List.of(account.getId()));
-            ObjectNode show = jsonWriter.writeOne(railsResources.account, account.getId());
-
-            assertThat(items).hasSize(1);
-            assertThat(items.getFirst().has("custom_fields")).isFalse();
-            assertThat(items.getFirst().path("name").asText()).isEqualTo("Serializer Corp");
-            assertThat(show.has("custom_fields")).isFalse();
-            assertThat(show.path("name").asText()).isEqualTo("Serializer Corp");
+            assertCustomFieldsOmittedFromWriters(true);
+            assertThat(customFieldsColumnExists()).isTrue();
+            assertThat(customFieldsValue()).isEqualTo(originalValue);
         } finally {
-            jdbcTemplate.execute("ALTER TABLE accounts DROP COLUMN IF EXISTS custom_fields");
+            if (!preexisting) {
+                jdbcTemplate.execute("ALTER TABLE accounts DROP COLUMN IF EXISTS custom_fields");
+            } else {
+                jdbcTemplate.update(
+                    "UPDATE accounts SET custom_fields = CAST(? AS jsonb) WHERE id = ?",
+                    preexistingValue,
+                    account.getId()
+                );
+            }
+        }
+        assertThat(customFieldsColumnExists()).isEqualTo(preexisting);
+        if (preexisting) {
+            assertThat(customFieldsValue()).isEqualTo(preexistingValue);
         }
     }
 
@@ -196,6 +218,56 @@ class RailsJsonWriterTest extends AbstractPostgresIntegrationTest {
         assertThat(RailsJsonWriter.shouldSerializeColumn(resource, "password_salt")).isFalse();
         assertThat(RailsJsonWriter.shouldSerializeColumn(resource, "internal_value")).isFalse();
         assertThat(RailsJsonWriter.shouldSerializeColumn(resource, "name")).isTrue();
+    }
+
+    private void assertCustomFieldsOmittedFromWriters(boolean preexisting) {
+        String originalValue = preexisting ? customFieldsValue() : null;
+        if (!preexisting) {
+            jdbcTemplate.execute("ALTER TABLE accounts ADD COLUMN custom_fields jsonb");
+        }
+        try {
+            jdbcTemplate.update(
+                "UPDATE accounts SET custom_fields = CAST(? AS jsonb) WHERE id = ?",
+                "{\"x\":1}",
+                account.getId()
+            );
+
+            List<ObjectNode> items = jsonWriter.write(railsResources.account, List.of(account.getId()));
+            ObjectNode show = jsonWriter.writeOne(railsResources.account, account.getId());
+
+            assertThat(items).hasSize(1);
+            assertThat(items.getFirst().has("custom_fields")).isFalse();
+            assertThat(items.getFirst().path("name").asText()).isEqualTo("Serializer Corp");
+            assertThat(show.has("custom_fields")).isFalse();
+            assertThat(show.path("name").asText()).isEqualTo("Serializer Corp");
+        } finally {
+            if (!preexisting) {
+                jdbcTemplate.execute("ALTER TABLE accounts DROP COLUMN IF EXISTS custom_fields");
+            } else {
+                jdbcTemplate.update(
+                    "UPDATE accounts SET custom_fields = CAST(? AS jsonb) WHERE id = ?",
+                    originalValue,
+                    account.getId()
+                );
+            }
+        }
+    }
+
+    private boolean customFieldsColumnExists() {
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
+            "SELECT EXISTS (SELECT 1 FROM information_schema.columns "
+                + "WHERE table_schema = current_schema() AND table_name = 'accounts' "
+                + "AND column_name = 'custom_fields')",
+            Boolean.class
+        ));
+    }
+
+    private String customFieldsValue() {
+        return jdbcTemplate.queryForObject(
+            "SELECT custom_fields::text FROM accounts WHERE id = ?",
+            String.class,
+            account.getId()
+        );
     }
 
     private void saveTagging(Tag tag) {
