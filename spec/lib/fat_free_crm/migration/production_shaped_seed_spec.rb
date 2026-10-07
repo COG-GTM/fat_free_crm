@@ -103,9 +103,9 @@ describe FatFreeCRM::Migration::ProductionShapedManifest do
       expect(contacts[:columns].find { |column| column[:name] == 'cf_interests' })
         .to include(status: 'mapped', yaml_serialized: true, populated_rows: 3)
 
-      expect(Contact.where.not(cf_interests: nil).pluck(:cf_interests)).to all(eq(%w[Email Events]))
+      expect(Contact.where.not(cf_interests: nil).pluck(:cf_interests)).to eq([%w[Email Events]] * 3)
       expect(Account.columns_hash.fetch('cf_annual_value')).to have_attributes(type: :decimal, precision: 15, scale: 2)
-      expect(Account.where.not(cf_annual_value: nil).pluck(:cf_annual_value)).to all(eq(BigDecimal('12345.67')))
+      expect(Account.where.not(cf_annual_value: nil).pluck(:cf_annual_value)).to eq([BigDecimal('12345.67')] * 3)
       expect(Lead.column_names).not_to include('cf_partner_code')
       expect(Field.find_by(name: 'cf_legacy_region')).to be_nil
       expect(Field.find_by(name: 'cf_detached_context').field_group).to be_nil
