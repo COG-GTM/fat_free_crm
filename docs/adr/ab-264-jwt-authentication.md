@@ -23,8 +23,10 @@ Rails facts that constrain the design (verified from `app/models/users/user.rb`,
   and is then hashed 20 times, each round being the lowercase-hex SHA-512 of the previous string
   (`config.stretches = 20` outside the test environment). There is no pepper. The salt is a separate
   column (`users.password_salt`).
-- Login lookup: the login is stripped and downcased, then matched with
-  `lower(username) = ? OR lower(email) = ?`, and the first row by id wins.
+- Login lookup: the sign-in form submits the login (username or email) as the `email` param, the
+  Devise authentication key, so `strip_whitespace_keys`/`case_insensitive_keys = [:email]` strip and
+  downcase the whole login. It is then matched with `lower(username) = ? OR lower(email) = ?`, and the
+  first row by id wins.
 - `active_for_authentication?` requires `confirmed_at` to be set and `suspended_at` to be null. It is
   checked on every request, not only at sign-in.
 - Devise Trackable updates `sign_in_count`, `current/last_sign_in_at` and `current/last_sign_in_ip` (and
@@ -152,7 +154,10 @@ C4Container
   - Gateway should overwrite `X-Forwarded-For`, or the trusted-proxy handling should be aligned with Rails `remote_ip`.
   - PaperTrail `versions` row on sign-in, or an allow-listed delta.
   - Login timing equalisation.
-  - Token revocation and upgrade-on-login at AB-274.
+  - Login request limits: username is capped at 255 characters, password at 1024 and refresh token at 4096; longer values return 400.
+  - Token revocation and upgrade-on-login at AB-274. This includes invalidating outstanding refresh
+    tokens after a password change, for example a credential-fingerprint claim checked on refresh, or
+    a revocation store. Today a refresh token stays usable after a password reset until it expires.
   - Add the auth endpoints to the OpenAPI contract when the frozen baseline is next revised; the controllers are `@Hidden` until then.
 
 ## Open questions
@@ -160,4 +165,5 @@ C4Container
 - Owning team and on-call rotation.
 - NFR targets (availability, latency, peak load).
 - Is a server-side revocation list required before any production client uses `/api/v1`?
+- Must a password change or reset invalidate outstanding refresh tokens before `/api/v1` goes live?
 - Should Spring write the PaperTrail `versions` row on sign-in to keep Rails audit parity, or should this be an allow-listed delta?
