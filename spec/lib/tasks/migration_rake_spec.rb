@@ -105,6 +105,48 @@ describe "ffcrm:migration rake tasks" do # rubocop:disable RSpec/DescribeClass
                                          'PG_DUMP' => 'pg_dump', 'PG_DUMP_HOST' => '127.0.0.1')
   end
 
+  it "prefers PG_DUMP_HOST over the configured connection host" do
+    config = instance_double(
+      ActiveRecord::DatabaseConfigurations::HashConfig,
+      adapter: 'postgresql',
+      configuration_hash: { host: 'db.internal', port: 5432, username: 'crm', password: 'secret' },
+      database: 'ffcrm_test'
+    )
+    allow(ActiveRecord::Base).to receive(:connection_db_config).and_return(config)
+    status = instance_double(Process::Status, success?: true, exitstatus: 0)
+    arguments = [
+      'pg_dump', '--schema-only', '--no-owner', '--no-privileges',
+      '--host', 'host.docker.internal', '--port', '5432', '--username', 'crm', 'ffcrm_test'
+    ]
+    expect(Open3).to receive(:capture2)
+      .with({ 'PGPASSWORD' => 'secret' }, *arguments)
+      .and_return(["CREATE TABLE contacts;\n", status])
+
+    run('ffcrm:migration:baseline_dump', 'OUTPUT' => output_path.to_s,
+                                         'PG_DUMP' => 'pg_dump', 'PG_DUMP_HOST' => 'host.docker.internal')
+  end
+
+  it "ignores a blank PG_DUMP_HOST and keeps the configured connection host" do
+    config = instance_double(
+      ActiveRecord::DatabaseConfigurations::HashConfig,
+      adapter: 'postgresql',
+      configuration_hash: { host: 'db.internal', port: 5432, username: 'crm', password: 'secret' },
+      database: 'ffcrm_test'
+    )
+    allow(ActiveRecord::Base).to receive(:connection_db_config).and_return(config)
+    status = instance_double(Process::Status, success?: true, exitstatus: 0)
+    arguments = [
+      'pg_dump', '--schema-only', '--no-owner', '--no-privileges',
+      '--host', 'db.internal', '--port', '5432', '--username', 'crm', 'ffcrm_test'
+    ]
+    expect(Open3).to receive(:capture2)
+      .with({ 'PGPASSWORD' => 'secret' }, *arguments)
+      .and_return(["CREATE TABLE contacts;\n", status])
+
+    run('ffcrm:migration:baseline_dump', 'OUTPUT' => output_path.to_s,
+                                         'PG_DUMP' => 'pg_dump', 'PG_DUMP_HOST' => '')
+  end
+
   it "removes PostgreSQL restrict meta-commands from the captured dump" do
     config = instance_double(
       ActiveRecord::DatabaseConfigurations::HashConfig,

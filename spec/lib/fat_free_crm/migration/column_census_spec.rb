@@ -281,7 +281,8 @@ describe FatFreeCRM::Migration::ColumnCensus do
 
     it "records a nil schema version when schema_migrations cannot be queried" do
       connection = bare_connection
-      allow(connection).to receive_messages(table_exists?: true, columns: [])
+      allow(connection).to receive(:table_exists?) { |table| table.to_s != Field.table_name }
+      allow(connection).to receive(:columns).and_return([])
       allow(connection).to receive(:select_value).and_raise(ActiveRecord::StatementInvalid, 'no such table')
       census = described_class.new(klass_names: %w[Contact], count_rows: false, connection: connection)
 
