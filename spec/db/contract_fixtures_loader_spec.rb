@@ -69,6 +69,18 @@ RSpec.describe ContractFixtures, ".load!", :truncate do
     expect(Permission.count).to eq(0)
   end
 
+  it "still wipes pre-existing data when a reset load fails, because reset_tables! runs before the transaction" do
+    create(:user, username: "pre-existing")
+    Tag.create!(name: "pre-existing-tag")
+    allow(ContractFixtures::FixtureSupport).to receive(:reset_sequences!).and_raise(RuntimeError, "sequence boom")
+
+    expect { seed_contract_fixtures }.to raise_error(RuntimeError, "sequence boom")
+
+    expect(User.count).to eq(0)
+    expect(Tag.count).to eq(0)
+    expect(Account.count).to eq(0)
+  end
+
   it "pins user, group and setting timestamps to deterministic offsets from BASE_TIME" do
     seed_contract_fixtures
     base = described_class::BASE_TIME
