@@ -81,35 +81,39 @@ class ContractAuthFailureAndReportTest {
             }
         })) {
             RailsSessionAuth auth = new RailsSessionAuth(server.url(), users());
+            HitCounter hits = new HitCounter(signInPageHits);
 
             page.set("<html><body>no token here</body></html>");
             AuthContext noToken = auth.authenticate("alice");
             assertUnavailable(noToken, "rails auth unavailable (CSRF token missing)");
+            hits.assertFreshRequest();
 
             page.set(SIGN_IN_PAGE);
             loginStatus.set(200);
             AuthContext rerendered = auth.authenticate("alice");
             assertUnavailable(rerendered, "rails auth unavailable (login returned 200)");
+            hits.assertFreshRequest();
 
             loginStatus.set(302);
             loginLocation.set("/users/sign_in");
             AuthContext bounced = auth.authenticate("alice");
             assertUnavailable(bounced, "rails auth unavailable (login returned 302)");
+            hits.assertFreshRequest();
 
             loginLocation.set("/");
             homePage.set("<html>signed in but no csrf meta</html>");
             AuthContext noPostLoginToken = auth.authenticate("alice");
             assertUnavailable(noPostLoginToken, "rails auth unavailable (post-login CSRF token missing)");
-
-            assertEquals(4, signInPageHits.get(), "unavailable results must not be cached");
+            hits.assertFreshRequest();
 
             homePage.set(SIGN_IN_PAGE);
             AuthContext success = auth.authenticate("alice");
             assertNull(success.note());
             assertEquals("token-123", success.csrfToken());
             assertNull(success.authorization());
+            hits.assertFreshRequest();
             assertEquals(success, auth.authenticate("alice"));
-            assertEquals(5, signInPageHits.get(), "successful sessions are cached per user");
+            hits.assertNoRequest();
         }
     }
 
@@ -131,31 +135,35 @@ class ContractAuthFailureAndReportTest {
             StubServer.respond(exchange, status.get(), "application/json", body.get());
         })) {
             SpringJwtAuth auth = new SpringJwtAuth(server.url() + "/", users());
+            HitCounter hits = new HitCounter(loginHits);
 
             assertUnavailable(auth.authenticate("alice"), "spring auth unavailable (login returned 500)");
             assertEquals(JSON.readTree("{\"username\":\"alice\",\"password\":\"contract-password\"}"),
                 JSON.readTree(requestBody.get()));
+            hits.assertFreshRequest();
 
             status.set(401);
             assertUnavailable(auth.authenticate("alice"), "spring auth unavailable (login returned 401)");
+            hits.assertFreshRequest();
 
             status.set(200);
             body.set("{\"tokenType\":\"Bearer\"}");
             assertUnavailable(auth.authenticate("alice"),
                 "spring auth unavailable (login response omitted accessToken)");
+            hits.assertFreshRequest();
 
             body.set("<html>not json</html>");
             assertThrows(IOException.class, () -> auth.authenticate("alice"));
-
-            assertEquals(4, loginHits.get(), "unavailable results must not be cached");
+            hits.assertFreshRequest();
 
             body.set("{\"accessToken\":\"abc.def\",\"tokenType\":\"JWT\"}");
             AuthContext custom = auth.authenticate("alice");
             assertEquals("JWT abc.def", custom.authorization());
             assertNull(custom.csrfToken());
             assertNull(custom.note());
+            hits.assertFreshRequest();
             assertEquals(custom, auth.authenticate("alice"));
-            assertEquals(5, loginHits.get(), "successful sessions are cached per user");
+            hits.assertNoRequest();
 
             body.set("{\"accessToken\":\"xyz\"}");
             AuthContext bob = auth.authenticate("bob");
@@ -266,6 +274,31 @@ class ContractAuthFailureAndReportTest {
         assertTrue(markdown.contains("- `intentional` (pointer): 1 hits — applied in pending-diff: Known drift"
             + " (AB-997)"), markdown);
         assertTrue(markdown.contains("- `never-used` (status): 0 hits — **stale**"), markdown);
+    }
+
+    /**
+     * Tracks server hits between adapter calls without depending on an exact request count:
+     * the JDK {@code HttpClient} may transparently re-send a request over a stale pooled
+     * connection, so only "at least one new request" and "no new request" are asserted.
+     */
+    private static final class HitCounter {
+        private final AtomicInteger hits;
+        private int seen;
+
+        HitCounter(AtomicInteger hits) {
+            this.hits = hits;
+            this.seen = hits.get();
+        }
+
+        void assertFreshRequest() {
+            int current = hits.get();
+            assertTrue(current > seen, "unavailable or failed results must not be cached");
+            seen = current;
+        }
+
+        void assertNoRequest() {
+            assertEquals(seen, hits.get(), "successful sessions are cached per user");
+        }
     }
 
     private static void assertUnavailable(AuthContext context, String note) {
