@@ -1,23 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <FindBugsFilter>
+    <!--
+        JPA entities are an object graph by design: association accessors necessarily hand out and accept
+        references to other managed entities.
+    -->
     <Match>
-        <Class name="com.fatfreecrm.domain.Permission"/>
-        <Method name="getUser"/>
-        <Bug pattern="EI_EXPOSE_REP"/>
-    </Match>
-    <Match>
-        <Class name="com.fatfreecrm.domain.Permission"/>
-        <Method name="setUser"/>
-        <Bug pattern="EI_EXPOSE_REP2"/>
-    </Match>
-    <Match>
-        <Class name="com.fatfreecrm.domain.Permission"/>
-        <Method name="getGroup"/>
-        <Bug pattern="EI_EXPOSE_REP"/>
-    </Match>
-    <Match>
-        <Class name="com.fatfreecrm.domain.Permission"/>
-        <Method name="setGroup"/>
-        <Bug pattern="EI_EXPOSE_REP2"/>
+        <Package name="com.fatfreecrm.domain"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
 </FindBugsFilter>

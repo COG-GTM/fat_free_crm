@@ -1,0 +1,11 @@
+package com.fatfreecrm.repository;
+
+import com.fatfreecrm.domain.SavedList;
+import com.fatfreecrm.domain.User;
+import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface SavedListRepository extends JpaRepository<SavedList, Long> {
+
+    List<SavedList> findByUserOrUserIsNullOrderByNameAsc(User user);
+}

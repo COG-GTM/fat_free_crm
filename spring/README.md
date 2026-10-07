@@ -40,6 +40,31 @@ been applied to any shared database, never regenerate V1; add an additive
 into a frozen V1 comparison and a current Rails fixture comparison is follow-up work
 once V1 ships.
 
+## Domain model
+
+`com.fatfreecrm.domain` maps every application table in `docs/migration/data-model.md`
+one-to-one, with no JPA inheritance: `CrmEntity` is a `@MappedSuperclass` for the five
+core entities (owner, assignee, `access`, `deleted_at`, `subscribed_users`), Rails
+polymorphic associations are `PolymorphicRef` embeddables over the existing
+`*_type`/`*_id` column pairs, and soft delete is `@SQLRestriction("deleted_at IS NULL")`
+on every table Rails soft-deletes. Repositories extend `SoftDeletableRepository`
+(`softDelete(id)` stamps `deleted_at` inside its own transaction and never issues a
+physical `DELETE`). Rails-serialised columns (`subscribed_users` YAML, `settings.value`,
+`preferences.value`, `fields.collection`/`settings`, PaperTrail `versions`) are stored
+byte-for-byte as Rails writes them; `versions` is read-only. Custom `cf_*` columns are
+out of scope here (see `docs/migration/custom-fields-migration.md`).
+
+### Data-fidelity fixture
+
+`spring/src/test/resources/db/rails/rails_seed_data.sql` is a `pg_dump` of a database
+seeded by Rails itself (`rake ffcrm:migration:seed_fixture`, one or more rows per table
+including soft-deleted rows). `RailsSeededDataFidelityTest` loads it on top of the Rails
+schema fixture and asserts that every table is mapped by exactly one entity, every column
+is mapped, every row reads back attribute-for-attribute, and re-inserting the entities
+through Hibernate reproduces the Rails rows byte-for-byte. Regenerate it with
+`spring/scripts/generate-seed-fixture.sh` whenever the seed task or the Rails schema
+changes.
+
 ## Gateway
 
 Start the Rails app and gateway with `docker compose -f spring/docker-compose.yml up`.
