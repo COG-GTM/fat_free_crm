@@ -20,9 +20,17 @@ describe "ffcrm:migration:authz_matrix rake task" do # rubocop:disable RSpec/Des
   let(:matrix_result) { { matrix: { "visible" => { "Account" => { "owner" => { "ids" => [1], "count" => 1 } } } }, sql: "INSERT INTO public.\"accounts\" (\"id\") VALUES ('1');\n" } }
   let(:corpus_result) { { matrix: { "source" => "db/contract_fixtures.rb" }, sql: "-- corpus\n" } }
 
-  before do
-    Rake::Task.clear
+  # Run against a private Rake application so the suite-wide one (loaded on demand by other task
+  # specs via Rails.application.load_tasks) is neither cleared nor replaced.
+  around do |example|
+    previous = Rake.application
     Rake.application = Rake::Application.new
+    example.run
+  ensure
+    Rake.application = previous
+  end
+
+  before do
     Rake::Task.define_task(:environment)
     load Rails.root.join('lib/tasks/ffcrm/authz_matrix.rake')
     allow(FatFreeCRM::Migration::AuthzMatrix).to receive(:new)
@@ -31,10 +39,7 @@ describe "ffcrm:migration:authz_matrix rake task" do # rubocop:disable RSpec/Des
       .and_return(instance_double(FatFreeCRM::Migration::AuthzContractCorpus, generate: corpus_result))
   end
 
-  after do
-    Rake.application = nil
-    FileUtils.rm_rf(dir)
-  end
+  after { FileUtils.rm_rf(dir) }
 
   def run(env)
     original_env = env_keys.index_with { |key| ENV.fetch(key, nil) }
