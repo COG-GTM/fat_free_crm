@@ -6,11 +6,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class ContractDifferTest {
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -76,6 +79,81 @@ class ContractDifferTest {
             response(200, "application/json", ""), new Allowlist(List.of()), JSON.createObjectNode(), "/accounts/1");
         assertEquals(Difference.Kind.INVALID_JSON, oneSidedJson.differences().getFirst().kind());
         assertEquals("", oneSidedJson.differences().getFirst().pointer());
+    }
+
+    @Test
+    void responseExpectationsCheckBothSidesAndCannotBeAllowListed() throws Exception {
+        Allowlist allowlist = new Allowlist(List.of(entry("ignore-root", "pointer", "**", JSON.readTree("""
+            {"pointer":"","rule":"ignore"}
+            """))));
+        ContractCase contractCase = contractCase("expect-status", "/users/me", "admin", JSON.readTree("""
+            {"status":200}
+            """));
+
+        CaseResult result = diff(contractCase, response(404, "text/plain", "not found"),
+            response(404, "text/plain", "not found"), allowlist, JSON.createObjectNode(), "/users/me",
+            List.of(), false);
+
+        List<Difference> expectations = result.differences().stream()
+            .filter(difference -> difference.kind() == Difference.Kind.EXPECTATION).toList();
+        assertEquals(CaseResult.Outcome.DIFF, result.outcome());
+        assertEquals(2, expectations.size());
+        assertEquals("rails-side", expectations.get(0).side());
+        assertEquals("spring-side", expectations.get(1).side());
+        assertEquals("", expectations.get(0).pointer());
+        assertEquals(404, expectations.get(0).railsValue().asInt());
+        assertEquals(200, expectations.get(0).springValue().asInt());
+        assertTrue(expectations.stream().noneMatch(Difference::allowed));
+        assertEquals(0, allowlist.hits("ignore-root"));
+    }
+
+    @Test
+    void jsonExpectationsIdentifyTheFailingSideInReports(@TempDir Path directory) throws Exception {
+        ContractCase contractCase = contractCase("expect-username", "/users/me", "admin", JSON.readTree("""
+            {"status":200,"json":{"/username":"admin"}}
+            """));
+        Allowlist allowlist = new Allowlist(List.of(entry("ignore-username", "pointer", "**", JSON.readTree("""
+            {"pointer":"/username","rule":"ignore"}
+            """))));
+        CaseResult result = diff(contractCase, response(200, "application/json", """
+            {"username":"admin"}
+            """), response(200, "application/json", """
+            {"username":"guest"}
+            """), allowlist, JSON.createObjectNode(), "/users/me", List.of(), false);
+
+        Difference expectation = result.differences().stream()
+            .filter(difference -> difference.kind() == Difference.Kind.EXPECTATION).findFirst().orElseThrow();
+        assertEquals(CaseResult.Outcome.DIFF, result.outcome());
+        assertEquals("spring-side", expectation.side());
+        assertEquals("/username", expectation.pointer());
+        assertEquals("guest", expectation.railsValue().asText());
+        assertEquals("admin", expectation.springValue().asText());
+        assertFalse(expectation.allowed());
+
+        ReportWriter.write(directory, "http://rails", "http://spring", List.of(result), allowlist);
+        JsonNode report = JSON.readTree(Files.readString(directory.resolve("report.json")));
+        JsonNode reportExpectation = report.path("cases").get(0).path("differences").get(1);
+        assertEquals("spring-side", reportExpectation.path("side").asText());
+        assertEquals("guest", reportExpectation.path("actual").asText());
+        assertEquals("admin", reportExpectation.path("expected").asText());
+        assertTrue(Files.readString(directory.resolve("report.md")).contains("`EXPECTATION` on spring-side"));
+    }
+
+    @Test
+    void matchingResponseExpectationsRemainClean() throws Exception {
+        JsonNode body = JSON.readTree("""
+            {"id":1,"username":"admin","admin":true}
+            """);
+        ContractCase contractCase = contractCase("expect-match", "/users/me", "admin", JSON.readTree("""
+            {"status":200,"json":{"/id":1,"/username":"admin","/admin":true}}
+            """));
+
+        CaseResult result = diff(contractCase, new CapturedResponse(200, "application/json", body.toString(), body),
+            new CapturedResponse(200, "application/json", body.toString(), body), new Allowlist(List.of()),
+            JSON.createObjectNode(), "/users/me", List.of(), false);
+
+        assertEquals(CaseResult.Outcome.CLEAN, result.outcome());
+        assertTrue(result.differences().isEmpty());
     }
 
     @Test
@@ -323,6 +401,13 @@ class ContractDifferTest {
             new ContractCase.SideRequest(path + ".json", ContractCase.Target.RAILS),
             new ContractCase.SideRequest("/api/v1" + path, ContractCase.Target.SPRING),
             JSON.createObjectNode(), null, auth, JSON.createObjectNode(), "");
+    }
+
+    private static ContractCase contractCase(String id, String path, String auth, JsonNode expect) {
+        return new ContractCase(id, "AB-266", "pending", "GET", path,
+            new ContractCase.SideRequest(path + ".json", ContractCase.Target.RAILS),
+            new ContractCase.SideRequest("/api/v1" + path, ContractCase.Target.SPRING),
+            JSON.createObjectNode(), null, auth, JSON.createObjectNode(), "", expect);
     }
 
     private static CapturedResponse response(int status, String contentType, String body) throws Exception {

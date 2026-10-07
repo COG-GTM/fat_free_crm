@@ -3,6 +3,8 @@ package com.fatfreecrm.contract;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -12,7 +14,11 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +61,11 @@ class ContractHarnessTest {
         assertEquals(ContractCase.Target.SPRING, authSelfCheck.rails().target());
         assertEquals("/api/v1/users/me", authSelfCheck.spring().path());
         assertEquals(ContractCase.Target.SPRING, authSelfCheck.spring().target());
+        assertEquals(200, authSelfCheck.expect().path("status").asInt());
+        assertEquals(1, authSelfCheck.expect().path("json").path("/id").asInt());
+        assertEquals("admin", authSelfCheck.expect().path("json").path("/username").asText());
+        assertTrue(authSelfCheck.expect().path("json").path("/admin").asBoolean());
+        assertEquals(200, cases.getFirst().expect().path("status").asInt());
         assertEquals(5, FixtureUsers.load().size());
     }
 
@@ -210,6 +221,96 @@ class ContractHarnessTest {
     }
 
     @Test
+    void springJwtAdapterRefreshesTokensWithLessThanThirtySecondsRemaining() throws Exception {
+        AtomicInteger loginRequests = new AtomicInteger();
+        try (StubServer server = new StubServer(exchange -> {
+            if (exchange.getRequestURI().getPath().equals("/api/v1/auth/login")) {
+                int login = loginRequests.incrementAndGet();
+                StubServer.respond(exchange, 200, "application/json", """
+                    {"accessToken":"access-%d","tokenType":"Bearer","expiresIn":60}
+                    """.formatted(login));
+            } else {
+                StubServer.respond(exchange, 200, "application/json", "{}");
+            }
+        })) {
+            MutableClock clock = new MutableClock(Instant.parse("2026-10-07T12:00:00Z"));
+            SpringJwtAuth auth = new SpringJwtAuth(server.url(), Map.of("alice", user("alice")), clock);
+            AuthContext initial = auth.authenticate("alice");
+
+            clock.advance(Duration.ofSeconds(10));
+            assertSame(initial, auth.authenticate("alice"));
+            assertEquals(1, loginRequests.get());
+
+            clock.advance(Duration.ofSeconds(35));
+            AuthContext refreshed = auth.authenticate("alice");
+            assertNotSame(initial, refreshed);
+            assertEquals(2, loginRequests.get());
+
+            clock.advance(Duration.ofSeconds(10));
+            assertSame(refreshed, auth.authenticate("alice"));
+            assertEquals(2, loginRequests.get());
+        }
+    }
+
+    @Test
+    void springJwtAdapterExpiryStartsWhenLoginRequestStarts() throws Exception {
+        AtomicInteger loginRequests = new AtomicInteger();
+        MutableClock clock = new MutableClock(Instant.parse("2026-10-07T12:00:00Z"));
+        try (StubServer server = new StubServer(exchange -> {
+            if (exchange.getRequestURI().getPath().equals("/api/v1/auth/login")) {
+                int login = loginRequests.incrementAndGet();
+                clock.advance(Duration.ofSeconds(25));
+                StubServer.respond(exchange, 200, "application/json", """
+                    {"accessToken":"access-%d","tokenType":"Bearer","expiresIn":60}
+                    """.formatted(login));
+            } else {
+                StubServer.respond(exchange, 200, "application/json", "{}");
+            }
+        })) {
+            SpringJwtAuth auth = new SpringJwtAuth(server.url(), Map.of("alice", user("alice")), clock);
+            auth.authenticate("alice");
+
+            clock.advance(Duration.ofSeconds(25));
+            auth.authenticate("alice");
+
+            assertEquals(2, loginRequests.get());
+        }
+    }
+
+    @Test
+    void springJwtAdapterDoesNotCacheTokensWithoutPositiveExpiry() throws Exception {
+        AtomicInteger loginRequests = new AtomicInteger();
+        AtomicInteger zeroExpiryLogins = new AtomicInteger();
+        AtomicInteger missingExpiryLogins = new AtomicInteger();
+        try (StubServer server = new StubServer(exchange -> {
+            if (exchange.getRequestURI().getPath().equals("/api/v1/auth/login")) {
+                if (loginRequests.incrementAndGet() <= 2) {
+                    zeroExpiryLogins.incrementAndGet();
+                    StubServer.respond(exchange, 200, "application/json", """
+                        {"accessToken":"access-zero","tokenType":"Bearer","expiresIn":0}
+                        """);
+                } else {
+                    missingExpiryLogins.incrementAndGet();
+                    StubServer.respond(exchange, 200, "application/json", """
+                        {"accessToken":"access-missing","tokenType":"Bearer"}
+                        """);
+                }
+            } else {
+                StubServer.respond(exchange, 200, "application/json", "{}");
+            }
+        })) {
+            SpringJwtAuth auth = new SpringJwtAuth(server.url(), Map.of("alice", user("alice")));
+            auth.authenticate("alice");
+            auth.authenticate("alice");
+            auth.authenticate("alice");
+            auth.authenticate("alice");
+            assertEquals(4, loginRequests.get());
+            assertEquals(2, zeroExpiryLogins.get());
+            assertEquals(2, missingExpiryLogins.get());
+        }
+    }
+
+    @Test
     void enforcedSpringAuthCaseFailsWhenLoginReturnsUnauthorized() throws Exception {
         AtomicBoolean requestWasUnauthenticated = new AtomicBoolean();
         try (StubServer server = new StubServer(exchange -> {
@@ -299,5 +400,38 @@ class ContractHarnessTest {
     private static FixtureUsers.FixtureUser user(String key) {
         return new FixtureUsers.FixtureUser(key, 2, key, key + "@contract.example", "contract-password", false,
             false);
+    }
+
+    private static final class MutableClock extends Clock {
+        private final AtomicReference<Instant> current;
+        private final ZoneId zone;
+
+        private MutableClock(Instant initial) {
+            this(new AtomicReference<>(initial), ZoneOffset.UTC);
+        }
+
+        private MutableClock(AtomicReference<Instant> current, ZoneId zone) {
+            this.current = current;
+            this.zone = zone;
+        }
+
+        private void advance(Duration duration) {
+            current.updateAndGet(instant -> instant.plus(duration));
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return zone;
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            return new MutableClock(current, zone);
+        }
+
+        @Override
+        public Instant instant() {
+            return current.get();
+        }
     }
 }
