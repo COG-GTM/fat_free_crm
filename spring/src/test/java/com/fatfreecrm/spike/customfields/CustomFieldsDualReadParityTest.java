@@ -261,7 +261,7 @@ class CustomFieldsDualReadParityTest {
             assertThat(rewritten).isNotEqualTo(beforeTransition);
             assertThat(CustomFieldsDualReader.read(Map.of(), rewritten, flipped)).isEqualTo(staleRead);
 
-            // 3. physical columns in their new types take precedence and agree with the jsonb
+            // 3. physical columns in their new types win over a conflicting jsonb document
             Map<String, Object> columns = new java.util.LinkedHashMap<>();
             try (ResultSet rs = st.executeQuery("select cf_segment, to_json(cf_since) #>> '{}',"
                 + " to_json(cf_seen_at) #>> '{}', cf_score from spike_dual_read_accounts"
@@ -272,7 +272,10 @@ class CustomFieldsDualReadParityTest {
                 columns.put("cf_seen_at", rs.getString(3));
                 columns.put("cf_score", rs.getDouble(4));
             }
-            assertThat(CustomFieldsDualReader.read(columns, Map.of(), flipped)).isEqualTo(staleRead);
+            Map<String, Object> conflictingJsonb = new java.util.LinkedHashMap<>(beforeTransition);
+            conflictingJsonb.put("cf_segment", "stale");
+            conflictingJsonb.put("cf_score", 99);
+            assertThat(CustomFieldsDualReader.read(columns, conflictingJsonb, flipped)).isEqualTo(staleRead);
         }
     }
 }
