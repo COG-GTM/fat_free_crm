@@ -463,7 +463,7 @@
         "cf_ab271_float": "1.25",
         "cf_ab271_date_pair_start": "2025-01-02",
         "cf_ab271_date_pair_end": "2025-01-03",
-        "cf_ab271_datetime_pair_start": "2025-01-02 00:00:00",
+        "cf_ab271_datetime_pair_start": "2025-01-02 03:04:05.123",
         "cf_ab271_datetime_pair_end": "2025-01-03 00:00:00",
         "cf_ab271_required": null,
         "cf_ab271_minimum": null,
@@ -493,7 +493,7 @@
         "cf_ab271_float": 1.25,
         "cf_ab271_date_pair_start": "2025-01-02",
         "cf_ab271_date_pair_end": "2025-01-03",
-        "cf_ab271_datetime_pair_start": "2025-01-02T00:00:00.000Z",
+        "cf_ab271_datetime_pair_start": "2025-01-02T03:04:05.123Z",
         "cf_ab271_datetime_pair_end": "2025-01-03T00:00:00.000Z",
         "cf_ab271_required": null,
         "cf_ab271_minimum": null,
@@ -524,7 +524,7 @@
         "cf_ab271_radio_buttons": "alpha",
         "cf_ab271_date_pair_start": "2025-01-02",
         "cf_ab271_datetime_pair_end": "2025-01-03T00:00:00",
-        "cf_ab271_datetime_pair_start": "2025-01-02T00:00:00"
+        "cf_ab271_datetime_pair_start": "2025-01-02T03:04:05.123"
       }
     },
     {
@@ -806,6 +806,164 @@
           "$yaml": "---\n- |-\n  line one\n  line two\n"
         }
       }
+    },
+    {
+      "id": 982708,
+      "raw_columns": {
+        "cf_ab271_string": "Alpha%_string-Suffix",
+        "cf_ab271_text": "AlPhA%_text-Suffix",
+        "cf_ab271_email": "Alpha%_email-Suffix",
+        "cf_ab271_url": "Alpha%_url-Suffix",
+        "cf_ab271_tel": "Alpha%_tel-Suffix",
+        "cf_ab271_select": "beta",
+        "cf_ab271_radio_buttons": "beta",
+        "cf_ab271_check_boxes": "---\n- alpha\n- green\n",
+        "cf_ab271_boolean": "false",
+        "cf_ab271_date": "2024-12-31",
+        "cf_ab271_datetime": "2024-12-31 11:22:33.987",
+        "cf_ab271_decimal": "1000.00",
+        "cf_ab271_integer": "10",
+        "cf_ab271_float": "-0.5",
+        "cf_ab271_date_pair_start": "2024-12-31",
+        "cf_ab271_date_pair_end": "2025-01-01",
+        "cf_ab271_datetime_pair_start": "2024-12-31 11:22:33.987",
+        "cf_ab271_datetime_pair_end": "2025-01-01 00:00:00",
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "rails_json": {
+        "cf_ab271_string": "Alpha%_string-Suffix",
+        "cf_ab271_text": "AlPhA%_text-Suffix",
+        "cf_ab271_email": "Alpha%_email-Suffix",
+        "cf_ab271_url": "Alpha%_url-Suffix",
+        "cf_ab271_tel": "Alpha%_tel-Suffix",
+        "cf_ab271_select": "beta",
+        "cf_ab271_radio_buttons": "beta",
+        "cf_ab271_check_boxes": [
+          "alpha",
+          "green"
+        ],
+        "cf_ab271_boolean": false,
+        "cf_ab271_date": "2024-12-31",
+        "cf_ab271_datetime": "2024-12-31T11:22:33.987Z",
+        "cf_ab271_decimal": "1000.0",
+        "cf_ab271_integer": 10,
+        "cf_ab271_float": -0.5,
+        "cf_ab271_date_pair_start": "2024-12-31",
+        "cf_ab271_date_pair_end": "2025-01-01",
+        "cf_ab271_datetime_pair_start": "2024-12-31T11:22:33.987Z",
+        "cf_ab271_datetime_pair_end": "2025-01-01T00:00:00.000Z",
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "custom_fields": {
+        "cf_ab271_tel": "Alpha%_tel-Suffix",
+        "cf_ab271_url": "Alpha%_url-Suffix",
+        "cf_ab271_date": "2024-12-31",
+        "cf_ab271_text": "AlPhA%_text-Suffix",
+        "cf_ab271_email": "Alpha%_email-Suffix",
+        "cf_ab271_float": -0.5,
+        "cf_ab271_select": "beta",
+        "cf_ab271_string": "Alpha%_string-Suffix",
+        "cf_ab271_boolean": false,
+        "cf_ab271_decimal": 1000.0,
+        "cf_ab271_integer": 10,
+        "cf_ab271_datetime": "2024-12-31T11:22:33.987",
+        "cf_ab271_check_boxes": [
+          "alpha",
+          "green"
+        ],
+        "cf_ab271_date_pair_end": "2025-01-01",
+        "cf_ab271_radio_buttons": "beta",
+        "cf_ab271_date_pair_start": "2024-12-31",
+        "cf_ab271_datetime_pair_end": "2025-01-01T00:00:00",
+        "cf_ab271_datetime_pair_start": "2024-12-31T11:22:33.987"
+      }
+    },
+    {
+      "id": 982709,
+      "raw_columns": {
+        "cf_ab271_string": "beta_string%_END",
+        "cf_ab271_text": "beta_text%_END",
+        "cf_ab271_email": "beta_email%_END",
+        "cf_ab271_url": "beta_url%_END",
+        "cf_ab271_tel": "beta_tel%_END",
+        "cf_ab271_select": "alpha",
+        "cf_ab271_radio_buttons": "alpha",
+        "cf_ab271_check_boxes": "---\n- beta\n- 'true'\n",
+        "cf_ab271_boolean": "true",
+        "cf_ab271_date": "2025-03-01",
+        "cf_ab271_datetime": "2025-01-02 03:04:05",
+        "cf_ab271_decimal": "0.01",
+        "cf_ab271_integer": "100",
+        "cf_ab271_float": "3",
+        "cf_ab271_date_pair_start": "2025-03-01",
+        "cf_ab271_date_pair_end": "2025-03-02",
+        "cf_ab271_datetime_pair_start": "2025-01-02 03:04:05",
+        "cf_ab271_datetime_pair_end": "2025-03-01 12:00:00",
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "rails_json": {
+        "cf_ab271_string": "beta_string%_END",
+        "cf_ab271_text": "beta_text%_END",
+        "cf_ab271_email": "beta_email%_END",
+        "cf_ab271_url": "beta_url%_END",
+        "cf_ab271_tel": "beta_tel%_END",
+        "cf_ab271_select": "alpha",
+        "cf_ab271_radio_buttons": "alpha",
+        "cf_ab271_check_boxes": [
+          "beta",
+          "true"
+        ],
+        "cf_ab271_boolean": true,
+        "cf_ab271_date": "2025-03-01",
+        "cf_ab271_datetime": "2025-01-02T03:04:05.000Z",
+        "cf_ab271_decimal": "0.01",
+        "cf_ab271_integer": 100,
+        "cf_ab271_float": 3.0,
+        "cf_ab271_date_pair_start": "2025-03-01",
+        "cf_ab271_date_pair_end": "2025-03-02",
+        "cf_ab271_datetime_pair_start": "2025-01-02T03:04:05.000Z",
+        "cf_ab271_datetime_pair_end": "2025-03-01T12:00:00.000Z",
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "custom_fields": {
+        "cf_ab271_tel": "beta_tel%_END",
+        "cf_ab271_url": "beta_url%_END",
+        "cf_ab271_date": "2025-03-01",
+        "cf_ab271_text": "beta_text%_END",
+        "cf_ab271_email": "beta_email%_END",
+        "cf_ab271_float": 3,
+        "cf_ab271_select": "alpha",
+        "cf_ab271_string": "beta_string%_END",
+        "cf_ab271_boolean": true,
+        "cf_ab271_decimal": 0.01,
+        "cf_ab271_integer": 100,
+        "cf_ab271_datetime": "2025-01-02T03:04:05",
+        "cf_ab271_check_boxes": [
+          "beta",
+          "true"
+        ],
+        "cf_ab271_date_pair_end": "2025-03-02",
+        "cf_ab271_radio_buttons": "alpha",
+        "cf_ab271_date_pair_start": "2025-03-01",
+        "cf_ab271_datetime_pair_end": "2025-03-01T12:00:00",
+        "cf_ab271_datetime_pair_start": "2025-01-02T03:04:05"
+      }
     }
   ],
   "validation_errors": {
@@ -840,24 +998,29 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
-          "values": [
-            "alpha"
-          ],
-          "ids": []
-        },
-        "not_cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982708
           ]
         },
-        "blank": {
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -869,55 +1032,61 @@
             982707
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "true": {
-          "values": [
-            "1"
-          ],
-          "ids": []
-        },
-        "false": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "eq": {
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -929,62 +1098,221 @@
             982707
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "matches": {
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "does_not_match": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "eq:row-one": {
+          "values": [
+            "matrix string"
           ],
           "ids": [
             982701
           ]
         },
-        "lteq": {
+        "lt:m": {
           "values": [
-            "alpha"
+            "m"
           ],
-          "ids": []
+          "ids": [
+            982708,
+            982709
+          ]
         },
-        "gteq": {
+        "gt:m": {
           "values": [
-            "alpha"
+            "m"
           ],
           "ids": [
             982701
           ]
         },
-        "in": {
+        "cont:case-insensitive-alpha": {
           "values": [
             "alpha"
           ],
-          "ids": []
+          "ids": [
+            982708
+          ]
         },
-        "start": {
+        "cont:literal-percent": {
+          "values": [
+            "%"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "not_cont:case-insensitive-alpha": {
           "values": [
             "alpha"
           ],
-          "ids": []
+          "ids": [
+            982701,
+            982709
+          ]
         },
-        "cont_any": {
+        "start:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "end:case-insensitive-suffix": {
+          "values": [
+            "suffix"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "matches:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "does_not_match:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
           ],
-          "ids": []
+          "ids": [
+            982708,
+            982709
+          ]
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -1002,24 +1330,29 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
-          "values": [
-            "alpha"
-          ],
-          "ids": []
-        },
-        "not_cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982708
           ]
         },
-        "blank": {
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -1031,55 +1364,61 @@
             982707
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "true": {
-          "values": [
-            "1"
-          ],
-          "ids": []
-        },
-        "false": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "eq": {
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -1091,62 +1430,220 @@
             982707
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "matches": {
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "does_not_match": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "eq:row-one": {
+          "values": [
+            "line one\nline two"
           ],
           "ids": [
             982701
           ]
         },
-        "lteq": {
+        "lt:m": {
           "values": [
-            "alpha"
+            "m"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "gt:m": {
+          "values": [
+            "m"
           ],
           "ids": []
         },
-        "gteq": {
+        "cont:case-insensitive-alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982708
           ]
         },
-        "in": {
+        "cont:literal-percent": {
+          "values": [
+            "%"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "not_cont:case-insensitive-alpha": {
           "values": [
             "alpha"
           ],
-          "ids": []
+          "ids": [
+            982701,
+            982709
+          ]
         },
-        "start": {
+        "start:case-insensitive-alpha": {
           "values": [
             "alpha"
           ],
-          "ids": []
+          "ids": [
+            982708
+          ]
         },
-        "cont_any": {
+        "end:case-insensitive-suffix": {
+          "values": [
+            "suffix"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "matches:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "does_not_match:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
           ],
-          "ids": []
+          "ids": [
+            982708,
+            982709
+          ]
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -1164,24 +1661,29 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
-          "values": [
-            "alpha"
-          ],
-          "ids": []
-        },
-        "not_cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982708
           ]
         },
-        "blank": {
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -1193,55 +1695,61 @@
             982707
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "true": {
-          "values": [
-            "1"
-          ],
-          "ids": []
-        },
-        "false": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "eq": {
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -1253,62 +1761,221 @@
             982707
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "matches": {
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "does_not_match": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "eq:row-one": {
+          "values": [
+            "matrix email"
           ],
           "ids": [
             982701
           ]
         },
-        "lteq": {
+        "lt:m": {
           "values": [
-            "alpha"
+            "m"
           ],
-          "ids": []
+          "ids": [
+            982708,
+            982709
+          ]
         },
-        "gteq": {
+        "gt:m": {
           "values": [
-            "alpha"
+            "m"
           ],
           "ids": [
             982701
           ]
         },
-        "in": {
+        "cont:case-insensitive-alpha": {
           "values": [
             "alpha"
           ],
-          "ids": []
+          "ids": [
+            982708
+          ]
         },
-        "start": {
+        "cont:literal-percent": {
+          "values": [
+            "%"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "not_cont:case-insensitive-alpha": {
           "values": [
             "alpha"
           ],
-          "ids": []
+          "ids": [
+            982701,
+            982709
+          ]
         },
-        "cont_any": {
+        "start:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "end:case-insensitive-suffix": {
+          "values": [
+            "suffix"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "matches:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "does_not_match:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
           ],
-          "ids": []
+          "ids": [
+            982708,
+            982709
+          ]
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -1326,24 +1993,29 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
-          "values": [
-            "alpha"
-          ],
-          "ids": []
-        },
-        "not_cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982708
           ]
         },
-        "blank": {
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -1355,55 +2027,61 @@
             982707
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "true": {
-          "values": [
-            "1"
-          ],
-          "ids": []
-        },
-        "false": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "eq": {
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -1415,62 +2093,221 @@
             982707
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "matches": {
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "does_not_match": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "eq:row-one": {
+          "values": [
+            "matrix url"
           ],
           "ids": [
             982701
           ]
         },
-        "lteq": {
+        "lt:m": {
           "values": [
-            "alpha"
+            "m"
           ],
-          "ids": []
+          "ids": [
+            982708,
+            982709
+          ]
         },
-        "gteq": {
+        "gt:m": {
           "values": [
-            "alpha"
+            "m"
           ],
           "ids": [
             982701
           ]
         },
-        "in": {
+        "cont:case-insensitive-alpha": {
           "values": [
             "alpha"
           ],
-          "ids": []
+          "ids": [
+            982708
+          ]
         },
-        "start": {
+        "cont:literal-percent": {
+          "values": [
+            "%"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "not_cont:case-insensitive-alpha": {
           "values": [
             "alpha"
           ],
-          "ids": []
+          "ids": [
+            982701,
+            982709
+          ]
         },
-        "cont_any": {
+        "start:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "end:case-insensitive-suffix": {
+          "values": [
+            "suffix"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "matches:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "does_not_match:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
           ],
-          "ids": []
+          "ids": [
+            982708,
+            982709
+          ]
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -1488,24 +2325,29 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
-          "values": [
-            "alpha"
-          ],
-          "ids": []
-        },
-        "not_cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982708
           ]
         },
-        "blank": {
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -1517,55 +2359,61 @@
             982707
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "true": {
-          "values": [
-            "1"
-          ],
-          "ids": []
-        },
-        "false": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "eq": {
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -1577,62 +2425,221 @@
             982707
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "matches": {
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "does_not_match": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "eq:row-one": {
+          "values": [
+            "matrix tel"
           ],
           "ids": [
             982701
           ]
         },
-        "lteq": {
+        "lt:m": {
           "values": [
-            "alpha"
+            "m"
           ],
-          "ids": []
+          "ids": [
+            982708,
+            982709
+          ]
         },
-        "gteq": {
+        "gt:m": {
           "values": [
-            "alpha"
+            "m"
           ],
           "ids": [
             982701
           ]
         },
-        "in": {
+        "cont:case-insensitive-alpha": {
           "values": [
             "alpha"
           ],
-          "ids": []
+          "ids": [
+            982708
+          ]
         },
-        "start": {
+        "cont:literal-percent": {
+          "values": [
+            "%"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "not_cont:case-insensitive-alpha": {
           "values": [
             "alpha"
           ],
-          "ids": []
+          "ids": [
+            982701,
+            982709
+          ]
         },
-        "cont_any": {
+        "start:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "end:case-insensitive-suffix": {
+          "values": [
+            "suffix"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "matches:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "does_not_match:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
           ],
-          "ids": []
+          "ids": [
+            982708,
+            982709
+          ]
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -1650,24 +2657,29 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982709
           ]
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
-          "ids": []
+          "ids": [
+            982708
+          ]
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -1679,53 +2691,60 @@
             982707
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "true": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "false": {
+        "false:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "eq": {
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982709
           ]
         },
-        "not_eq": {
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "lt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
-          "ids": []
+          "ids": [
+            982708
+          ]
         },
-        "gt": {
-          "values": [
-            "alpha"
-          ],
-          "ids": []
-        },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -1737,70 +2756,174 @@
             982707
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "matches": {
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982709
           ]
         },
-        "does_not_match": {
-          "values": [
-            "alpha"
-          ],
-          "ids": []
-        },
-        "lteq": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982708
           ]
         },
-        "gteq": {
+        "lteq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982709
           ]
         },
-        "in": {
+        "gteq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "start": {
+        "in:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982709
           ]
         },
-        "cont_any": {
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "eq:beta": {
+          "values": [
+            "beta"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "not_eq:beta": {
+          "values": [
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "cont_all": {
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -1818,24 +2941,29 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982709
           ]
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
-          "ids": []
+          "ids": [
+            982708
+          ]
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -1847,53 +2975,60 @@
             982707
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "true": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "false": {
+        "false:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "eq": {
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982709
           ]
         },
-        "not_eq": {
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "lt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
-          "ids": []
+          "ids": [
+            982708
+          ]
         },
-        "gt": {
-          "values": [
-            "alpha"
-          ],
-          "ids": []
-        },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -1905,70 +3040,174 @@
             982707
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "matches": {
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982709
           ]
         },
-        "does_not_match": {
-          "values": [
-            "alpha"
-          ],
-          "ids": []
-        },
-        "lteq": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982708
           ]
         },
-        "gteq": {
+        "lteq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982709
           ]
         },
-        "in": {
+        "gteq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "start": {
+        "in:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982709
           ]
         },
-        "cont_any": {
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "eq:beta": {
+          "values": [
+            "beta"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "not_eq:beta": {
+          "values": [
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "cont_all": {
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -1986,73 +3225,78 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
-          "ids": []
+          "ids": [
+            982708
+          ]
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
             982701,
-            982707
+            982707,
+            982709
           ]
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
           "error": "ActiveRecord::SerializationTypeMismatch"
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "error": "ActiveRecord::SerializationTypeMismatch"
         },
-        "true": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "error": "ActiveRecord::SerializationTypeMismatch"
         },
-        "false": {
+        "false:flag-1": {
           "values": [
             "1"
           ],
           "error": "ActiveRecord::SerializationTypeMismatch"
         },
-        "eq": {
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::SerializationTypeMismatch"
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::SerializationTypeMismatch"
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::SerializationTypeMismatch"
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::SerializationTypeMismatch"
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -2063,62 +3307,134 @@
             982706
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
             982701,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "matches": {
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "does_not_match": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
             982701,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "lteq": {
+        "lteq:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::SerializationTypeMismatch"
         },
-        "gteq": {
+        "gteq:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::SerializationTypeMismatch"
         },
-        "in": {
+        "in:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::SerializationTypeMismatch"
         },
-        "start": {
+        "start:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "cont_any": {
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706
+          ]
+        },
+        "cont:element-true": {
+          "values": [
+            "true"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "not_cont:element-green": {
+          "values": [
+            "green"
+          ],
+          "ids": [
+            982701,
+            982707,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
           ],
-          "ids": []
+          "ids": [
+            982708,
+            982709
+          ]
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -2136,10 +3452,12 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -2149,10 +3467,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -2162,10 +3482,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -2177,27 +3499,30 @@
             982707
           ]
         },
-        "present": {
-          "values": [
-            "1"
-          ],
-          "ids": []
-        },
-        "true": {
-          "values": [
-            "1"
-          ],
-          "ids": [
-            982701
-          ]
-        },
-        "false": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "eq": {
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -2207,10 +3532,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -2220,10 +3547,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
@@ -2233,10 +3562,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
@@ -2246,10 +3577,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -2261,15 +3594,17 @@
             982707
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "matches": {
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
@@ -2279,10 +3614,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "does_not_match": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
           ],
@@ -2292,10 +3629,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "lteq": {
+        "lteq:alpha": {
           "values": [
             "alpha"
           ],
@@ -2305,10 +3644,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "gteq": {
+        "gteq:alpha": {
           "values": [
             "alpha"
           ],
@@ -2318,10 +3659,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "in": {
+        "in:alpha": {
           "values": [
             "alpha"
           ],
@@ -2331,10 +3674,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "start": {
+        "start:alpha": {
           "values": [
             "alpha"
           ],
@@ -2344,10 +3689,137 @@
             982704,
             982705,
             982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
             982707
           ]
         },
-        "cont_any": {
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "eq:value-true": {
+          "values": [
+            "true"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "not_eq:value-true": {
+          "values": [
+            "true"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "eq:value-false": {
+          "values": [
+            "false"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "not_eq:value-false": {
+          "values": [
+            "false"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "eq:value-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "not_eq:value-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "eq:value-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "not_eq:value-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -2358,10 +3830,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -2372,7 +3846,9 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         }
       },
@@ -2386,10 +3862,12 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -2399,10 +3877,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -2412,10 +3892,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -2427,25 +3909,25 @@
             982707
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "true": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "false": {
+        "false:flag-1": {
           "values": [
             "1"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "eq": {
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -2455,10 +3937,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -2468,10 +3952,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
@@ -2481,10 +3967,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
@@ -2494,10 +3982,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -2509,93 +3999,220 @@
             982707
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "eq:iso-date": {
+          "values": [
+            "2025-01-02"
           ],
           "ids": [
             982701
           ]
         },
-        "matches": {
+        "not_eq:iso-date": {
           "values": [
-            "alpha"
+            "2025-01-02"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "lt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:iso-date": {
+          "values": [
+            "2025-01-02"
           ],
           "ids": [
             982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
+            982708
           ]
         },
-        "does_not_match": {
+        "gt:iso-date": {
           "values": [
-            "alpha"
+            "2025-01-02"
+          ],
+          "ids": [
+            982709
+          ]
+        },
+        "gteq:iso-date": {
+          "values": [
+            "2025-01-02"
           ],
           "ids": [
             982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
+            982709
           ]
         },
-        "lteq": {
+        "in:december-and-january": {
           "values": [
-            "alpha"
+            "2024-12-31",
+            "2025-01-02"
           ],
           "ids": [
             982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
+            982708
           ]
         },
-        "gteq": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "in": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "start": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "cont_any": {
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -2606,10 +4223,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -2620,7 +4239,9 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         }
       },
@@ -2634,7 +4255,9 @@
           982704,
           982705,
           982706,
-          982707
+          982707,
+          982708,
+          982709
         ]
       }
     },
@@ -2646,10 +4269,12 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -2659,10 +4284,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -2672,10 +4299,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -2687,25 +4316,25 @@
             982707
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "true": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "false": {
+        "false:flag-1": {
           "values": [
             "1"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "eq": {
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -2715,10 +4344,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -2728,10 +4359,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
@@ -2741,10 +4374,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
@@ -2754,10 +4389,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -2769,93 +4406,228 @@
             982707
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "eq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982709
+          ]
+        },
+        "eq:sql-timestamp": {
+          "values": [
+            "2025-01-02 03:04:05"
+          ],
+          "ids": [
+            982709
+          ]
+        },
+        "not_eq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982701,
+            982708
+          ]
+        },
+        "lt:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "gt:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
           ],
           "ids": [
             982701
           ]
         },
-        "matches": {
+        "gteq:iso-timestamp": {
           "values": [
-            "alpha"
+            "2025-01-02T03:04:05Z"
           ],
           "ids": [
             982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
+            982709
           ]
         },
-        "does_not_match": {
+        "in:fractional-and-whole": {
           "values": [
-            "alpha"
+            "2024-12-31T11:22:33.987Z",
+            "2025-01-02T03:04:05Z"
           ],
           "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
+            982708,
+            982709
           ]
         },
-        "lteq": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "gteq": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "in": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "start": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "cont_any": {
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -2866,10 +4638,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -2880,7 +4654,9 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         }
       },
@@ -2894,7 +4670,9 @@
           982704,
           982705,
           982706,
-          982707
+          982707,
+          982708,
+          982709
         ]
       }
     },
@@ -2906,22 +4684,24 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -2931,57 +4711,61 @@
             982707
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "true": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "false": {
+        "false:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "eq": {
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
             982701,
             982704,
-            982705
+            982705,
+            982708,
+            982709
           ]
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
             982701,
             982704,
-            982705
+            982705,
+            982708,
+            982709
           ]
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -2991,64 +4775,210 @@
             982707
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
             982701,
             982704,
-            982705
+            982705,
+            982708,
+            982709
           ]
         },
-        "matches": {
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "does_not_match": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "lteq": {
+        "lteq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "gteq": {
+        "gteq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
             982701,
             982704,
-            982705
+            982705,
+            982708,
+            982709
           ]
         },
-        "in": {
+        "in:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "start": {
+        "start:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "cont_any": {
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982706,
+            982707
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982704,
+            982705,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982704,
+            982705,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982704,
+            982705,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982706,
+            982707
+          ]
+        },
+        "eq:1000-point-zero-zero": {
+          "values": [
+            "1000.00"
+          ],
+          "ids": [
+            982704,
+            982708
+          ]
+        },
+        "eq:1000": {
+          "values": [
+            "1000"
+          ],
+          "ids": [
+            982704,
+            982708
+          ]
+        },
+        "not_eq:0.01": {
+          "values": [
+            "0.01"
+          ],
+          "ids": [
+            982701,
+            982704,
+            982708
+          ]
+        },
+        "lt:1000": {
+          "values": [
+            "1000"
+          ],
+          "ids": [
+            982705,
+            982709
+          ]
+        },
+        "lteq:1000": {
+          "values": [
+            "1000"
+          ],
+          "ids": [
+            982704,
+            982705,
+            982708,
+            982709
+          ]
+        },
+        "gt:1000": {
+          "values": [
+            "1000"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "gteq:1000": {
+          "values": [
+            "1000"
+          ],
+          "ids": [
+            982701,
+            982704,
+            982708
+          ]
+        },
+        "in:decimal-values": {
+          "values": [
+            "0.01",
+            "1000",
+            "1234.50"
+          ],
+          "ids": [
+            982701,
+            982704,
+            982705,
+            982708,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -3071,22 +5001,24 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -3098,53 +5030,57 @@
             982707
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "true": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "false": {
+        "false:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "eq": {
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -3156,60 +5092,193 @@
             982707
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "matches": {
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "does_not_match": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "lteq": {
+        "lteq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "gteq": {
+        "gteq:alpha": {
           "values": [
             "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "eq:integer": {
+          "values": [
+            "42"
           ],
           "ids": [
             982701
           ]
         },
-        "in": {
+        "eq:decimal-string": {
           "values": [
-            "alpha"
+            "42.0"
           ],
-          "ids": []
+          "ids": [
+            982701
+          ]
         },
-        "start": {
+        "not_eq:10": {
           "values": [
-            "alpha"
+            "10"
           ],
-          "error": "ActiveRecord::StatementInvalid"
+          "ids": [
+            982701,
+            982709
+          ]
         },
-        "cont_any": {
+        "lt:42": {
+          "values": [
+            "42"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:42": {
+          "values": [
+            "42"
+          ],
+          "ids": [
+            982701,
+            982708
+          ]
+        },
+        "gt:42": {
+          "values": [
+            "42"
+          ],
+          "ids": [
+            982709
+          ]
+        },
+        "gteq:42": {
+          "values": [
+            "42"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:10-and-42": {
+          "values": [
+            "10",
+            "42"
+          ],
+          "ids": [
+            982701,
+            982708
+          ]
+        },
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -3232,22 +5301,24 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -3259,53 +5330,58 @@
             982707
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "true": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "false": {
+        "false:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "eq": {
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "lt": {
-          "values": [
-            "alpha"
-          ],
-          "ids": []
-        },
-        "gt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": [
-            982701
+            982708
           ]
         },
-        "null": {
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -3317,60 +5393,194 @@
             982707
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "matches": {
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "does_not_match": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "lteq": {
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "gteq": {
+        "start:alpha": {
           "values": [
             "alpha"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "eq:1.25": {
+          "values": [
+            "1.25"
           ],
           "ids": [
             982701
           ]
         },
-        "in": {
+        "eq:3.0": {
           "values": [
-            "alpha"
+            "3.0"
           ],
-          "ids": []
+          "ids": [
+            982709
+          ]
         },
-        "start": {
+        "not_eq:1.25": {
           "values": [
-            "alpha"
+            "1.25"
           ],
-          "error": "ActiveRecord::StatementInvalid"
+          "ids": [
+            982708,
+            982709
+          ]
         },
-        "cont_any": {
+        "lt:1.25": {
+          "values": [
+            "1.25"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:1.25": {
+          "values": [
+            "1.25"
+          ],
+          "ids": [
+            982701,
+            982708
+          ]
+        },
+        "gt:1.25": {
+          "values": [
+            "1.25"
+          ],
+          "ids": [
+            982709
+          ]
+        },
+        "gteq:1.25": {
+          "values": [
+            "1.25"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:negative-and-positive": {
+          "values": [
+            "-0.5",
+            "1.25"
+          ],
+          "ids": [
+            982701,
+            982708
+          ]
+        },
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -3393,10 +5603,12 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -3406,10 +5618,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -3419,10 +5633,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -3434,25 +5650,25 @@
             982707
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "true": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "false": {
+        "false:flag-1": {
           "values": [
             "1"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "eq": {
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -3462,10 +5678,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -3475,10 +5693,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
@@ -3488,10 +5708,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
@@ -3501,10 +5723,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -3516,93 +5740,220 @@
             982707
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "eq:iso-date": {
+          "values": [
+            "2025-01-02"
           ],
           "ids": [
             982701
           ]
         },
-        "matches": {
+        "not_eq:iso-date": {
           "values": [
-            "alpha"
+            "2025-01-02"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "lt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:iso-date": {
+          "values": [
+            "2025-01-02"
           ],
           "ids": [
             982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
+            982708
           ]
         },
-        "does_not_match": {
+        "gt:iso-date": {
           "values": [
-            "alpha"
+            "2025-01-02"
+          ],
+          "ids": [
+            982709
+          ]
+        },
+        "gteq:iso-date": {
+          "values": [
+            "2025-01-02"
           ],
           "ids": [
             982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
+            982709
           ]
         },
-        "lteq": {
+        "in:december-and-january": {
           "values": [
-            "alpha"
+            "2024-12-31",
+            "2025-01-02"
           ],
           "ids": [
             982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
+            982708
           ]
         },
-        "gteq": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "in": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "start": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "cont_any": {
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -3613,10 +5964,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -3627,7 +5980,9 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         }
       },
@@ -3641,7 +5996,9 @@
           982704,
           982705,
           982706,
-          982707
+          982707,
+          982708,
+          982709
         ]
       }
     },
@@ -3653,10 +6010,12 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -3666,10 +6025,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -3679,10 +6040,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -3694,25 +6057,25 @@
             982707
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "true": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "false": {
+        "false:flag-1": {
           "values": [
             "1"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "eq": {
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -3722,10 +6085,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -3735,10 +6100,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
@@ -3748,10 +6115,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
@@ -3761,10 +6130,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -3776,15 +6147,17 @@
             982707
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "matches": {
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
@@ -3794,10 +6167,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "does_not_match": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
           ],
@@ -3807,10 +6182,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "lteq": {
+        "lteq:alpha": {
           "values": [
             "alpha"
           ],
@@ -3820,10 +6197,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "gteq": {
+        "gteq:alpha": {
           "values": [
             "alpha"
           ],
@@ -3833,10 +6212,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "in": {
+        "in:alpha": {
           "values": [
             "alpha"
           ],
@@ -3846,10 +6227,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "start": {
+        "start:alpha": {
           "values": [
             "alpha"
           ],
@@ -3859,10 +6242,121 @@
             982704,
             982705,
             982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
             982707
           ]
         },
-        "cont_any": {
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "eq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "not_eq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "gt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "gteq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:december-and-january": {
+          "values": [
+            "2024-12-31",
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -3873,10 +6367,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -3887,7 +6383,9 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         }
       },
@@ -3901,7 +6399,9 @@
           982704,
           982705,
           982706,
-          982707
+          982707,
+          982708,
+          982709
         ]
       }
     },
@@ -3913,10 +6413,12 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -3926,10 +6428,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -3939,10 +6443,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -3954,25 +6460,25 @@
             982707
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "true": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "false": {
+        "false:flag-1": {
           "values": [
             "1"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "eq": {
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -3982,10 +6488,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -3995,10 +6503,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
@@ -4008,10 +6518,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
@@ -4021,10 +6533,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -4036,93 +6550,228 @@
             982707
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "eq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982709
+          ]
+        },
+        "eq:sql-timestamp": {
+          "values": [
+            "2025-01-02 03:04:05"
+          ],
+          "ids": [
+            982709
+          ]
+        },
+        "not_eq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982701,
+            982708
+          ]
+        },
+        "lt:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "gt:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
           ],
           "ids": [
             982701
           ]
         },
-        "matches": {
+        "gteq:iso-timestamp": {
           "values": [
-            "alpha"
+            "2025-01-02T03:04:05Z"
           ],
           "ids": [
             982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
+            982709
           ]
         },
-        "does_not_match": {
+        "in:fractional-and-whole": {
           "values": [
-            "alpha"
+            "2024-12-31T11:22:33.987Z",
+            "2025-01-02T03:04:05Z"
           ],
           "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
+            982708,
+            982709
           ]
         },
-        "lteq": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "gteq": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "in": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "start": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "cont_any": {
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -4133,10 +6782,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -4147,7 +6798,9 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         }
       },
@@ -4161,7 +6814,9 @@
           982704,
           982705,
           982706,
-          982707
+          982707,
+          982708,
+          982709
         ]
       }
     },
@@ -4173,10 +6828,12 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -4186,10 +6843,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -4199,10 +6858,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -4214,25 +6875,25 @@
             982707
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "true": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "false": {
+        "false:flag-1": {
           "values": [
             "1"
           ],
           "error": "ActiveRecord::StatementInvalid"
         },
-        "eq": {
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -4242,10 +6903,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -4255,10 +6918,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
@@ -4268,10 +6933,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
@@ -4281,10 +6948,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -4296,15 +6965,17 @@
             982707
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
           ],
           "ids": [
-            982701
+            982701,
+            982708,
+            982709
           ]
         },
-        "matches": {
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
@@ -4314,10 +6985,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "does_not_match": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
           ],
@@ -4327,10 +7000,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "lteq": {
+        "lteq:alpha": {
           "values": [
             "alpha"
           ],
@@ -4340,10 +7015,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "gteq": {
+        "gteq:alpha": {
           "values": [
             "alpha"
           ],
@@ -4353,10 +7030,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "in": {
+        "in:alpha": {
           "values": [
             "alpha"
           ],
@@ -4366,10 +7045,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "start": {
+        "start:alpha": {
           "values": [
             "alpha"
           ],
@@ -4379,10 +7060,127 @@
             982704,
             982705,
             982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
             982707
           ]
         },
-        "cont_any": {
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707
+          ]
+        },
+        "eq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": []
+        },
+        "eq:sql-timestamp": {
+          "values": [
+            "2025-01-02 03:04:05"
+          ],
+          "ids": []
+        },
+        "not_eq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lt:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "gt:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "gteq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:fractional-and-whole": {
+          "values": [
+            "2024-12-31T11:22:33.987Z",
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": []
+        },
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -4393,10 +7191,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -4407,7 +7207,9 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         }
       },
@@ -4421,7 +7223,9 @@
           982704,
           982705,
           982706,
-          982707
+          982707,
+          982708,
+          982709
         ]
       }
     },
@@ -4433,22 +7237,24 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -4458,52 +7264,54 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "true": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "false": {
+        "false:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "eq": {
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -4513,59 +7321,175 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "matches": {
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "does_not_match": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "lteq": {
+        "lteq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "gteq": {
+        "gteq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "in": {
+        "in:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "start": {
+        "start:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "cont_any": {
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "eq:row-one": {
+          "values": [
+            "matrix string"
+          ],
+          "ids": []
+        },
+        "lt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": []
+        },
+        "gt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": []
+        },
+        "cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "cont:literal-percent": {
+          "values": [
+            "%"
+          ],
+          "ids": []
+        },
+        "not_cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "end:case-insensitive-suffix": {
+          "values": [
+            "suffix"
+          ],
+          "ids": []
+        },
+        "matches:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": []
+        },
+        "does_not_match:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": []
+        },
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
           ],
           "ids": []
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -4583,22 +7507,24 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -4608,52 +7534,54 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "true": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "false": {
+        "false:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "eq": {
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -4663,59 +7591,175 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "matches": {
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "does_not_match": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "lteq": {
+        "lteq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "gteq": {
+        "gteq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "in": {
+        "in:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "start": {
+        "start:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "cont_any": {
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "eq:row-one": {
+          "values": [
+            "matrix string"
+          ],
+          "ids": []
+        },
+        "lt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": []
+        },
+        "gt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": []
+        },
+        "cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "cont:literal-percent": {
+          "values": [
+            "%"
+          ],
+          "ids": []
+        },
+        "not_cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "end:case-insensitive-suffix": {
+          "values": [
+            "suffix"
+          ],
+          "ids": []
+        },
+        "matches:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": []
+        },
+        "does_not_match:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": []
+        },
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
           ],
           "ids": []
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -4733,22 +7777,24 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -4758,52 +7804,54 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "present": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "true": {
+        "true:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "false": {
+        "false:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "eq": {
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "not_eq": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "lt": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "gt": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "null": {
+        "null:flag-1": {
           "values": [
             "1"
           ],
@@ -4813,59 +7861,175 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_null": {
+        "not_null:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "matches": {
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "does_not_match": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "lteq": {
+        "lteq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "gteq": {
+        "gteq:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "in": {
+        "in:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "start": {
+        "start:alpha": {
           "values": [
             "alpha"
           ],
           "ids": []
         },
-        "cont_any": {
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "eq:row-one": {
+          "values": [
+            "matrix string"
+          ],
+          "ids": []
+        },
+        "lt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": []
+        },
+        "gt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": []
+        },
+        "cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "cont:literal-percent": {
+          "values": [
+            "%"
+          ],
+          "ids": []
+        },
+        "not_cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "end:case-insensitive-suffix": {
+          "values": [
+            "suffix"
+          ],
+          "ids": []
+        },
+        "matches:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": []
+        },
+        "does_not_match:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": []
+        },
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
           ],
           "ids": []
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -4883,10 +8047,12 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -4896,10 +8062,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -4909,10 +8077,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -4922,99 +8092,30 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "present": {
-          "values": [
-            "1"
-          ],
-          "ids": []
-        },
-        "true": {
-          "values": [
-            "1"
-          ],
-          "error": "ActiveRecord::StatementInvalid"
-        },
-        "false": {
-          "values": [
-            "1"
-          ],
-          "error": "ActiveRecord::StatementInvalid"
-        },
-        "eq": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "not_eq": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "lt": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "gt": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "null": {
-          "values": [
-            "1"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "not_null": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "matches": {
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -5024,10 +8125,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "does_not_match": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -5037,10 +8140,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "lteq": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
@@ -5050,10 +8155,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "gteq": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
@@ -5063,10 +8170,33 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "in": {
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
@@ -5076,10 +8206,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "start": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
           ],
@@ -5089,10 +8221,169 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "cont_any": {
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "eq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "not_eq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "lt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "lteq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "gt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "gteq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "in:december-and-january": {
+          "values": [
+            "2024-12-31",
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -5103,10 +8394,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -5117,7 +8410,9 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         }
       },
@@ -5131,7 +8426,9 @@
           982704,
           982705,
           982706,
-          982707
+          982707,
+          982708,
+          982709
         ]
       }
     },
@@ -5143,10 +8440,12 @@
         982704,
         982705,
         982706,
-        982707
+        982707,
+        982708,
+        982709
       ],
       "cases": {
-        "cont": {
+        "cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -5156,10 +8455,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "not_cont": {
+        "not_cont:alpha": {
           "values": [
             "alpha"
           ],
@@ -5169,10 +8470,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "blank": {
+        "blank:flag-1": {
           "values": [
             "1"
           ],
@@ -5182,99 +8485,30 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "present": {
-          "values": [
-            "1"
-          ],
-          "ids": []
-        },
-        "true": {
-          "values": [
-            "1"
-          ],
-          "error": "ActiveRecord::StatementInvalid"
-        },
-        "false": {
-          "values": [
-            "1"
-          ],
-          "error": "ActiveRecord::StatementInvalid"
-        },
-        "eq": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "not_eq": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "lt": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "gt": {
-          "values": [
-            "alpha"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "null": {
-          "values": [
-            "1"
-          ],
-          "ids": [
-            982701,
-            982703,
-            982704,
-            982705,
-            982706,
-            982707
-          ]
-        },
-        "not_null": {
+        "present:flag-1": {
           "values": [
             "1"
           ],
           "ids": []
         },
-        "matches": {
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -5284,10 +8518,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "does_not_match": {
+        "not_eq:alpha": {
           "values": [
             "alpha"
           ],
@@ -5297,10 +8533,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "lteq": {
+        "lt:alpha": {
           "values": [
             "alpha"
           ],
@@ -5310,10 +8548,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "gteq": {
+        "gt:alpha": {
           "values": [
             "alpha"
           ],
@@ -5323,10 +8563,33 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "in": {
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "matches:alpha": {
           "values": [
             "alpha"
           ],
@@ -5336,10 +8599,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "start": {
+        "does_not_match:alpha": {
           "values": [
             "alpha"
           ],
@@ -5349,10 +8614,169 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "cont_any": {
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709
+          ]
+        },
+        "eq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "not_eq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "lt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "lteq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "gt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "gteq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "in:december-and-january": {
+          "values": [
+            "2024-12-31",
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "cont_any:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -5363,10 +8787,12 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         },
-        "cont_all": {
+        "cont_all:alpha-and-beta": {
           "values": [
             "alpha",
             "beta"
@@ -5377,7 +8803,9 @@
             982704,
             982705,
             982706,
-            982707
+            982707,
+            982708,
+            982709
           ]
         }
       },
@@ -5391,7 +8819,9 @@
           982704,
           982705,
           982706,
-          982707
+          982707,
+          982708,
+          982709
         ]
       }
     }

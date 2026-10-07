@@ -21,7 +21,7 @@ namespace :ffcrm do
       end
       abort "custom-fields V2 trigger/column missing on: #{missing.join(', ')}" if missing.any?
 
-      if connection.select_value("SELECT 1 FROM accounts WHERE id BETWEEN 982701 AND 982707").present? ||
+      if connection.select_value("SELECT 1 FROM accounts WHERE id BETWEEN 982701 AND 982709").present? ||
          connection.select_value("SELECT 1 FROM field_groups WHERE id = 982700").present? ||
          connection.select_value("SELECT 1 FROM fields WHERE id BETWEEN 982710 AND 982799").present? ||
          tables.any? { |table| connection.columns(table).any? { |column| column.name.start_with?("cf_ab271_") } }
@@ -58,6 +58,8 @@ def custom_fields_matrix_result(java_fixture)
   definitions = custom_fields_matrix_create_fields(group)
   Account.reset_column_information
   record_values = custom_fields_matrix_values(definitions)
+  secondary_values = custom_fields_matrix_values(definitions, variant: 1)
+  tertiary_values = custom_fields_matrix_values(definitions, variant: 2)
   decimal = definitions.find { |field| field.as == "decimal" }
   check_boxes = definitions.find { |field| field.as == "check_boxes" }
   row_inputs = [
@@ -66,7 +68,9 @@ def custom_fields_matrix_result(java_fixture)
     [982704, "decimal-1000", { decimal.name => BigDecimal("1000") }],
     [982705, "decimal-small", { decimal.name => BigDecimal("0.01") }],
     [982706, "empty-check-boxes", { check_boxes.name => [] }],
-    [982707, "yaml-block-marker", { check_boxes.name => ["line one\nline two"] }]
+    [982707, "yaml-block-marker", { check_boxes.name => ["line one\nline two"] }],
+    [982708, "typed-secondary", secondary_values],
+    [982709, "typed-tertiary", tertiary_values]
   ]
   records = row_inputs.map do |id, label, values|
     Account.create!(
@@ -169,27 +173,50 @@ def custom_fields_matrix_create_fields(group)
   definitions
 end
 
-def custom_fields_matrix_values(definitions)
+def custom_fields_matrix_values(definitions, variant: 0)
   values = {}
   definitions.each do |field|
     next if field.pair_id.present?
 
     values[field.name] = case field.as
-                         when "check_boxes" then ["true", "123", "O'Brien", "café"]
-                         when "boolean" then true
-                         when "date" then Date.new(2025, 1, 2)
-                         when "datetime" then Time.utc(2025, 1, 2, 3, 4, 5, 123_000)
-                         when "decimal" then BigDecimal("1234.50")
-                         when "integer" then 42
-                         when "float" then 1.25
-                         when "select", "radio_buttons" then "alpha"
-                         when "text" then "line one\nline two"
-                         else "matrix #{field.as}"
+                         when "check_boxes"
+                           [["true", "123", "O'Brien", "café"], ["alpha", "green"], ["beta", "true"]][variant]
+                         when "boolean" then [true, false, true][variant]
+                         when "date"
+                           [Date.new(2025, 1, 2), Date.new(2024, 12, 31), Date.new(2025, 3, 1)][variant]
+                         when "datetime"
+                           [
+                             Time.utc(2025, 1, 2, 3, 4, 5, 123_000),
+                             Time.utc(2024, 12, 31, 11, 22, 33, 987_000),
+                             Time.utc(2025, 1, 2, 3, 4, 5)
+                           ][variant]
+                         when "decimal"
+                           [BigDecimal("1234.50"), BigDecimal("1000"), BigDecimal("0.01")][variant]
+                         when "integer" then [42, 10, 100][variant]
+                         when "float" then [1.25, -0.5, 3.0][variant]
+                         when "select", "radio_buttons" then %w[alpha beta alpha][variant]
+                         when "text"
+                           ["line one\nline two", "AlPhA%_text-Suffix", "beta_text%_END"][variant]
+                         else
+                           ["matrix #{field.as}", "Alpha%_#{field.as}-Suffix", "beta_#{field.as}%_END"][variant]
                          end
   end
   definitions.select { |field| %w[date_pair datetime_pair].include?(field.as) }.each_slice(2) do |pair|
+    pair_values = if pair.first.as == "date_pair"
+                    [
+                      [Date.new(2025, 1, 2), Date.new(2025, 1, 3)],
+                      [Date.new(2024, 12, 31), Date.new(2025, 1, 1)],
+                      [Date.new(2025, 3, 1), Date.new(2025, 3, 2)]
+                    ]
+                  else
+                    [
+                      [Time.utc(2025, 1, 2, 3, 4, 5, 123_000), Time.utc(2025, 1, 3, 0, 0)],
+                      [Time.utc(2024, 12, 31, 11, 22, 33, 987_000), Time.utc(2025, 1, 1, 0, 0)],
+                      [Time.utc(2025, 1, 2, 3, 4, 5), Time.utc(2025, 3, 1, 12, 0)]
+                    ]
+                  end
     pair.each_with_index do |field, index|
-      values[field.name] = field.as == "date_pair" ? Date.new(2025, 1, index + 2) : Time.utc(2025, 1, index + 2)
+      values[field.name] = pair_values.fetch(variant).fetch(index)
     end
   end
   values
@@ -234,17 +261,96 @@ def custom_fields_matrix_search(definitions, account_ids)
     lteq gteq in start
   ]
   definitions.to_h do |field|
-    cases = predicates.to_h do |predicate|
-      value = %w[blank present true false null not_null].include?(predicate) ? "1" : "alpha"
-      query = { "#{field.name}_#{predicate}" => value }
-      result = custom_fields_matrix_run_search(account_ids, query, [value])
-      [predicate, result]
+    cases = {}
+    add_case = lambda do |predicate, label, values|
+      query_value = values.one? ? values.first : values
+      query = { "#{field.name}_#{predicate}" => query_value }
+      cases["#{predicate}:#{label}"] = custom_fields_matrix_run_search(account_ids, query, values)
     end
+
+    predicates.each do |predicate|
+      flag = %w[blank present true false null not_null].include?(predicate)
+      add_case.call(predicate, flag ? "flag-1" : "alpha", [flag ? "1" : "alpha"])
+    end
+    %w[blank present true false null not_null].each do |predicate|
+      add_case.call(predicate, "flag-0", ["0"])
+    end
+
+    case field.as
+    when "integer"
+      {
+        %w[eq integer] => ["42"], %w[eq decimal-string] => ["42.0"],
+        %w[not_eq 10] => ["10"], %w[lt 42] => ["42"], %w[lteq 42] => ["42"],
+        %w[gt 42] => ["42"], %w[gteq 42] => ["42"], %w[in 10-and-42] => %w[10 42]
+      }.each { |(predicate, label), values| add_case.call(predicate, label, values) }
+    when "float"
+      {
+        %w[eq 1.25] => ["1.25"], %w[eq 3.0] => ["3.0"],
+        %w[not_eq 1.25] => ["1.25"], %w[lt 1.25] => ["1.25"], %w[lteq 1.25] => ["1.25"],
+        %w[gt 1.25] => ["1.25"], %w[gteq 1.25] => ["1.25"],
+        %w[in negative-and-positive] => ["-0.5", "1.25"]
+      }.each { |(predicate, label), values| add_case.call(predicate, label, values) }
+    when "decimal"
+      {
+        %w[eq 1000-point-zero-zero] => ["1000.00"], %w[eq 1000] => ["1000"],
+        %w[not_eq 0.01] => ["0.01"], %w[lt 1000] => ["1000"], %w[lteq 1000] => ["1000"],
+        %w[gt 1000] => ["1000"], %w[gteq 1000] => ["1000"],
+        %w[in decimal-values] => ["0.01", "1000", "1234.50"]
+      }.each { |(predicate, label), values| add_case.call(predicate, label, values) }
+    when "date", "date_pair"
+      {
+        %w[eq iso-date] => ["2025-01-02"], %w[not_eq iso-date] => ["2025-01-02"],
+        %w[lt iso-date] => ["2025-01-02"], %w[lteq iso-date] => ["2025-01-02"],
+        %w[gt iso-date] => ["2025-01-02"], %w[gteq iso-date] => ["2025-01-02"],
+        %w[in december-and-january] => %w[2024-12-31 2025-01-02]
+      }.each { |(predicate, label), values| add_case.call(predicate, label, values) }
+    when "datetime", "datetime_pair"
+      {
+        %w[eq iso-timestamp] => ["2025-01-02T03:04:05Z"],
+        %w[eq sql-timestamp] => ["2025-01-02 03:04:05"],
+        %w[not_eq iso-timestamp] => ["2025-01-02T03:04:05Z"],
+        %w[lt iso-timestamp] => ["2025-01-02T03:04:05Z"],
+        %w[lteq iso-timestamp] => ["2025-01-02T03:04:05Z"],
+        %w[gt iso-timestamp] => ["2025-01-02T03:04:05Z"],
+        %w[gteq iso-timestamp] => ["2025-01-02T03:04:05Z"],
+        %w[in fractional-and-whole] =>
+          ["2024-12-31T11:22:33.987Z", "2025-01-02T03:04:05Z"]
+      }.each { |(predicate, label), values| add_case.call(predicate, label, values) }
+    when "boolean"
+      %w[true false 1 0].each do |value|
+        add_case.call("eq", "value-#{value}", [value])
+        add_case.call("not_eq", "value-#{value}", [value])
+      end
+    when "select", "radio_buttons"
+      %w[alpha beta].each do |value|
+        add_case.call("eq", value, [value])
+        add_case.call("not_eq", value, [value])
+      end
+      add_case.call("in", "alpha-and-beta", %w[alpha beta])
+    when "check_boxes"
+      add_case.call("cont", "element-true", ["true"])
+      add_case.call("not_cont", "element-green", ["green"])
+      add_case.call("cont_any", "alpha-and-beta", %w[alpha beta])
+      add_case.call("cont_all", "alpha-and-beta", %w[alpha beta])
+    when "string", "text", "email", "url", "tel"
+      eq_value = field.as == "text" ? "line one\nline two" : "matrix #{field.as}"
+      add_case.call("eq", "row-one", [eq_value])
+      add_case.call("lt", "m", ["m"])
+      add_case.call("gt", "m", ["m"])
+      add_case.call("cont", "case-insensitive-alpha", ["alpha"])
+      add_case.call("cont", "literal-percent", ["%"])
+      add_case.call("not_cont", "case-insensitive-alpha", ["alpha"])
+      add_case.call("start", "case-insensitive-alpha", ["alpha"])
+      add_case.call("end", "case-insensitive-suffix", ["suffix"])
+      add_case.call("matches", "alpha-wildcard", ["alpha%"])
+      add_case.call("does_not_match", "alpha-wildcard", ["alpha%"])
+    end
+
     compound = %w[cont_any cont_all]
     compound.each do |predicate|
-      name = "#{field.name}_#{predicate}"
-      cases[predicate] =
-        custom_fields_matrix_run_search(account_ids, { name => %w[alpha beta] }, %w[alpha beta])
+      next if field.as == "check_boxes"
+
+      add_case.call(predicate, "alpha-and-beta", %w[alpha beta])
     end
     uncoercible_value = case field.as
                         when "integer", "float", "decimal" then "not-a-number"

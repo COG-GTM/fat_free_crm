@@ -148,7 +148,9 @@ class CustomFieldsRailsRoundTripTest extends AbstractPostgresIntegrationTest {
             Iterator<Map.Entry<String, JsonNode>> cases = field.getValue().path("cases").properties().iterator();
             while (cases.hasNext()) {
                 Map.Entry<String, JsonNode> searchCase = cases.next();
-                assertSearchCase(field.getKey(), searchCase.getKey(), searchCase.getValue(), fixtureIds);
+                String caseName = searchCase.getKey();
+                String operator = caseName.substring(0, caseName.indexOf(':'));
+                assertSearchCase(field.getKey(), operator, searchCase.getValue(), fixtureIds);
             }
             JsonNode uncoercible = field.getValue().path("uncoercible");
             if (!uncoercible.isMissingNode() && !uncoercible.isNull()) {

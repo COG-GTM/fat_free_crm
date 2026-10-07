@@ -88,6 +88,9 @@ BEGIN
         RETURN NULL;
     END IF;
     RETURN v_out;
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN NULL;
 END;
 $$;
 
@@ -120,21 +123,27 @@ BEGIN
         END IF;
         IF jsonb_typeof(v_val) = 'string' AND (v_val #>> '{}') ~ '^\s*(---|\[)' THEN
             IF NOT v_cb_names_loaded THEN
-                SELECT array_agg(f.name) INTO v_cb_names
-                  FROM fields f
-                  JOIN field_groups g ON g.id = f.field_group_id
-                 WHERE g.klass_name = TG_ARGV[0]
-                   AND f."as" = 'check_boxes';
+                IF TG_ARGV[0] IS NOT NULL THEN
+                    SELECT array_agg(f.name) INTO v_cb_names
+                      FROM fields f
+                      JOIN field_groups g ON g.id = f.field_group_id
+                     WHERE g.klass_name = TG_ARGV[0]
+                       AND f."as" = 'check_boxes';
+                END IF;
                 v_cb_names := coalesce(v_cb_names, '{}');
                 v_cb_names_loaded := true;
             END IF;
             IF v_key = ANY(v_cb_names) THEN
                 v_decoded := ffcrm_yaml_string_array(v_val #>> '{}');
                 IF v_decoded IS NULL THEN
-                    IF TG_OP = 'UPDATE'
-                       AND to_jsonb(OLD) -> v_key IS NOT DISTINCT FROM to_jsonb(NEW) -> v_key
-                       AND jsonb_typeof(NEW.custom_fields -> v_key) = 'array' THEN
-                        v_obj := v_obj || jsonb_build_object(v_key, NEW.custom_fields -> v_key);
+                    IF TG_OP = 'UPDATE' THEN
+                        IF to_jsonb(OLD) -> v_key IS NOT DISTINCT FROM to_jsonb(NEW) -> v_key
+                           AND jsonb_typeof(NEW.custom_fields -> v_key) = 'array' THEN
+                            v_obj := v_obj || jsonb_build_object(v_key, NEW.custom_fields -> v_key);
+                        ELSE
+                            v_obj := v_obj || jsonb_build_object(
+                                v_key, jsonb_build_object('$yaml', v_val #>> '{}'));
+                        END IF;
                     ELSE
                         v_obj := v_obj || jsonb_build_object(
                             v_key, jsonb_build_object('$yaml', v_val #>> '{}'));
@@ -150,7 +159,12 @@ BEGIN
         END IF;
     END LOOP;
 
-    v_document := (coalesce(NEW.custom_fields, '{}'::jsonb) - v_remove) || v_obj;
+    v_document := (
+        CASE WHEN jsonb_typeof(NEW.custom_fields) = 'object'
+            THEN NEW.custom_fields
+            ELSE '{}'::jsonb
+        END - v_remove
+    ) || v_obj;
     IF v_document IS DISTINCT FROM NEW.custom_fields THEN
         NEW.custom_fields := v_document;
     END IF;

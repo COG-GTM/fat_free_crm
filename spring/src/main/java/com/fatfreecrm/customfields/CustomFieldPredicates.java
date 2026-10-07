@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -113,7 +114,8 @@ public class CustomFieldPredicates implements DynamicAttributePredicates {
             case "lt", "lteq", "gt", "gteq" ->
                 comparisonPredicate(root, cb, attribute, definition, predicate, values.get(0));
             case "cont", "not_cont", "i_cont", "start", "not_start", "end", "not_end",
-                "matches", "does_not_match" -> likePredicate(text, predicate, rawValues.get(0), cb);
+                "matches", "does_not_match" ->
+                likePredicate(text, predicate, rawValues.get(0), definition.as().equals("check_boxes"), cb);
             default -> null;
         };
     }
@@ -189,10 +191,14 @@ public class CustomFieldPredicates implements DynamicAttributePredicates {
         Expression<?> path = typedExpression(root, cb, attribute, definition.as());
         List<Object> comparableValues = values.stream().map(value -> typedBind(definition.as(), value)).toList();
         if (list) {
-            Predicate included = path.in(comparableValues);
+            List<Expression<?>> boundValues = new ArrayList<>();
+            for (Object value : comparableValues) {
+                boundValues.add(bindValue(cb, value));
+            }
+            Predicate included = path.in(boundValues);
             return negative ? cb.not(included) : included;
         }
-        Predicate equal = cb.equal(path, comparableValues.get(0));
+        Predicate equal = cb.equal(path, bindValue(cb, comparableValues.get(0)));
         return negative ? cb.not(equal) : equal;
     }
 
@@ -209,10 +215,10 @@ public class CustomFieldPredicates implements DynamicAttributePredicates {
             root, cb, attribute, definition.as());
         Comparable bind = (Comparable) typedBind(definition.as(), value);
         return switch (predicate) {
-            case "lt" -> cb.lessThan(path, bind);
-            case "lteq" -> cb.lessThanOrEqualTo(path, bind);
-            case "gt" -> cb.greaterThan(path, bind);
-            default -> cb.greaterThanOrEqualTo(path, bind);
+            case "lt" -> cb.lessThan(path, bindValue(cb, bind));
+            case "lteq" -> cb.lessThanOrEqualTo(path, bindValue(cb, bind));
+            case "gt" -> cb.greaterThan(path, bindValue(cb, bind));
+            default -> cb.greaterThanOrEqualTo(path, bindValue(cb, bind));
         };
     }
 
@@ -230,6 +236,9 @@ public class CustomFieldPredicates implements DynamicAttributePredicates {
             Expression<Boolean> value = (Expression<Boolean>) typedExpression(root, cb, attribute, "boolean");
             return cb.equal(value, target);
         }
+        if (!RubyScalars.toBoolean(raw) && isNumeric(as)) {
+            return cb.isNotNull(textExpression(root, cb, attribute));
+        }
         if (isNumeric(as)) {
             Expression<?> value = typedExpression(root, cb, attribute, as);
             return cb.equal(value, target ? BigDecimal.ONE : BigDecimal.ZERO);
@@ -238,13 +247,23 @@ public class CustomFieldPredicates implements DynamicAttributePredicates {
             return null;
         }
         Expression<String> value = textExpression(root, cb, attribute);
-        return cb.equal(value, Boolean.toString(target));
+        if (isStringLike(as) && !RubyScalars.toBoolean(raw)) {
+            return cb.isNotNull(value);
+        }
+        return cb.equal(value, bindValue(cb, Boolean.toString(target)));
     }
 
     private Predicate flagPredicate(
         Expression<String> value, String as, String predicate, String raw, CriteriaBuilder cb
     ) {
         boolean flag = RubyScalars.toBoolean(raw);
+        boolean databaseScalar = isNumeric(as) || isTemporal(as) || as.equals("boolean");
+        if (databaseScalar && predicate.equals("blank")) {
+            return flag ? cb.isNull(value) : cb.disjunction();
+        }
+        if (databaseScalar && predicate.equals("present")) {
+            return flag ? cb.disjunction() : cb.isNull(value);
+        }
         if (predicate.equals("present") && flag && !isStringLike(as)) {
             return cb.disjunction();
         }
@@ -264,19 +283,29 @@ public class CustomFieldPredicates implements DynamicAttributePredicates {
         return List.of("string", "email", "url", "tel", "text", "select", "radio_buttons").contains(as);
     }
 
-    private Predicate likePredicate(Expression<String> path, String predicate, String raw, CriteriaBuilder cb) {
+    private Predicate likePredicate(
+        Expression<String> path, String predicate, String raw, boolean jsonArrayText, CriteriaBuilder cb
+    ) {
         Expression<String> lowered = cb.lower(path);
         String value = raw.toLowerCase(Locale.ROOT);
+        if (jsonArrayText) {
+            try {
+                String encoded = objectMapper.writeValueAsString(value);
+                value = encoded.substring(1, encoded.length() - 1);
+            } catch (JsonProcessingException exception) {
+                throw new IllegalArgumentException("Custom-field predicate value is not JSON serializable", exception);
+            }
+        }
         String escaped = value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
         return switch (predicate) {
-            case "cont", "i_cont" -> cb.like(lowered, "%" + escaped + "%", LIKE_ESCAPE);
-            case "not_cont" -> cb.notLike(lowered, "%" + escaped + "%", LIKE_ESCAPE);
-            case "start" -> cb.like(lowered, escaped + "%", LIKE_ESCAPE);
-            case "not_start" -> cb.notLike(lowered, escaped + "%", LIKE_ESCAPE);
-            case "end" -> cb.like(lowered, "%" + escaped, LIKE_ESCAPE);
-            case "not_end" -> cb.notLike(lowered, "%" + escaped, LIKE_ESCAPE);
-            case "matches" -> cb.like(lowered, value);
-            case "does_not_match" -> cb.notLike(lowered, value);
+            case "cont", "i_cont" -> cb.like(lowered, bindValue(cb, "%" + escaped + "%"), LIKE_ESCAPE);
+            case "not_cont" -> cb.notLike(lowered, bindValue(cb, "%" + escaped + "%"), LIKE_ESCAPE);
+            case "start" -> cb.like(lowered, bindValue(cb, escaped + "%"), LIKE_ESCAPE);
+            case "not_start" -> cb.notLike(lowered, bindValue(cb, escaped + "%"), LIKE_ESCAPE);
+            case "end" -> cb.like(lowered, bindValue(cb, "%" + escaped), LIKE_ESCAPE);
+            case "not_end" -> cb.notLike(lowered, bindValue(cb, "%" + escaped), LIKE_ESCAPE);
+            case "matches" -> cb.like(lowered, bindValue(cb, value));
+            case "does_not_match" -> cb.notLike(lowered, bindValue(cb, value));
             default -> null;
         };
     }
@@ -285,7 +314,7 @@ public class CustomFieldPredicates implements DynamicAttributePredicates {
         try {
             String json = objectMapper.writeValueAsString(Map.of(attribute, value));
             return cb.isTrue(cb.function("ffcrm_jsonb_contains", Boolean.class,
-                root.get("customFields"), cb.literal(json)));
+                root.get("customFields"), bindValue(cb, json)));
         } catch (JsonProcessingException exception) {
             throw new IllegalArgumentException("Custom-field predicate value is not JSON serializable", exception);
         }
@@ -293,7 +322,8 @@ public class CustomFieldPredicates implements DynamicAttributePredicates {
 
     private static Expression<String> textExpression(
         Root<?> root, CriteriaBuilder cb, String attribute) {
-        return cb.function("ffcrm_jsonb_text", String.class, root.get("customFields"), cb.literal(attribute));
+        return cb.function("ffcrm_jsonb_text", String.class, root.get("customFields"),
+            bindValue(cb, attribute));
     }
 
     private static Expression<?> typedExpression(
@@ -312,7 +342,11 @@ public class CustomFieldPredicates implements DynamicAttributePredicates {
             case "ffcrm_jsonb_boolean" -> Boolean.class;
             default -> String.class;
         };
-        return cb.function(function, resultType, root.get("customFields"), cb.literal(attribute));
+        return cb.function(function, resultType, root.get("customFields"), bindValue(cb, attribute));
+    }
+
+    private static <T> Expression<T> bindValue(CriteriaBuilder cb, T value) {
+        return ((HibernateCriteriaBuilder) cb).value(value);
     }
 
     private static Object cast(String as, String raw) {

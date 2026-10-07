@@ -14,6 +14,7 @@ import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -165,10 +166,20 @@ public class CustomFieldsBackfillJob {
                     } catch (RuntimeException ignored) {
                         continue;
                     }
-                    transactionTemplate.executeWithoutResult(status -> jdbcTemplate.update(
-                        "UPDATE " + table + " SET custom_fields = jsonb_set(custom_fields, ?::text[], ?::jsonb, true) "
-                            + "WHERE id = ?",
-                        "{" + entry.getKey() + "}", writeJson(decoded), row.id()));
+                    String json;
+                    try {
+                        json = writeJson(decoded);
+                    } catch (RuntimeException ignored) {
+                        continue;
+                    }
+                    try {
+                        transactionTemplate.executeWithoutResult(status -> jdbcTemplate.update(
+                            "UPDATE " + table + " SET custom_fields = "
+                                + "jsonb_set(custom_fields, ?::text[], ?::jsonb, true) WHERE id = ?",
+                            "{" + entry.getKey() + "}", json, row.id()));
+                    } catch (DataAccessException ignored) {
+                        continue;
+                    }
                 }
             }
         }
