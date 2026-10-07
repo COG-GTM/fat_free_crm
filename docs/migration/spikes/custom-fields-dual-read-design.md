@@ -1,16 +1,13 @@
 # Custom fields: dual-read shim and type-enforcement design (AB-267)
 
 - **Ticket**: [AB-267](https://cog-gtm.atlassian.net/browse/AB-267). Phase 2 design spike, part of epic AB-261.
-- **Status**: Design proposal. Implementation belongs to G4 (custom fields JSONB + dual-read) and
-  AB-265/AB-271 (entity mapping and API).
+- **Status**: Design proposal. AB-271 promoted the prototype into `com.fatfreecrm.customfields` and
+  removed the spike harness; the design and benchmark results remain here.
 - **Companion**: [`custom-fields-jsonb-benchmark.md`](custom-fields-jsonb-benchmark.md) (numbers and the GO/NO-GO).
   Builds on [ADR 0003](../decisions/0003-custom-field-storage.md) and the
   [`cf_*` column census](../baseline/column-census.md).
-- **Prototype code** (test source set only, nothing in `src/main`):
-  `spring/src/test/java/com/fatfreecrm/spike/customfields/`
-  (`CustomFieldsDualReader`, `CheckBoxesYamlCodec`, `CustomFieldTypeValidator`) and
-  `spring/src/test/resources/spike/customfields/dual_read_trigger.sql` (`spike_sync_custom_fields()`
-  trigger function and the `spike_yaml_string_array()` SQL YAML decoder).
+- **Production code**: `spring/src/main/java/com/fatfreecrm/customfields/`; the AB-271 spike test
+  harness was removed after promotion.
 
 ## 1. Problem
 
@@ -25,7 +22,7 @@ to know each deployment's physical `cf_*` set at compile time (`ddl-auto: valida
 | Concern | Decision |
 |---|---|
 | Source of truth during coexistence | **`cf_*` columns** (Rails is the writer). `custom_fields` is a derived copy. |
-| How `custom_fields` is kept fresh | **`BEFORE INSERT OR UPDATE` row trigger** (`spike_sync_custom_fields(<klass>)`) plus a **one-off set-based backfill**. No periodic job. Java merge-on-read stays as the safety net. |
+| How `custom_fields` is kept fresh | **`BEFORE INSERT OR UPDATE` row trigger** (`ffcrm_sync_custom_fields(<klass>)`) plus a **one-off set-based backfill**. No periodic job. Java merge-on-read stays as the safety net. |
 | Java read precedence | Physical `cf_*` column (even NULL) > `custom_fields` key > absent. Unknown keys dropped. READ-mode normalisation. |
 | Java writes before cutover | **Write the `cf_*` columns** (Rails' representation, including YAML for check_boxes) and let the trigger derive JSONB. Java-only keys (no `cf_*` column) go straight to `custom_fields`. |
 | Runtime `ADD COLUMN cf_*` | No trigger change needed; trigger iterates `to_jsonb(NEW)`; next write of the row picks up the column; optional backfill of the new key is a no-op because a new column is NULL everywhere. |
@@ -65,19 +62,20 @@ specific in the entity). The column-reading path is needed only (a) before the b
 
 | Option | Freshness | Cost | Runtime `ADD COLUMN cf_*` risk | Verdict |
 |---|---|---|---|---|
-| **A. Row trigger on `cf_*` writes** | Synchronous, same transaction | +1 `to_jsonb(NEW)` + one `fields` lookup per written row; see benchmark §writes (single-row insert/update latency roughly doubles in absolute terms, still sub-millisecond; ~2x on bulk backfill) | None: trigger iterates `jsonb_each(to_jsonb(NEW))`, so new columns are picked up without DDL on the trigger. `ALTER TABLE ADD COLUMN` (nullable, no default) is metadata-only and does not fire row triggers. | **Recommended** |
+| **A. Row trigger on `cf_*` writes** | Synchronous, same transaction | +1 `to_jsonb(NEW)`; the `fields` lookup is lazy and occurs only for YAML-looking strings that may be check_boxes values. The benchmark §writes measured the original prototype trigger. | None: trigger iterates `jsonb_each(to_jsonb(NEW))`, so new columns are picked up without DDL on the trigger. `ALTER TABLE ADD COLUMN` (nullable, no default) is metadata-only and does not fire row triggers. | **Recommended** |
 | B. Periodic backfill job | Eventually consistent (lag = job period) | Batch rewrite of changed rows; needs a change marker (`updated_at`), which Rails touches on every save anyway | Job must re-discover columns each run | Rejected: stale reads in Java API responses are visible contract-diff deltas; extra moving part |
 | C. Java merge-on-read only (no JSONB writes until cutover) | Always fresh | Java SELECTs must include every `cf_*` column; JSONB GIN/expr indexes useless until cutover (JSONB is empty) | Java must reflect on `information_schema` at runtime and rebuild queries when a column appears | Rejected as the primary mechanism (kills the search/index benefit and forces dynamic SQL). Kept as the diagnostic path in §3. |
 
-Trigger details (`dual_read_trigger.sql`, tested by `CustomFieldsSyncTriggerTest`):
+Trigger details (`spring/src/main/resources/db/migration/V2__custom_fields_jsonb.sql`, tested by
+`CustomFieldsTriggerIntegrationTest`):
 
 - `CREATE TRIGGER ... BEFORE INSERT OR UPDATE ON accounts FOR EACH ROW EXECUTE FUNCTION
-  spike_sync_custom_fields('Account')`; the argument is the `field_groups.klass_name`.
+  ffcrm_sync_custom_fields('Account')`; the argument is the `field_groups.klass_name`.
 - Every `cf_` key present in `NEW` is first removed from the document, then non-null values are
   re-added: `NEW.custom_fields := (coalesce(NEW.custom_fields,'{}') - <cf_ names>) || <non-null cf values>`.
   Therefore a NULL column removes its key, and **Java-only keys survive** (`updateNullAndJavaOnlyKeySemantics`).
 - check_boxes columns (from `fields."as" = 'check_boxes'` for the klass) are decoded by
-  `spike_yaml_string_array()`. If it returns NULL (anything other than a simple Psych block sequence of
+  `ffcrm_yaml_string_array()`. If it returns NULL (anything other than a simple Psych block sequence of
   scalars, e.g. the `|-` multi-line block scalar), the value is stored as `{"$yaml": "<raw>"}` and decoded
   in Java (`psychFixturesDecodeOrProduceMarker`: 8 of 9 Psych fixtures decode in SQL, 1 marker).
   Note: the SQL decoder assumes Psych-emitted YAML — Rails writes check_boxes via
@@ -104,8 +102,8 @@ Trigger details (`dual_read_trigger.sql`, tested by `CustomFieldsSyncTriggerTest
   range in production (e.g. 10k rows per transaction) to keep lock time and WAL bursts small. The
   subtraction form keeps Java-only keys (no `cf_` column), and check_boxes values fall back to the
   `{"$yaml": ...}` marker when the SQL decoder cannot handle them — the same merge semantics as the
-  trigger, which the benchmark verifies against (`setBasedBackfillIsLossless` also asserts Java-only
-  key preservation, marker fallback and trigger equality). Measured
+  trigger; `CustomFieldsBackfillJobIntegrationTest` checks parity, Java-only key preservation and
+  undecodable YAML marker resolution. Measured
   at about half the cost of a no-op `UPDATE ... SET custom_fields = custom_fields` through the trigger
   (benchmark `writes.csv`, `backfill_set_based` vs `backfill_via_trigger_noop_update`), and both produce
   identical documents (asserted by the benchmark).
@@ -168,7 +166,7 @@ trigger's logic in Java and races with it).
 3. **Verify**: for each table, `SELECT count(*) WHERE custom_fields IS DISTINCT FROM <set-based expr>` = 0
    and the Java consistency check (§3) reports no drift; record counts per key.
 4. **Switch reads**: Java reads JSONB-only (already the steady state), disable the column-reading path.
-5. **Drop the trigger** and `spike_yaml_string_array` (renamed in production).
+5. **Drop the trigger** and `ffcrm_yaml_string_array`.
 6. **Contract migration (separate Flyway version, after a soak period)**: archive orphaned and mapped
    `cf_*` columns (`CREATE TABLE cf_archive_<table> AS SELECT id, cf_... FROM <table>`), then
    `ALTER TABLE <table> DROP COLUMN cf_...` per census column. Re-run the census first; a deployment-

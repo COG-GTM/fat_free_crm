@@ -1,0 +1,9262 @@
+{
+  "generated_by": "bundle exec rake ffcrm:migration:custom_fields_matrix OUTPUT=spring/src/test/resources/customfields/rails_custom_fields_matrix.json",
+  "field_group": {
+    "id": 982700,
+    "klass_name": "Account",
+    "label": "AB-271 matrix",
+    "position": 1
+  },
+  "fields": [
+    {
+      "id": 982710,
+      "type": "CustomField",
+      "field_group_id": 982700,
+      "position": 1,
+      "pair_id": null,
+      "name": "cf_ab271_string",
+      "label": "matrix string",
+      "as": "string",
+      "collection": [
+        "alpha",
+        "beta"
+      ],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982711,
+      "type": "CustomField",
+      "field_group_id": 982700,
+      "position": 2,
+      "pair_id": null,
+      "name": "cf_ab271_text",
+      "label": "matrix text",
+      "as": "text",
+      "collection": [
+        "alpha",
+        "beta"
+      ],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982712,
+      "type": "CustomField",
+      "field_group_id": 982700,
+      "position": 3,
+      "pair_id": null,
+      "name": "cf_ab271_email",
+      "label": "matrix email",
+      "as": "email",
+      "collection": [
+        "alpha",
+        "beta"
+      ],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982713,
+      "type": "CustomField",
+      "field_group_id": 982700,
+      "position": 4,
+      "pair_id": null,
+      "name": "cf_ab271_url",
+      "label": "matrix url",
+      "as": "url",
+      "collection": [
+        "alpha",
+        "beta"
+      ],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982714,
+      "type": "CustomField",
+      "field_group_id": 982700,
+      "position": 5,
+      "pair_id": null,
+      "name": "cf_ab271_tel",
+      "label": "matrix tel",
+      "as": "tel",
+      "collection": [
+        "alpha",
+        "beta"
+      ],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982715,
+      "type": "CustomField",
+      "field_group_id": 982700,
+      "position": 6,
+      "pair_id": null,
+      "name": "cf_ab271_select",
+      "label": "matrix select",
+      "as": "select",
+      "collection": [
+        "alpha",
+        "beta"
+      ],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982716,
+      "type": "CustomField",
+      "field_group_id": 982700,
+      "position": 7,
+      "pair_id": null,
+      "name": "cf_ab271_radio_buttons",
+      "label": "matrix radio_buttons",
+      "as": "radio_buttons",
+      "collection": [
+        "alpha",
+        "beta"
+      ],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982717,
+      "type": "CustomField",
+      "field_group_id": 982700,
+      "position": 8,
+      "pair_id": null,
+      "name": "cf_ab271_check_boxes",
+      "label": "matrix check_boxes",
+      "as": "check_boxes",
+      "collection": [
+        "alpha",
+        "beta"
+      ],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982718,
+      "type": "CustomField",
+      "field_group_id": 982700,
+      "position": 9,
+      "pair_id": null,
+      "name": "cf_ab271_boolean",
+      "label": "matrix boolean",
+      "as": "boolean",
+      "collection": [
+        "alpha",
+        "beta"
+      ],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982719,
+      "type": "CustomField",
+      "field_group_id": 982700,
+      "position": 10,
+      "pair_id": null,
+      "name": "cf_ab271_date",
+      "label": "matrix date",
+      "as": "date",
+      "collection": [
+        "alpha",
+        "beta"
+      ],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982720,
+      "type": "CustomField",
+      "field_group_id": 982700,
+      "position": 11,
+      "pair_id": null,
+      "name": "cf_ab271_datetime",
+      "label": "matrix datetime",
+      "as": "datetime",
+      "collection": [
+        "alpha",
+        "beta"
+      ],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982721,
+      "type": "CustomField",
+      "field_group_id": 982700,
+      "position": 12,
+      "pair_id": null,
+      "name": "cf_ab271_decimal",
+      "label": "matrix decimal",
+      "as": "decimal",
+      "collection": [
+        "alpha",
+        "beta"
+      ],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982722,
+      "type": "CustomField",
+      "field_group_id": 982700,
+      "position": 13,
+      "pair_id": null,
+      "name": "cf_ab271_integer",
+      "label": "matrix integer",
+      "as": "integer",
+      "collection": [
+        "alpha",
+        "beta"
+      ],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982723,
+      "type": "CustomField",
+      "field_group_id": 982700,
+      "position": 14,
+      "pair_id": null,
+      "name": "cf_ab271_float",
+      "label": "matrix float",
+      "as": "float",
+      "collection": [
+        "alpha",
+        "beta"
+      ],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982724,
+      "type": "CustomFieldDatePair",
+      "field_group_id": 982700,
+      "position": 15,
+      "pair_id": null,
+      "name": "cf_ab271_date_pair_start",
+      "label": "matrix date_pair",
+      "as": "date_pair",
+      "collection": [],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982725,
+      "type": "CustomFieldDatePair",
+      "field_group_id": 982700,
+      "position": 16,
+      "pair_id": 982724,
+      "name": "cf_ab271_date_pair_end",
+      "label": "matrix date_pair",
+      "as": "date_pair",
+      "collection": [],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982726,
+      "type": "CustomFieldDatetimePair",
+      "field_group_id": 982700,
+      "position": 17,
+      "pair_id": null,
+      "name": "cf_ab271_datetime_pair_start",
+      "label": "matrix datetime_pair",
+      "as": "datetime_pair",
+      "collection": [],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982727,
+      "type": "CustomFieldDatetimePair",
+      "field_group_id": 982700,
+      "position": 18,
+      "pair_id": 982726,
+      "name": "cf_ab271_datetime_pair_end",
+      "label": "matrix datetime_pair",
+      "as": "datetime_pair",
+      "collection": [],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982780,
+      "type": "CustomField",
+      "field_group_id": 982700,
+      "position": 90,
+      "pair_id": null,
+      "name": "cf_ab271_required",
+      "label": "required",
+      "as": "string",
+      "collection": [],
+      "disabled": null,
+      "required": true,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982781,
+      "type": "CustomField",
+      "field_group_id": 982700,
+      "position": 91,
+      "pair_id": null,
+      "name": "cf_ab271_minimum",
+      "label": "minimum",
+      "as": "string",
+      "collection": [],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 3,
+      "settings": {}
+    },
+    {
+      "id": 982782,
+      "type": "CustomField",
+      "field_group_id": 982700,
+      "position": 92,
+      "pair_id": null,
+      "name": "cf_ab271_maximum",
+      "label": "maximum",
+      "as": "string",
+      "collection": [],
+      "disabled": null,
+      "required": null,
+      "maxlength": 5,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982783,
+      "type": "CustomFieldDatePair",
+      "field_group_id": 982700,
+      "position": 93,
+      "pair_id": null,
+      "name": "cf_ab271_range_start",
+      "label": "date range",
+      "as": "date_pair",
+      "collection": [],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    },
+    {
+      "id": 982784,
+      "type": "CustomFieldDatePair",
+      "field_group_id": 982700,
+      "position": 94,
+      "pair_id": 982783,
+      "name": "cf_ab271_range_end",
+      "label": "date range",
+      "as": "date_pair",
+      "collection": [],
+      "disabled": null,
+      "required": null,
+      "maxlength": null,
+      "minlength": 0,
+      "settings": {}
+    }
+  ],
+  "column_types": {
+    "cf_ab271_string": "character varying",
+    "cf_ab271_text": "text",
+    "cf_ab271_email": "character varying",
+    "cf_ab271_url": "character varying",
+    "cf_ab271_tel": "character varying",
+    "cf_ab271_select": "character varying",
+    "cf_ab271_radio_buttons": "character varying",
+    "cf_ab271_check_boxes": "text",
+    "cf_ab271_boolean": "boolean",
+    "cf_ab271_date": "date",
+    "cf_ab271_datetime": "timestamp without time zone",
+    "cf_ab271_decimal": "numeric",
+    "cf_ab271_integer": "integer",
+    "cf_ab271_float": "double precision",
+    "cf_ab271_date_pair_start": "date",
+    "cf_ab271_date_pair_end": "date",
+    "cf_ab271_datetime_pair_start": "timestamp without time zone",
+    "cf_ab271_datetime_pair_end": "timestamp without time zone",
+    "cf_ab271_required": "character varying",
+    "cf_ab271_minimum": "character varying",
+    "cf_ab271_maximum": "character varying",
+    "cf_ab271_range_start": "date",
+    "cf_ab271_range_end": "date"
+  },
+  "rows": [
+    {
+      "id": 982701,
+      "raw_columns": {
+        "cf_ab271_string": "matrix string",
+        "cf_ab271_text": "line one\nline two",
+        "cf_ab271_email": "matrix email",
+        "cf_ab271_url": "matrix url",
+        "cf_ab271_tel": "matrix tel",
+        "cf_ab271_select": "alpha",
+        "cf_ab271_radio_buttons": "alpha",
+        "cf_ab271_check_boxes": "---\n- 'true'\n- '123'\n- O'Brien\n- café\n",
+        "cf_ab271_boolean": "true",
+        "cf_ab271_date": "2025-01-02",
+        "cf_ab271_datetime": "2025-01-02 03:04:05.123",
+        "cf_ab271_decimal": "1234.50",
+        "cf_ab271_integer": "42",
+        "cf_ab271_float": "1.25",
+        "cf_ab271_date_pair_start": "2025-01-02",
+        "cf_ab271_date_pair_end": "2025-01-03",
+        "cf_ab271_datetime_pair_start": "2025-01-02 03:04:05.123",
+        "cf_ab271_datetime_pair_end": "2025-01-03 00:00:00",
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "rails_json": {
+        "cf_ab271_string": "matrix string",
+        "cf_ab271_text": "line one\nline two",
+        "cf_ab271_email": "matrix email",
+        "cf_ab271_url": "matrix url",
+        "cf_ab271_tel": "matrix tel",
+        "cf_ab271_select": "alpha",
+        "cf_ab271_radio_buttons": "alpha",
+        "cf_ab271_check_boxes": [
+          "true",
+          "123",
+          "O'Brien",
+          "café"
+        ],
+        "cf_ab271_boolean": true,
+        "cf_ab271_date": "2025-01-02",
+        "cf_ab271_datetime": "2025-01-02T03:04:05.123Z",
+        "cf_ab271_decimal": "1234.5",
+        "cf_ab271_integer": 42,
+        "cf_ab271_float": 1.25,
+        "cf_ab271_date_pair_start": "2025-01-02",
+        "cf_ab271_date_pair_end": "2025-01-03",
+        "cf_ab271_datetime_pair_start": "2025-01-02T03:04:05.123Z",
+        "cf_ab271_datetime_pair_end": "2025-01-03T00:00:00.000Z",
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "custom_fields": {
+        "cf_ab271_tel": "matrix tel",
+        "cf_ab271_url": "matrix url",
+        "cf_ab271_date": "2025-01-02",
+        "cf_ab271_text": "line one\nline two",
+        "cf_ab271_email": "matrix email",
+        "cf_ab271_float": 1.25,
+        "cf_ab271_select": "alpha",
+        "cf_ab271_string": "matrix string",
+        "cf_ab271_boolean": true,
+        "cf_ab271_decimal": 1234.5,
+        "cf_ab271_integer": 42,
+        "cf_ab271_datetime": "2025-01-02T03:04:05.123",
+        "cf_ab271_check_boxes": [
+          "true",
+          "123",
+          "O'Brien",
+          "café"
+        ],
+        "cf_ab271_date_pair_end": "2025-01-03",
+        "cf_ab271_radio_buttons": "alpha",
+        "cf_ab271_date_pair_start": "2025-01-02",
+        "cf_ab271_datetime_pair_end": "2025-01-03T00:00:00",
+        "cf_ab271_datetime_pair_start": "2025-01-02T03:04:05.123"
+      }
+    },
+    {
+      "id": 982703,
+      "raw_columns": {
+        "cf_ab271_string": null,
+        "cf_ab271_text": null,
+        "cf_ab271_email": null,
+        "cf_ab271_url": null,
+        "cf_ab271_tel": null,
+        "cf_ab271_select": null,
+        "cf_ab271_radio_buttons": null,
+        "cf_ab271_check_boxes": null,
+        "cf_ab271_boolean": null,
+        "cf_ab271_date": null,
+        "cf_ab271_datetime": null,
+        "cf_ab271_decimal": null,
+        "cf_ab271_integer": null,
+        "cf_ab271_float": null,
+        "cf_ab271_date_pair_start": null,
+        "cf_ab271_date_pair_end": null,
+        "cf_ab271_datetime_pair_start": null,
+        "cf_ab271_datetime_pair_end": null,
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "rails_json": {
+        "cf_ab271_string": null,
+        "cf_ab271_text": null,
+        "cf_ab271_email": null,
+        "cf_ab271_url": null,
+        "cf_ab271_tel": null,
+        "cf_ab271_select": null,
+        "cf_ab271_radio_buttons": null,
+        "cf_ab271_check_boxes": [],
+        "cf_ab271_boolean": null,
+        "cf_ab271_date": null,
+        "cf_ab271_datetime": null,
+        "cf_ab271_decimal": null,
+        "cf_ab271_integer": null,
+        "cf_ab271_float": null,
+        "cf_ab271_date_pair_start": null,
+        "cf_ab271_date_pair_end": null,
+        "cf_ab271_datetime_pair_start": null,
+        "cf_ab271_datetime_pair_end": null,
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "custom_fields": {}
+    },
+    {
+      "id": 982704,
+      "raw_columns": {
+        "cf_ab271_string": null,
+        "cf_ab271_text": null,
+        "cf_ab271_email": null,
+        "cf_ab271_url": null,
+        "cf_ab271_tel": null,
+        "cf_ab271_select": null,
+        "cf_ab271_radio_buttons": null,
+        "cf_ab271_check_boxes": null,
+        "cf_ab271_boolean": null,
+        "cf_ab271_date": null,
+        "cf_ab271_datetime": null,
+        "cf_ab271_decimal": "1000.00",
+        "cf_ab271_integer": null,
+        "cf_ab271_float": null,
+        "cf_ab271_date_pair_start": null,
+        "cf_ab271_date_pair_end": null,
+        "cf_ab271_datetime_pair_start": null,
+        "cf_ab271_datetime_pair_end": null,
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "rails_json": {
+        "cf_ab271_string": null,
+        "cf_ab271_text": null,
+        "cf_ab271_email": null,
+        "cf_ab271_url": null,
+        "cf_ab271_tel": null,
+        "cf_ab271_select": null,
+        "cf_ab271_radio_buttons": null,
+        "cf_ab271_check_boxes": [],
+        "cf_ab271_boolean": null,
+        "cf_ab271_date": null,
+        "cf_ab271_datetime": null,
+        "cf_ab271_decimal": "1000.0",
+        "cf_ab271_integer": null,
+        "cf_ab271_float": null,
+        "cf_ab271_date_pair_start": null,
+        "cf_ab271_date_pair_end": null,
+        "cf_ab271_datetime_pair_start": null,
+        "cf_ab271_datetime_pair_end": null,
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "custom_fields": {
+        "cf_ab271_decimal": 1000.0
+      }
+    },
+    {
+      "id": 982705,
+      "raw_columns": {
+        "cf_ab271_string": null,
+        "cf_ab271_text": null,
+        "cf_ab271_email": null,
+        "cf_ab271_url": null,
+        "cf_ab271_tel": null,
+        "cf_ab271_select": null,
+        "cf_ab271_radio_buttons": null,
+        "cf_ab271_check_boxes": null,
+        "cf_ab271_boolean": null,
+        "cf_ab271_date": null,
+        "cf_ab271_datetime": null,
+        "cf_ab271_decimal": "0.01",
+        "cf_ab271_integer": null,
+        "cf_ab271_float": null,
+        "cf_ab271_date_pair_start": null,
+        "cf_ab271_date_pair_end": null,
+        "cf_ab271_datetime_pair_start": null,
+        "cf_ab271_datetime_pair_end": null,
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "rails_json": {
+        "cf_ab271_string": null,
+        "cf_ab271_text": null,
+        "cf_ab271_email": null,
+        "cf_ab271_url": null,
+        "cf_ab271_tel": null,
+        "cf_ab271_select": null,
+        "cf_ab271_radio_buttons": null,
+        "cf_ab271_check_boxes": [],
+        "cf_ab271_boolean": null,
+        "cf_ab271_date": null,
+        "cf_ab271_datetime": null,
+        "cf_ab271_decimal": "0.01",
+        "cf_ab271_integer": null,
+        "cf_ab271_float": null,
+        "cf_ab271_date_pair_start": null,
+        "cf_ab271_date_pair_end": null,
+        "cf_ab271_datetime_pair_start": null,
+        "cf_ab271_datetime_pair_end": null,
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "custom_fields": {
+        "cf_ab271_decimal": 0.01
+      }
+    },
+    {
+      "id": 982706,
+      "raw_columns": {
+        "cf_ab271_string": null,
+        "cf_ab271_text": null,
+        "cf_ab271_email": null,
+        "cf_ab271_url": null,
+        "cf_ab271_tel": null,
+        "cf_ab271_select": null,
+        "cf_ab271_radio_buttons": null,
+        "cf_ab271_check_boxes": null,
+        "cf_ab271_boolean": null,
+        "cf_ab271_date": null,
+        "cf_ab271_datetime": null,
+        "cf_ab271_decimal": null,
+        "cf_ab271_integer": null,
+        "cf_ab271_float": null,
+        "cf_ab271_date_pair_start": null,
+        "cf_ab271_date_pair_end": null,
+        "cf_ab271_datetime_pair_start": null,
+        "cf_ab271_datetime_pair_end": null,
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "rails_json": {
+        "cf_ab271_string": null,
+        "cf_ab271_text": null,
+        "cf_ab271_email": null,
+        "cf_ab271_url": null,
+        "cf_ab271_tel": null,
+        "cf_ab271_select": null,
+        "cf_ab271_radio_buttons": null,
+        "cf_ab271_check_boxes": [],
+        "cf_ab271_boolean": null,
+        "cf_ab271_date": null,
+        "cf_ab271_datetime": null,
+        "cf_ab271_decimal": null,
+        "cf_ab271_integer": null,
+        "cf_ab271_float": null,
+        "cf_ab271_date_pair_start": null,
+        "cf_ab271_date_pair_end": null,
+        "cf_ab271_datetime_pair_start": null,
+        "cf_ab271_datetime_pair_end": null,
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "custom_fields": {}
+    },
+    {
+      "id": 982707,
+      "raw_columns": {
+        "cf_ab271_string": null,
+        "cf_ab271_text": null,
+        "cf_ab271_email": null,
+        "cf_ab271_url": null,
+        "cf_ab271_tel": null,
+        "cf_ab271_select": null,
+        "cf_ab271_radio_buttons": null,
+        "cf_ab271_check_boxes": "---\n- |-\n  line one\n  line two\n",
+        "cf_ab271_boolean": null,
+        "cf_ab271_date": null,
+        "cf_ab271_datetime": null,
+        "cf_ab271_decimal": null,
+        "cf_ab271_integer": null,
+        "cf_ab271_float": null,
+        "cf_ab271_date_pair_start": null,
+        "cf_ab271_date_pair_end": null,
+        "cf_ab271_datetime_pair_start": null,
+        "cf_ab271_datetime_pair_end": null,
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "rails_json": {
+        "cf_ab271_string": null,
+        "cf_ab271_text": null,
+        "cf_ab271_email": null,
+        "cf_ab271_url": null,
+        "cf_ab271_tel": null,
+        "cf_ab271_select": null,
+        "cf_ab271_radio_buttons": null,
+        "cf_ab271_check_boxes": [
+          "line one\nline two"
+        ],
+        "cf_ab271_boolean": null,
+        "cf_ab271_date": null,
+        "cf_ab271_datetime": null,
+        "cf_ab271_decimal": null,
+        "cf_ab271_integer": null,
+        "cf_ab271_float": null,
+        "cf_ab271_date_pair_start": null,
+        "cf_ab271_date_pair_end": null,
+        "cf_ab271_datetime_pair_start": null,
+        "cf_ab271_datetime_pair_end": null,
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "custom_fields": {
+        "cf_ab271_check_boxes": {
+          "$yaml": "---\n- |-\n  line one\n  line two\n"
+        }
+      }
+    },
+    {
+      "id": 982708,
+      "raw_columns": {
+        "cf_ab271_string": "Alpha%_string-Suffix",
+        "cf_ab271_text": "AlPhA%_text-Suffix",
+        "cf_ab271_email": "Alpha%_email-Suffix",
+        "cf_ab271_url": "Alpha%_url-Suffix",
+        "cf_ab271_tel": "Alpha%_tel-Suffix",
+        "cf_ab271_select": "beta",
+        "cf_ab271_radio_buttons": "beta",
+        "cf_ab271_check_boxes": "---\n- alpha\n- green\n",
+        "cf_ab271_boolean": "false",
+        "cf_ab271_date": "2024-12-31",
+        "cf_ab271_datetime": "2024-12-31 11:22:33.987",
+        "cf_ab271_decimal": "1000.00",
+        "cf_ab271_integer": "10",
+        "cf_ab271_float": "-0.5",
+        "cf_ab271_date_pair_start": "2024-12-31",
+        "cf_ab271_date_pair_end": "2025-01-01",
+        "cf_ab271_datetime_pair_start": "2024-12-31 11:22:33.987",
+        "cf_ab271_datetime_pair_end": "2025-01-01 00:00:00",
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "rails_json": {
+        "cf_ab271_string": "Alpha%_string-Suffix",
+        "cf_ab271_text": "AlPhA%_text-Suffix",
+        "cf_ab271_email": "Alpha%_email-Suffix",
+        "cf_ab271_url": "Alpha%_url-Suffix",
+        "cf_ab271_tel": "Alpha%_tel-Suffix",
+        "cf_ab271_select": "beta",
+        "cf_ab271_radio_buttons": "beta",
+        "cf_ab271_check_boxes": [
+          "alpha",
+          "green"
+        ],
+        "cf_ab271_boolean": false,
+        "cf_ab271_date": "2024-12-31",
+        "cf_ab271_datetime": "2024-12-31T11:22:33.987Z",
+        "cf_ab271_decimal": "1000.0",
+        "cf_ab271_integer": 10,
+        "cf_ab271_float": -0.5,
+        "cf_ab271_date_pair_start": "2024-12-31",
+        "cf_ab271_date_pair_end": "2025-01-01",
+        "cf_ab271_datetime_pair_start": "2024-12-31T11:22:33.987Z",
+        "cf_ab271_datetime_pair_end": "2025-01-01T00:00:00.000Z",
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "custom_fields": {
+        "cf_ab271_tel": "Alpha%_tel-Suffix",
+        "cf_ab271_url": "Alpha%_url-Suffix",
+        "cf_ab271_date": "2024-12-31",
+        "cf_ab271_text": "AlPhA%_text-Suffix",
+        "cf_ab271_email": "Alpha%_email-Suffix",
+        "cf_ab271_float": -0.5,
+        "cf_ab271_select": "beta",
+        "cf_ab271_string": "Alpha%_string-Suffix",
+        "cf_ab271_boolean": false,
+        "cf_ab271_decimal": 1000.0,
+        "cf_ab271_integer": 10,
+        "cf_ab271_datetime": "2024-12-31T11:22:33.987",
+        "cf_ab271_check_boxes": [
+          "alpha",
+          "green"
+        ],
+        "cf_ab271_date_pair_end": "2025-01-01",
+        "cf_ab271_radio_buttons": "beta",
+        "cf_ab271_date_pair_start": "2024-12-31",
+        "cf_ab271_datetime_pair_end": "2025-01-01T00:00:00",
+        "cf_ab271_datetime_pair_start": "2024-12-31T11:22:33.987"
+      }
+    },
+    {
+      "id": 982709,
+      "raw_columns": {
+        "cf_ab271_string": "beta_string%_END",
+        "cf_ab271_text": "beta_text%_END",
+        "cf_ab271_email": "beta_email%_END",
+        "cf_ab271_url": "beta_url%_END",
+        "cf_ab271_tel": "beta_tel%_END",
+        "cf_ab271_select": "alpha",
+        "cf_ab271_radio_buttons": "alpha",
+        "cf_ab271_check_boxes": "---\n- beta\n- 'true'\n",
+        "cf_ab271_boolean": "true",
+        "cf_ab271_date": "2025-03-01",
+        "cf_ab271_datetime": "2025-01-02 03:04:05",
+        "cf_ab271_decimal": "0.01",
+        "cf_ab271_integer": "100",
+        "cf_ab271_float": "3",
+        "cf_ab271_date_pair_start": "2025-03-01",
+        "cf_ab271_date_pair_end": "2025-03-02",
+        "cf_ab271_datetime_pair_start": "2025-01-02 03:04:05",
+        "cf_ab271_datetime_pair_end": "2025-03-01 12:00:00",
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "rails_json": {
+        "cf_ab271_string": "beta_string%_END",
+        "cf_ab271_text": "beta_text%_END",
+        "cf_ab271_email": "beta_email%_END",
+        "cf_ab271_url": "beta_url%_END",
+        "cf_ab271_tel": "beta_tel%_END",
+        "cf_ab271_select": "alpha",
+        "cf_ab271_radio_buttons": "alpha",
+        "cf_ab271_check_boxes": [
+          "beta",
+          "true"
+        ],
+        "cf_ab271_boolean": true,
+        "cf_ab271_date": "2025-03-01",
+        "cf_ab271_datetime": "2025-01-02T03:04:05.000Z",
+        "cf_ab271_decimal": "0.01",
+        "cf_ab271_integer": 100,
+        "cf_ab271_float": 3.0,
+        "cf_ab271_date_pair_start": "2025-03-01",
+        "cf_ab271_date_pair_end": "2025-03-02",
+        "cf_ab271_datetime_pair_start": "2025-01-02T03:04:05.000Z",
+        "cf_ab271_datetime_pair_end": "2025-03-01T12:00:00.000Z",
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "custom_fields": {
+        "cf_ab271_tel": "beta_tel%_END",
+        "cf_ab271_url": "beta_url%_END",
+        "cf_ab271_date": "2025-03-01",
+        "cf_ab271_text": "beta_text%_END",
+        "cf_ab271_email": "beta_email%_END",
+        "cf_ab271_float": 3,
+        "cf_ab271_select": "alpha",
+        "cf_ab271_string": "beta_string%_END",
+        "cf_ab271_boolean": true,
+        "cf_ab271_decimal": 0.01,
+        "cf_ab271_integer": 100,
+        "cf_ab271_datetime": "2025-01-02T03:04:05",
+        "cf_ab271_check_boxes": [
+          "beta",
+          "true"
+        ],
+        "cf_ab271_date_pair_end": "2025-03-02",
+        "cf_ab271_radio_buttons": "alpha",
+        "cf_ab271_date_pair_start": "2025-03-01",
+        "cf_ab271_datetime_pair_end": "2025-03-01T12:00:00",
+        "cf_ab271_datetime_pair_start": "2025-01-02T03:04:05"
+      }
+    },
+    {
+      "id": 982710,
+      "raw_columns": {
+        "cf_ab271_string": null,
+        "cf_ab271_text": null,
+        "cf_ab271_email": null,
+        "cf_ab271_url": null,
+        "cf_ab271_tel": null,
+        "cf_ab271_select": null,
+        "cf_ab271_radio_buttons": null,
+        "cf_ab271_check_boxes": "---\n- alpha\n- alpha\n- ''\n",
+        "cf_ab271_boolean": null,
+        "cf_ab271_date": null,
+        "cf_ab271_datetime": null,
+        "cf_ab271_decimal": null,
+        "cf_ab271_integer": null,
+        "cf_ab271_float": null,
+        "cf_ab271_date_pair_start": null,
+        "cf_ab271_date_pair_end": null,
+        "cf_ab271_datetime_pair_start": null,
+        "cf_ab271_datetime_pair_end": null,
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "rails_json": {
+        "cf_ab271_string": null,
+        "cf_ab271_text": null,
+        "cf_ab271_email": null,
+        "cf_ab271_url": null,
+        "cf_ab271_tel": null,
+        "cf_ab271_select": null,
+        "cf_ab271_radio_buttons": null,
+        "cf_ab271_check_boxes": [
+          "alpha",
+          "alpha",
+          ""
+        ],
+        "cf_ab271_boolean": null,
+        "cf_ab271_date": null,
+        "cf_ab271_datetime": null,
+        "cf_ab271_decimal": null,
+        "cf_ab271_integer": null,
+        "cf_ab271_float": null,
+        "cf_ab271_date_pair_start": null,
+        "cf_ab271_date_pair_end": null,
+        "cf_ab271_datetime_pair_start": null,
+        "cf_ab271_datetime_pair_end": null,
+        "cf_ab271_required": null,
+        "cf_ab271_minimum": null,
+        "cf_ab271_maximum": null,
+        "cf_ab271_range_start": null,
+        "cf_ab271_range_end": null
+      },
+      "custom_fields": {
+        "cf_ab271_check_boxes": [
+          "alpha",
+          "alpha",
+          ""
+        ]
+      }
+    }
+  ],
+  "validation_errors": {
+    "errors": {
+      "cf_ab271_required": [
+        "^required is required."
+      ],
+      "cf_ab271_minimum": [
+        "^minimum is too short."
+      ],
+      "cf_ab271_maximum": [
+        "^maximum is too long."
+      ],
+      "cf_ab271_range_end": [
+        "^date range cannot end before it begins."
+      ]
+    },
+    "field_names": [
+      "cf_ab271_required",
+      "cf_ab271_minimum",
+      "cf_ab271_maximum",
+      "cf_ab271_range_start",
+      "cf_ab271_range_end"
+    ]
+  },
+  "search": {
+    "cf_ab271_string": {
+      "as": "string",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "eq:row-one": {
+          "values": [
+            "matrix string"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "lt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "gt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "cont:literal-percent": {
+          "values": [
+            "%"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "not_cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "start:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "end:case-insensitive-suffix": {
+          "values": [
+            "suffix"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "matches:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "does_not_match:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": []
+        }
+      },
+      "uncoercible": null
+    },
+    "cf_ab271_text": {
+      "as": "text",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "eq:row-one": {
+          "values": [
+            "line one\nline two"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "lt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "gt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": []
+        },
+        "cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "cont:literal-percent": {
+          "values": [
+            "%"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "not_cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "start:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "end:case-insensitive-suffix": {
+          "values": [
+            "suffix"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "matches:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "does_not_match:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": []
+        }
+      },
+      "uncoercible": null
+    },
+    "cf_ab271_email": {
+      "as": "email",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "eq:row-one": {
+          "values": [
+            "matrix email"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "lt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "gt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "cont:literal-percent": {
+          "values": [
+            "%"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "not_cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "start:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "end:case-insensitive-suffix": {
+          "values": [
+            "suffix"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "matches:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "does_not_match:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": []
+        }
+      },
+      "uncoercible": null
+    },
+    "cf_ab271_url": {
+      "as": "url",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "eq:row-one": {
+          "values": [
+            "matrix url"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "lt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "gt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "cont:literal-percent": {
+          "values": [
+            "%"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "not_cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "start:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "end:case-insensitive-suffix": {
+          "values": [
+            "suffix"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "matches:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "does_not_match:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": []
+        }
+      },
+      "uncoercible": null
+    },
+    "cf_ab271_tel": {
+      "as": "tel",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "eq:row-one": {
+          "values": [
+            "matrix tel"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "lt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "gt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "cont:literal-percent": {
+          "values": [
+            "%"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "not_cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "start:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "end:case-insensitive-suffix": {
+          "values": [
+            "suffix"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "matches:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "does_not_match:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": []
+        }
+      },
+      "uncoercible": null
+    },
+    "cf_ab271_select": {
+      "as": "select",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "eq:beta": {
+          "values": [
+            "beta"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "not_eq:beta": {
+          "values": [
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": []
+        }
+      },
+      "uncoercible": null
+    },
+    "cf_ab271_radio_buttons": {
+      "as": "radio_buttons",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "eq:beta": {
+          "values": [
+            "beta"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "not_eq:beta": {
+          "values": [
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": []
+        }
+      },
+      "uncoercible": null
+    },
+    "cf_ab271_check_boxes": {
+      "as": "check_boxes",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708,
+            982710
+          ]
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982707,
+            982709
+          ]
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::SerializationTypeMismatch"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706
+          ]
+        },
+        "cont:element-true": {
+          "values": [
+            "true"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "not_cont:element-green": {
+          "values": [
+            "green"
+          ],
+          "ids": [
+            982701,
+            982707,
+            982709,
+            982710
+          ]
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": []
+        }
+      },
+      "uncoercible": null
+    },
+    "cf_ab271_boolean": {
+      "as": "boolean",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "eq:value-true": {
+          "values": [
+            "true"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "not_eq:value-true": {
+          "values": [
+            "true"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "eq:value-false": {
+          "values": [
+            "false"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "not_eq:value-false": {
+          "values": [
+            "false"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "eq:value-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "not_eq:value-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "eq:value-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "not_eq:value-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        }
+      },
+      "uncoercible": null
+    },
+    "cf_ab271_date": {
+      "as": "date",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "eq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "not_eq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "lt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982701,
+            982708
+          ]
+        },
+        "gt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982709
+          ]
+        },
+        "gteq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:december-and-january": {
+          "values": [
+            "2024-12-31",
+            "2025-01-02"
+          ],
+          "ids": [
+            982701,
+            982708
+          ]
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        }
+      },
+      "uncoercible": {
+        "values": [
+          "not-a-date"
+        ],
+        "ids": [
+          982701,
+          982703,
+          982704,
+          982705,
+          982706,
+          982707,
+          982708,
+          982709,
+          982710
+        ]
+      }
+    },
+    "cf_ab271_datetime": {
+      "as": "datetime",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "eq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982709
+          ]
+        },
+        "eq:sql-timestamp": {
+          "values": [
+            "2025-01-02 03:04:05"
+          ],
+          "ids": [
+            982709
+          ]
+        },
+        "not_eq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982701,
+            982708
+          ]
+        },
+        "lt:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "gt:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "gteq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:fractional-and-whole": {
+          "values": [
+            "2024-12-31T11:22:33.987Z",
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        }
+      },
+      "uncoercible": {
+        "values": [
+          "not-a-datetime"
+        ],
+        "ids": [
+          982701,
+          982703,
+          982704,
+          982705,
+          982706,
+          982707,
+          982708,
+          982709,
+          982710
+        ]
+      }
+    },
+    "cf_ab271_decimal": {
+      "as": "decimal",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982704,
+            982705,
+            982708,
+            982709
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982704,
+            982705,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982704,
+            982705,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982704,
+            982705,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982704,
+            982705,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982704,
+            982705,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982704,
+            982705,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "eq:1000-point-zero-zero": {
+          "values": [
+            "1000.00"
+          ],
+          "ids": [
+            982704,
+            982708
+          ]
+        },
+        "eq:1000": {
+          "values": [
+            "1000"
+          ],
+          "ids": [
+            982704,
+            982708
+          ]
+        },
+        "not_eq:0.01": {
+          "values": [
+            "0.01"
+          ],
+          "ids": [
+            982701,
+            982704,
+            982708
+          ]
+        },
+        "lt:1000": {
+          "values": [
+            "1000"
+          ],
+          "ids": [
+            982705,
+            982709
+          ]
+        },
+        "lteq:1000": {
+          "values": [
+            "1000"
+          ],
+          "ids": [
+            982704,
+            982705,
+            982708,
+            982709
+          ]
+        },
+        "gt:1000": {
+          "values": [
+            "1000"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "gteq:1000": {
+          "values": [
+            "1000"
+          ],
+          "ids": [
+            982701,
+            982704,
+            982708
+          ]
+        },
+        "in:decimal-values": {
+          "values": [
+            "0.01",
+            "1000",
+            "1234.50"
+          ],
+          "ids": [
+            982701,
+            982704,
+            982705,
+            982708,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        }
+      },
+      "uncoercible": {
+        "values": [
+          "not-a-number"
+        ],
+        "ids": []
+      }
+    },
+    "cf_ab271_integer": {
+      "as": "integer",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "eq:integer": {
+          "values": [
+            "42"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "eq:decimal-string": {
+          "values": [
+            "42.0"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "not_eq:10": {
+          "values": [
+            "10"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "lt:42": {
+          "values": [
+            "42"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:42": {
+          "values": [
+            "42"
+          ],
+          "ids": [
+            982701,
+            982708
+          ]
+        },
+        "gt:42": {
+          "values": [
+            "42"
+          ],
+          "ids": [
+            982709
+          ]
+        },
+        "gteq:42": {
+          "values": [
+            "42"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:10-and-42": {
+          "values": [
+            "10",
+            "42"
+          ],
+          "ids": [
+            982701,
+            982708
+          ]
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        }
+      },
+      "uncoercible": {
+        "values": [
+          "not-a-number"
+        ],
+        "ids": []
+      }
+    },
+    "cf_ab271_float": {
+      "as": "float",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "eq:1.25": {
+          "values": [
+            "1.25"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "eq:3.0": {
+          "values": [
+            "3.0"
+          ],
+          "ids": [
+            982709
+          ]
+        },
+        "not_eq:1.25": {
+          "values": [
+            "1.25"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "lt:1.25": {
+          "values": [
+            "1.25"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:1.25": {
+          "values": [
+            "1.25"
+          ],
+          "ids": [
+            982701,
+            982708
+          ]
+        },
+        "gt:1.25": {
+          "values": [
+            "1.25"
+          ],
+          "ids": [
+            982709
+          ]
+        },
+        "gteq:1.25": {
+          "values": [
+            "1.25"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:negative-and-positive": {
+          "values": [
+            "-0.5",
+            "1.25"
+          ],
+          "ids": [
+            982701,
+            982708
+          ]
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        }
+      },
+      "uncoercible": {
+        "values": [
+          "not-a-number"
+        ],
+        "ids": []
+      }
+    },
+    "cf_ab271_date_pair_start": {
+      "as": "date_pair",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "eq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "not_eq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "lt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982701,
+            982708
+          ]
+        },
+        "gt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982709
+          ]
+        },
+        "gteq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:december-and-january": {
+          "values": [
+            "2024-12-31",
+            "2025-01-02"
+          ],
+          "ids": [
+            982701,
+            982708
+          ]
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        }
+      },
+      "uncoercible": {
+        "values": [
+          "not-a-date"
+        ],
+        "ids": [
+          982701,
+          982703,
+          982704,
+          982705,
+          982706,
+          982707,
+          982708,
+          982709,
+          982710
+        ]
+      }
+    },
+    "cf_ab271_date_pair_end": {
+      "as": "date_pair",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "eq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "not_eq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "gt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "gteq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:december-and-january": {
+          "values": [
+            "2024-12-31",
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        }
+      },
+      "uncoercible": {
+        "values": [
+          "not-a-date"
+        ],
+        "ids": [
+          982701,
+          982703,
+          982704,
+          982705,
+          982706,
+          982707,
+          982708,
+          982709,
+          982710
+        ]
+      }
+    },
+    "cf_ab271_datetime_pair_start": {
+      "as": "datetime_pair",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "eq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982709
+          ]
+        },
+        "eq:sql-timestamp": {
+          "values": [
+            "2025-01-02 03:04:05"
+          ],
+          "ids": [
+            982709
+          ]
+        },
+        "not_eq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982701,
+            982708
+          ]
+        },
+        "lt:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "gt:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982701
+          ]
+        },
+        "gteq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:fractional-and-whole": {
+          "values": [
+            "2024-12-31T11:22:33.987Z",
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982708,
+            982709
+          ]
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        }
+      },
+      "uncoercible": {
+        "values": [
+          "not-a-datetime"
+        ],
+        "ids": [
+          982701,
+          982703,
+          982704,
+          982705,
+          982706,
+          982707,
+          982708,
+          982709,
+          982710
+        ]
+      }
+    },
+    "cf_ab271_datetime_pair_end": {
+      "as": "datetime_pair",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982710
+          ]
+        },
+        "eq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": []
+        },
+        "eq:sql-timestamp": {
+          "values": [
+            "2025-01-02 03:04:05"
+          ],
+          "ids": []
+        },
+        "not_eq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982701,
+            982708,
+            982709
+          ]
+        },
+        "lt:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "lteq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982708
+          ]
+        },
+        "gt:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "gteq:iso-timestamp": {
+          "values": [
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": [
+            982701,
+            982709
+          ]
+        },
+        "in:fractional-and-whole": {
+          "values": [
+            "2024-12-31T11:22:33.987Z",
+            "2025-01-02T03:04:05Z"
+          ],
+          "ids": []
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        }
+      },
+      "uncoercible": {
+        "values": [
+          "not-a-datetime"
+        ],
+        "ids": [
+          982701,
+          982703,
+          982704,
+          982705,
+          982706,
+          982707,
+          982708,
+          982709,
+          982710
+        ]
+      }
+    },
+    "cf_ab271_required": {
+      "as": "string",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "eq:row-one": {
+          "values": [
+            "matrix string"
+          ],
+          "ids": []
+        },
+        "lt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": []
+        },
+        "gt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": []
+        },
+        "cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "cont:literal-percent": {
+          "values": [
+            "%"
+          ],
+          "ids": []
+        },
+        "not_cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "end:case-insensitive-suffix": {
+          "values": [
+            "suffix"
+          ],
+          "ids": []
+        },
+        "matches:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": []
+        },
+        "does_not_match:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": []
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": []
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": []
+        }
+      },
+      "uncoercible": null
+    },
+    "cf_ab271_minimum": {
+      "as": "string",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "eq:row-one": {
+          "values": [
+            "matrix string"
+          ],
+          "ids": []
+        },
+        "lt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": []
+        },
+        "gt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": []
+        },
+        "cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "cont:literal-percent": {
+          "values": [
+            "%"
+          ],
+          "ids": []
+        },
+        "not_cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "end:case-insensitive-suffix": {
+          "values": [
+            "suffix"
+          ],
+          "ids": []
+        },
+        "matches:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": []
+        },
+        "does_not_match:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": []
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": []
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": []
+        }
+      },
+      "uncoercible": null
+    },
+    "cf_ab271_maximum": {
+      "as": "string",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "eq:row-one": {
+          "values": [
+            "matrix string"
+          ],
+          "ids": []
+        },
+        "lt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": []
+        },
+        "gt:m": {
+          "values": [
+            "m"
+          ],
+          "ids": []
+        },
+        "cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "cont:literal-percent": {
+          "values": [
+            "%"
+          ],
+          "ids": []
+        },
+        "not_cont:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "start:case-insensitive-alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": []
+        },
+        "end:case-insensitive-suffix": {
+          "values": [
+            "suffix"
+          ],
+          "ids": []
+        },
+        "matches:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": []
+        },
+        "does_not_match:alpha-wildcard": {
+          "values": [
+            "alpha%"
+          ],
+          "ids": []
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": []
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": []
+        }
+      },
+      "uncoercible": null
+    },
+    "cf_ab271_range_start": {
+      "as": "date_pair",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "eq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "not_eq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "lt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "lteq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "gt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "gteq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "in:december-and-january": {
+          "values": [
+            "2024-12-31",
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        }
+      },
+      "uncoercible": {
+        "values": [
+          "not-a-date"
+        ],
+        "ids": [
+          982701,
+          982703,
+          982704,
+          982705,
+          982706,
+          982707,
+          982708,
+          982709,
+          982710
+        ]
+      }
+    },
+    "cf_ab271_range_end": {
+      "as": "date_pair",
+      "ids": [
+        982701,
+        982703,
+        982704,
+        982705,
+        982706,
+        982707,
+        982708,
+        982709,
+        982710
+      ],
+      "cases": {
+        "cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_cont:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "present:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "true:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-1": {
+          "values": [
+            "1"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_eq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gt:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "not_null:flag-1": {
+          "values": [
+            "1"
+          ],
+          "ids": []
+        },
+        "matches:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "does_not_match:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "lteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "gteq:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "in:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "start:alpha": {
+          "values": [
+            "alpha"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "blank:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "present:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "true:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "false:flag-0": {
+          "values": [
+            "0"
+          ],
+          "error": "ActiveRecord::StatementInvalid"
+        },
+        "null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": []
+        },
+        "not_null:flag-0": {
+          "values": [
+            "0"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "eq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "not_eq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "lt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "lteq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "gt:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "gteq:iso-date": {
+          "values": [
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "in:december-and-january": {
+          "values": [
+            "2024-12-31",
+            "2025-01-02"
+          ],
+          "ids": []
+        },
+        "cont_any:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        },
+        "cont_all:alpha-and-beta": {
+          "values": [
+            "alpha",
+            "beta"
+          ],
+          "ids": [
+            982701,
+            982703,
+            982704,
+            982705,
+            982706,
+            982707,
+            982708,
+            982709,
+            982710
+          ]
+        }
+      },
+      "uncoercible": {
+        "values": [
+          "not-a-date"
+        ],
+        "ids": [
+          982701,
+          982703,
+          982704,
+          982705,
+          982706,
+          982707,
+          982708,
+          982709,
+          982710
+        ]
+      }
+    }
+  },
+  "java_written": {
+    "columns": {
+      "cf_ab271_string": "written by Java",
+      "cf_ab271_text": "Java line one\nJava line two",
+      "cf_ab271_email": "java@example.test",
+      "cf_ab271_url": "https://example.test/java",
+      "cf_ab271_tel": "+1-555-0100",
+      "cf_ab271_select": "beta",
+      "cf_ab271_radio_buttons": "alpha",
+      "cf_ab271_check_boxes": "---\n- \"true\"\n- \"123\"\n- \"O'Brien\"\n",
+      "cf_ab271_boolean": "true",
+      "cf_ab271_date": "2025-02-03",
+      "cf_ab271_datetime": "2025-02-03 04:05:06.123",
+      "cf_ab271_decimal": "1000.00",
+      "cf_ab271_integer": "17",
+      "cf_ab271_float": "0.125",
+      "cf_ab271_date_pair_start": "2025-02-01",
+      "cf_ab271_date_pair_end": "2025-02-10",
+      "cf_ab271_datetime_pair_start": "2025-02-01 04:05:06.123",
+      "cf_ab271_datetime_pair_end": "2025-02-10 04:05:06.456"
+    },
+    "rails_values": {
+      "cf_ab271_string": {
+        "value": "written by Java",
+        "ruby_class": "String",
+        "inspect": "\"written by Java\""
+      },
+      "cf_ab271_text": {
+        "value": "Java line one\nJava line two",
+        "ruby_class": "String",
+        "inspect": "\"Java line one\\nJava line two\""
+      },
+      "cf_ab271_email": {
+        "value": "java@example.test",
+        "ruby_class": "String",
+        "inspect": "\"java@example.test\""
+      },
+      "cf_ab271_url": {
+        "value": "https://example.test/java",
+        "ruby_class": "String",
+        "inspect": "\"https://example.test/java\""
+      },
+      "cf_ab271_tel": {
+        "value": "+1-555-0100",
+        "ruby_class": "String",
+        "inspect": "\"+1-555-0100\""
+      },
+      "cf_ab271_select": {
+        "value": "beta",
+        "ruby_class": "String",
+        "inspect": "\"beta\""
+      },
+      "cf_ab271_radio_buttons": {
+        "value": "alpha",
+        "ruby_class": "String",
+        "inspect": "\"alpha\""
+      },
+      "cf_ab271_check_boxes": {
+        "value": [
+          "true",
+          "123",
+          "O'Brien"
+        ],
+        "ruby_class": "Array",
+        "inspect": "[\"true\", \"123\", \"O'Brien\"]"
+      },
+      "cf_ab271_boolean": {
+        "value": true,
+        "ruby_class": "TrueClass",
+        "inspect": "true"
+      },
+      "cf_ab271_date": {
+        "value": "2025-02-03",
+        "ruby_class": "Date",
+        "inspect": "Mon, 03 Feb 2025"
+      },
+      "cf_ab271_datetime": {
+        "value": "2025-02-03T04:05:06.123Z",
+        "ruby_class": "ActiveSupport::TimeWithZone",
+        "inspect": "2025-02-03 04:05:06.123000000 UTC +00:00"
+      },
+      "cf_ab271_decimal": {
+        "value": "1000.0",
+        "ruby_class": "BigDecimal",
+        "inspect": "0.1e4"
+      },
+      "cf_ab271_integer": {
+        "value": 17,
+        "ruby_class": "Integer",
+        "inspect": "17"
+      },
+      "cf_ab271_float": {
+        "value": 0.125,
+        "ruby_class": "Float",
+        "inspect": "0.125"
+      },
+      "cf_ab271_date_pair_start": {
+        "value": "2025-02-01",
+        "ruby_class": "Date",
+        "inspect": "Sat, 01 Feb 2025"
+      },
+      "cf_ab271_date_pair_end": {
+        "value": "2025-02-10",
+        "ruby_class": "Date",
+        "inspect": "Mon, 10 Feb 2025"
+      },
+      "cf_ab271_datetime_pair_start": {
+        "value": "2025-02-01T04:05:06.123Z",
+        "ruby_class": "ActiveSupport::TimeWithZone",
+        "inspect": "2025-02-01 04:05:06.123000000 UTC +00:00"
+      },
+      "cf_ab271_datetime_pair_end": {
+        "value": "2025-02-10T04:05:06.456Z",
+        "ruby_class": "ActiveSupport::TimeWithZone",
+        "inspect": "2025-02-10 04:05:06.456000000 UTC +00:00"
+      }
+    }
+  }
+}

@@ -1,6 +1,7 @@
 package com.fatfreecrm.domain;
 
 import com.fatfreecrm.domain.support.RailsModelType;
+import com.fatfreecrm.domain.support.HasCustomFields;
 import com.fatfreecrm.domain.support.SubscribedUsersConverter;
 import com.fatfreecrm.domain.support.TimestampedEntity;
 import jakarta.persistence.Column;
@@ -12,14 +13,27 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "tasks")
 @DynamicUpdate
-public class Task extends TimestampedEntity {
+public class Task extends TimestampedEntity implements HasCustomFields {
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "custom_fields", insertable = false, updatable = false)
+    private Map<String, Object> customFields;
+
+    @Override
+    public Map<String, Object> getCustomFields() {
+        return customFields == null ? Map.of() : Collections.unmodifiableMap(customFields);
+    }
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", columnDefinition = "int4")

@@ -13,6 +13,7 @@ module FatFreeCRM
 
     module ClassMethods
       def has_fields
+        self.ignored_columns += %w[custom_fields] unless ignored_columns.include?("custom_fields")
         unless included_modules.include?(InstanceMethods)
           extend SingletonMethods
           include InstanceMethods

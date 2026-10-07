@@ -8,6 +8,10 @@
     <property name="fileExtensions" value="java"/>
     <module name="NewlineAtEndOfFile"/>
     <module name="FileTabCharacter"/>
+    <module name="SuppressionSingleFilter">
+        <property name="checks" value="TypeName"/>
+        <property name="files" value=".*V3__custom_fields_gin\.java"/>
+    </module>
     <module name="LineLength">
         <property name="max" value="120"/>
         <property name="ignorePattern" value="^\s*(//|\*)"/>
