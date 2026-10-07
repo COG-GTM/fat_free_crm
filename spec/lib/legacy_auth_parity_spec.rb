@@ -15,8 +15,36 @@ describe User do
     JSON.parse(Rails.root.join('spring/src/test/resources/auth/rails-legacy-users.json').read)
   end
 
+  # The fixture was produced with the production stretch count, while the test
+  # environment configures 1. Devise's compare uses `User.stretches`, so the
+  # fixture's count is applied here; the first example guards against drift
+  # between the fixture and the production configuration itself.
   before do
     allow(User).to receive(:stretches).and_return(fixture['stretches'])
+  end
+
+  # Re-evaluates config/initializers/devise.rb as a non-test environment would
+  # see it and captures the values it assigns.
+  def production_devise_config
+    config = Class.new do
+      attr_reader :assignments
+
+      def initialize
+        @assignments = {}
+      end
+
+      def method_missing(name, *args)
+        name.to_s.end_with?('=') ? @assignments[name.to_s.chomp('=').to_sym] = args.first : super
+      end
+
+      def respond_to_missing?(name, include_private = false)
+        name.to_s.end_with?('=') || super
+      end
+    end.new
+    allow(Rails).to receive(:env).and_return(ActiveSupport::EnvironmentInquirer.new('production'))
+    allow(Devise).to receive(:setup).and_yield(config)
+    load Rails.root.join('config/initializers/devise.rb')
+    config.assignments
   end
 
   def build_legacy_user(attrs)
@@ -35,11 +63,17 @@ describe User do
     user
   end
 
-  it 'describes the production encryptor and stretch count' do
+  it 'describes the production encryptor and stretch count configured in the Devise initializer' do
+    production = production_devise_config
+
     expect(fixture['encryptor']).to eq(User.encryptor.to_s)
+    expect(fixture['encryptor']).to eq(production[:encryptor].to_s)
     expect(fixture['encryptor']).to eq('authlogic_sha512')
+    expect(fixture['stretches']).to eq(production[:stretches])
     expect(fixture['stretches']).to eq(20)
+    expect(Devise.stretches).to eq(1)
     expect(User.pepper).to be_nil
+    expect(production[:pepper]).to be_nil
     expect(fixture['users'].pluck('username')).to include(
       'legacy_plain', 'legacy_admin', 'Legacy_MixedCase', 'legacy_suspended', 'legacy_unconfirmed'
     )
