@@ -36,7 +36,7 @@ PostgreSQL container image.
 
 Before V1 is released, rerun the generator to regenerate both artifacts. After V1 has
 been applied to any shared database, never regenerate V1; add an additive
-`V2+__*.sql` migration and refresh only the Rails schema fixture. Splitting the check
+`V2+` migration and refresh only the Rails schema fixture. Splitting the check
 into a frozen V1 comparison and a current Rails fixture comparison is follow-up work
 once V1 ships.
 
@@ -336,7 +336,9 @@ corpus in a rolled-back transaction, runs every case through `AccountsController
 
 ## Custom-field JSONB backfill
 
-If V3 fails while building GIN indexes, run `flyway repair` and rerun; V3 drops leftover invalid indexes.
+If V3 fails, run `flyway repair` and rerun. The Java migration keeps valid expected GIN indexes and rebuilds invalid or wrong-definition indexes concurrently.
+
+Writes normalize only supplied keys whose raw input differs from the current READ value. Omitted and unchanged values retain READ-mode semantics while still participating in required and date-pair validation.
 
 Normal Spring startup applies the custom-field JSONB synchronization trigger and GIN indexes. Once
 the trigger is live, run the restartable backfill with:

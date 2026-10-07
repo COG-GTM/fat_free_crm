@@ -56,6 +56,23 @@ public class CustomFieldTypeValidator {
      * type-conversion failure keeps the raw value instead of failing.
      */
     public ValidationResult validate(List<CustomFieldDefinition> fields, Map<String, Object> input, Mode mode) {
+        return validate(fields, input, mode, null);
+    }
+
+    public ValidationResult validateChanged(
+        List<CustomFieldDefinition> fields,
+        Map<String, Object> input,
+        Set<String> changedFields
+    ) {
+        return validate(fields, input, Mode.WRITE, changedFields);
+    }
+
+    private ValidationResult validate(
+        List<CustomFieldDefinition> fields,
+        Map<String, Object> input,
+        Mode mode,
+        Set<String> changedFields
+    ) {
         Map<String, CustomFieldDefinition> byName =
             fields.stream().collect(Collectors.toMap(CustomFieldDefinition::name, Function.identity()));
         Map<Long, CustomFieldDefinition> byId =
@@ -77,9 +94,12 @@ public class CustomFieldTypeValidator {
         for (CustomFieldDefinition field : fields) {
             boolean present = input.containsKey(field.name());
             Object raw = input.get(field.name());
+            boolean changedField = mode == Mode.WRITE
+                && (changedFields == null || changedFields.contains(field.name()));
+            Mode fieldMode = changedField ? Mode.WRITE : Mode.READ;
             Object value;
             if (present) {
-                value = normalizeValue(field, raw, mode, errors);
+                value = normalizeValue(field, raw, fieldMode, errors);
             } else {
                 // WRITE: absent behaves like null (required check); READ: skip absent keys.
                 if (mode == Mode.READ) {
@@ -95,7 +115,7 @@ public class CustomFieldTypeValidator {
                 // so a required boolean can never be submitted false. Parity.
                 addError(errors, field.name(), field.label() + " is required.");
             }
-            if (mode == Mode.WRITE && value instanceof CharSequence s) {
+            if (changedField && value instanceof CharSequence s) {
                 int len = (int) s.codePoints().count();
                 if (field.minlength() != null && field.minlength() > 0 && len < field.minlength()) {
                     addError(errors, field.name(), field.label() + " is too short.");
@@ -109,9 +129,7 @@ public class CustomFieldTypeValidator {
             }
         }
 
-        // pair check (WRITE only: READ is normalization-only, and a raw unparseable
-        // half kept as-is could not be compared anyway): both halves present and
-        // end < start -> error on the end field
+        // Pair constraints apply to writes; READ-only operations are normalization-only.
         if (mode == Mode.WRITE) {
             for (CustomFieldDefinition field : fields) {
                 if (field.pairId() == null) {

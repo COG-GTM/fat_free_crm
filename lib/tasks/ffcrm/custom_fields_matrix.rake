@@ -21,9 +21,14 @@ namespace :ffcrm do
       end
       abort "custom-fields V2 trigger/column missing on: #{missing.join(', ')}" if missing.any?
 
-      if connection.select_value("SELECT 1 FROM accounts WHERE id BETWEEN 982701 AND 982709").present? ||
-         connection.select_value("SELECT 1 FROM field_groups WHERE id = 982700").present? ||
-         connection.select_value("SELECT 1 FROM fields WHERE id BETWEEN 982710 AND 982799").present? ||
+      field_ids = custom_fields_matrix_field_ids
+      field_id_min, field_id_max = field_ids.minmax
+      if connection.select_value(
+        "SELECT 1 FROM field_groups WHERE id = #{custom_fields_matrix_group_id}"
+      ).present? ||
+         connection.select_value(
+           "SELECT 1 FROM fields WHERE id BETWEEN #{field_id_min} AND #{field_id_max}"
+         ).present? ||
          tables.any? { |table| connection.columns(table).any? { |column| column.name.start_with?("cf_ab271_") } }
         abort "custom-fields matrix fixed fixture IDs or columns already exist"
       end
@@ -52,7 +57,7 @@ end
 
 def custom_fields_matrix_result(java_fixture)
   group = FieldGroup.create!(
-    id: 982700, klass_name: "Account", label: "AB-271 matrix", position: 1,
+    id: custom_fields_matrix_group_id, klass_name: "Account", label: "AB-271 matrix", position: 1,
     created_at: Time.utc(2025, 1, 1), updated_at: Time.utc(2025, 1, 1)
   )
   definitions = custom_fields_matrix_create_fields(group)
@@ -73,19 +78,28 @@ def custom_fields_matrix_result(java_fixture)
     [982709, "typed-tertiary", tertiary_values],
     [982710, "duplicate-and-blank-check-boxes", { check_boxes.name => %w[alpha alpha] + [""] }]
   ]
+  account_ids = row_inputs.map { |id, _label, _values| id } + [custom_fields_matrix_java_record_id]
+  account_id_min, account_id_max = account_ids.minmax
+  if ActiveRecord::Base.connection.select_value(
+    "SELECT 1 FROM accounts WHERE id BETWEEN #{account_id_min} AND #{account_id_max}"
+  ).present?
+    raise "custom-fields matrix fixed fixture IDs or columns already exist"
+  end
+
   records = row_inputs.map do |id, label, values|
     Account.create!(
       { id: id, name: "AB-271 #{label}", created_at: Time.utc(2025, 1, 1),
         updated_at: Time.utc(2025, 1, 1) }.merge(values)
     )
   end
-  java_record = Account.create!(id: 982702, name: "AB-271 Java matrix")
+  java_record = Account.create!(id: custom_fields_matrix_java_record_id, name: "AB-271 Java matrix")
   java_fixture.fetch("columns").each do |column, raw_value|
     next unless definitions.any? { |field| field.name == column }
 
     ActiveRecord::Base.connection.exec_update(
       "UPDATE accounts SET #{ActiveRecord::Base.connection.quote_column_name(column)} = " \
-      "#{ActiveRecord::Base.connection.quote(raw_value)} WHERE id = 982702"
+      "#{ActiveRecord::Base.connection.quote(raw_value)} " \
+      "WHERE id = #{custom_fields_matrix_java_record_id}"
     )
   end
   java_record.reload
@@ -149,7 +163,7 @@ end
 
 def custom_fields_matrix_create_fields(group)
   definitions = []
-  next_id = 982710
+  next_id = custom_fields_matrix_first_field_id
   Field.field_types.each_key do |as|
     if %w[date_pair datetime_pair].include?(as)
       pair = Field.lookup_class(as).constantize.create_pair(
@@ -224,23 +238,24 @@ def custom_fields_matrix_values(definitions, variant: 0)
 end
 
 def custom_fields_matrix_validation_errors(group)
+  ids = custom_fields_matrix_validation_field_ids
   required = CustomField.create!(
-    id: 982780, field_group: group, position: 90, label: "required", name: "cf_ab271_required",
+    id: ids[0], field_group: group, position: 90, label: "required", name: "cf_ab271_required",
     as: "string", required: true
   )
   minimum = CustomField.create!(
-    id: 982781, field_group: group, position: 91, label: "minimum", name: "cf_ab271_minimum",
+    id: ids[1], field_group: group, position: 91, label: "minimum", name: "cf_ab271_minimum",
     as: "string", minlength: 3
   )
   maximum = CustomField.create!(
-    id: 982782, field_group: group, position: 92, label: "maximum", name: "cf_ab271_maximum",
+    id: ids[2], field_group: group, position: 92, label: "maximum", name: "cf_ab271_maximum",
     as: "string", maxlength: 5
   )
   pair = CustomFieldDatePair.create_pair(
     "field" => { "field_group_id" => group.id, "label" => "date range", "as" => "date_pair" },
     "pair" => {
-      "0" => { "id" => 982783, "name" => "cf_ab271_range_start", "position" => 93 },
-      "1" => { "id" => 982784, "name" => "cf_ab271_range_end", "position" => 94, "pair_id" => 982783 }
+      "0" => { "id" => ids[3], "name" => "cf_ab271_range_start", "position" => 93 },
+      "1" => { "id" => ids[4], "name" => "cf_ab271_range_end", "position" => 94, "pair_id" => ids[3] }
     }
   )
   Account.reset_column_information
@@ -254,6 +269,33 @@ def custom_fields_matrix_validation_errors(group)
     "field_names" => [required.name, minimum.name, maximum.name, *pair.map(&:name)],
     "definitions" => [required, minimum, maximum, *pair]
   }
+end
+
+def custom_fields_matrix_group_id
+  982700
+end
+
+def custom_fields_matrix_java_record_id
+  982702
+end
+
+def custom_fields_matrix_first_field_id
+  982710
+end
+
+def custom_fields_matrix_validation_field_ids
+  (982780..982784).to_a
+end
+
+def custom_fields_matrix_field_ids
+  ids = []
+  next_id = custom_fields_matrix_first_field_id
+  Field.field_types.each_key do |as|
+    count = %w[date_pair datetime_pair].include?(as) ? 2 : 1
+    ids.concat((next_id...(next_id + count)).to_a)
+    next_id += count
+  end
+  ids.concat(custom_fields_matrix_validation_field_ids)
 end
 
 def custom_fields_matrix_search(definitions, account_ids)

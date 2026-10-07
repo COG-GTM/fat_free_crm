@@ -23,6 +23,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Writes only changed custom-field values. Changed inputs use WRITE normalization;
+ * stored values merged for required and pair validation retain READ semantics.
+ */
 @Service
 @SuppressFBWarnings(
     value = "EI_EXPOSE_REP2",
@@ -60,15 +64,17 @@ public class CustomFieldWriteService {
     public Map<String, Object> write(HasCustomFields entity, Map<String, Object> input) {
         RailsModelType type = modelType(entity);
         List<CustomFieldDefinition> applicable = applicableDefinitions(entity, type);
-        Map<String, Object> merged = new LinkedHashMap<>();
         Map<String, Object> current = readService.valuesFor(entity);
-        for (CustomFieldDefinition definition : applicable) {
-            if (current.containsKey(definition.name())) {
-                merged.put(definition.name(), current.get(definition.name()));
+        Map<String, Object> merged = new LinkedHashMap<>(current);
+        Set<String> changedNames = new LinkedHashSet<>();
+        for (Map.Entry<String, Object> entry : input.entrySet()) {
+            if (!current.containsKey(entry.getKey())
+                || !Objects.deepEquals(current.get(entry.getKey()), entry.getValue())) {
+                changedNames.add(entry.getKey());
+                merged.put(entry.getKey(), entry.getValue());
             }
         }
-        merged.putAll(input);
-        ValidationResult validation = validator.validate(applicable, merged, CustomFieldTypeValidator.Mode.WRITE);
+        ValidationResult validation = validator.validateChanged(applicable, merged, changedNames);
         if (!validation.ok()) {
             throw new CustomFieldValidationException(validation.errors());
         }
@@ -79,13 +85,10 @@ public class CustomFieldWriteService {
         List<Object> jsonParameters = new ArrayList<>();
         List<String> assignments = new ArrayList<>();
         Map<String, Object> jsonOnlyValues = new LinkedHashMap<>();
-        for (String name : input.keySet()) {
+        for (String name : changedNames) {
             CustomFieldDefinition definition = registry.find(type, name)
                 .orElseThrow(() -> new IllegalStateException("Unregistered custom field " + name));
             Object normalized = validation.normalized().get(name);
-            if (Objects.deepEquals(current.get(name), normalized)) {
-                continue;
-            }
             if (physicalColumns.contains(name)) {
                 if (!name.matches("cf_[a-z0-9_]+")) {
                     throw new IllegalStateException("Invalid custom-field column " + name);
