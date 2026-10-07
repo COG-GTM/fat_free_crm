@@ -218,6 +218,15 @@ describe FatFreeCRM::Migration::ColumnCensus do
       expect(row).to include('Region \\| Area')
       expect(row.split(/(?<!\\)\|/).length - 2).to eq(6)
     end
+
+    it "escapes existing backslashes before pipes in field labels" do
+      contact_field('cf_path', label: 'Path \| Segment')
+      markdown = census_for([column('cf_path')]).to_markdown
+      row = markdown.lines.find { |line| line.include?('cf_path') }
+
+      expect(row).to include('| Path \\\\\| Segment |')
+      expect(row.scan(/(?<!\\)(?:\\\\)*\|/).length).to eq(7)
+    end
   end
 
   describe "a live custom field" do

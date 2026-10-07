@@ -310,7 +310,7 @@ module FatFreeCRM
         end
 
         def escape(value)
-          value.to_s.gsub('|', '\|')
+          value.to_s.gsub(/[\\|]/) { |char| "\\#{char}" }
         end
 
         def status_cell(column)
