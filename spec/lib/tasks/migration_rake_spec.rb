@@ -153,4 +153,58 @@ describe "ffcrm:migration rake tasks" do # rubocop:disable RSpec/DescribeClass
 
     expect(File.read(output_path)).to include('CREATE TABLE')
   end
+
+  describe "PG_DUMP_HOST" do
+    let(:config) do
+      instance_double(
+        ActiveRecord::DatabaseConfigurations::HashConfig,
+        adapter: 'postgresql',
+        configuration_hash: { host: 'db.internal', port: 5432, username: 'crm', password: 'secret' },
+        database: 'ffcrm_test'
+      )
+    end
+    let(:status) { instance_double(Process::Status, success?: true, exitstatus: 0) }
+
+    before { allow(ActiveRecord::Base).to receive(:connection_db_config).and_return(config) }
+
+    def expect_pg_dump_host(host)
+      expect(Open3).to receive(:capture2)
+        .with({ 'PGPASSWORD' => 'secret' }, 'pg_dump', '--schema-only', '--no-owner', '--no-privileges',
+              '--host', host, '--port', '5432', '--username', 'crm', 'ffcrm_test')
+        .and_return(["CREATE TABLE contacts;\n", status])
+    end
+
+    it "overrides the configured host" do
+      expect_pg_dump_host('127.0.0.1')
+
+      run('ffcrm:migration:baseline_dump', 'OUTPUT' => output_path.to_s,
+                                           'PG_DUMP' => 'pg_dump', 'PG_DUMP_HOST' => '127.0.0.1')
+
+      expect(File.read(output_path)).to eq("CREATE TABLE contacts;\n")
+    end
+
+    it "falls back to the configured host when blank" do
+      expect_pg_dump_host('db.internal')
+
+      run('ffcrm:migration:baseline_dump', 'OUTPUT' => output_path.to_s,
+                                           'PG_DUMP' => 'pg_dump', 'PG_DUMP_HOST' => '')
+    end
+
+    it "falls back to the configured host when unset" do
+      expect_pg_dump_host('db.internal')
+
+      run('ffcrm:migration:baseline_dump', 'OUTPUT' => output_path.to_s,
+                                           'PG_DUMP' => 'pg_dump', 'PG_DUMP_HOST' => nil)
+    end
+
+    it "does not override an unset PGPASSWORD" do
+      allow(config).to receive(:configuration_hash).and_return({ host: 'db.internal' })
+      expect(Open3).to receive(:capture2)
+        .with({}, 'pg_dump', '--schema-only', '--no-owner', '--no-privileges', '--host', 'override.local', 'ffcrm_test')
+        .and_return(["CREATE TABLE contacts;", status])
+
+      run('ffcrm:migration:baseline_dump', 'OUTPUT' => output_path.to_s,
+                                           'PG_DUMP' => 'pg_dump', 'PG_DUMP_HOST' => 'override.local')
+    end
+  end
 end
