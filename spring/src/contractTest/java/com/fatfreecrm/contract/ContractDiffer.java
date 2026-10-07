@@ -60,14 +60,12 @@ public final class ContractDiffer {
                 rails.json(), options, "rails");
             JsonNormalizer.NormalizationResult right = JsonNormalizer.normalizeWithDiagnostics(
                 spring.json(), options, "spring");
-            left.missingKeys().stream().filter(missing -> !ignoredOrAncestor(missing.pointer(), options))
-                .forEach(missing ->
-                    differences.add(new Difference(missing.pointer(), Difference.Kind.MISSING_KEY,
-                        missing.value(), null, List.of())));
-            right.missingKeys().stream().filter(missing -> !ignoredOrAncestor(missing.pointer(), options))
-                .forEach(missing ->
-                    differences.add(new Difference(missing.pointer(), Difference.Kind.MISSING_KEY,
-                        null, missing.value(), List.of())));
+            left.missingKeys().forEach(missing ->
+                add(differences, Difference.Kind.MISSING_KEY, missing.pointer(), missing.value(), null, matching,
+                    allowlist, rails, spring, contractCase, problemBodyAllowed));
+            right.missingKeys().forEach(missing ->
+                add(differences, Difference.Kind.MISSING_KEY, missing.pointer(), null, missing.value(), matching,
+                    allowlist, rails, spring, contractCase, problemBodyAllowed));
             compare(left.json(), right.json(), "", differences, matching, allowlist, rails, spring, contractCase,
                 problemBodyAllowed, options);
         }
@@ -265,20 +263,6 @@ public final class ContractDiffer {
         String mediaType = response.mediaType();
         boolean jsonMediaType = mediaType.equals("application/json") || mediaType.endsWith("+json");
         return jsonMediaType && !response.rawBody().isBlank() && response.json() == null;
-    }
-
-    private static boolean ignoredOrAncestor(String pointer, JsonNode options) {
-        String candidate = pointer;
-        while (true) {
-            if (JsonNormalizer.ignored(candidate, options)) {
-                return true;
-            }
-            int separator = candidate.lastIndexOf('/');
-            if (separator < 0) {
-                return false;
-            }
-            candidate = candidate.substring(0, separator);
-        }
     }
 
     private static JsonNode rawBody(CapturedResponse response) {

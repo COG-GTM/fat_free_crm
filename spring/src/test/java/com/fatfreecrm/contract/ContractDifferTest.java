@@ -162,6 +162,32 @@ class ContractDifferTest {
     }
 
     @Test
+    void pointerAllowlistCanAllowMissingKeyDiagnostics() throws Exception {
+        Allowlist allowlist = new Allowlist(List.of(
+            entry("allow-missing-key", "pointer", "**", JSON.readTree("""
+                {"pointer":"/items/*","rule":"ignore"}
+                """))
+        ));
+        JsonNode options = JSON.readTree("""
+            {"unorderedArrays":[{"pointer":"/items","key":"/id"}]}
+            """);
+        String body = """
+            {"items":[{"name":"x"}]}
+            """;
+        CaseResult result = diff(response(200, "application/json", body),
+            response(200, "application/json", body), allowlist, options, "/accounts/1");
+        List<Difference> missingKeys = result.differences().stream()
+            .filter(difference -> difference.kind() == Difference.Kind.MISSING_KEY).toList();
+
+        assertEquals(CaseResult.Outcome.CLEAN, result.outcome());
+        assertEquals(2, missingKeys.size());
+        assertTrue(missingKeys.stream().allMatch(Difference::allowed));
+        assertTrue(missingKeys.stream().allMatch(difference ->
+            difference.allowedBy().equals(List.of("allow-missing-key"))));
+        assertTrue(allowlist.hits("allow-missing-key") > 0);
+    }
+
+    @Test
     void matchesCaseAndPathGlobsAndTracksStaleEntries() throws Exception {
         Allowlist allowlist = new Allowlist(List.of(
             entry("narrow", "pointer", "/accounts/*", JSON.readTree("""

@@ -89,6 +89,7 @@ jobs:
       FFCRM_DB_URL: jdbc:postgresql://127.0.0.1:5432/ffcrm_contract
       FFCRM_DB_USER: postgres
       FFCRM_DB_PASSWORD: postgres
+      FFCRM_JWT_SECRET: ab266-contract-ci-jwt-secret-0123456789abcdef
     steps:
       - uses: actions/checkout@v7
       - uses: ruby/setup-ruby@v1

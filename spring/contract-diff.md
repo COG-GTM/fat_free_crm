@@ -11,6 +11,11 @@ The default database command creates or reuses a PostgreSQL 16 container named
 
 ```sh
 PG_IMAGE=mirror.gcr.io/library/postgres:16 spring/scripts/contract-db.sh
+```
+
+For re-running against an existing container (optional):
+
+```sh
 CONTRACT_FIXTURES_RESET=1 spring/scripts/contract-db.sh
 ```
 
@@ -30,6 +35,7 @@ bin/rails server -p 3000 -b 127.0.0.1
 export FFCRM_DB_URL=jdbc:postgresql://127.0.0.1:5433/ffcrm_contract
 export FFCRM_DB_USER=postgres
 export FFCRM_DB_PASSWORD=postgres
+export FFCRM_JWT_SECRET=ab266-contract-ci-jwt-secret-0123456789abcdef
 cd spring
 ./gradlew bootRun
 ```
@@ -89,6 +95,9 @@ normalize:
     - {side: spring, from: "/*/createdAt", to: "/*/created_at"}
 ```
 
+Ignore pointers are evaluated against the response structure after renames and before unordered
+arrays are sorted.
+
 Arrays remain ordered unless listed under `unorderedArrays`. A string pointer sorts by canonical
 JSON; an object with `key` pairs entries by that key pointer. Timestamp pointers compare as
 ISO-8601 instants. Renames happen only for the declared side and pointer.
@@ -105,26 +114,31 @@ segment and `**` matches any path), and optionally a case ID:
   still requires a non-empty `title` and matching `status`.
 
 Each applied allow-list entry is counted. Zero-hit entries are marked **stale** in the report but
-do not fail the run. In particular, the authorization status entry is expected to be stale until
-Spring authentication and authorization are implemented.
+do not fail the run. The `authz-denied-401-vs-403` status entry is currently stale because the
+authenticated account-show request reaches an unimplemented Spring route and gets 404, not the
+expected 403.
 
 ## Authentication and case lifecycle
 
 `RailsSessionAuth` performs the Devise CSRF form sign-in using an isolated cookie jar per fixture
 user. `SpringJwtAuth` posts fixture credentials to `/api/v1/auth/login` and uses the returned
-bearer token. If Spring login returns 401 or 404, the case still sends its Spring request without
-credentials and records `spring auth unavailable`; this is report-only for pending cases but an
-enforced case fails. An unreachable Rails sign-in page fails the run clearly.
+bearer token. In the current live run, login succeeded for admin, Alice, and Bob, so no
+`spring auth unavailable` notes were recorded. The account and contact resource endpoints are not
+implemented yet; authenticated requests to them return Spring 404 `application/problem+json`,
+while Rails returns 200 for the pending account/contact reads and 401 for Bob's private-account
+denial. If Spring login returns 401 or 404, the case still sends its request without credentials
+and records `spring auth unavailable`; this is report-only for pending cases but an enforced case
+fails. An unreachable Rails sign-in page fails the run clearly.
 
 Cases begin as `pending` while their Spring endpoint or behavior is still in progress. Pending
 cases always pass the Gradle task but retain their live diff in the report. Later phases flip cases
 to `enforced` when the endpoint lands and its intended behavior is stable.
 
-`accounts-show-private-denied-bob` is currently **CLEAN** only because Spring authentication is
-unavailable: the Spring request is anonymous and also returns 401. Rails labels its plain-text
-denial as `application/json`; the `errorBody` rule allows this Rails-side `INVALID_JSON` against a
-valid Spring problem response. Keep this case pending until Spring authentication and authorization
-can exercise the intended 401-vs-403 behavior.
+`accounts-show-private-denied-bob` currently reports **DIFF**: Bob's JWT login succeeds, but the
+missing Spring account-show endpoint returns 404 while Rails denies the private account with 401.
+The `errorBody` rule allows the content-type and body differences; the 401-vs-404 status difference
+remains open because the authorization rule expects Spring 403. Keep this case pending until the
+Spring endpoint can exercise the intended authorization behavior.
 
 ## Fixture corpus and visibility matrix
 

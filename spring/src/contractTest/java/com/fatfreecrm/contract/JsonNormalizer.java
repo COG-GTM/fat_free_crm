@@ -28,19 +28,48 @@ public final class JsonNormalizer {
     public static NormalizationResult normalizeWithDiagnostics(JsonNode input, JsonNode options, String side) {
         JsonNode normalized = input.deepCopy();
         applyRenames(normalized, options.path("rename"), side);
+        removeIgnored(normalized, "", options.path("ignore"));
         normalizeTree(normalized, "", options);
         List<MissingKey> missingKeys = new ArrayList<>();
-        collectMissingKeys(normalized, "", options.path("unorderedArrays"), side, missingKeys);
+        collectMissingKeys(normalized, "", options, side, missingKeys);
         return new NormalizationResult(normalized, missingKeys);
     }
 
     public static boolean ignored(String pointer, JsonNode options) {
-        for (JsonNode pattern : options.path("ignore")) {
+        return matchesAny(options.path("ignore"), pointer);
+    }
+
+    private static boolean matchesAny(JsonNode patterns, String pointer) {
+        for (JsonNode pattern : patterns) {
             if (matches(pattern.asText(), pointer)) {
                 return true;
             }
         }
         return false;
+    }
+
+    private static void removeIgnored(JsonNode node, String pointer, JsonNode patterns) {
+        if (node instanceof ObjectNode object) {
+            List<String> names = new ArrayList<>();
+            object.fieldNames().forEachRemaining(names::add);
+            for (String name : names) {
+                String childPointer = pointer + "/" + escape(name);
+                if (matchesAny(patterns, childPointer)) {
+                    object.remove(name);
+                } else {
+                    removeIgnored(object.get(name), childPointer, patterns);
+                }
+            }
+        } else if (node instanceof ArrayNode array) {
+            for (int index = array.size() - 1; index >= 0; index--) {
+                String childPointer = pointer + "/" + index;
+                if (matchesAny(patterns, childPointer)) {
+                    array.remove(index);
+                } else {
+                    removeIgnored(array.get(index), childPointer, patterns);
+                }
+            }
+        }
     }
 
     private static void appendOptions(ObjectNode target, JsonNode source) {
@@ -143,11 +172,21 @@ public final class JsonNormalizer {
             values.sort(Comparator.comparing(JsonNormalizer::canonical));
         } else {
             String selectedKey = keyPointer;
-            values.sort(Comparator.comparingInt((JsonNode value) -> get(value, selectedKey) == null ? 1 : 0)
-                .thenComparing(value -> {
-                    JsonNode key = get(value, selectedKey);
-                    return key == null ? canonical(value) : canonical(key);
-                }));
+            values.sort((left, right) -> {
+                JsonNode leftKey = get(left, selectedKey);
+                JsonNode rightKey = get(right, selectedKey);
+                if (leftKey == null && rightKey != null) {
+                    return 1;
+                }
+                if (leftKey != null && rightKey == null) {
+                    return -1;
+                }
+                if (leftKey == null) {
+                    return canonical(left).compareTo(canonical(right));
+                }
+                int keyOrder = canonical(leftKey).compareTo(canonical(rightKey));
+                return keyOrder != 0 ? keyOrder : canonical(left).compareTo(canonical(right));
+            });
         }
         array.removeAll();
         values.forEach(array::add);
@@ -156,23 +195,25 @@ public final class JsonNormalizer {
     private static void collectMissingKeys(
         JsonNode node,
         String pointer,
-        JsonNode specifications,
+        JsonNode options,
         String side,
         List<MissingKey> missingKeys
     ) {
         if (node.isObject()) {
             node.properties().forEach(entry ->
-                collectMissingKeys(entry.getValue(), pointer + "/" + escape(entry.getKey()), specifications,
+                collectMissingKeys(entry.getValue(), pointer + "/" + escape(entry.getKey()), options,
                     side, missingKeys));
         } else if (node.isArray()) {
             ArrayNode array = (ArrayNode) node;
-            String keyPointer = keyPointer(pointer, specifications);
+            String keyPointer = keyPointer(pointer, options.path("unorderedArrays"));
             for (int index = 0; index < array.size(); index++) {
                 JsonNode value = array.get(index);
-                if (keyPointer != null && get(value, keyPointer) == null) {
-                    missingKeys.add(new MissingKey(side, pointer + "/" + index, value.deepCopy()));
+                String elementPointer = pointer + "/" + index;
+                if (keyPointer != null && get(value, keyPointer) == null
+                    && !ignored(elementPointer + keyPointer, options)) {
+                    missingKeys.add(new MissingKey(side, elementPointer, value.deepCopy()));
                 }
-                collectMissingKeys(value, pointer + "/" + index, specifications, side, missingKeys);
+                collectMissingKeys(value, elementPointer, options, side, missingKeys);
             }
         }
     }

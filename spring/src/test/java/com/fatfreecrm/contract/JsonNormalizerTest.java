@@ -51,7 +51,7 @@ class JsonNormalizerTest {
     }
 
     @Test
-    void duplicateKeysKeepInputOrderWhenIgnoredFieldsDiffer() throws Exception {
+    void duplicateKeysSortByCanonicalIgnoreStrippedElements() throws Exception {
         JsonNode options = JSON.readTree("""
             {
               "unorderedArrays":[{"pointer":"/items","key":"/id"}],
@@ -70,6 +70,24 @@ class JsonNormalizerTest {
                   {"id":1,"ignored":"z","value":"one"},
                   {"id":1,"ignored":"a","value":"two"}
                 ]}
+                """),
+            options
+        );
+        assertEquals(CaseResult.Outcome.CLEAN, result.outcome());
+        assertTrue(result.differences().isEmpty());
+    }
+
+    @Test
+    void duplicateKeysInReversedOrderSortByCanonicalElements() throws Exception {
+        JsonNode options = JSON.readTree("""
+            {"unorderedArrays":[{"pointer":"/items","key":"/id"}]}
+            """);
+        CaseResult result = compare(
+            JSON.readTree("""
+                {"items":[{"id":1,"value":"a"},{"id":1,"value":"b"}]}
+                """),
+            JSON.readTree("""
+                {"items":[{"id":1,"value":"b"},{"id":1,"value":"a"}]}
                 """),
             options
         );
@@ -102,6 +120,26 @@ class JsonNormalizerTest {
         assertEquals(CaseResult.Outcome.DIFF, visible.outcome());
         assertEquals(2, visible.differences().stream()
             .filter(difference -> difference.kind() == Difference.Kind.MISSING_KEY).count());
+    }
+
+    @Test
+    void ignoringArrayItemKeysSuppressesMissingKeyDiagnostics() throws Exception {
+        JsonNode options = JSON.readTree("""
+            {
+              "unorderedArrays":[{"pointer":"/items","key":"/id"}],
+              "ignore":["/items/*/id"]
+            }
+            """);
+        JsonNode body = JSON.readTree("""
+            {"items":[{"name":"x"},{"name":"y"}]}
+            """);
+        JsonNormalizer.NormalizationResult normalized =
+            JsonNormalizer.normalizeWithDiagnostics(body, options, "rails");
+        assertTrue(normalized.missingKeys().isEmpty());
+
+        CaseResult result = compare(body, body, options);
+        assertEquals(CaseResult.Outcome.CLEAN, result.outcome());
+        assertTrue(result.differences().isEmpty());
     }
 
     @Test

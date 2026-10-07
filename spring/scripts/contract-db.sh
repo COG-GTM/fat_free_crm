@@ -19,7 +19,7 @@ if [[ -z "${CONTRACT_DATABASE_URL:-}" ]]; then
     if docker container inspect ffcrm-contract-db >/dev/null 2>&1; then
         CONTAINER_ID="ffcrm-contract-db"
         EXISTING_DB_PORT="$(docker inspect \
-            --format '{{with (index .NetworkSettings.Ports "5432/tcp")}}{{(index . 0).HostPort}}{{end}}' \
+            --format '{{with (index .HostConfig.PortBindings "5432/tcp")}}{{(index . 0).HostPort}}{{end}}' \
             "$CONTAINER_ID")"
         if [[ "$EXISTING_DB_PORT" != "$DB_PORT" ]]; then
             printf 'Existing ffcrm-contract-db uses host port %s, not requested port %s.\n' \
