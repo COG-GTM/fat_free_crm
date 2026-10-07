@@ -22,6 +22,8 @@ spring:
     baseline-version: 1
     baseline-description: Rails schema adopted
     validate-on-migrate: true
+    postgresql:
+      transactional-lock: false
     clean-disabled: true
 springdoc:
   api-docs:
@@ -50,6 +52,10 @@ ffcrm:
       refresh-token-ttl: ${FFCRM_JWT_REFRESH_TTL:14d}
     legacy-password:
       stretches: 20
+  custom-fields:
+    registry-ttl: 30s
+    backfill:
+      batch-size: 10000
 
 management:
   endpoints:

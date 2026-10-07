@@ -22,12 +22,16 @@ class FlywayEmptyDatabaseTest extends AbstractPostgresIntegrationTest {
     private JdbcTemplate jdbcTemplate;
 
     @Test
-    void appliesAndValidatesTheBaselineMigration() {
+    void appliesAndValidatesTheBaselineAndCustomFieldMigrations() {
         var applied = flyway.info().applied();
-        assertThat(applied).hasSize(1);
+        assertThat(applied).hasSize(3);
         assertThat(applied[0].getVersion().getVersion()).isEqualTo("1");
         assertThat(applied[0].getType().name()).isEqualTo("SQL");
         assertThat(applied[0].getState()).isEqualTo(MigrationState.SUCCESS);
+        assertThat(applied[1].getVersion().getVersion()).isEqualTo("2");
+        assertThat(applied[1].getType().name()).isEqualTo("SQL");
+        assertThat(applied[2].getVersion().getVersion()).isEqualTo("3");
+        assertThat(applied[2].getType().name()).isEqualTo("SQL");
         ValidateResult validation = flyway.validateWithResult();
         assertThat(validation.validationSuccessful)
             .withFailMessage("Flyway validation failed: %s", validation.getAllErrorMessages())

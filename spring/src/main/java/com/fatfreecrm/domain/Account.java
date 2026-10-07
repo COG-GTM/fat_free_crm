@@ -1,16 +1,30 @@
 package com.fatfreecrm.domain;
 
 import com.fatfreecrm.domain.support.CrmEntity;
+import com.fatfreecrm.domain.support.HasCustomFields;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.Map;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "accounts")
 @DynamicUpdate
-public class Account extends CrmEntity {
+public class Account extends CrmEntity implements HasCustomFields {
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "custom_fields", insertable = false, updatable = false)
+    private Map<String, Object> customFields;
+
+    @Override
+    public Map<String, Object> getCustomFields() {
+        return customFields == null ? Map.of() : Collections.unmodifiableMap(customFields);
+    }
 
     @Column(name = "name", length = 64, nullable = false)
     private String name = "";

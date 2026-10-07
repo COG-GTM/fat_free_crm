@@ -1,10 +1,12 @@
 package com.fatfreecrm.api;
 
+import com.fatfreecrm.customfields.CustomFieldValidationException;
 import com.fatfreecrm.service.query.InvalidPageException;
 import com.fatfreecrm.service.query.InvalidSearchQueryException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -29,6 +31,13 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ApiExceptionHandler.class);
+
+    @ExceptionHandler(CustomFieldValidationException.class)
+    public ResponseEntity<Object> handleCustomFieldValidation(CustomFieldValidationException exception) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(Map.of("errors", exception.errors()));
+    }
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<Object> handleAuthenticationFailure(

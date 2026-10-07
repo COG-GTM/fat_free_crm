@@ -62,15 +62,35 @@ class RailsMigratedDatabaseTest {
     private JdbcTemplate jdbcTemplate;
 
     @Test
-    void baselinesAnExistingRailsSchemaWithoutExecutingSqlMigrations() {
+    void baselinesExistingRailsSchemaAndAppliesCustomFieldMigrations() {
         var applied = flyway.info().applied();
-        assertThat(applied).hasSize(1);
+        assertThat(applied).hasSize(3);
         assertThat(applied[0].getVersion().getVersion()).isEqualTo("1");
         assertThat(applied[0].getType().name()).isEqualTo("BASELINE");
         assertThat(jdbcTemplate.queryForObject(
             "SELECT count(*) FROM flyway_schema_history WHERE type = 'SQL'",
             Integer.class
+        )).isEqualTo(2);
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM information_schema.columns "
+                + "WHERE table_schema = 'public' AND table_name IN "
+                + "('accounts', 'campaigns', 'contacts', 'leads', 'opportunities', 'tasks') "
+                + "AND column_name = 'custom_fields'",
+            Integer.class
+        )).isEqualTo(6);
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM pg_indexes WHERE schemaname = 'public' "
+                + "AND indexname LIKE 'index_%_on_custom_fields'",
+            Integer.class
+        )).isEqualTo(6);
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM flyway_schema_history WHERE version = '1' AND type = 'SQL'",
+            Integer.class
         )).isZero();
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM flyway_schema_history WHERE version = '1' AND type = 'BASELINE'",
+            Integer.class
+        )).isEqualTo(1);
         assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
     }
 
@@ -80,6 +100,10 @@ class RailsMigratedDatabaseTest {
             "SELECT value FROM settings WHERE name = 'ab263-sentinel'",
             String.class
         )).isEqualTo("preserved");
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM accounts WHERE custom_fields IS NOT NULL",
+            Integer.class
+        )).isZero();
         assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM schema_migrations", Integer.class))
             .isGreaterThan(0);
         assertThat(jdbcTemplate.queryForObject(
