@@ -102,6 +102,15 @@ class CustomFieldTypeValidatorTest {
         assertThat(write(len, Map.of("cb", List.of("x"))).ok()).isTrue();
     }
 
+    @Test
+    void checkBoxesReadPreservesDuplicatesBlanksAndNullItems() {
+        List<CustomFieldDefinition> fields = List.of(f("cb", "check_boxes"));
+        List<String> stored = java.util.Arrays.asList("red", "red", "", null);
+
+        assertThat(read(fields, Map.of("cb", stored)).normalized().get("cb")).isEqualTo(stored);
+        assertThat(read(fields, Map.of("cb", "raw yaml")).normalized().get("cb")).isEqualTo("raw yaml");
+    }
+
     // --- boolean -------------------------------------------------------------
 
     @Test

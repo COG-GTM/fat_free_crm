@@ -336,6 +336,8 @@ corpus in a rolled-back transaction, runs every case through `AccountsController
 
 ## Custom-field JSONB backfill
 
+If V3 fails while building GIN indexes, run `flyway repair` and rerun; V3 drops leftover invalid indexes.
+
 Normal Spring startup applies the custom-field JSONB synchronization trigger and GIN indexes. Once
 the trigger is live, run the restartable backfill with:
 
@@ -352,3 +354,6 @@ custom-field column's non-null count beside its JSONB-key non-null count. A zero
 indicates a failed report; investigate it with `CustomFieldConsistencyCheck` before cutover. The
 read/write precedence and cutover sequence are documented in
 `../docs/migration/spikes/custom-fields-dual-read-design.md` §7.
+
+The registry caches field definitions and physical `cf_*` columns, and re-hashes their contents after
+the configured TTL to detect metadata or schema changes.

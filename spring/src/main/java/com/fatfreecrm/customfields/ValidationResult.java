@@ -18,7 +18,10 @@ public record ValidationResult(
     public ValidationResult {
         Map<String, Object> normalizedCopy = new LinkedHashMap<>();
         normalized.forEach((key, value) ->
-            normalizedCopy.put(key, value instanceof List<?> list ? List.copyOf(list) : value));
+            normalizedCopy.put(
+                key, value instanceof List<?> list
+                    ? Collections.unmodifiableList(new ArrayList<>(list))
+                    : value));
         normalized = normalizedCopy;
         Map<String, List<String>> errorsCopy = new LinkedHashMap<>();
         errors.forEach((key, value) -> errorsCopy.put(key, new ArrayList<>(value)));
@@ -29,7 +32,9 @@ public record ValidationResult(
     public Map<String, Object> normalized() {
         Map<String, Object> copy = new LinkedHashMap<>();
         normalized.forEach((key, value) -> copy.put(
-            key, value instanceof List<?> list ? List.copyOf(list) : value));
+            key, value instanceof List<?> list
+                ? Collections.unmodifiableList(new ArrayList<>(list))
+                : value));
         return Collections.unmodifiableMap(copy);
     }
 

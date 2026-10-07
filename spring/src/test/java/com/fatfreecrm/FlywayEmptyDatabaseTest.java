@@ -6,6 +6,7 @@ import com.fatfreecrm.support.AbstractPostgresIntegrationTest;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationState;
 import org.flywaydb.core.api.output.ValidateResult;
@@ -32,6 +33,23 @@ class FlywayEmptyDatabaseTest extends AbstractPostgresIntegrationTest {
         assertThat(applied[1].getType().name()).isEqualTo("SQL");
         assertThat(applied[2].getVersion().getVersion()).isEqualTo("3");
         assertThat(applied[2].getType().name()).isEqualTo("SQL");
+        List<String> validIndexes = jdbcTemplate.queryForList(
+            "SELECT index_class.relname FROM pg_class index_class "
+                + "JOIN pg_namespace index_schema ON index_schema.oid = index_class.relnamespace "
+                + "JOIN pg_index index_info ON index_info.indexrelid = index_class.oid "
+                + "WHERE index_schema.nspname = 'public' "
+                + "AND index_class.relname IN ('index_accounts_on_custom_fields', "
+                + "'index_campaigns_on_custom_fields', 'index_contacts_on_custom_fields', "
+                + "'index_leads_on_custom_fields', 'index_opportunities_on_custom_fields', "
+                + "'index_tasks_on_custom_fields') AND index_info.indisvalid",
+            String.class);
+        assertThat(validIndexes).containsExactlyInAnyOrder(
+            "index_accounts_on_custom_fields",
+            "index_campaigns_on_custom_fields",
+            "index_contacts_on_custom_fields",
+            "index_leads_on_custom_fields",
+            "index_opportunities_on_custom_fields",
+            "index_tasks_on_custom_fields");
         ValidateResult validation = flyway.validateWithResult();
         assertThat(validation.validationSuccessful)
             .withFailMessage("Flyway validation failed: %s", validation.getAllErrorMessages())

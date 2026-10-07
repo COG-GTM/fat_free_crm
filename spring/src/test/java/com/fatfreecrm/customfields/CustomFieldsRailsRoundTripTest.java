@@ -109,6 +109,10 @@ class CustomFieldsRailsRoundTripTest extends AbstractPostgresIntegrationTest {
             Account account = entityManager.find(Account.class, id);
             JsonNode railsJson = objectMapper.valueToTree(readService.railsJsonValues(account));
             assertThat(railsJson).isEqualTo(row.path("rails_json"));
+            if (id == 982710) {
+                assertThat(railsJson.path("cf_ab271_check_boxes"))
+                    .isEqualTo(objectMapper.valueToTree(List.of("alpha", "alpha", "")));
+            }
         }
     }
 

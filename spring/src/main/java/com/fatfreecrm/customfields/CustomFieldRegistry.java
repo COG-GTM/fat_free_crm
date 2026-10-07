@@ -12,12 +12,15 @@ import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+/**
+ * Caches custom-field definitions and physical columns, refreshing when their
+ * content hashes change after the configured TTL.
+ */
 @Component
 @SuppressFBWarnings(
     value = "EI_EXPOSE_REP2",
@@ -83,14 +86,21 @@ public class CustomFieldRegistry {
     }
 
     private Fingerprint fingerprint() {
-        long[] fields = Objects.requireNonNull(jdbcTemplate.queryForObject(
-            "SELECT count(*), COALESCE((EXTRACT(EPOCH FROM max(updated_at)) * 1000000)::bigint, 0) FROM fields",
-            (rs, rowNum) -> new long[] {rs.getLong(1), rs.getLong(2)}));
-        long[] groups = Objects.requireNonNull(jdbcTemplate.queryForObject(
-            "SELECT count(*), COALESCE((EXTRACT(EPOCH FROM max(updated_at)) * 1000000)::bigint, 0) "
-                + "FROM field_groups",
-            (rs, rowNum) -> new long[] {rs.getLong(1), rs.getLong(2)}));
-        return new Fingerprint(fields[0], fields[1], groups[0], groups[1]);
+        String fields = jdbcTemplate.queryForObject(
+            "SELECT coalesce(md5(string_agg(f::text, '|' ORDER BY f.id)), '') FROM fields f",
+            String.class);
+        String groups = jdbcTemplate.queryForObject(
+            "SELECT coalesce(md5(string_agg(g::text, '|' ORDER BY g.id)), '') FROM field_groups g",
+            String.class);
+        String physicalColumns = jdbcTemplate.queryForObject(
+            "SELECT coalesce(md5(string_agg(table_name || '.' || column_name || ':' || data_type, '|' "
+                + "ORDER BY table_name, column_name)), '') "
+                + "FROM information_schema.columns "
+                + "WHERE table_schema = current_schema() "
+                + "AND table_name IN ('accounts', 'campaigns', 'contacts', 'leads', 'opportunities', 'tasks') "
+                + "AND column_name LIKE 'cf\\_%' ESCAPE '\\'",
+            String.class);
+        return new Fingerprint(fields, groups, physicalColumns);
     }
 
     private void reload() {
@@ -180,7 +190,7 @@ public class CustomFieldRegistry {
         };
     }
 
-    private record Fingerprint(long fieldsCount, long fieldsUpdated, long groupsCount, long groupsUpdated) {
+    private record Fingerprint(String fieldsHash, String groupsHash, String physicalColumnsHash) {
     }
 
 }

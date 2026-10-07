@@ -1,5 +1,6 @@
 package com.fatfreecrm.customfields;
 
+import com.fatfreecrm.domain.support.BaseEntity;
 import com.fatfreecrm.domain.support.HasCustomFields;
 import com.fatfreecrm.domain.support.RailsModelType;
 import java.math.BigDecimal;
@@ -12,11 +13,14 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class CustomFieldReadService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(CustomFieldReadService.class);
     private static final DateTimeFormatter RAILS_DATETIME =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
@@ -43,7 +47,17 @@ public class CustomFieldReadService {
                 continue;
             }
             if (value instanceof Map<?, ?> marker && marker.size() == 1 && marker.containsKey("$yaml")) {
-                value = yamlCodec.decode(String.valueOf(marker.get("$yaml")));
+                String rawYaml = String.valueOf(marker.get("$yaml"));
+                try {
+                    value = yamlCodec.decode(rawYaml);
+                } catch (RuntimeException exception) {
+                    LOGGER.warn(
+                        "Could not decode custom-field YAML for model {} id {} field {}; returning raw YAML",
+                        type.railsName(),
+                        entityId(entity),
+                        definition.name());
+                    value = rawYaml;
+                }
             }
             knownValues.put(definition.name(), value);
         }
@@ -114,5 +128,9 @@ public class CustomFieldReadService {
             }
         }
         throw new IllegalArgumentException("Unsupported custom-fields entity " + entity.getClass());
+    }
+
+    private static Long entityId(HasCustomFields entity) {
+        return entity instanceof BaseEntity baseEntity ? baseEntity.getId() : null;
     }
 }

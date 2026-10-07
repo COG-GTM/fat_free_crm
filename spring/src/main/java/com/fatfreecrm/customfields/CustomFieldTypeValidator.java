@@ -190,7 +190,7 @@ public class CustomFieldTypeValidator {
         }
         switch (as) {
             case "check_boxes":
-                return normalizeCheckBoxes(raw);
+                return normalizeCheckBoxes(raw, mode);
             case "boolean":
                 return normalizeBoolean(raw);
             case "date":
@@ -208,14 +208,20 @@ public class CustomFieldTypeValidator {
         }
     }
 
-    private static Object normalizeCheckBoxes(Object raw) throws FieldConversionException {
+    private static Object normalizeCheckBoxes(Object raw, Mode mode) throws FieldConversionException {
         List<?> items;
         if (raw instanceof List<?> list) {
             items = list;
         } else if (raw instanceof CharSequence s) {
+            if (mode == Mode.READ) {
+                return s.toString();
+            }
             items = List.of(s.toString());
         } else {
             throw new FieldConversionException("%s is not a list.");
+        }
+        if (mode == Mode.READ) {
+            return new ArrayList<>(items);
         }
         Set<String> seen = new LinkedHashSet<>();
         for (Object item : items) {

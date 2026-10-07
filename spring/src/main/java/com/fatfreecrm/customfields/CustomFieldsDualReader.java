@@ -1,8 +1,11 @@
 package com.fatfreecrm.customfields;
 
+import com.fatfreecrm.domain.support.RailsModelType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Dual-read shim: merges legacy cf_* column values and the custom_fields jsonb
@@ -13,6 +16,8 @@ import java.util.Map;
  */
 final class CustomFieldsDualReader {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(CustomFieldsDualReader.class);
+
     private CustomFieldsDualReader() {
     }
 
@@ -21,10 +26,13 @@ final class CustomFieldsDualReader {
      *                         columns that physically exist are present)
      * @param customFieldsJsonb the JSONB document
      * @param metadata         field definitions for the klass
+     * @param type             Rails model type
+     * @param id               entity id
      * @return normalized custom-field values, READ-mode validated
      */
     static Map<String, Object> read(Map<String, Object> cfColumns,
-        Map<String, Object> customFieldsJsonb, List<CustomFieldDefinition> metadata) {
+        Map<String, Object> customFieldsJsonb, List<CustomFieldDefinition> metadata,
+        RailsModelType type, Long id) {
         CheckBoxesYamlCodec codec = new CheckBoxesYamlCodec();
         Map<String, Object> merged = new LinkedHashMap<>();
         for (CustomFieldDefinition field : metadata) {
@@ -36,7 +44,7 @@ final class CustomFieldsDualReader {
                     continue; // cleared field: key absent from output
                 }
                 if ("check_boxes".equals(field.as()) && col instanceof CharSequence s) {
-                    merged.put(name, codec.decode(s.toString()));
+                    merged.put(name, decodeOrRaw(codec, s.toString(), type, id, name));
                 } else {
                     merged.put(name, col);
                 }
@@ -46,7 +54,7 @@ final class CustomFieldsDualReader {
                     continue;
                 }
                 if (v instanceof Map<?, ?> marker && marker.size() == 1 && marker.containsKey("$yaml")) {
-                    merged.put(name, codec.decode(String.valueOf(marker.get("$yaml"))));
+                    merged.put(name, decodeOrRaw(codec, String.valueOf(marker.get("$yaml")), type, id, name));
                 } else {
                     merged.put(name, v);
                 }
@@ -56,5 +64,19 @@ final class CustomFieldsDualReader {
         ValidationResult result = new CustomFieldTypeValidator()
             .validate(metadata, merged, CustomFieldTypeValidator.Mode.READ);
         return result.normalized();
+    }
+
+    private static Object decodeOrRaw(CheckBoxesYamlCodec codec, String rawYaml,
+        RailsModelType type, Long id, String fieldName) {
+        try {
+            return codec.decode(rawYaml);
+        } catch (RuntimeException exception) {
+            LOGGER.warn(
+                "Could not decode custom-field YAML for model {} id {} field {}; returning raw YAML",
+                type.railsName(),
+                id,
+                fieldName);
+            return rawYaml;
+        }
     }
 }

@@ -40,9 +40,10 @@ class CustomFieldReadWriteIntegrationTest extends AbstractPostgresIntegrationTes
     @AfterEach
     void cleanUp() {
         jdbcTemplate.update("DELETE FROM accounts WHERE name LIKE 'ab271-%'");
-        jdbcTemplate.update("DELETE FROM fields WHERE id IN (990301, 990302)");
+        jdbcTemplate.update("DELETE FROM fields WHERE id IN (990301, 990302, 990303)");
         jdbcTemplate.update("DELETE FROM field_groups WHERE id = 990301");
         jdbcTemplate.execute("ALTER TABLE accounts DROP COLUMN IF EXISTS cf_read_write");
+        jdbcTemplate.execute("ALTER TABLE accounts DROP COLUMN IF EXISTS cf_read_boxes");
         registry.invalidate();
     }
 
@@ -108,5 +109,30 @@ class CustomFieldReadWriteIntegrationTest extends AbstractPostgresIntegrationTes
             entityManager.find(Account.class, id), Map.of("cf_unknown", "value")))
             .isInstanceOfSatisfying(CustomFieldValidationException.class, exception ->
                 assertThat(exception.errors()).containsKey("cf_unknown"));
+    }
+
+    @Test
+    void malformedCheckboxYamlIsReturnedByJsonbReadsAndConsistencyCheck() {
+        jdbcTemplate.execute("ALTER TABLE accounts ADD COLUMN cf_read_boxes text");
+        jdbcTemplate.update(
+            "INSERT INTO field_groups (id, klass_name, name, \"position\", created_at, updated_at) "
+                + "VALUES (990301, 'Account', 'read malformed YAML test', 1, now(), now())");
+        jdbcTemplate.update(
+            "INSERT INTO fields (id, type, field_group_id, \"position\", name, label, \"as\", "
+                + "disabled, required, created_at, updated_at) VALUES "
+                + "(990303, 'CustomField', 990301, 1, 'cf_read_boxes', 'Read boxes', 'check_boxes', "
+                + "false, false, now(), now())");
+        String raw = "---\n- \"\\uZZZZ\"\n";
+        Long id = jdbcTemplate.queryForObject(
+            "INSERT INTO accounts (name, cf_read_boxes) VALUES ('ab271-read-malformed-yaml', ?) RETURNING id",
+            Long.class,
+            raw);
+        registry.invalidate();
+        entityManager.clear();
+        Account account = entityManager.find(Account.class, id);
+
+        assertThat(readService.valuesFor(account)).containsEntry("cf_read_boxes", raw);
+        assertThat(readService.railsJsonValues(account)).containsEntry("cf_read_boxes", raw);
+        assertThat(consistencyCheck.check(RailsModelType.ACCOUNT).ok()).isTrue();
     }
 }

@@ -70,7 +70,8 @@ def custom_fields_matrix_result(java_fixture)
     [982706, "empty-check-boxes", { check_boxes.name => [] }],
     [982707, "yaml-block-marker", { check_boxes.name => ["line one\nline two"] }],
     [982708, "typed-secondary", secondary_values],
-    [982709, "typed-tertiary", tertiary_values]
+    [982709, "typed-tertiary", tertiary_values],
+    [982710, "duplicate-and-blank-check-boxes", { check_boxes.name => %w[alpha alpha] + [""] }]
   ]
   records = row_inputs.map do |id, label, values|
     Account.create!(

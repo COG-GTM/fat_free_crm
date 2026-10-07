@@ -75,7 +75,7 @@ public class CustomFieldConsistencyCheck {
                 continue;
             }
             Map<String, Object> dualRead = CustomFieldsDualReader.read(
-                record, entity.getCustomFields(), definitions);
+                record, entity.getCustomFields(), definitions, type, id);
             Map<String, Object> jsonbOnly = readService.valuesFor(entity);
             Set<String> keys = new LinkedHashSet<>(dualRead.keySet());
             keys.addAll(jsonbOnly.keySet());
