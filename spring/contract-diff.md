@@ -79,14 +79,22 @@ Each YAML file in `contract/cases/` contains a list of cases:
 are Rails `<path>.json` and Spring `/api/v1<path>`. Explicit `rails` or `spring` entries may be a
 path string or `{path: /path, target: rails|spring}`; target defaults to the corresponding side.
 `params` is a query map, `body` is the JSON object sent for a non-GET request, and `auth` is
-`anonymous` or a key from `contract/users.yml`.
+`anonymous` or a key from `contract/users.yml`. Optional `expect` checks `status` and exact JSON
+pointer values independently on each side after the normal diff; expectation differences are
+always open and cannot be allow-listed.
+
+```yaml
+expect:
+  status: 200
+  json: {/id: 1, /username: admin, /admin: true}
+```
 
 The current initial case set is:
 
 | Case | Mode | Request | Purpose |
 |---|---|---|---|
-| `accounts-index-self-check-admin` | enforced | Rails `GET /accounts.json` on both sides | Harness and Rails-session self-check |
-| `auth-login-spring-self-check` | enforced | Spring `GET /api/v1/users/me` on both sides | AB-264 fixture JWT login and current-user self-check; expected 200 and CLEAN |
+| `accounts-index-self-check-admin` | enforced | Rails `GET /accounts.json` on both sides | Harness and Rails-session self-check; expected 200 |
+| `auth-login-spring-self-check` | enforced | Spring `GET /api/v1/users/me` on both sides | AB-264 fixture JWT login and current-user identity self-check; expected admin id 1, username `admin`, and `admin: true` |
 | `accounts-index-admin` | pending | Rails `GET /accounts.json`; Spring `GET /api/v1/accounts` | AB-270 account index |
 | `accounts-show-public` | pending | Rails `GET /accounts/101.json`; Spring `GET /api/v1/accounts/101` | AB-270 public account |
 | `contacts-index-alice` | pending | Rails `GET /contacts.json`; Spring `GET /api/v1/contacts` | AB-270 contacts index |

@@ -2,6 +2,7 @@ package com.fatfreecrm.contract;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.MissingNode;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -89,9 +90,37 @@ public final class ContractDiffer {
         if (problemBodyAllowed) {
             validateProblemBody(spring, differences, matching, allowlist);
         }
+        addExpectations(contractCase.expect(), rails, "rails-side", differences);
+        addExpectations(contractCase.expect(), spring, "spring-side", differences);
         boolean clean = differences.stream().allMatch(Difference::allowed);
         return new CaseResult(contractCase, clean ? CaseResult.Outcome.CLEAN : CaseResult.Outcome.DIFF,
             railsUrl, springUrl, rails, spring, notes, differences, null);
+    }
+
+    private static void addExpectations(
+        JsonNode expectation,
+        CapturedResponse response,
+        String side,
+        List<Difference> differences
+    ) {
+        if (expectation == null) {
+            return;
+        }
+        JsonNode expectedStatus = expectation.get("status");
+        if (expectedStatus != null && response.status() != expectedStatus.asInt()) {
+            differences.add(Difference.expectation(side, "",
+                JSON.getNodeFactory().numberNode(response.status()), expectedStatus));
+        }
+        JsonNode expectedJson = expectation.get("json");
+        if (expectedJson != null) {
+            expectedJson.properties().forEach(entry -> {
+                JsonNode actual = response.json() == null ? MissingNode.getInstance()
+                    : response.json().at(entry.getKey());
+                if (actual.isMissingNode() || !actual.equals(entry.getValue())) {
+                    differences.add(Difference.expectation(side, entry.getKey(), actual, entry.getValue()));
+                }
+            });
+        }
     }
 
     private void compare(

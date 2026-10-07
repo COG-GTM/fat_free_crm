@@ -10,6 +10,7 @@
     path: /accounts.json
     target: rails
   auth: admin
+  expect: {status: 200}
   description: Exercise both sides of the harness against the same Rails endpoint.
 - id: auth-login-spring-self-check
   ticket: AB-264
@@ -19,6 +20,9 @@
   rails: {path: /api/v1/users/me, target: spring}
   spring: {path: /api/v1/users/me, target: spring}
   auth: admin
+  expect:
+    status: 200
+    json: {/id: 1, /username: admin, /admin: true}
   description: Both sides log in through Spring POST /api/v1/auth/login (AB-264) and read /api/v1/users/me; proves JWT auth works end to end against the fixture DB.
 - id: accounts-index-admin
   ticket: AB-270

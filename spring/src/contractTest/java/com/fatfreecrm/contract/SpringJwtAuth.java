@@ -8,7 +8,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -16,12 +18,18 @@ public final class SpringJwtAuth implements AuthAdapter {
     private static final ObjectMapper JSON = new ObjectMapper();
     private final String baseUrl;
     private final Map<String, FixtureUsers.FixtureUser> users;
-    private final Map<String, AuthContext> sessions = new ConcurrentHashMap<>();
+    private final Map<String, CachedToken> sessions = new ConcurrentHashMap<>();
     private final HttpClient client;
+    private final Clock clock;
 
     public SpringJwtAuth(String baseUrl, Map<String, FixtureUsers.FixtureUser> users) {
+        this(baseUrl, users, Clock.systemUTC());
+    }
+
+    SpringJwtAuth(String baseUrl, Map<String, FixtureUsers.FixtureUser> users, Clock clock) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.users = Map.copyOf(users);
+        this.clock = clock;
         this.client = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NEVER)
             .connectTimeout(Duration.ofSeconds(10))
@@ -30,9 +38,9 @@ public final class SpringJwtAuth implements AuthAdapter {
 
     @Override
     public AuthContext authenticate(String userKey) throws IOException, InterruptedException {
-        AuthContext cached = sessions.get(userKey);
-        if (cached != null) {
-            return cached;
+        CachedToken cached = sessions.get(userKey);
+        if (cached != null && !cached.expiresAt().isBefore(clock.instant().plusSeconds(30))) {
+            return cached.context();
         }
         FixtureUsers.FixtureUser user = users.get(userKey);
         if (user == null) {
@@ -62,7 +70,13 @@ public final class SpringJwtAuth implements AuthAdapter {
         }
         String tokenType = tokenResponse.path("tokenType").asText("Bearer");
         AuthContext result = new AuthContext(client, tokenType + " " + token, null, null);
-        sessions.put(userKey, result);
+        long expiresIn = tokenResponse.path("expiresIn").asLong(0);
+        if (expiresIn > 0) {
+            sessions.put(userKey, new CachedToken(result, clock.instant().plusSeconds(expiresIn)));
+        }
         return result;
+    }
+
+    private record CachedToken(AuthContext context, Instant expiresAt) {
     }
 }

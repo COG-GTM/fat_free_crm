@@ -1,5 +1,6 @@
 package com.fatfreecrm.contract;
 
+import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -86,8 +87,36 @@ public final class CaseLoader {
             node.get("body"),
             text(node, "auth", "anonymous"),
             objectOrEmpty(node.get("normalize")),
-            text(node, "description", "")
+            text(node, "description", ""),
+            expectation(node.get("expect"))
         );
+    }
+
+    private static JsonNode expectation(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return null;
+        }
+        if (!node.isObject()) {
+            throw new IllegalArgumentException("Contract case expect must be an object.");
+        }
+        JsonNode status = node.get("status");
+        if (status != null && (!status.isIntegralNumber() || !status.canConvertToInt())) {
+            throw new IllegalArgumentException("Contract case expectation status must be an integer.");
+        }
+        JsonNode json = node.get("json");
+        if (json != null && !json.isObject()) {
+            throw new IllegalArgumentException("Contract case expectation json must map pointers to values.");
+        }
+        if (json != null) {
+            json.fieldNames().forEachRemaining(pointer -> {
+                try {
+                    JsonPointer.compile(pointer);
+                } catch (IllegalArgumentException exception) {
+                    throw new IllegalArgumentException("Invalid expectation JSON pointer: " + pointer, exception);
+                }
+            });
+        }
+        return node.deepCopy();
     }
 
     private static ContractCase.SideRequest side(JsonNode node, String defaultPath, ContractCase.Target defaultTarget) {

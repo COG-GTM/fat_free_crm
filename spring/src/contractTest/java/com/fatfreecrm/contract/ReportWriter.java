@@ -71,8 +71,14 @@ public final class ReportWriter {
             ObjectNode detail = differences.addObject();
             detail.put("pointer", difference.pointer());
             detail.put("kind", difference.kind().name());
-            putJson(detail, "rails", difference.railsValue());
-            putJson(detail, "spring", difference.springValue());
+            if (difference.side() == null) {
+                putJson(detail, "rails", difference.railsValue());
+                putJson(detail, "spring", difference.springValue());
+            } else {
+                detail.put("side", difference.side());
+                putJson(detail, "actual", difference.railsValue());
+                putJson(detail, "expected", difference.springValue());
+            }
             ArrayNode applied = detail.putArray("allowedBy");
             difference.allowedBy().forEach(applied::add);
         });
@@ -92,6 +98,8 @@ public final class ReportWriter {
     private static void putJson(ObjectNode node, String field, JsonNode value) {
         if (value == null) {
             node.putNull(field);
+        } else if (value.isMissingNode()) {
+            node.put(field, "<missing>");
         } else {
             node.set(field, value);
         }
@@ -129,10 +137,18 @@ public final class ReportWriter {
             int shown = Math.min(20, result.differences().size());
             for (int index = 0; index < shown; index++) {
                 Difference difference = result.differences().get(index);
-                text.append("- `").append(difference.kind()).append("` `")
-                    .append(difference.pointer()).append("`: Rails `")
-                    .append(truncate(stringify(difference.railsValue()))).append("`, Spring `")
-                    .append(truncate(stringify(difference.springValue()))).append("`");
+                text.append("- `").append(difference.kind()).append('`');
+                if (difference.side() != null) {
+                    text.append(" on ").append(difference.side());
+                }
+                text.append(" `").append(difference.pointer()).append("`: ");
+                if (difference.side() == null) {
+                    text.append("Rails `").append(truncate(stringify(difference.railsValue())))
+                        .append("`, Spring `").append(truncate(stringify(difference.springValue()))).append('`');
+                } else {
+                    text.append("actual `").append(truncate(stringify(difference.railsValue())))
+                        .append("`, expected `").append(truncate(stringify(difference.springValue()))).append('`');
+                }
                 if (!difference.allowedBy().isEmpty()) {
                     text.append(" (allowed by ").append(String.join(", ", difference.allowedBy())).append(')');
                 }
@@ -173,7 +189,7 @@ public final class ReportWriter {
     }
 
     private static String stringify(JsonNode value) {
-        return value == null ? "null" : value.toString();
+        return value == null ? "null" : value.isMissingNode() ? "<missing>" : value.toString();
     }
 
     private static String truncate(String value) {
