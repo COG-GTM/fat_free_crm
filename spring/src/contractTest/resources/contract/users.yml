@@ -1,0 +1,28 @@
+users:
+  admin:
+    id: 1
+    username: admin
+    email: admin@contract.example
+    password: contract-password
+    admin: true
+  alice:
+    id: 2
+    username: alice
+    email: alice@contract.example
+    password: contract-password
+  bob:
+    id: 3
+    username: bob
+    email: bob@contract.example
+    password: contract-password
+  sam:
+    id: 4
+    username: sam
+    email: sam@contract.example
+    password: contract-password
+    suspended: true
+  carol:
+    id: 5
+    username: carol
+    email: carol@contract.example
+    password: contract-password

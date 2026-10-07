@@ -1,0 +1,61 @@
+- id: accounts-index-self-check-admin
+  ticket: AB-266
+  status: enforced
+  method: GET
+  path: /accounts
+  rails:
+    path: /accounts.json
+    target: rails
+  spring:
+    path: /accounts.json
+    target: rails
+  auth: admin
+  expect: {status: 200}
+  description: Exercise both sides of the harness against the same Rails endpoint.
+- id: auth-login-spring-self-check
+  ticket: AB-264
+  status: enforced
+  method: GET
+  path: /users/me
+  rails: {path: /api/v1/users/me, target: spring}
+  spring: {path: /api/v1/users/me, target: spring}
+  auth: admin
+  expect:
+    status: 200
+    json: {/id: 1, /username: admin, /admin: true}
+  description: Both sides log in through Spring POST /api/v1/auth/login (AB-264) and read /api/v1/users/me; proves JWT auth works end to end against the fixture DB.
+- id: accounts-index-admin
+  ticket: AB-270
+  status: pending
+  method: GET
+  path: /accounts
+  auth: admin
+  description: Compare the authenticated Rails index with the Spring API when its endpoint lands.
+- id: accounts-show-public
+  ticket: AB-270
+  status: pending
+  method: GET
+  path: /accounts/101
+  auth: admin
+  description: Compare the public fixture account after Spring account show is implemented.
+- id: contacts-index-alice
+  ticket: AB-270
+  status: pending
+  method: GET
+  path: /contacts
+  auth: alice
+  description: Compare Alice's visible contacts after Spring contacts index is implemented.
+- id: accounts-index-anonymous
+  ticket: AB-266
+  status: enforced
+  method: GET
+  path: /accounts
+  auth: anonymous
+  description: Rails Devise and Spring problem details responses are intentionally different error formats.
+- id: accounts-show-private-denied-bob
+  ticket: AB-268
+  status: pending
+  method: GET
+  path: /accounts/102
+  auth: bob
+  description: Becomes the live 401-vs-403 authz example after AB-264 login and AB-268 authorization land.

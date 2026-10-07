@@ -1,0 +1,19 @@
+allowlist:
+  - id: authz-denied-401-vs-403
+    match:
+      method: "*"
+      path: "**"
+      authenticated: true
+    kind: status
+    status:
+      rails: 401
+      spring: 403
+    reason: Spring authorization denials use 403 while Rails returns 401.
+    reference: docs/migration/target-architecture.md §2.6
+  - id: error-body-problem-json
+    match:
+      method: "*"
+      path: "**"
+    kind: errorBody
+    reason: Spring errors use RFC 9457 problem+json while Rails errors use Rails response formats.
+    reference: docs/migration/target-architecture.md §2.6
