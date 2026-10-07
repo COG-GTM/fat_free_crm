@@ -1,0 +1,1341 @@
+### N=10000 phase=no_index scenario=eq_rare form=count variant=cf_column
+SELECT count(*) FROM bench_accounts WHERE cf_account_segment = 'Strategic'
+
+Aggregate  (cost=811.09..811.10 rows=1 width=8) (actual time=0.869..0.870 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=35 width=0) (actual time=0.021..0.865 rows=35 loops=1)
+        Filter: ((cf_account_segment)::text = 'Strategic'::text)
+        Rows Removed by Filter: 9965
+        Buffers: shared hit=686
+Planning Time: 0.026 ms
+Execution Time: 0.880 ms
+
+### N=10000 phase=no_index scenario=eq_rare form=page variant=cf_column
+SELECT id, name FROM bench_accounts WHERE cf_account_segment = 'Strategic' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..639.33 rows=25 width=20) (actual time=0.016..0.753 rows=25 loops=1)
+  Buffers: shared hit=681
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=35 width=20) (actual time=0.016..0.750 rows=25 loops=1)
+        Filter: ((cf_account_segment)::text = 'Strategic'::text)
+        Rows Removed by Filter: 6912
+        Buffers: shared hit=681
+Planning Time: 0.024 ms
+Execution Time: 0.760 ms
+
+### N=10000 phase=no_index scenario=eq_rare form=count variant=jsonb_contains
+SELECT count(*) FROM bench_accounts WHERE custom_fields @> '{"cf_account_segment": "Strategic"}'
+
+Aggregate  (cost=811.00..811.01 rows=1 width=8) (actual time=2.728..2.729 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=1 width=0) (actual time=0.067..2.722 rows=35 loops=1)
+        Filter: (custom_fields @> '{"cf_account_segment": "Strategic"}'::jsonb)
+        Rows Removed by Filter: 9965
+        Buffers: shared hit=686
+Planning Time: 0.092 ms
+Execution Time: 2.745 ms
+
+### N=10000 phase=no_index scenario=eq_rare form=page variant=jsonb_contains
+SELECT id, name FROM bench_accounts WHERE custom_fields @> '{"cf_account_segment": "Strategic"}' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=811.01..811.01 rows=1 width=20) (actual time=2.382..2.385 rows=25 loops=1)
+  Buffers: shared hit=686
+  ->  Sort  (cost=811.01..811.01 rows=1 width=20) (actual time=2.381..2.382 rows=25 loops=1)
+        Sort Key: id DESC
+        Sort Method: quicksort  Memory: 27kB
+        Buffers: shared hit=686
+        ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=1 width=20) (actual time=0.048..2.373 rows=35 loops=1)
+              Filter: (custom_fields @> '{"cf_account_segment": "Strategic"}'::jsonb)
+              Rows Removed by Filter: 9965
+              Buffers: shared hit=686
+Planning Time: 0.067 ms
+Execution Time: 2.393 ms
+
+### N=10000 phase=no_index scenario=eq_rare form=count variant=jsonb_text_expr
+SELECT count(*) FROM bench_accounts WHERE custom_fields->>'cf_account_segment' = 'Strategic'
+
+Aggregate  (cost=836.12..836.13 rows=1 width=8) (actual time=1.969..1.970 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..836.00 rows=50 width=0) (actual time=0.043..1.965 rows=35 loops=1)
+        Filter: ((custom_fields ->> 'cf_account_segment'::text) = 'Strategic'::text)
+        Rows Removed by Filter: 9965
+        Buffers: shared hit=686
+Planning Time: 0.025 ms
+Execution Time: 1.981 ms
+
+### N=10000 phase=no_index scenario=eq_rare form=page variant=jsonb_text_expr
+SELECT id, name FROM bench_accounts WHERE custom_fields->>'cf_account_segment' = 'Strategic' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..460.12 rows=25 width=20) (actual time=0.030..1.544 rows=25 loops=1)
+  Buffers: shared hit=681
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..919.95 rows=50 width=20) (actual time=0.029..1.541 rows=25 loops=1)
+        Filter: ((custom_fields ->> 'cf_account_segment'::text) = 'Strategic'::text)
+        Rows Removed by Filter: 6912
+        Buffers: shared hit=681
+Planning Time: 0.033 ms
+Execution Time: 1.564 ms
+
+### N=10000 phase=no_index scenario=eq_common form=count variant=cf_column
+SELECT count(*) FROM bench_accounts WHERE cf_account_segment = 'Enterprise'
+
+Aggregate  (cost=814.44..814.45 rows=1 width=8) (actual time=1.038..1.039 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=1377 width=0) (actual time=0.003..0.983 rows=1377 loops=1)
+        Filter: ((cf_account_segment)::text = 'Enterprise'::text)
+        Rows Removed by Filter: 8623
+        Buffers: shared hit=686
+Planning Time: 0.022 ms
+Execution Time: 1.048 ms
+
+### N=10000 phase=no_index scenario=eq_common form=page variant=cf_column
+SELECT id, name FROM bench_accounts WHERE cf_account_segment = 'Enterprise' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..16.53 rows=25 width=20) (actual time=0.004..0.024 rows=25 loops=1)
+  Buffers: shared hit=18
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=1377 width=20) (actual time=0.004..0.021 rows=25 loops=1)
+        Filter: ((cf_account_segment)::text = 'Enterprise'::text)
+        Rows Removed by Filter: 103
+        Buffers: shared hit=18
+Planning Time: 0.015 ms
+Execution Time: 0.028 ms
+
+### N=10000 phase=no_index scenario=eq_common form=count variant=jsonb_contains
+SELECT count(*) FROM bench_accounts WHERE custom_fields @> '{"cf_account_segment": "Enterprise"}'
+
+Aggregate  (cost=813.78..813.79 rows=1 width=8) (actual time=2.498..2.498 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=1111 width=0) (actual time=0.006..2.442 rows=1377 loops=1)
+        Filter: (custom_fields @> '{"cf_account_segment": "Enterprise"}'::jsonb)
+        Rows Removed by Filter: 8623
+        Buffers: shared hit=686
+Planning Time: 0.067 ms
+Execution Time: 2.510 ms
+
+### N=10000 phase=no_index scenario=eq_common form=page variant=jsonb_contains
+SELECT id, name FROM bench_accounts WHERE custom_fields @> '{"cf_account_segment": "Enterprise"}' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..20.42 rows=25 width=20) (actual time=0.006..0.054 rows=25 loops=1)
+  Buffers: shared hit=18
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=1111 width=20) (actual time=0.006..0.052 rows=25 loops=1)
+        Filter: (custom_fields @> '{"cf_account_segment": "Enterprise"}'::jsonb)
+        Rows Removed by Filter: 103
+        Buffers: shared hit=18
+Planning Time: 0.051 ms
+Execution Time: 0.060 ms
+
+### N=10000 phase=no_index scenario=eq_common form=count variant=jsonb_text_expr
+SELECT count(*) FROM bench_accounts WHERE custom_fields->>'cf_account_segment' = 'Enterprise'
+
+Aggregate  (cost=836.12..836.13 rows=1 width=8) (actual time=2.123..2.124 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..836.00 rows=50 width=0) (actual time=0.007..2.067 rows=1377 loops=1)
+        Filter: ((custom_fields ->> 'cf_account_segment'::text) = 'Enterprise'::text)
+        Rows Removed by Filter: 8623
+        Buffers: shared hit=686
+Planning Time: 0.026 ms
+Execution Time: 2.136 ms
+
+### N=10000 phase=no_index scenario=eq_common form=page variant=jsonb_text_expr
+SELECT id, name FROM bench_accounts WHERE custom_fields->>'cf_account_segment' = 'Enterprise' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..460.12 rows=25 width=20) (actual time=0.005..0.036 rows=25 loops=1)
+  Buffers: shared hit=18
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..919.95 rows=50 width=20) (actual time=0.005..0.033 rows=25 loops=1)
+        Filter: ((custom_fields ->> 'cf_account_segment'::text) = 'Enterprise'::text)
+        Rows Removed by Filter: 103
+        Buffers: shared hit=18
+Planning Time: 0.016 ms
+Execution Time: 0.041 ms
+
+### N=10000 phase=no_index scenario=multi_value form=count variant=cf_yaml_like
+SELECT count(*) FROM bench_accounts WHERE cf_interests LIKE '%' || chr(10) || '- Partner program' || chr(10) || '%'
+
+Aggregate  (cost=811.60..811.61 rows=1 width=8) (actual time=1.728..1.729 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=238 width=0) (actual time=0.004..1.716 rows=238 loops=1)
+        Filter: (cf_interests ~~ '%
+- Partner program
+%'::text)
+        Rows Removed by Filter: 9762
+        Buffers: shared hit=686
+Planning Time: 0.038 ms
+Execution Time: 1.739 ms
+
+### N=10000 phase=no_index scenario=multi_value form=page variant=cf_yaml_like
+SELECT id, name FROM bench_accounts WHERE cf_interests LIKE '%' || chr(10) || '- Partner program' || chr(10) || '%' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..94.26 rows=25 width=20) (actual time=0.031..0.292 rows=25 loops=1)
+  Buffers: shared hit=141
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=238 width=20) (actual time=0.031..0.290 rows=25 loops=1)
+        Filter: (cf_interests ~~ '%
+- Partner program
+%'::text)
+        Rows Removed by Filter: 1438
+        Buffers: shared hit=141
+Planning Time: 0.023 ms
+Execution Time: 0.297 ms
+
+### N=10000 phase=no_index scenario=multi_value form=count variant=jsonb_contains
+SELECT count(*) FROM bench_accounts WHERE custom_fields @> '{"cf_interests": ["Partner program"]}'
+
+Aggregate  (cost=812.01..812.02 rows=1 width=8) (actual time=2.584..2.584 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=404 width=0) (actual time=0.004..2.570 rows=238 loops=1)
+        Filter: (custom_fields @> '{"cf_interests": ["Partner program"]}'::jsonb)
+        Rows Removed by Filter: 9762
+        Buffers: shared hit=686
+Planning Time: 0.076 ms
+Execution Time: 2.595 ms
+
+### N=10000 phase=no_index scenario=multi_value form=page variant=jsonb_contains
+SELECT id, name FROM bench_accounts WHERE custom_fields @> '{"cf_interests": ["Partner program"]}' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..55.65 rows=25 width=20) (actual time=0.051..0.429 rows=25 loops=1)
+  Buffers: shared hit=141
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=404 width=20) (actual time=0.051..0.427 rows=25 loops=1)
+        Filter: (custom_fields @> '{"cf_interests": ["Partner program"]}'::jsonb)
+        Rows Removed by Filter: 1438
+        Buffers: shared hit=141
+Planning Time: 0.076 ms
+Execution Time: 0.436 ms
+
+### N=10000 phase=no_index scenario=multi_value form=count variant=jsonb_path_match
+SELECT count(*) FROM bench_accounts WHERE custom_fields @? '$.cf_interests[*] ? (@ == "Partner program")'
+
+Aggregate  (cost=812.01..812.02 rows=1 width=8) (actual time=3.086..3.087 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=404 width=0) (actual time=0.005..3.073 rows=238 loops=1)
+        Filter: (custom_fields @? '$."cf_interests"[*]?(@ == "Partner program")'::jsonpath)
+        Rows Removed by Filter: 9762
+        Buffers: shared hit=686
+Planning Time: 0.077 ms
+Execution Time: 3.098 ms
+
+### N=10000 phase=no_index scenario=multi_value form=page variant=jsonb_path_match
+SELECT id, name FROM bench_accounts WHERE custom_fields @? '$.cf_interests[*] ? (@ == "Partner program")' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..55.65 rows=25 width=20) (actual time=0.065..0.518 rows=25 loops=1)
+  Buffers: shared hit=141
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=404 width=20) (actual time=0.065..0.516 rows=25 loops=1)
+        Filter: (custom_fields @? '$."cf_interests"[*]?(@ == "Partner program")'::jsonpath)
+        Rows Removed by Filter: 1438
+        Buffers: shared hit=141
+Planning Time: 0.068 ms
+Execution Time: 0.525 ms
+
+### N=10000 phase=no_index scenario=numeric_range form=count variant=cf_column
+SELECT count(*) FROM bench_accounts WHERE cf_annual_value BETWEEN 250000 AND 500000
+
+Aggregate  (cost=838.29..838.30 rows=1 width=8) (actual time=1.629..1.629 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..836.00 rows=916 width=0) (actual time=0.007..1.591 rows=907 loops=1)
+        Filter: ((cf_annual_value >= '250000'::numeric) AND (cf_annual_value <= '500000'::numeric))
+        Rows Removed by Filter: 9093
+        Buffers: shared hit=686
+Planning Time: 0.042 ms
+Execution Time: 1.640 ms
+
+### N=10000 phase=no_index scenario=numeric_range form=page variant=cf_column
+SELECT id, name FROM bench_accounts WHERE cf_annual_value BETWEEN 250000 AND 500000 ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..25.38 rows=25 width=20) (actual time=0.008..0.064 rows=25 loops=1)
+  Buffers: shared hit=27
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..919.95 rows=916 width=20) (actual time=0.008..0.062 rows=25 loops=1)
+        Filter: ((cf_annual_value >= '250000'::numeric) AND (cf_annual_value <= '500000'::numeric))
+        Rows Removed by Filter: 227
+        Buffers: shared hit=27
+Planning Time: 0.041 ms
+Execution Time: 0.071 ms
+
+### N=10000 phase=no_index scenario=numeric_range form=count variant=jsonb_numeric_expr
+SELECT count(*) FROM bench_accounts WHERE (custom_fields->>'cf_annual_value')::numeric BETWEEN 250000 AND 500000
+
+Aggregate  (cost=986.12..986.13 rows=1 width=8) (actual time=3.281..3.282 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..986.00 rows=50 width=0) (actual time=0.008..3.242 rows=907 loops=1)
+        Filter: ((((custom_fields ->> 'cf_annual_value'::text))::numeric >= '250000'::numeric) AND (((custom_fields ->> 'cf_annual_value'::text))::numeric <= '500000'::numeric))
+        Rows Removed by Filter: 9093
+        Buffers: shared hit=686
+Planning Time: 0.033 ms
+Execution Time: 3.293 ms
+
+### N=10000 phase=no_index scenario=numeric_range form=page variant=jsonb_numeric_expr
+SELECT id, name FROM bench_accounts WHERE (custom_fields->>'cf_annual_value')::numeric BETWEEN 250000 AND 500000 ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..535.12 rows=25 width=20) (actual time=0.005..0.098 rows=25 loops=1)
+  Buffers: shared hit=27
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..1069.95 rows=50 width=20) (actual time=0.004..0.096 rows=25 loops=1)
+        Filter: ((((custom_fields ->> 'cf_annual_value'::text))::numeric >= '250000'::numeric) AND (((custom_fields ->> 'cf_annual_value'::text))::numeric <= '500000'::numeric))
+        Rows Removed by Filter: 227
+        Buffers: shared hit=27
+Planning Time: 0.023 ms
+Execution Time: 0.104 ms
+
+### N=10000 phase=no_index scenario=numeric_range form=count variant=jsonb_path_match
+SELECT count(*) FROM bench_accounts WHERE custom_fields @? '$.cf_annual_value ? (@ >= 250000 && @ <= 500000)'
+
+Aggregate  (cost=813.27..813.28 rows=1 width=8) (actual time=3.136..3.137 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=909 width=0) (actual time=0.007..3.093 rows=907 loops=1)
+        Filter: (custom_fields @? '$."cf_annual_value"?(@ >= 250000 && @ <= 500000)'::jsonpath)
+        Rows Removed by Filter: 9093
+        Buffers: shared hit=686
+Planning Time: 0.074 ms
+Execution Time: 3.148 ms
+
+### N=10000 phase=no_index scenario=numeric_range form=page variant=jsonb_path_match
+SELECT id, name FROM bench_accounts WHERE custom_fields @? '$.cf_annual_value ? (@ >= 250000 && @ <= 500000)' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..24.89 rows=25 width=20) (actual time=0.005..0.103 rows=25 loops=1)
+  Buffers: shared hit=27
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=909 width=20) (actual time=0.004..0.101 rows=25 loops=1)
+        Filter: (custom_fields @? '$."cf_annual_value"?(@ >= 250000 && @ <= 500000)'::jsonpath)
+        Rows Removed by Filter: 227
+        Buffers: shared hit=27
+Planning Time: 0.060 ms
+Execution Time: 0.109 ms
+
+### N=10000 phase=no_index scenario=date_range form=count variant=cf_column
+SELECT count(*) FROM bench_accounts WHERE cf_renewal_date BETWEEN '2026-01-01' AND '2026-03-31'
+
+Aggregate  (cost=836.67..836.68 rows=1 width=8) (actual time=1.160..1.160 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..836.00 rows=268 width=0) (actual time=0.004..1.146 rows=270 loops=1)
+        Filter: ((cf_renewal_date >= '2026-01-01'::date) AND (cf_renewal_date <= '2026-03-31'::date))
+        Rows Removed by Filter: 9730
+        Buffers: shared hit=686
+Planning Time: 0.023 ms
+Execution Time: 1.169 ms
+
+### N=10000 phase=no_index scenario=date_range form=page variant=cf_column
+SELECT id, name FROM bench_accounts WHERE cf_renewal_date BETWEEN '2026-01-01' AND '2026-03-31' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..86.07 rows=25 width=20) (actual time=0.006..0.108 rows=25 loops=1)
+  Buffers: shared hit=75
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..919.95 rows=268 width=20) (actual time=0.006..0.106 rows=25 loops=1)
+        Filter: ((cf_renewal_date >= '2026-01-01'::date) AND (cf_renewal_date <= '2026-03-31'::date))
+        Rows Removed by Filter: 738
+        Buffers: shared hit=75
+Planning Time: 0.019 ms
+Execution Time: 0.113 ms
+
+### N=10000 phase=no_index scenario=date_range form=count variant=jsonb_text_expr
+SELECT count(*) FROM bench_accounts WHERE custom_fields->>'cf_renewal_date' BETWEEN '2026-01-01' AND '2026-03-31'
+
+Aggregate  (cost=886.12..886.13 rows=1 width=8) (actual time=2.297..2.298 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..886.00 rows=50 width=0) (actual time=0.008..2.283 rows=270 loops=1)
+        Filter: (((custom_fields ->> 'cf_renewal_date'::text) >= '2026-01-01'::text) AND ((custom_fields ->> 'cf_renewal_date'::text) <= '2026-03-31'::text))
+        Rows Removed by Filter: 9730
+        Buffers: shared hit=686
+Planning Time: 0.024 ms
+Execution Time: 2.310 ms
+
+### N=10000 phase=no_index scenario=date_range form=page variant=jsonb_text_expr
+SELECT id, name FROM bench_accounts WHERE custom_fields->>'cf_renewal_date' BETWEEN '2026-01-01' AND '2026-03-31' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..485.12 rows=25 width=20) (actual time=0.012..0.206 rows=25 loops=1)
+  Buffers: shared hit=75
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..969.95 rows=50 width=20) (actual time=0.011..0.204 rows=25 loops=1)
+        Filter: (((custom_fields ->> 'cf_renewal_date'::text) >= '2026-01-01'::text) AND ((custom_fields ->> 'cf_renewal_date'::text) <= '2026-03-31'::text))
+        Rows Removed by Filter: 738
+        Buffers: shared hit=75
+Planning Time: 0.028 ms
+Execution Time: 0.212 ms
+
+### N=10000 phase=no_index scenario=date_range form=count variant=jsonb_path_match
+SELECT count(*) FROM bench_accounts WHERE custom_fields @? '$.cf_renewal_date ? (@ >= "2026-01-01" && @ <= "2026-03-31")'
+
+Aggregate  (cost=812.51..812.52 rows=1 width=8) (actual time=6.295..6.295 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=606 width=0) (actual time=0.008..6.274 rows=270 loops=1)
+        Filter: (custom_fields @? '$."cf_renewal_date"?(@ >= "2026-01-01" && @ <= "2026-03-31")'::jsonpath)
+        Rows Removed by Filter: 9730
+        Buffers: shared hit=686
+Planning Time: 0.078 ms
+Execution Time: 6.307 ms
+
+### N=10000 phase=no_index scenario=date_range form=page variant=jsonb_path_match
+SELECT id, name FROM bench_accounts WHERE custom_fields @? '$.cf_renewal_date ? (@ >= "2026-01-01" && @ <= "2026-03-31")' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..37.19 rows=25 width=20) (actual time=0.009..0.215 rows=25 loops=1)
+  Buffers: shared hit=75
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=606 width=20) (actual time=0.009..0.213 rows=25 loops=1)
+        Filter: (custom_fields @? '$."cf_renewal_date"?(@ >= "2026-01-01" && @ <= "2026-03-31")'::jsonpath)
+        Rows Removed by Filter: 738
+        Buffers: shared hit=75
+Planning Time: 0.044 ms
+Execution Time: 0.219 ms
+
+### N=10000 phase=no_index scenario=key_exists form=count variant=cf_column
+SELECT count(*) FROM bench_accounts WHERE cf_renewal_date IS NOT NULL
+
+Aggregate  (cost=794.77..794.78 rows=1 width=8) (actual time=1.360..1.361 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..786.00 rows=3509 width=0) (actual time=0.002..1.216 rows=3509 loops=1)
+        Filter: (cf_renewal_date IS NOT NULL)
+        Rows Removed by Filter: 6491
+        Buffers: shared hit=686
+Planning Time: 0.018 ms
+Execution Time: 1.415 ms
+
+### N=10000 phase=no_index scenario=key_exists form=page variant=cf_column
+SELECT id, name FROM bench_accounts WHERE cf_renewal_date IS NOT NULL ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..6.48 rows=25 width=20) (actual time=0.002..0.013 rows=25 loops=1)
+  Buffers: shared hit=9
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..869.95 rows=3509 width=20) (actual time=0.002..0.011 rows=25 loops=1)
+        Filter: (cf_renewal_date IS NOT NULL)
+        Rows Removed by Filter: 38
+        Buffers: shared hit=9
+Planning Time: 0.007 ms
+Execution Time: 0.016 ms
+
+### N=10000 phase=no_index scenario=key_exists form=count variant=jsonb_key_exists
+SELECT count(*) FROM bench_accounts WHERE custom_fields ? 'cf_renewal_date'
+
+Aggregate  (cost=820.85..820.86 rows=1 width=8) (actual time=1.967..1.968 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=3939 width=0) (actual time=0.004..1.829 rows=3509 loops=1)
+        Filter: (custom_fields ? 'cf_renewal_date'::text)
+        Rows Removed by Filter: 6491
+        Buffers: shared hit=686
+Planning Time: 0.053 ms
+Execution Time: 1.976 ms
+
+### N=10000 phase=no_index scenario=key_exists form=page variant=jsonb_key_exists
+SELECT id, name FROM bench_accounts WHERE custom_fields ? 'cf_renewal_date' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..5.96 rows=25 width=20) (actual time=0.002..0.016 rows=25 loops=1)
+  Buffers: shared hit=9
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=3939 width=20) (actual time=0.002..0.014 rows=25 loops=1)
+        Filter: (custom_fields ? 'cf_renewal_date'::text)
+        Rows Removed by Filter: 38
+        Buffers: shared hit=9
+Planning Time: 0.021 ms
+Execution Time: 0.019 ms
+
+### N=10000 phase=no_index scenario=key_exists form=count variant=jsonb_path_match
+SELECT count(*) FROM bench_accounts WHERE custom_fields @? '$.cf_renewal_date'
+
+Aggregate  (cost=820.85..820.86 rows=1 width=8) (actual time=2.285..2.285 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=3939 width=0) (actual time=0.004..2.148 rows=3509 loops=1)
+        Filter: (custom_fields @? '$."cf_renewal_date"'::jsonpath)
+        Rows Removed by Filter: 6491
+        Buffers: shared hit=686
+Planning Time: 0.062 ms
+Execution Time: 2.294 ms
+
+### N=10000 phase=no_index scenario=key_exists form=page variant=jsonb_path_match
+SELECT id, name FROM bench_accounts WHERE custom_fields @? '$.cf_renewal_date' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..5.96 rows=25 width=20) (actual time=0.002..0.018 rows=25 loops=1)
+  Buffers: shared hit=9
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=3939 width=20) (actual time=0.002..0.016 rows=25 loops=1)
+        Filter: (custom_fields @? '$."cf_renewal_date"'::jsonpath)
+        Rows Removed by Filter: 38
+        Buffers: shared hit=9
+Planning Time: 0.028 ms
+Execution Time: 0.022 ms
+
+### N=10000 phase=no_index scenario=key_exists form=count variant=jsonb_text_expr
+SELECT count(*) FROM bench_accounts WHERE custom_fields->>'cf_renewal_date' IS NOT NULL
+
+Aggregate  (cost=835.88..835.88 rows=1 width=8) (actual time=2.042..2.042 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=9950 width=0) (actual time=0.003..1.905 rows=3509 loops=1)
+        Filter: ((custom_fields ->> 'cf_renewal_date'::text) IS NOT NULL)
+        Rows Removed by Filter: 6491
+        Buffers: shared hit=686
+Planning Time: 0.020 ms
+Execution Time: 2.053 ms
+
+### N=10000 phase=no_index scenario=key_exists form=page variant=jsonb_text_expr
+SELECT id, name FROM bench_accounts WHERE custom_fields->>'cf_renewal_date' IS NOT NULL ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..2.53 rows=25 width=20) (actual time=0.002..0.017 rows=25 loops=1)
+  Buffers: shared hit=9
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=9950 width=20) (actual time=0.002..0.015 rows=25 loops=1)
+        Filter: ((custom_fields ->> 'cf_renewal_date'::text) IS NOT NULL)
+        Rows Removed by Filter: 38
+        Buffers: shared hit=9
+Planning Time: 0.007 ms
+Execution Time: 0.021 ms
+
+### N=10000 phase=no_index scenario=sort_offset_0 form=page variant=cf_column
+SELECT id, cf_annual_value AS v FROM bench_accounts ORDER BY cf_annual_value DESC NULLS LAST, id DESC LIMIT 25 OFFSET 0
+
+Limit  (cost=1068.19..1068.26 rows=25 width=16) (actual time=2.760..2.763 rows=25 loops=1)
+  Buffers: shared hit=686
+  ->  Sort  (cost=1068.19..1093.19 rows=10000 width=16) (actual time=2.759..2.760 rows=25 loops=1)
+        Sort Key: cf_annual_value DESC NULLS LAST, id DESC
+        Sort Method: top-N heapsort  Memory: 27kB
+        Buffers: shared hit=686
+        ->  Seq Scan on bench_accounts  (cost=0.00..786.00 rows=10000 width=16) (actual time=0.002..1.278 rows=10000 loops=1)
+              Buffers: shared hit=686
+Planning Time: 0.021 ms
+Execution Time: 2.776 ms
+
+### N=10000 phase=no_index scenario=sort_offset_0 form=page variant=jsonb_numeric_expr
+SELECT id, (custom_fields->>'cf_annual_value')::numeric AS v FROM bench_accounts ORDER BY (custom_fields->>'cf_annual_value')::numeric DESC NULLS LAST, id DESC LIMIT 25 OFFSET 0
+
+Limit  (cost=1143.19..1143.26 rows=25 width=40) (actual time=4.588..4.591 rows=25 loops=1)
+  Buffers: shared hit=686
+  ->  Sort  (cost=1143.19..1168.19 rows=10000 width=40) (actual time=4.588..4.589 rows=25 loops=1)
+        Sort Key: (((custom_fields ->> 'cf_annual_value'::text))::numeric) DESC NULLS LAST, id DESC
+        Sort Method: top-N heapsort  Memory: 27kB
+        Buffers: shared hit=686
+        ->  Seq Scan on bench_accounts  (cost=0.00..861.00 rows=10000 width=40) (actual time=0.007..3.178 rows=10000 loops=1)
+              Buffers: shared hit=686
+Planning Time: 0.028 ms
+Execution Time: 4.600 ms
+
+### N=10000 phase=no_index scenario=sort_offset_5000 form=page variant=cf_column
+SELECT id, cf_annual_value AS v FROM bench_accounts ORDER BY cf_annual_value DESC NULLS LAST, id DESC LIMIT 25 OFFSET 5000
+
+Limit  (cost=1462.89..1462.95 rows=25 width=16) (actual time=10.508..10.511 rows=25 loops=1)
+  Buffers: shared hit=686
+  ->  Sort  (cost=1450.39..1475.39 rows=10000 width=16) (actual time=10.173..10.360 rows=5025 loops=1)
+        Sort Key: cf_annual_value DESC NULLS LAST, id DESC
+        Sort Method: quicksort  Memory: 954kB
+        Buffers: shared hit=686
+        ->  Seq Scan on bench_accounts  (cost=0.00..786.00 rows=10000 width=16) (actual time=0.005..1.278 rows=10000 loops=1)
+              Buffers: shared hit=686
+Planning Time: 0.035 ms
+Execution Time: 10.521 ms
+
+### N=10000 phase=no_index scenario=sort_offset_5000 form=page variant=jsonb_numeric_expr
+SELECT id, (custom_fields->>'cf_annual_value')::numeric AS v FROM bench_accounts ORDER BY (custom_fields->>'cf_annual_value')::numeric DESC NULLS LAST, id DESC LIMIT 25 OFFSET 5000
+
+Limit  (cost=1537.89..1537.95 rows=25 width=40) (actual time=12.430..12.433 rows=25 loops=1)
+  Buffers: shared hit=686
+  ->  Sort  (cost=1525.39..1550.39 rows=10000 width=40) (actual time=12.102..12.285 rows=5025 loops=1)
+        Sort Key: (((custom_fields ->> 'cf_annual_value'::text))::numeric) DESC NULLS LAST, id DESC
+        Sort Method: quicksort  Memory: 954kB
+        Buffers: shared hit=686
+        ->  Seq Scan on bench_accounts  (cost=0.00..861.00 rows=10000 width=40) (actual time=0.007..3.231 rows=10000 loops=1)
+              Buffers: shared hit=686
+Planning Time: 0.030 ms
+Execution Time: 12.444 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=eq_rare form=count variant=cf_column
+SELECT count(*) FROM bench_accounts WHERE cf_account_segment = 'Strategic'
+
+Aggregate  (cost=2.08..2.09 rows=1 width=8) (actual time=0.006..0.006 rows=1 loops=1)
+  Buffers: shared hit=3
+  ->  Index Only Scan using ix_cf_segment on bench_accounts  (cost=0.29..2.00 rows=35 width=0) (actual time=0.001..0.004 rows=35 loops=1)
+        Index Cond: (cf_account_segment = 'Strategic'::text)
+        Heap Fetches: 0
+        Buffers: shared hit=3
+Planning Time: 0.012 ms
+Execution Time: 0.010 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=eq_rare form=page variant=cf_column
+SELECT id, name FROM bench_accounts WHERE cf_account_segment = 'Strategic' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=39.41..39.47 rows=25 width=20) (actual time=0.013..0.016 rows=25 loops=1)
+  Buffers: shared hit=35
+  ->  Sort  (cost=39.41..39.50 rows=35 width=20) (actual time=0.013..0.014 rows=25 loops=1)
+        Sort Key: id DESC
+        Sort Method: quicksort  Memory: 27kB
+        Buffers: shared hit=35
+        ->  Index Scan using ix_cf_segment on bench_accounts  (cost=0.29..38.51 rows=35 width=20) (actual time=0.002..0.008 rows=35 loops=1)
+              Index Cond: ((cf_account_segment)::text = 'Strategic'::text)
+              Buffers: shared hit=35
+Planning Time: 0.015 ms
+Execution Time: 0.020 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=eq_rare form=count variant=jsonb_contains
+SELECT count(*) FROM bench_accounts WHERE custom_fields @> '{"cf_account_segment": "Strategic"}'
+
+Aggregate  (cost=5.25..5.26 rows=1 width=8) (actual time=0.022..0.022 rows=1 loops=1)
+  Buffers: shared hit=36
+  ->  Bitmap Heap Scan on bench_accounts  (cost=4.14..5.25 rows=1 width=0) (actual time=0.005..0.020 rows=35 loops=1)
+        Recheck Cond: (custom_fields @> '{"cf_account_segment": "Strategic"}'::jsonb)
+        Heap Blocks: exact=33
+        Buffers: shared hit=36
+        ->  Bitmap Index Scan on ix_jsonb_path_ops  (cost=0.00..4.14 rows=1 width=0) (actual time=0.003..0.003 rows=35 loops=1)
+              Index Cond: (custom_fields @> '{"cf_account_segment": "Strategic"}'::jsonb)
+              Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.032 ms
+Execution Time: 0.027 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=eq_rare form=page variant=jsonb_contains
+SELECT id, name FROM bench_accounts WHERE custom_fields @> '{"cf_account_segment": "Strategic"}' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=5.26..5.27 rows=1 width=20) (actual time=0.028..0.031 rows=25 loops=1)
+  Buffers: shared hit=36
+  ->  Sort  (cost=5.26..5.27 rows=1 width=20) (actual time=0.028..0.029 rows=25 loops=1)
+        Sort Key: id DESC
+        Sort Method: quicksort  Memory: 27kB
+        Buffers: shared hit=36
+        ->  Bitmap Heap Scan on bench_accounts  (cost=4.14..5.25 rows=1 width=20) (actual time=0.007..0.024 rows=35 loops=1)
+              Recheck Cond: (custom_fields @> '{"cf_account_segment": "Strategic"}'::jsonb)
+              Heap Blocks: exact=33
+              Buffers: shared hit=36
+              ->  Bitmap Index Scan on ix_jsonb_path_ops  (cost=0.00..4.14 rows=1 width=0) (actual time=0.004..0.004 rows=35 loops=1)
+                    Index Cond: (custom_fields @> '{"cf_account_segment": "Strategic"}'::jsonb)
+                    Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.043 ms
+Execution Time: 0.037 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=eq_rare form=count variant=jsonb_text_expr
+SELECT count(*) FROM bench_accounts WHERE custom_fields->>'cf_account_segment' = 'Strategic'
+
+Aggregate  (cost=38.60..38.61 rows=1 width=8) (actual time=0.009..0.009 rows=1 loops=1)
+  Buffers: shared hit=35
+  ->  Index Scan using ix_jsonb_segment on bench_accounts  (cost=0.29..38.51 rows=35 width=0) (actual time=0.002..0.007 rows=35 loops=1)
+        Index Cond: ((custom_fields ->> 'cf_account_segment'::text) = 'Strategic'::text)
+        Buffers: shared hit=35
+Planning Time: 0.013 ms
+Execution Time: 0.014 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=eq_rare form=page variant=jsonb_text_expr
+SELECT id, name FROM bench_accounts WHERE custom_fields->>'cf_account_segment' = 'Strategic' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=39.41..39.47 rows=25 width=20) (actual time=0.013..0.015 rows=25 loops=1)
+  Buffers: shared hit=35
+  ->  Sort  (cost=39.41..39.50 rows=35 width=20) (actual time=0.012..0.014 rows=25 loops=1)
+        Sort Key: id DESC
+        Sort Method: quicksort  Memory: 27kB
+        Buffers: shared hit=35
+        ->  Index Scan using ix_jsonb_segment on bench_accounts  (cost=0.29..38.51 rows=35 width=20) (actual time=0.002..0.008 rows=35 loops=1)
+              Index Cond: ((custom_fields ->> 'cf_account_segment'::text) = 'Strategic'::text)
+              Buffers: shared hit=35
+Planning Time: 0.016 ms
+Execution Time: 0.020 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=eq_common form=count variant=cf_column
+SELECT count(*) FROM bench_accounts WHERE cf_account_segment = 'Enterprise'
+
+Aggregate  (cost=30.02..30.04 rows=1 width=8) (actual time=0.213..0.214 rows=1 loops=1)
+  Buffers: shared hit=4
+  ->  Index Only Scan using ix_cf_segment on bench_accounts  (cost=0.29..26.58 rows=1377 width=0) (actual time=0.002..0.068 rows=1377 loops=1)
+        Index Cond: (cf_account_segment = 'Enterprise'::text)
+        Heap Fetches: 0
+        Buffers: shared hit=4
+Planning Time: 0.011 ms
+Execution Time: 0.218 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=eq_common form=page variant=cf_column
+SELECT id, name FROM bench_accounts WHERE cf_account_segment = 'Enterprise' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..16.53 rows=25 width=20) (actual time=0.003..0.021 rows=25 loops=1)
+  Buffers: shared hit=18
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=1377 width=20) (actual time=0.003..0.019 rows=25 loops=1)
+        Filter: ((cf_account_segment)::text = 'Enterprise'::text)
+        Rows Removed by Filter: 103
+        Buffers: shared hit=18
+Planning Time: 0.015 ms
+Execution Time: 0.025 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=eq_common form=count variant=jsonb_contains
+SELECT count(*) FROM bench_accounts WHERE custom_fields @> '{"cf_account_segment": "Enterprise"}'
+
+Aggregate  (cost=643.94..643.95 rows=1 width=8) (actual time=0.754..0.755 rows=1 loops=1)
+  Buffers: shared hit=607
+  ->  Bitmap Heap Scan on bench_accounts  (cost=9.97..641.16 rows=1111 width=0) (actual time=0.135..0.698 rows=1377 loops=1)
+        Recheck Cond: (custom_fields @> '{"cf_account_segment": "Enterprise"}'::jsonb)
+        Heap Blocks: exact=604
+        Buffers: shared hit=607
+        ->  Bitmap Index Scan on ix_jsonb_path_ops  (cost=0.00..9.69 rows=1111 width=0) (actual time=0.087..0.087 rows=1377 loops=1)
+              Index Cond: (custom_fields @> '{"cf_account_segment": "Enterprise"}'::jsonb)
+              Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.069 ms
+Execution Time: 0.764 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=eq_common form=page variant=jsonb_contains
+SELECT id, name FROM bench_accounts WHERE custom_fields @> '{"cf_account_segment": "Enterprise"}' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..20.42 rows=25 width=20) (actual time=0.005..0.045 rows=25 loops=1)
+  Buffers: shared hit=18
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=1111 width=20) (actual time=0.005..0.043 rows=25 loops=1)
+        Filter: (custom_fields @> '{"cf_account_segment": "Enterprise"}'::jsonb)
+        Rows Removed by Filter: 103
+        Buffers: shared hit=18
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.061 ms
+Execution Time: 0.049 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=eq_common form=count variant=jsonb_text_expr
+SELECT count(*) FROM bench_accounts WHERE custom_fields->>'cf_account_segment' = 'Enterprise'
+
+Aggregate  (cost=723.25..723.26 rows=1 width=8) (actual time=0.354..0.354 rows=1 loops=1)
+  Buffers: shared hit=607
+  ->  Bitmap Heap Scan on bench_accounts  (cost=13.16..719.81 rows=1377 width=0) (actual time=0.075..0.299 rows=1377 loops=1)
+        Recheck Cond: ((custom_fields ->> 'cf_account_segment'::text) = 'Enterprise'::text)
+        Heap Blocks: exact=604
+        Buffers: shared hit=607
+        ->  Bitmap Index Scan on ix_jsonb_segment  (cost=0.00..12.81 rows=1377 width=0) (actual time=0.037..0.037 rows=1377 loops=1)
+              Index Cond: ((custom_fields ->> 'cf_account_segment'::text) = 'Enterprise'::text)
+              Buffers: shared hit=3
+Planning Time: 0.016 ms
+Execution Time: 0.360 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=eq_common form=page variant=jsonb_text_expr
+SELECT id, name FROM bench_accounts WHERE custom_fields->>'cf_account_segment' = 'Enterprise' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..16.98 rows=25 width=20) (actual time=0.003..0.033 rows=25 loops=1)
+  Buffers: shared hit=18
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..919.95 rows=1377 width=20) (actual time=0.003..0.031 rows=25 loops=1)
+        Filter: ((custom_fields ->> 'cf_account_segment'::text) = 'Enterprise'::text)
+        Rows Removed by Filter: 103
+        Buffers: shared hit=18
+Planning Time: 0.015 ms
+Execution Time: 0.037 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=multi_value form=count variant=cf_yaml_like
+SELECT count(*) FROM bench_accounts WHERE cf_interests LIKE '%' || chr(10) || '- Partner program' || chr(10) || '%'
+
+Aggregate  (cost=255.61..255.62 rows=1 width=8) (actual time=0.228..0.228 rows=1 loops=1)
+  Buffers: shared hit=220
+  ->  Bitmap Heap Scan on bench_accounts  (cost=39.79..255.02 rows=238 width=0) (actual time=0.107..0.214 rows=238 loops=1)
+        Recheck Cond: (cf_interests ~~ '%
+- Partner program
+%'::text)
+        Heap Blocks: exact=200
+        Buffers: shared hit=220
+        ->  Bitmap Index Scan on ix_cf_interests_trgm  (cost=0.00..39.73 rows=238 width=0) (actual time=0.093..0.093 rows=238 loops=1)
+              Index Cond: (cf_interests ~~ '%
+- Partner program
+%'::text)
+              Buffers: shared hit=20
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.041 ms
+Execution Time: 0.236 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=multi_value form=page variant=cf_yaml_like
+SELECT id, name FROM bench_accounts WHERE cf_interests LIKE '%' || chr(10) || '- Partner program' || chr(10) || '%' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..94.26 rows=25 width=20) (actual time=0.032..0.284 rows=25 loops=1)
+  Buffers: shared hit=141
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=238 width=20) (actual time=0.032..0.282 rows=25 loops=1)
+        Filter: (cf_interests ~~ '%
+- Partner program
+%'::text)
+        Rows Removed by Filter: 1438
+        Buffers: shared hit=141
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.042 ms
+Execution Time: 0.290 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=multi_value form=count variant=jsonb_contains
+SELECT count(*) FROM bench_accounts WHERE custom_fields @> '{"cf_interests": ["Partner program"]}'
+
+Aggregate  (cost=335.47..335.48 rows=1 width=8) (actual time=0.165..0.166 rows=1 loops=1)
+  Buffers: shared hit=203
+  ->  Bitmap Heap Scan on bench_accounts  (cost=6.25..334.46 rows=404 width=0) (actual time=0.031..0.155 rows=238 loops=1)
+        Recheck Cond: (custom_fields @> '{"cf_interests": ["Partner program"]}'::jsonb)
+        Heap Blocks: exact=200
+        Buffers: shared hit=203
+        ->  Bitmap Index Scan on ix_jsonb_path_ops  (cost=0.00..6.15 rows=404 width=0) (actual time=0.019..0.019 rows=238 loops=1)
+              Index Cond: (custom_fields @> '{"cf_interests": ["Partner program"]}'::jsonb)
+              Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.045 ms
+Execution Time: 0.171 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=multi_value form=page variant=jsonb_contains
+SELECT id, name FROM bench_accounts WHERE custom_fields @> '{"cf_interests": ["Partner program"]}' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..55.65 rows=25 width=20) (actual time=0.048..0.423 rows=25 loops=1)
+  Buffers: shared hit=141
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=404 width=20) (actual time=0.048..0.421 rows=25 loops=1)
+        Filter: (custom_fields @> '{"cf_interests": ["Partner program"]}'::jsonb)
+        Rows Removed by Filter: 1438
+        Buffers: shared hit=141
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.077 ms
+Execution Time: 0.430 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=multi_value form=count variant=jsonb_path_match
+SELECT count(*) FROM bench_accounts WHERE custom_fields @? '$.cf_interests[*] ? (@ == "Partner program")'
+
+Aggregate  (cost=335.47..335.48 rows=1 width=8) (actual time=0.213..0.214 rows=1 loops=1)
+  Buffers: shared hit=203
+  ->  Bitmap Heap Scan on bench_accounts  (cost=6.25..334.46 rows=404 width=0) (actual time=0.025..0.203 rows=238 loops=1)
+        Recheck Cond: (custom_fields @? '$."cf_interests"[*]?(@ == "Partner program")'::jsonpath)
+        Heap Blocks: exact=200
+        Buffers: shared hit=203
+        ->  Bitmap Index Scan on ix_jsonb_path_ops  (cost=0.00..6.15 rows=404 width=0) (actual time=0.013..0.014 rows=238 loops=1)
+              Index Cond: (custom_fields @? '$."cf_interests"[*]?(@ == "Partner program")'::jsonpath)
+              Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.051 ms
+Execution Time: 0.219 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=multi_value form=page variant=jsonb_path_match
+SELECT id, name FROM bench_accounts WHERE custom_fields @? '$.cf_interests[*] ? (@ == "Partner program")' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..55.65 rows=25 width=20) (actual time=0.050..0.490 rows=25 loops=1)
+  Buffers: shared hit=141
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=404 width=20) (actual time=0.050..0.487 rows=25 loops=1)
+        Filter: (custom_fields @? '$."cf_interests"[*]?(@ == "Partner program")'::jsonpath)
+        Rows Removed by Filter: 1438
+        Buffers: shared hit=141
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.056 ms
+Execution Time: 0.494 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=numeric_range form=count variant=cf_column
+SELECT count(*) FROM bench_accounts WHERE cf_annual_value BETWEEN 250000 AND 500000
+
+Aggregate  (cost=26.39..26.41 rows=1 width=8) (actual time=0.198..0.198 rows=1 loops=1)
+  Buffers: shared hit=8
+  ->  Index Only Scan using ix_cf_annual_value on bench_accounts  (cost=0.29..24.11 rows=916 width=0) (actual time=0.008..0.162 rows=907 loops=1)
+        Index Cond: ((cf_annual_value >= '250000'::numeric) AND (cf_annual_value <= '500000'::numeric))
+        Heap Fetches: 0
+        Buffers: shared hit=8
+Planning Time: 0.025 ms
+Execution Time: 0.203 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=numeric_range form=page variant=cf_column
+SELECT id, name FROM bench_accounts WHERE cf_annual_value BETWEEN 250000 AND 500000 ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..25.38 rows=25 width=20) (actual time=0.003..0.051 rows=25 loops=1)
+  Buffers: shared hit=27
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..919.95 rows=916 width=20) (actual time=0.003..0.049 rows=25 loops=1)
+        Filter: ((cf_annual_value >= '250000'::numeric) AND (cf_annual_value <= '500000'::numeric))
+        Rows Removed by Filter: 227
+        Buffers: shared hit=27
+Planning Time: 0.027 ms
+Execution Time: 0.056 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=numeric_range form=count variant=jsonb_numeric_expr
+SELECT count(*) FROM bench_accounts WHERE (custom_fields->>'cf_annual_value')::numeric BETWEEN 250000 AND 500000
+
+Aggregate  (cost=600.70..600.71 rows=1 width=8) (actual time=0.412..0.412 rows=1 loops=1)
+  Buffers: shared hit=522
+  ->  Bitmap Heap Scan on bench_accounts  (cost=15.17..598.41 rows=916 width=0) (actual time=0.185..0.375 rows=907 loops=1)
+        Recheck Cond: ((((custom_fields ->> 'cf_annual_value'::text))::numeric >= '250000'::numeric) AND (((custom_fields ->> 'cf_annual_value'::text))::numeric <= '500000'::numeric))
+        Heap Blocks: exact=515
+        Buffers: shared hit=522
+        ->  Bitmap Index Scan on ix_jsonb_annual_value  (cost=0.00..14.95 rows=916 width=0) (actual time=0.146..0.146 rows=907 loops=1)
+              Index Cond: ((((custom_fields ->> 'cf_annual_value'::text))::numeric >= '250000'::numeric) AND (((custom_fields ->> 'cf_annual_value'::text))::numeric <= '500000'::numeric))
+              Buffers: shared hit=7
+Planning Time: 0.039 ms
+Execution Time: 0.421 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=numeric_range form=page variant=jsonb_numeric_expr
+SELECT id, name FROM bench_accounts WHERE (custom_fields->>'cf_annual_value')::numeric BETWEEN 250000 AND 500000 ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..29.48 rows=25 width=20) (actual time=0.004..0.093 rows=25 loops=1)
+  Buffers: shared hit=27
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..1069.95 rows=916 width=20) (actual time=0.004..0.091 rows=25 loops=1)
+        Filter: ((((custom_fields ->> 'cf_annual_value'::text))::numeric >= '250000'::numeric) AND (((custom_fields ->> 'cf_annual_value'::text))::numeric <= '500000'::numeric))
+        Rows Removed by Filter: 227
+        Buffers: shared hit=27
+Planning Time: 0.033 ms
+Execution Time: 0.098 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=numeric_range form=count variant=jsonb_path_match
+SELECT count(*) FROM bench_accounts WHERE custom_fields @? '$.cf_annual_value ? (@ >= 250000 && @ <= 500000)'
+
+Aggregate  (cost=813.27..813.28 rows=1 width=8) (actual time=3.176..3.176 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=909 width=0) (actual time=0.007..3.136 rows=907 loops=1)
+        Filter: (custom_fields @? '$."cf_annual_value"?(@ >= 250000 && @ <= 500000)'::jsonpath)
+        Rows Removed by Filter: 9093
+        Buffers: shared hit=686
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.090 ms
+Execution Time: 3.187 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=numeric_range form=page variant=jsonb_path_match
+SELECT id, name FROM bench_accounts WHERE custom_fields @? '$.cf_annual_value ? (@ >= 250000 && @ <= 500000)' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..24.89 rows=25 width=20) (actual time=0.003..0.088 rows=25 loops=1)
+  Buffers: shared hit=27
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=909 width=20) (actual time=0.002..0.086 rows=25 loops=1)
+        Filter: (custom_fields @? '$."cf_annual_value"?(@ >= 250000 && @ <= 500000)'::jsonpath)
+        Rows Removed by Filter: 227
+        Buffers: shared hit=27
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.048 ms
+Execution Time: 0.092 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=date_range form=count variant=cf_column
+SELECT count(*) FROM bench_accounts WHERE cf_renewal_date BETWEEN '2026-01-01' AND '2026-03-31'
+
+Aggregate  (cost=7.42..7.43 rows=1 width=8) (actual time=0.027..0.027 rows=1 loops=1)
+  Buffers: shared hit=3
+  ->  Index Only Scan using ix_cf_renewal_date on bench_accounts  (cost=0.29..6.75 rows=268 width=0) (actual time=0.003..0.016 rows=270 loops=1)
+        Index Cond: ((cf_renewal_date >= '2026-01-01'::date) AND (cf_renewal_date <= '2026-03-31'::date))
+        Heap Fetches: 0
+        Buffers: shared hit=3
+Planning Time: 0.020 ms
+Execution Time: 0.032 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=date_range form=page variant=cf_column
+SELECT id, name FROM bench_accounts WHERE cf_renewal_date BETWEEN '2026-01-01' AND '2026-03-31' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..86.07 rows=25 width=20) (actual time=0.007..0.109 rows=25 loops=1)
+  Buffers: shared hit=75
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..919.95 rows=268 width=20) (actual time=0.006..0.106 rows=25 loops=1)
+        Filter: ((cf_renewal_date >= '2026-01-01'::date) AND (cf_renewal_date <= '2026-03-31'::date))
+        Rows Removed by Filter: 738
+        Buffers: shared hit=75
+Planning Time: 0.028 ms
+Execution Time: 0.114 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=date_range form=count variant=jsonb_text_expr
+SELECT count(*) FROM bench_accounts WHERE custom_fields->>'cf_renewal_date' BETWEEN '2026-01-01' AND '2026-03-31'
+
+Aggregate  (cost=218.22..218.23 rows=1 width=8) (actual time=0.109..0.110 rows=1 loops=1)
+  Buffers: shared hit=226
+  ->  Bitmap Heap Scan on bench_accounts  (cost=3.77..217.63 rows=233 width=0) (actual time=0.034..0.098 rows=270 loops=1)
+        Recheck Cond: (((custom_fields ->> 'cf_renewal_date'::text) >= '2026-01-01'::text) AND ((custom_fields ->> 'cf_renewal_date'::text) <= '2026-03-31'::text))
+        Heap Blocks: exact=223
+        Buffers: shared hit=226
+        ->  Bitmap Index Scan on ix_jsonb_renewal_date  (cost=0.00..3.72 rows=233 width=0) (actual time=0.024..0.024 rows=270 loops=1)
+              Index Cond: (((custom_fields ->> 'cf_renewal_date'::text) >= '2026-01-01'::text) AND ((custom_fields ->> 'cf_renewal_date'::text) <= '2026-03-31'::text))
+              Buffers: shared hit=3
+Planning Time: 0.046 ms
+Execution Time: 0.117 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=date_range form=page variant=jsonb_text_expr
+SELECT id, name FROM bench_accounts WHERE custom_fields->>'cf_renewal_date' BETWEEN '2026-01-01' AND '2026-03-31' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..104.33 rows=25 width=20) (actual time=0.011..0.202 rows=25 loops=1)
+  Buffers: shared hit=75
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..969.95 rows=233 width=20) (actual time=0.010..0.199 rows=25 loops=1)
+        Filter: (((custom_fields ->> 'cf_renewal_date'::text) >= '2026-01-01'::text) AND ((custom_fields ->> 'cf_renewal_date'::text) <= '2026-03-31'::text))
+        Rows Removed by Filter: 738
+        Buffers: shared hit=75
+Planning Time: 0.060 ms
+Execution Time: 0.207 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=date_range form=count variant=jsonb_path_match
+SELECT count(*) FROM bench_accounts WHERE custom_fields @? '$.cf_renewal_date ? (@ >= "2026-01-01" && @ <= "2026-03-31")'
+
+Aggregate  (cost=812.51..812.52 rows=1 width=8) (actual time=2.589..2.589 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=606 width=0) (actual time=0.007..2.562 rows=270 loops=1)
+        Filter: (custom_fields @? '$."cf_renewal_date"?(@ >= "2026-01-01" && @ <= "2026-03-31")'::jsonpath)
+        Rows Removed by Filter: 9730
+        Buffers: shared hit=686
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.080 ms
+Execution Time: 2.600 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=date_range form=page variant=jsonb_path_match
+SELECT id, name FROM bench_accounts WHERE custom_fields @? '$.cf_renewal_date ? (@ >= "2026-01-01" && @ <= "2026-03-31")' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..37.19 rows=25 width=20) (actual time=0.009..0.217 rows=25 loops=1)
+  Buffers: shared hit=75
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=606 width=20) (actual time=0.008..0.214 rows=25 loops=1)
+        Filter: (custom_fields @? '$."cf_renewal_date"?(@ >= "2026-01-01" && @ <= "2026-03-31")'::jsonpath)
+        Rows Removed by Filter: 738
+        Buffers: shared hit=75
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.053 ms
+Execution Time: 0.221 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=key_exists form=count variant=cf_column
+SELECT count(*) FROM bench_accounts WHERE cf_renewal_date IS NOT NULL
+
+Aggregate  (cost=75.97..75.98 rows=1 width=8) (actual time=0.312..0.312 rows=1 loops=1)
+  Buffers: shared hit=9
+  ->  Index Only Scan using ix_cf_renewal_date on bench_accounts  (cost=0.29..67.19 rows=3509 width=0) (actual time=0.003..0.177 rows=3509 loops=1)
+        Index Cond: (cf_renewal_date IS NOT NULL)
+        Heap Fetches: 0
+        Buffers: shared hit=9
+Planning Time: 0.010 ms
+Execution Time: 0.316 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=key_exists form=page variant=cf_column
+SELECT id, name FROM bench_accounts WHERE cf_renewal_date IS NOT NULL ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..6.48 rows=25 width=20) (actual time=0.003..0.014 rows=25 loops=1)
+  Buffers: shared hit=9
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..869.95 rows=3509 width=20) (actual time=0.003..0.012 rows=25 loops=1)
+        Filter: (cf_renewal_date IS NOT NULL)
+        Rows Removed by Filter: 38
+        Buffers: shared hit=9
+Planning Time: 0.017 ms
+Execution Time: 0.018 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=key_exists form=count variant=jsonb_key_exists
+SELECT count(*) FROM bench_accounts WHERE custom_fields ? 'cf_renewal_date'
+
+Aggregate  (cost=820.85..820.86 rows=1 width=8) (actual time=1.958..1.959 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=3939 width=0) (actual time=0.003..1.810 rows=3509 loops=1)
+        Filter: (custom_fields ? 'cf_renewal_date'::text)
+        Rows Removed by Filter: 6491
+        Buffers: shared hit=686
+Planning Time: 0.059 ms
+Execution Time: 1.967 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=key_exists form=page variant=jsonb_key_exists
+SELECT id, name FROM bench_accounts WHERE custom_fields ? 'cf_renewal_date' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..5.96 rows=25 width=20) (actual time=0.002..0.017 rows=25 loops=1)
+  Buffers: shared hit=9
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=3939 width=20) (actual time=0.002..0.015 rows=25 loops=1)
+        Filter: (custom_fields ? 'cf_renewal_date'::text)
+        Rows Removed by Filter: 38
+        Buffers: shared hit=9
+Planning Time: 0.031 ms
+Execution Time: 0.021 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=key_exists form=count variant=jsonb_path_match
+SELECT count(*) FROM bench_accounts WHERE custom_fields @? '$.cf_renewal_date'
+
+Aggregate  (cost=820.85..820.86 rows=1 width=8) (actual time=2.263..2.264 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=3939 width=0) (actual time=0.003..2.121 rows=3509 loops=1)
+        Filter: (custom_fields @? '$."cf_renewal_date"'::jsonpath)
+        Rows Removed by Filter: 6491
+        Buffers: shared hit=686
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.068 ms
+Execution Time: 2.274 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=key_exists form=page variant=jsonb_path_match
+SELECT id, name FROM bench_accounts WHERE custom_fields @? '$.cf_renewal_date' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..5.96 rows=25 width=20) (actual time=0.002..0.019 rows=25 loops=1)
+  Buffers: shared hit=9
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=3939 width=20) (actual time=0.002..0.018 rows=25 loops=1)
+        Filter: (custom_fields @? '$."cf_renewal_date"'::jsonpath)
+        Rows Removed by Filter: 38
+        Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.039 ms
+Execution Time: 0.023 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=key_exists form=count variant=jsonb_text_expr
+SELECT count(*) FROM bench_accounts WHERE custom_fields->>'cf_renewal_date' IS NOT NULL
+
+Aggregate  (cost=772.71..772.72 rows=1 width=8) (actual time=0.702..0.703 rows=1 loops=1)
+  Buffers: shared hit=694
+  ->  Bitmap Heap Scan on bench_accounts  (cost=34.08..763.94 rows=3509 width=0) (actual time=0.157..0.565 rows=3509 loops=1)
+        Recheck Cond: ((custom_fields ->> 'cf_renewal_date'::text) IS NOT NULL)
+        Heap Blocks: exact=685
+        Buffers: shared hit=694
+        ->  Bitmap Index Scan on ix_jsonb_renewal_date  (cost=0.00..33.20 rows=3509 width=0) (actual time=0.108..0.108 rows=3509 loops=1)
+              Index Cond: ((custom_fields ->> 'cf_renewal_date'::text) IS NOT NULL)
+              Buffers: shared hit=9
+Planning Time: 0.025 ms
+Execution Time: 0.711 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=key_exists form=page variant=jsonb_text_expr
+SELECT id, name FROM bench_accounts WHERE custom_fields->>'cf_renewal_date' IS NOT NULL ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..6.66 rows=25 width=20) (actual time=0.003..0.019 rows=25 loops=1)
+  Buffers: shared hit=9
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=3509 width=20) (actual time=0.003..0.017 rows=25 loops=1)
+        Filter: ((custom_fields ->> 'cf_renewal_date'::text) IS NOT NULL)
+        Rows Removed by Filter: 38
+        Buffers: shared hit=9
+Planning Time: 0.021 ms
+Execution Time: 0.024 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=sort_offset_0 form=page variant=cf_column
+SELECT id, cf_annual_value AS v FROM bench_accounts ORDER BY cf_annual_value DESC NULLS LAST, id DESC LIMIT 25 OFFSET 0
+
+Limit  (cost=0.29..0.79 rows=25 width=16) (actual time=0.004..0.007 rows=25 loops=1)
+  Buffers: shared hit=3
+  ->  Index Only Scan using ix_cf_annual_value on bench_accounts  (cost=0.29..201.98 rows=10000 width=16) (actual time=0.004..0.006 rows=25 loops=1)
+        Heap Fetches: 0
+        Buffers: shared hit=3
+Planning Time: 0.012 ms
+Execution Time: 0.011 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=sort_offset_0 form=page variant=jsonb_numeric_expr
+SELECT id, (custom_fields->>'cf_annual_value')::numeric AS v FROM bench_accounts ORDER BY (custom_fields->>'cf_annual_value')::numeric DESC NULLS LAST, id DESC LIMIT 25 OFFSET 0
+
+Limit  (cost=0.29..2.86 rows=25 width=40) (actual time=0.003..0.015 rows=25 loops=1)
+  Buffers: shared hit=27
+  ->  Index Scan using ix_jsonb_annual_value on bench_accounts  (cost=0.29..1031.56 rows=10000 width=40) (actual time=0.003..0.013 rows=25 loops=1)
+        Buffers: shared hit=27
+Planning Time: 0.014 ms
+Execution Time: 0.026 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=sort_offset_5000 form=page variant=cf_column
+SELECT id, cf_annual_value AS v FROM bench_accounts ORDER BY cf_annual_value DESC NULLS LAST, id DESC LIMIT 25 OFFSET 5000
+
+Limit  (cost=101.13..101.64 rows=25 width=16) (actual time=0.504..0.507 rows=25 loops=1)
+  Buffers: shared hit=27
+  ->  Index Only Scan using ix_cf_annual_value on bench_accounts  (cost=0.29..201.98 rows=10000 width=16) (actual time=0.004..0.361 rows=5025 loops=1)
+        Heap Fetches: 0
+        Buffers: shared hit=27
+Planning Time: 0.012 ms
+Execution Time: 0.511 ms
+
+### N=10000 phase=btree_gin_path_ops scenario=sort_offset_5000 form=page variant=jsonb_numeric_expr
+SELECT id, (custom_fields->>'cf_annual_value')::numeric AS v FROM bench_accounts ORDER BY (custom_fields->>'cf_annual_value')::numeric DESC NULLS LAST, id DESC LIMIT 25 OFFSET 5000
+
+Limit  (cost=515.92..518.50 rows=25 width=40) (actual time=2.442..2.454 rows=25 loops=1)
+  Buffers: shared hit=5044
+  ->  Index Scan using ix_jsonb_annual_value on bench_accounts  (cost=0.29..1031.56 rows=10000 width=40) (actual time=0.007..2.300 rows=5025 loops=1)
+        Buffers: shared hit=5044
+Planning Time: 0.039 ms
+Execution Time: 2.464 ms
+
+### N=10000 phase=gin_jsonb_ops scenario=eq_rare form=count variant=jsonb_contains
+SELECT count(*) FROM bench_accounts WHERE custom_fields @> '{"cf_account_segment": "Strategic"}'
+
+Aggregate  (cost=10.86..10.87 rows=1 width=8) (actual time=0.049..0.050 rows=1 loops=1)
+  Buffers: shared hit=44
+  ->  Bitmap Heap Scan on bench_accounts  (cost=9.75..10.86 rows=1 width=0) (actual time=0.031..0.047 rows=35 loops=1)
+        Recheck Cond: (custom_fields @> '{"cf_account_segment": "Strategic"}'::jsonb)
+        Heap Blocks: exact=33
+        Buffers: shared hit=44
+        ->  Bitmap Index Scan on ix_jsonb_ops  (cost=0.00..9.75 rows=1 width=0) (actual time=0.028..0.028 rows=35 loops=1)
+              Index Cond: (custom_fields @> '{"cf_account_segment": "Strategic"}'::jsonb)
+              Buffers: shared hit=11
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.043 ms
+Execution Time: 0.055 ms
+
+### N=10000 phase=gin_jsonb_ops scenario=eq_rare form=page variant=jsonb_contains
+SELECT id, name FROM bench_accounts WHERE custom_fields @> '{"cf_account_segment": "Strategic"}' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=10.87..10.87 rows=1 width=20) (actual time=0.053..0.056 rows=25 loops=1)
+  Buffers: shared hit=44
+  ->  Sort  (cost=10.87..10.87 rows=1 width=20) (actual time=0.052..0.054 rows=25 loops=1)
+        Sort Key: id DESC
+        Sort Method: quicksort  Memory: 27kB
+        Buffers: shared hit=44
+        ->  Bitmap Heap Scan on bench_accounts  (cost=9.75..10.86 rows=1 width=20) (actual time=0.031..0.048 rows=35 loops=1)
+              Recheck Cond: (custom_fields @> '{"cf_account_segment": "Strategic"}'::jsonb)
+              Heap Blocks: exact=33
+              Buffers: shared hit=44
+              ->  Bitmap Index Scan on ix_jsonb_ops  (cost=0.00..9.75 rows=1 width=0) (actual time=0.028..0.028 rows=35 loops=1)
+                    Index Cond: (custom_fields @> '{"cf_account_segment": "Strategic"}'::jsonb)
+                    Buffers: shared hit=11
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.043 ms
+Execution Time: 0.061 ms
+
+### N=10000 phase=gin_jsonb_ops scenario=eq_common form=count variant=jsonb_contains
+SELECT count(*) FROM bench_accounts WHERE custom_fields @> '{"cf_account_segment": "Enterprise"}'
+
+Aggregate  (cost=649.55..649.56 rows=1 width=8) (actual time=0.799..0.800 rows=1 loops=1)
+  Buffers: shared hit=615
+  ->  Bitmap Heap Scan on bench_accounts  (cost=15.57..646.77 rows=1111 width=0) (actual time=0.192..0.744 rows=1377 loops=1)
+        Recheck Cond: (custom_fields @> '{"cf_account_segment": "Enterprise"}'::jsonb)
+        Heap Blocks: exact=604
+        Buffers: shared hit=615
+        ->  Bitmap Index Scan on ix_jsonb_ops  (cost=0.00..15.30 rows=1111 width=0) (actual time=0.144..0.144 rows=1377 loops=1)
+              Index Cond: (custom_fields @> '{"cf_account_segment": "Enterprise"}'::jsonb)
+              Buffers: shared hit=11
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.068 ms
+Execution Time: 0.808 ms
+
+### N=10000 phase=gin_jsonb_ops scenario=eq_common form=page variant=jsonb_contains
+SELECT id, name FROM bench_accounts WHERE custom_fields @> '{"cf_account_segment": "Enterprise"}' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..20.42 rows=25 width=20) (actual time=0.003..0.038 rows=25 loops=1)
+  Buffers: shared hit=18
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=1111 width=20) (actual time=0.003..0.036 rows=25 loops=1)
+        Filter: (custom_fields @> '{"cf_account_segment": "Enterprise"}'::jsonb)
+        Rows Removed by Filter: 103
+        Buffers: shared hit=18
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.035 ms
+Execution Time: 0.041 ms
+
+### N=10000 phase=gin_jsonb_ops scenario=multi_value form=count variant=jsonb_contains
+SELECT count(*) FROM bench_accounts WHERE custom_fields @> '{"cf_interests": ["Partner program"]}'
+
+Aggregate  (cost=341.08..341.09 rows=1 width=8) (actual time=0.178..0.179 rows=1 loops=1)
+  Buffers: shared hit=208
+  ->  Bitmap Heap Scan on bench_accounts  (cost=11.86..340.07 rows=404 width=0) (actual time=0.044..0.168 rows=238 loops=1)
+        Recheck Cond: (custom_fields @> '{"cf_interests": ["Partner program"]}'::jsonb)
+        Heap Blocks: exact=200
+        Buffers: shared hit=208
+        ->  Bitmap Index Scan on ix_jsonb_ops  (cost=0.00..11.76 rows=404 width=0) (actual time=0.033..0.033 rows=238 loops=1)
+              Index Cond: (custom_fields @> '{"cf_interests": ["Partner program"]}'::jsonb)
+              Buffers: shared hit=8
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.052 ms
+Execution Time: 0.184 ms
+
+### N=10000 phase=gin_jsonb_ops scenario=multi_value form=page variant=jsonb_contains
+SELECT id, name FROM bench_accounts WHERE custom_fields @> '{"cf_interests": ["Partner program"]}' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..55.65 rows=25 width=20) (actual time=0.042..0.411 rows=25 loops=1)
+  Buffers: shared hit=141
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=404 width=20) (actual time=0.042..0.409 rows=25 loops=1)
+        Filter: (custom_fields @> '{"cf_interests": ["Partner program"]}'::jsonb)
+        Rows Removed by Filter: 1438
+        Buffers: shared hit=141
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.048 ms
+Execution Time: 0.416 ms
+
+### N=10000 phase=gin_jsonb_ops scenario=multi_value form=count variant=jsonb_path_match
+SELECT count(*) FROM bench_accounts WHERE custom_fields @? '$.cf_interests[*] ? (@ == "Partner program")'
+
+Aggregate  (cost=345.34..345.35 rows=1 width=8) (actual time=0.237..0.237 rows=1 loops=1)
+  Buffers: shared hit=211
+  ->  Bitmap Heap Scan on bench_accounts  (cost=16.12..344.33 rows=404 width=0) (actual time=0.051..0.226 rows=238 loops=1)
+        Recheck Cond: (custom_fields @? '$."cf_interests"[*]?(@ == "Partner program")'::jsonpath)
+        Heap Blocks: exact=200
+        Buffers: shared hit=211
+        ->  Bitmap Index Scan on ix_jsonb_ops  (cost=0.00..16.02 rows=404 width=0) (actual time=0.039..0.040 rows=238 loops=1)
+              Index Cond: (custom_fields @? '$."cf_interests"[*]?(@ == "Partner program")'::jsonpath)
+              Buffers: shared hit=11
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.048 ms
+Execution Time: 0.243 ms
+
+### N=10000 phase=gin_jsonb_ops scenario=multi_value form=page variant=jsonb_path_match
+SELECT id, name FROM bench_accounts WHERE custom_fields @? '$.cf_interests[*] ? (@ == "Partner program")' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..55.65 rows=25 width=20) (actual time=0.050..0.485 rows=25 loops=1)
+  Buffers: shared hit=141
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=404 width=20) (actual time=0.050..0.483 rows=25 loops=1)
+        Filter: (custom_fields @? '$."cf_interests"[*]?(@ == "Partner program")'::jsonpath)
+        Rows Removed by Filter: 1438
+        Buffers: shared hit=141
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.063 ms
+Execution Time: 0.490 ms
+
+### N=10000 phase=gin_jsonb_ops scenario=numeric_range form=count variant=jsonb_path_match
+SELECT count(*) FROM bench_accounts WHERE custom_fields @? '$.cf_annual_value ? (@ >= 250000 && @ <= 500000)'
+
+Aggregate  (cost=813.27..813.28 rows=1 width=8) (actual time=3.139..3.139 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=909 width=0) (actual time=0.008..3.100 rows=907 loops=1)
+        Filter: (custom_fields @? '$."cf_annual_value"?(@ >= 250000 && @ <= 500000)'::jsonpath)
+        Rows Removed by Filter: 9093
+        Buffers: shared hit=686
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.096 ms
+Execution Time: 3.149 ms
+
+### N=10000 phase=gin_jsonb_ops scenario=numeric_range form=page variant=jsonb_path_match
+SELECT id, name FROM bench_accounts WHERE custom_fields @? '$.cf_annual_value ? (@ >= 250000 && @ <= 500000)' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..24.89 rows=25 width=20) (actual time=0.003..0.090 rows=25 loops=1)
+  Buffers: shared hit=27
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=909 width=20) (actual time=0.003..0.088 rows=25 loops=1)
+        Filter: (custom_fields @? '$."cf_annual_value"?(@ >= 250000 && @ <= 500000)'::jsonpath)
+        Rows Removed by Filter: 227
+        Buffers: shared hit=27
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.047 ms
+Execution Time: 0.094 ms
+
+### N=10000 phase=gin_jsonb_ops scenario=date_range form=count variant=jsonb_path_match
+SELECT count(*) FROM bench_accounts WHERE custom_fields @? '$.cf_renewal_date ? (@ >= "2026-01-01" && @ <= "2026-03-31")'
+
+Aggregate  (cost=812.51..812.52 rows=1 width=8) (actual time=2.567..2.567 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=606 width=0) (actual time=0.009..2.552 rows=270 loops=1)
+        Filter: (custom_fields @? '$."cf_renewal_date"?(@ >= "2026-01-01" && @ <= "2026-03-31")'::jsonpath)
+        Rows Removed by Filter: 9730
+        Buffers: shared hit=686
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.087 ms
+Execution Time: 2.580 ms
+
+### N=10000 phase=gin_jsonb_ops scenario=date_range form=page variant=jsonb_path_match
+SELECT id, name FROM bench_accounts WHERE custom_fields @? '$.cf_renewal_date ? (@ >= "2026-01-01" && @ <= "2026-03-31")' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..37.19 rows=25 width=20) (actual time=0.009..0.222 rows=25 loops=1)
+  Buffers: shared hit=75
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=606 width=20) (actual time=0.008..0.220 rows=25 loops=1)
+        Filter: (custom_fields @? '$."cf_renewal_date"?(@ >= "2026-01-01" && @ <= "2026-03-31")'::jsonpath)
+        Rows Removed by Filter: 738
+        Buffers: shared hit=75
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.049 ms
+Execution Time: 0.226 ms
+
+### N=10000 phase=gin_jsonb_ops scenario=key_exists form=count variant=jsonb_key_exists
+SELECT count(*) FROM bench_accounts WHERE custom_fields ? 'cf_renewal_date'
+
+Aggregate  (cost=772.47..772.48 rows=1 width=8) (actual time=1.338..1.338 rows=1 loops=1)
+  Buffers: shared hit=690
+  ->  Bitmap Heap Scan on bench_accounts  (cost=27.39..762.63 rows=3939 width=0) (actual time=0.210..1.192 rows=3509 loops=1)
+        Recheck Cond: (custom_fields ? 'cf_renewal_date'::text)
+        Heap Blocks: exact=685
+        Buffers: shared hit=690
+        ->  Bitmap Index Scan on ix_jsonb_ops  (cost=0.00..26.40 rows=3939 width=0) (actual time=0.157..0.157 rows=3509 loops=1)
+              Index Cond: (custom_fields ? 'cf_renewal_date'::text)
+              Buffers: shared hit=5
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.062 ms
+Execution Time: 1.349 ms
+
+### N=10000 phase=gin_jsonb_ops scenario=key_exists form=page variant=jsonb_key_exists
+SELECT id, name FROM bench_accounts WHERE custom_fields ? 'cf_renewal_date' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..5.96 rows=25 width=20) (actual time=0.004..0.019 rows=25 loops=1)
+  Buffers: shared hit=9
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=3939 width=20) (actual time=0.003..0.017 rows=25 loops=1)
+        Filter: (custom_fields ? 'cf_renewal_date'::text)
+        Rows Removed by Filter: 38
+        Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.055 ms
+Execution Time: 0.024 ms
+
+### N=10000 phase=gin_jsonb_ops scenario=key_exists form=count variant=jsonb_path_match
+SELECT count(*) FROM bench_accounts WHERE custom_fields @? '$.cf_renewal_date'
+
+Aggregate  (cost=820.85..820.86 rows=1 width=8) (actual time=6.047..6.048 rows=1 loops=1)
+  Buffers: shared hit=686
+  ->  Seq Scan on bench_accounts  (cost=0.00..811.00 rows=3939 width=0) (actual time=0.003..5.905 rows=3509 loops=1)
+        Filter: (custom_fields @? '$."cf_renewal_date"'::jsonpath)
+        Rows Removed by Filter: 6491
+        Buffers: shared hit=686
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.070 ms
+Execution Time: 6.059 ms
+
+### N=10000 phase=gin_jsonb_ops scenario=key_exists form=page variant=jsonb_path_match
+SELECT id, name FROM bench_accounts WHERE custom_fields @? '$.cf_renewal_date' ORDER BY id DESC LIMIT 25
+
+Limit  (cost=0.29..5.96 rows=25 width=20) (actual time=0.003..0.020 rows=25 loops=1)
+  Buffers: shared hit=9
+  ->  Index Scan Backward using bench_accounts_pkey on bench_accounts  (cost=0.29..894.95 rows=3939 width=20) (actual time=0.002..0.018 rows=25 loops=1)
+        Filter: (custom_fields @? '$."cf_renewal_date"'::jsonpath)
+        Rows Removed by Filter: 38
+        Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.038 ms
+Execution Time: 0.024 ms
+

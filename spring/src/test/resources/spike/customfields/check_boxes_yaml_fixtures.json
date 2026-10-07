@@ -1,0 +1,77 @@
+[
+  {
+    "values": [],
+    "yaml": "--- []\n"
+  },
+  {
+    "values": [
+      "A"
+    ],
+    "yaml": "---\n- A\n"
+  },
+  {
+    "values": [
+      "Email",
+      "Events",
+      "Product updates"
+    ],
+    "yaml": "---\n- Email\n- Events\n- Product updates\n"
+  },
+  {
+    "values": [
+      "yes",
+      "no",
+      "true",
+      "1",
+      "1.5",
+      "null",
+      "~"
+    ],
+    "yaml": "---\n- 'yes'\n- 'no'\n- 'true'\n- '1'\n- '1.5'\n- 'null'\n- \"~\"\n"
+  },
+  {
+    "values": [
+      "a: b",
+      "#hash",
+      "- dash",
+      "O'Brien",
+      "\"quoted\"",
+      "back\\slash"
+    ],
+    "yaml": "---\n- 'a: b'\n- \"#hash\"\n- \"- dash\"\n- O'Brien\n- '\"quoted\"'\n- back\\slash\n"
+  },
+  {
+    "values": [
+      "",
+      " leading",
+      "trailing "
+    ],
+    "yaml": "---\n- ''\n- \" leading\"\n- 'trailing '\n"
+  },
+  {
+    "values": [
+      "multi\nline"
+    ],
+    "yaml": "---\n- |-\n  multi\n  line\n"
+  },
+  {
+    "values": [
+      "ünïcödé",
+      "日本"
+    ],
+    "yaml": "---\n- ünïcödé\n- 日本\n"
+  },
+  {
+    "values": [
+      "[x]",
+      "{y}",
+      "*star",
+      "&amp",
+      "!bang",
+      "%pct",
+      "@at",
+      "`tick"
+    ],
+    "yaml": "---\n- \"[x]\"\n- \"{y}\"\n- \"*star\"\n- \"&amp\"\n- \"!bang\"\n- \"%pct\"\n- \"@at\"\n- \"`tick\"\n"
+  }
+]

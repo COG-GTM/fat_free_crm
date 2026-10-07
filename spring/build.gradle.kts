@@ -26,6 +26,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
@@ -66,6 +67,10 @@ tasks.withType<Test>().configureEach {
     }
 }
 
+tasks.named<Test>("test") {
+    systemProperty("spring.profiles.active", "test")
+}
+
 tasks.named("spotbugsTest") {
     enabled = false
 }
@@ -92,7 +97,6 @@ tasks.register("verifyFrozenOpenApi") {
 tasks.named("check") {
     dependsOn("verifyFrozenOpenApi")
 }
-
 val contractTest by sourceSets.creating {
     compileClasspath = configurations.getByName("contractTestCompileClasspath")
     runtimeClasspath = output + compileClasspath + configurations.getByName("contractTestRuntimeClasspath")
@@ -138,4 +142,22 @@ tasks.register<Test>("contractTest") {
         ).get()
     )
     outputs.upToDateWhen { false }
+}
+
+// AB-267: custom-fields JSONB benchmark, excluded from `build`; run with ./gradlew benchmarkTest
+tasks.named<Test>("test") {
+    useJUnitPlatform { excludeTags("benchmark") }
+}
+tasks.register<Test>("benchmarkTest") {
+    group = "verification"
+    description = "Runs @Tag(\"benchmark\") tests (AB-267 custom-fields JSONB spike)."
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform { includeTags("benchmark") }
+    maxHeapSize = "2g"
+    outputs.upToDateWhen { false }
+    testLogging { showStandardStreams = true }
+    listOf("benchmark.rows", "benchmark.reps", "benchmark.warmup", "benchmark.writes", "benchmark.outputDir").forEach { key ->
+        providers.gradleProperty(key).orNull?.let { systemProperty(key, it) }
+    }
 }

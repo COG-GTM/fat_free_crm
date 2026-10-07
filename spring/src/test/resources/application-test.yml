@@ -1,0 +1,6 @@
+ffcrm:
+  security:
+    jwt:
+      secret: spring-test-secret-with-at-least-32-bytes
+      access-token-ttl: 15m
+      refresh-token-ttl: 14d

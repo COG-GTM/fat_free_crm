@@ -11,6 +11,8 @@ on:
       - "db/contract_fixtures.rb"
       - "app/**"
       - "config/routes.rb"
+      - "lib/tasks/ffcrm/legacy_auth_fixture.rake"
+      - "spec/lib/tasks/legacy_auth_fixture_spec.rb"
   push:
     paths:
       - "spring/**"
@@ -21,6 +23,8 @@ on:
       - "db/contract_fixtures.rb"
       - "app/**"
       - "config/routes.rb"
+      - "lib/tasks/ffcrm/legacy_auth_fixture.rake"
+      - "spec/lib/tasks/legacy_auth_fixture_spec.rb"
 
 permissions:
   contents: read
