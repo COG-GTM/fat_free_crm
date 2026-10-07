@@ -85,8 +85,10 @@ class PermissionServiceIntegrationTest extends AbstractPostgresIntegrationTest {
     @AfterEach
     void cleanUp() {
         for (Long id : accountIds) {
-            jdbcTemplate.update("DELETE FROM permissions WHERE asset_id = ?", id);
+            jdbcTemplate.update("DELETE FROM permissions WHERE asset_type = 'Account' AND asset_id = ?", id);
         }
+        jdbcTemplate.update("DELETE FROM permissions WHERE user_id IN (?, ?, ?, ?) OR group_id = ?",
+            ownerId, granteeId, memberId, outsiderId, groupId);
         jdbcTemplate.update("DELETE FROM accounts WHERE name LIKE ?", PREFIX + "%");
         jdbcTemplate.update("DELETE FROM groups_users WHERE group_id = ?", groupId);
         jdbcTemplate.update("DELETE FROM groups WHERE id = ?", groupId);
