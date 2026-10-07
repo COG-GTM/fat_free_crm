@@ -63,7 +63,7 @@ class ApiExceptionHandlerEdgeCaseTest {
             .andExpect(jsonPath("$.instance").value("/edge/missing/42"))
             .andReturn();
 
-        assertOnlyProblemFields(result);
+        assertExactlyProblemFields(result);
     }
 
     @Test
@@ -122,7 +122,7 @@ class ApiExceptionHandlerEdgeCaseTest {
             .andExpect(jsonPath("$.instance").value("/edge/validated"))
             .andReturn();
 
-        assertOnlyProblemFields(result);
+        assertExactlyProblemFields(result);
     }
 
     @Test
@@ -179,15 +179,16 @@ class ApiExceptionHandlerEdgeCaseTest {
             .andExpect(content().string(not(containsString("NullPointerException"))))
             .andReturn();
 
-        assertOnlyProblemFields(result);
+        assertExactlyProblemFields(result);
     }
 
-    private void assertOnlyProblemFields(MvcResult result) throws Exception {
+    private void assertExactlyProblemFields(MvcResult result) throws Exception {
         JsonNode body = objectMapper.readTree(result.getResponse().getContentAsByteArray());
         Set<String> fields = new HashSet<>();
         body.fieldNames().forEachRemaining(fields::add);
-        if (!PROBLEM_FIELDS.containsAll(fields)) {
-            throw new AssertionError("Problem body exposes non-RFC 9457 fields: " + fields);
+        if (!fields.equals(PROBLEM_FIELDS)) {
+            throw new AssertionError("Problem body must carry exactly the RFC 9457 fields "
+                + PROBLEM_FIELDS + " but was: " + fields);
         }
     }
 

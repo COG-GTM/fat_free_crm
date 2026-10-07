@@ -8,9 +8,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fatfreecrm.support.AbstractPostgresIntegrationTest;
+import io.swagger.v3.core.util.Json31;
 import io.swagger.v3.core.util.Yaml31;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.tags.Tag;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,11 +69,13 @@ class OpenApiContractParityTest extends AbstractPostgresIntegrationTest {
     }
 
     @Test
-    void globalSecurityRequirementMatchesTheRailsCookieAuthScheme() {
+    void globalSecurityRequirementMatchesTheRailsCookieAuthScheme() throws IOException {
         assertThat(published.path("security")).hasSize(1);
         assertThat(fieldNames(published.path("security").get(0))).containsExactly("cookieAuth");
-        assertThat(fieldNames(published.path("components").path("securitySchemes")))
-            .containsExactlyInAnyOrderElementsOf(frozen.getComponents().getSecuritySchemes().keySet());
+        assertThat(published.path("components").path("securitySchemes"))
+            .isEqualTo(frozenJson(frozen.getComponents().getSecuritySchemes()));
+        assertThat(published.path("components").path("securitySchemes").path("cookieAuth").path("name").asText())
+            .isEqualTo("_ffcrm_session");
     }
 
     @Test
@@ -83,12 +87,12 @@ class OpenApiContractParityTest extends AbstractPostgresIntegrationTest {
     }
 
     @Test
-    void reusableResponsesAndParametersMatchTheFrozenContract() {
-        assertThat(fieldNames(published.path("components").path("responses")))
-            .containsExactlyInAnyOrderElementsOf(frozen.getComponents().getResponses().keySet())
-            .contains("NotFound", "AccessDenied", "ValidationErrors");
-        assertThat(fieldNames(published.path("components").path("parameters")))
-            .containsExactlyInAnyOrderElementsOf(frozen.getComponents().getParameters().keySet());
+    void reusableResponsesAndParametersMatchTheFrozenContract() throws IOException {
+        JsonNode responses = published.path("components").path("responses");
+        assertThat(fieldNames(responses)).contains("NotFound", "AccessDenied", "ValidationErrors");
+        assertThat(responses).isEqualTo(frozenJson(frozen.getComponents().getResponses()));
+        assertThat(published.path("components").path("parameters"))
+            .isEqualTo(frozenJson(frozen.getComponents().getParameters()));
     }
 
     @Test
@@ -117,12 +121,17 @@ class OpenApiContractParityTest extends AbstractPostgresIntegrationTest {
     void yamlEndpointIsServedAsYamlAndParsesToTheFrozenContract() throws Exception {
         byte[] yaml = mockMvc.perform(get("/openapi.yaml"))
             .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith("application/yaml"))
             .andReturn()
             .getResponse()
             .getContentAsByteArray();
         OpenAPI served = Yaml31.mapper().readValue(yaml, OpenAPI.class);
         assertThat(served.getOpenapi()).isEqualTo("3.1.0");
         assertThat(served.getPaths().keySet()).containsExactlyInAnyOrderElementsOf(frozen.getPaths().keySet());
+    }
+
+    private JsonNode frozenJson(Object frozenComponent) throws IOException {
+        return Json31.mapper().readTree(Json31.mapper().writeValueAsBytes(frozenComponent));
     }
 
     private Set<String> fieldNames(JsonNode node) {
