@@ -1,0 +1,310 @@
+{
+  "generated_by": "ffcrm:migration:authz_matrix",
+  "regenerate": "FFCRM_ENTITY_FIXTURE=1 SECRET_KEY_BASE=entity-fixture-only-secret-key-base-0123456789abcdef bundle exec rake ffcrm:migration:authz_matrix",
+  "source": "db/contract_fixtures.rb",
+  "users": {
+    "admin": 1,
+    "alice": 2,
+    "bob": 3,
+    "sam": 4,
+    "carol": 5
+  },
+  "visible": {
+    "Account": {
+      "admin": {
+        "ids": [
+          101,
+          102,
+          103,
+          104,
+          105,
+          106,
+          107
+        ],
+        "count": 7
+      },
+      "alice": {
+        "ids": [
+          101,
+          102,
+          103,
+          104,
+          105
+        ],
+        "count": 5
+      },
+      "bob": {
+        "ids": [
+          101,
+          103,
+          104,
+          105,
+          106
+        ],
+        "count": 5
+      },
+      "sam": {
+        "ids": [
+          101
+        ],
+        "count": 1
+      },
+      "carol": {
+        "ids": [
+          101
+        ],
+        "count": 1
+      }
+    },
+    "Campaign": {
+      "admin": {
+        "ids": [
+          501,
+          502,
+          503,
+          504,
+          505,
+          506,
+          507
+        ],
+        "count": 7
+      },
+      "alice": {
+        "ids": [
+          501,
+          502,
+          503,
+          504,
+          505
+        ],
+        "count": 5
+      },
+      "bob": {
+        "ids": [
+          501,
+          503,
+          504,
+          505,
+          506
+        ],
+        "count": 5
+      },
+      "sam": {
+        "ids": [
+          501
+        ],
+        "count": 1
+      },
+      "carol": {
+        "ids": [
+          501
+        ],
+        "count": 1
+      }
+    },
+    "Contact": {
+      "admin": {
+        "ids": [
+          201,
+          202,
+          203,
+          204,
+          205,
+          206,
+          207
+        ],
+        "count": 7
+      },
+      "alice": {
+        "ids": [
+          201,
+          202,
+          203,
+          204,
+          205
+        ],
+        "count": 5
+      },
+      "bob": {
+        "ids": [
+          201,
+          203,
+          204,
+          205,
+          206
+        ],
+        "count": 5
+      },
+      "sam": {
+        "ids": [
+          201
+        ],
+        "count": 1
+      },
+      "carol": {
+        "ids": [
+          201
+        ],
+        "count": 1
+      }
+    },
+    "Lead": {
+      "admin": {
+        "ids": [
+          301,
+          302,
+          303,
+          304,
+          305,
+          306,
+          307
+        ],
+        "count": 7
+      },
+      "alice": {
+        "ids": [
+          301,
+          302,
+          303,
+          304,
+          305
+        ],
+        "count": 5
+      },
+      "bob": {
+        "ids": [
+          301,
+          303,
+          304,
+          305,
+          306
+        ],
+        "count": 5
+      },
+      "sam": {
+        "ids": [
+          301
+        ],
+        "count": 1
+      },
+      "carol": {
+        "ids": [
+          301
+        ],
+        "count": 1
+      }
+    },
+    "Opportunity": {
+      "admin": {
+        "ids": [
+          401,
+          402,
+          403,
+          404,
+          405,
+          406,
+          407
+        ],
+        "count": 7
+      },
+      "alice": {
+        "ids": [
+          401,
+          402,
+          403,
+          404,
+          405
+        ],
+        "count": 5
+      },
+      "bob": {
+        "ids": [
+          401,
+          403,
+          404,
+          405,
+          406
+        ],
+        "count": 5
+      },
+      "sam": {
+        "ids": [
+          401
+        ],
+        "count": 1
+      },
+      "carol": {
+        "ids": [
+          401
+        ],
+        "count": 1
+      }
+    },
+    "Task": {
+      "admin": {
+        "ids": [
+          601,
+          602,
+          603,
+          604,
+          605
+        ],
+        "count": 5
+      },
+      "alice": {
+        "ids": [
+          601,
+          602,
+          604
+        ],
+        "count": 3
+      },
+      "bob": {
+        "ids": [
+          602,
+          603
+        ],
+        "count": 2
+      },
+      "sam": {
+        "ids": [],
+        "count": 0
+      },
+      "carol": {
+        "ids": [
+          603
+        ],
+        "count": 1
+      }
+    },
+    "Comment": {
+      "admin": {
+        "ids": [
+          1,
+          2
+        ],
+        "count": 2
+      },
+      "alice": {
+        "ids": [
+          1
+        ],
+        "count": 1
+      },
+      "bob": {
+        "ids": [
+          2
+        ],
+        "count": 1
+      },
+      "sam": {
+        "ids": [],
+        "count": 0
+      },
+      "carol": {
+        "ids": [],
+        "count": 0
+      }
+    }
+  }
+}

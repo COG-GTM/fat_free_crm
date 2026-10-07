@@ -7,6 +7,9 @@ require "rake"
 RSpec.describe Rake::Task do
   let(:output_path) { Rails.root.join("tmp", "authz-matrix-#{SecureRandom.hex(4)}.json") }
   let(:sql_path) { Rails.root.join("tmp", "authz-fixture-#{SecureRandom.hex(4)}.sql") }
+  let(:corpus_path) { Rails.root.join("tmp", "authz-corpus-#{SecureRandom.hex(4)}.json") }
+  let(:corpus_sql_path) { Rails.root.join("tmp", "authz-corpus-#{SecureRandom.hex(4)}.sql") }
+  let(:env_keys) { %w[OUTPUT SQL_OUTPUT CONTRACT_OUTPUT CONTRACT_SQL_OUTPUT] }
   let(:tables) { FatFreeCRM::Migration::AuthzMatrix::TABLES }
 
   before do
@@ -16,17 +19,18 @@ RSpec.describe Rake::Task do
   end
 
   around do |example|
-    previous = ENV.to_h.slice("OUTPUT", "SQL_OUTPUT")
-    ENV["OUTPUT"] = output_path.to_s
-    ENV["SQL_OUTPUT"] = sql_path.to_s
+    previous = ENV.to_h.slice(*env_keys)
+    env_keys.zip([output_path, sql_path, corpus_path, corpus_sql_path]).each { |key, path| ENV[key] = path.to_s }
     example.run
   ensure
-    %w[OUTPUT SQL_OUTPUT].each { |key| previous.key?(key) ? ENV[key] = previous[key] : ENV.delete(key) }
+    env_keys.each { |key| previous.key?(key) ? ENV[key] = previous[key] : ENV.delete(key) }
   end
 
   after do
     FileUtils.rm_f(output_path)
     FileUtils.rm_f(sql_path)
+    FileUtils.rm_f(corpus_path)
+    FileUtils.rm_f(corpus_sql_path)
     Rake::Task["ffcrm:migration:authz_matrix"].reenable if Rake::Task.task_defined?("ffcrm:migration:authz_matrix")
   end
 
@@ -54,11 +58,28 @@ RSpec.describe Rake::Task do
     account.each_value { |cell| expect(cell.fetch("count")).to eq(cell.fetch("ids").size) }
   end
 
+  it "records the AB-266 contract corpus visibility documented in spring/contract-diff.md, then rolls back" do
+    before_counts = table_counts
+    generate
+    expect(table_counts).to eq(before_counts)
+    expect(User.count).to eq(before_counts.fetch("users"))
+    visible = JSON.parse(File.read(corpus_path, encoding: "UTF-8")).fetch("visible")
+    ids = ->(type, user) { visible.fetch(type).fetch(user).fetch("ids") }
+    expect(ids.call("Account", "alice")).to eq((101..105).to_a)
+    expect(ids.call("Account", "bob")).to eq([101, 103, 104, 105, 106])
+    expect(ids.call("Account", "admin")).to eq((101..107).to_a)
+    expect(ids.call("Account", "carol")).to eq([101])
+    expect(ids.call("Task", "bob")).to eq([602, 603])
+    expect(ids.call("Task", "carol")).to eq([603])
+    expect(File.read(corpus_sql_path)).to include("INSERT INTO public.\"permissions\" ")
+  end
+
   it "produces identical output on consecutive runs" do
     generate
-    first = [File.read(output_path), File.read(sql_path)]
+    paths = [output_path, sql_path, corpus_path, corpus_sql_path]
+    first = paths.map { |path| File.read(path) }
     generate
-    expect([File.read(output_path), File.read(sql_path)]).to eq(first)
+    expect(paths.map { |path| File.read(path) }).to eq(first)
   end
 
   def generate

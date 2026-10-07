@@ -279,5 +279,14 @@ FFCRM_ENTITY_FIXTURE=1 SECRET_KEY_BASE=entity-fixture-only-secret-key-base-01234
   bundle exec rake ffcrm:migration:authz_matrix
 ```
 
-The `authz-matrix` job in `spring-api.yml` regenerates the matrix on a PostgreSQL service,
+The same task also records `Klass.my(user)` / `accessible_by` for admin, alice, bob, sam and
+carol on the AB-266 contract-diff corpus (`db/contract_fixtures.rb`, also rolled back), writing
+`contract_corpus_matrix.json` and `contract_corpus.sql`. `ContractCorpusAuthorizationTest` asserts
+identical list ids, page totals and evaluator decisions on that corpus, so the Specifications are
+checked on the data the harness runs against. The matrix matches the visibility table in
+[contract-diff.md](contract-diff.md). The harness case `accounts-show-private-denied-bob` stays
+`pending`: this ticket adds no account-show route, and it is enforced once AB-270 adds one (bob
+reading account 102 is then a 403, which the `authz-denied-401-vs-403` entry allow-lists).
+
+The `authz-matrix` job in `spring-api.yml` regenerates both matrices on a PostgreSQL service,
 fails if the committed files drift, and runs `spec/lib/tasks/authz_matrix_spec.rb`.

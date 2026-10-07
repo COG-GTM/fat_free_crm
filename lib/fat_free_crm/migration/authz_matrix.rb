@@ -280,8 +280,12 @@ module FatFreeCRM
         "#{lines.join("\n")}\n"
       end
 
+      def sequence_tables
+        TABLES - ["groups_users"]
+      end
+
       def save_sequences
-        TABLES.reject { |table| table == "groups_users" }.filter_map do |table|
+        sequence_tables.filter_map do |table|
           sequence = @connection.select_value("SELECT pg_catalog.pg_get_serial_sequence('public.#{table}', 'id')")
           next unless sequence
 
