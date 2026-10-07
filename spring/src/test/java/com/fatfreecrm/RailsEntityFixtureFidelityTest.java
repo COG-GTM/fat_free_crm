@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fatfreecrm.domain.Account;
 import com.fatfreecrm.domain.Lead;
+import com.fatfreecrm.domain.support.HasCustomFields;
 import com.fatfreecrm.domain.support.RailsModelType;
 import com.fatfreecrm.repository.AccountRepository;
 import com.fatfreecrm.repository.LeadRepository;
@@ -257,6 +258,11 @@ class RailsEntityFixtureFidelityTest {
             if (original.get("subscribed_users") instanceof String serialized && serialized.equals("--- []\n")) {
                 assertThat(written.get("subscribed_users")).isNull();
                 original.put("subscribed_users", null);
+            }
+            if (row.value() instanceof HasCustomFields) {
+                assertThat(written.get("custom_fields").toString()).isEqualTo("{}");
+                original.remove("custom_fields");
+                written.remove("custom_fields");
             }
             assertThat(written).as("written values for %s row %d", row.table(), originalId).isEqualTo(original);
         }

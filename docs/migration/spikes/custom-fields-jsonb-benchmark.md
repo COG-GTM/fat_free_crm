@@ -7,8 +7,7 @@
   backfill and type-enforcement rules).
 - **Raw results**: [`custom-fields-jsonb-benchmark/`](custom-fields-jsonb-benchmark/): `queries.csv`,
   `sizes.csv`, `writes.csv`, `environment.json`, `plans-<N>.txt` (every `EXPLAIN (ANALYZE, BUFFERS)`).
-- **Harness**: `spring/src/test/java/com/fatfreecrm/spike/customfields/CustomFieldsJsonbBenchmark.java`
-  (`@Tag("benchmark")`, excluded from `./gradlew build`).
+- **Harness**: Removed by AB-271 after promotion; the committed benchmark results remain below.
 
 ## Recommendation: **GO** (with conditions)
 
@@ -42,7 +41,7 @@ Conditions that G4 (implementation) and AB-269 (search) must meet:
    `custom_fields @> :json::jsonb`, `custom_fields @? :path::jsonpath` (equality/membership paths only), and
    `(custom_fields->>'cf_x')::numeric BETWEEN ...` with the **same expression** as the index. Never emit
    `jsonb_contains(...)` / `jsonb_path_exists(...)` function forms (never use GIN, asserted in
-   `JsonbQueryShapesTest`), and never use jsonpath comparisons for ranges (`@? '$.x ? (@ > 1)'` is always a
+   `CustomFieldPredicatesIntegrationTest`), and never use jsonpath comparisons for ranges (`@? '$.x ? (@ > 1)'` is always a
    sequential scan: 146 ms at 1M vs 64 ms on the expression index).
 3. **Counts**: accept 3–12x slower large counts (worst observed 110 ms p50 at 1M rows for a 13%-selective
    `@>`, about 40 ms with the expression index), or keep total counts bounded (`count` over the filtered,
@@ -51,7 +50,7 @@ Conditions that G4 (implementation) and AB-269 (search) must meet:
 4. **Storage budget**: plan for about 2x heap during coexistence (both representations) and about 1.65x
    after cutover, plus 210 MB GIN per 1M rows. Values below are for an accounts-shaped table with 12
    custom fields; the JSON key names (`cf_...`) repeat in every row and are the main overhead.
-5. **Trigger for coexistence** (`spike_sync_custom_fields`, see the dual-read design): +0.1 ms per row
+5. **Trigger for coexistence** (`ffcrm_sync_custom_fields`, see the dual-read design): +0.1 ms per row
    write, backfill at about 16k rows/s via trigger or about 43k rows/s set-based; use set-based batched
    backfill and keep the trigger for live Rails writes only.
 6. **Representation rules from §Type enforcement** (JSON numbers for numeric types, ISO strings for
@@ -74,7 +73,7 @@ sequential scans (the "`cf_*` no index" column above).
 | PG settings | `shared_buffers=1GB`, `work_mem=32MB`, `maintenance_work_mem=512MB`, `effective_cache_size=4GB`, `random_page_cost=1.1`, `jit=off`, `max_parallel_workers_per_gather=2`, `fsync=on`, `synchronous_commit=on` |
 | Host | 8 vCPU Intel Xeon Platinum 8559C, 31 GB RAM, Linux 6.8 (AWS VM), Docker |
 | Client | Java 21.0.12, PgJDBC (Spring Boot 3.5.16 BOM), JDBC autocommit, same host |
-| Rows | **10k, 100k and 1M** (all three run; `./gradlew benchmarkTest -Pbenchmark.rows=10000,100000,1000000`) |
+| Rows | **10k, 100k and 1M** (all three were run with the prototype benchmark harness, now removed by AB-271) |
 | Repetitions | 3 warm-up + 20 measured per query; 2,000 single-row writes per write test |
 | Wall time | 6 min 2 s for all three sizes (1M dominates) |
 
@@ -221,17 +220,17 @@ plus one `fields` lookup per row; caching the check_boxes list (dual-read design
 `jsonb_set` updates instead; see the dual-read design §6). The converter works but needs a SQL write
 transformer, which is easy to forget on new entities.
 
-## Query shapes for AB-269 (from `JsonbQueryShapesTest`)
+## Query shapes for AB-269 (promoted to `CustomFieldPredicatesIntegrationTest`)
 
 - **Criteria / Specification**: register functions with a Hibernate `FunctionContributor` (service file
   `META-INF/services/org.hibernate.boot.model.FunctionContributor`):
-  `spike_jsonb_contains` → pattern `(?1 @> cast(?2 as jsonb))`, used as
-  `cb.isTrue(cb.function("spike_jsonb_contains", Boolean.class, root.get("customFields"), cb.literal(json)))`.
+  `ffcrm_jsonb_contains` → pattern `(?1 @> cast(?2 as jsonb))`, used as
+  `cb.isTrue(cb.function("ffcrm_jsonb_contains", Boolean.class, root.get("customFields"), cb.literal(json)))`.
   Generated SQL: `... where (sja1_0.custom_fields @> cast(? as jsonb))=true`; plan uses the GIN index.
 - `@?` **cannot** be a `registerPattern`: Hibernate's `PatternRenderer` treats every `?` as a parameter
-  placeholder (`NumberFormatException`). A small `NamedSqmFunctionDescriptor` subclass
-  (`SpikeJsonbPathMatchDescriptor`) renders `(a @? cast(p as jsonpath))`.
-- **JPQL/HQL** works with the same registered functions (`where spike_jsonb_contains(a.customFields, :json) = true`).
+  placeholder (`NumberFormatException`). The prototype-only custom descriptor used to render
+  `(a @? cast(p as jsonpath))` was not promoted.
+- **JPQL/HQL** works with the same registered functions (`where ffcrm_jsonb_contains(a.customFields, :json) = true`).
 - **Native `@Query`** works for `@>` (`custom_fields @> cast(:json as jsonb)`), but not for `?`, `?|`,
   `?&` or `@?`: Hibernate parses `?` as an ordinal parameter. Use the registered functions, or plain
   JDBC/`JdbcTemplate`, for those.
@@ -240,19 +239,8 @@ transformer, which is easy to forget on new entities.
 
 ## Reproducing
 
-```bash
-cd spring
-export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 PATH=/usr/lib/jvm/java-21-openjdk-amd64/bin:$PATH
-# default: 10k and 100k, results in build/benchmark-results
-./gradlew benchmarkTest
-# what produced the committed results
-./gradlew benchmarkTest -Pbenchmark.rows=10000,100000,1000000 \
-  -Pbenchmark.outputDir=$PWD/../docs/migration/spikes/custom-fields-jsonb-benchmark
-# optional: -Pbenchmark.reps=20 -Pbenchmark.warmup=3
-```
-
-Needs Docker; pulls `postgres:16` (use `mirror.gcr.io/library/postgres:16` and `docker tag` if Docker Hub
-rate-limits). The harness creates the `pg_trgm` extension inside the throwaway container only.
+The prototype benchmark harness was removed by AB-271 after production promotion. The results above
+are retained as the recorded benchmark; the `benchmarkTest` task is no longer available.
 
 ## Limitations
 

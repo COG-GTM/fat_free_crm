@@ -36,7 +36,7 @@ PostgreSQL container image.
 
 Before V1 is released, rerun the generator to regenerate both artifacts. After V1 has
 been applied to any shared database, never regenerate V1; add an additive
-`V2+__*.sql` migration and refresh only the Rails schema fixture. Splitting the check
+`V2+` migration and refresh only the Rails schema fixture. Splitting the check
 into a frozen V1 comparison and a current Rails fixture comparison is follow-up work
 once V1 ships.
 
@@ -327,9 +327,35 @@ appended as a deterministic tiebreaker; the session category filter and preferen
 `DynamicAttributePredicates` is an extension point for non-static attributes (Rails custom fields,
 `cf_*`): the Ransack parser consults registered beans — in order — for root-level attributes after the
 static-column and association-traversal lookups, passing the predicate suffix string and the stripped
-raw values. AB-271 implements it; this branch ships no bean.
+raw values. AB-271 registers the production custom-field predicate bean.
 
 The Rails parity matrix `rake ffcrm:migration:search_matrix
 OUTPUT=spring/src/test/resources/search/accounts_search_matrix.json` (PostgreSQL only, seeds a fixed
 corpus in a rolled-back transaction, runs every case through `AccountsController#index`) feeds
 `RailsSearchParityTest`, which replays the same corpus and cases against `/api/v1/accounts`.
+
+## Custom-field JSONB backfill
+
+If V3 fails, run `flyway repair` and rerun. The Java migration keeps valid expected GIN indexes and rebuilds invalid or wrong-definition indexes concurrently.
+
+Writes normalize only supplied keys whose raw input differs from the current READ value. Omitted and unchanged values retain READ-mode semantics while still participating in required and date-pair validation.
+
+Normal Spring startup applies the custom-field JSONB synchronization trigger and GIN indexes. Once
+the trigger is live, run the restartable backfill with:
+
+```bash
+java -jar spring-api.jar --spring.profiles.active=backfill-custom-fields
+```
+
+The job processes ID ranges in independent transactions. Set
+`ffcrm.custom-fields.backfill.batch-size` to tune the default 10,000-row batch. Re-running is safe:
+already synchronized rows are skipped, and unresolved YAML markers are retried. The stdout and log
+report lists, per table, `rows`, `rowsBackfilled`, `drift`, `markersRemaining`, and each physical
+custom-field column's non-null count beside its JSONB-key non-null count. A zero `drift`,
+`markersRemaining`, and count difference indicates a successful verification. A non-zero exit
+indicates a failed report; investigate it with `CustomFieldConsistencyCheck` before cutover. The
+read/write precedence and cutover sequence are documented in
+`../docs/migration/spikes/custom-fields-dual-read-design.md` §7.
+
+The registry caches field definitions and physical `cf_*` columns, and re-hashes their contents after
+the configured TTL to detect metadata or schema changes.

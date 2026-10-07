@@ -1,0 +1,338 @@
+package com.fatfreecrm.customfields;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fatfreecrm.api.ApiExceptionHandler;
+import com.fatfreecrm.domain.Account;
+import com.fatfreecrm.domain.support.RailsModelType;
+import com.fatfreecrm.support.AbstractPostgresIntegrationTest;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Transactional
+class CustomFieldReadWriteIntegrationTest extends AbstractPostgresIntegrationTest {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private CustomFieldRegistry registry;
+
+    @Autowired
+    private CustomFieldReadService readService;
+
+    @Autowired
+    private CustomFieldWriteService writeService;
+
+    @Autowired
+    private CustomFieldConsistencyCheck consistencyCheck;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @AfterEach
+    void cleanUp() {
+        jdbcTemplate.update("DELETE FROM accounts WHERE name LIKE 'ab271-%'");
+        jdbcTemplate.update("DELETE FROM fields WHERE id IN (990301, 990302, 990303, 990311, 990321)");
+        jdbcTemplate.update("DELETE FROM field_groups WHERE id IN (990301, 990310, 990320)");
+        jdbcTemplate.update("DELETE FROM tags WHERE id = 990312");
+        jdbcTemplate.execute("ALTER TABLE accounts DROP COLUMN IF EXISTS cf_read_write");
+        jdbcTemplate.execute("ALTER TABLE accounts DROP COLUMN IF EXISTS cf_read_boxes");
+        jdbcTemplate.execute("ALTER TABLE accounts DROP COLUMN IF EXISTS cf_read_stale");
+        jdbcTemplate.execute("ALTER TABLE accounts DROP COLUMN IF EXISTS cf_read_required");
+        registry.invalidate();
+    }
+
+    @Test
+    void readsWritesValidatesAndComparesTheDualReadWithJsonb() {
+        jdbcTemplate.execute("ALTER TABLE accounts ADD COLUMN cf_read_write text");
+        jdbcTemplate.update(
+            "INSERT INTO field_groups (id, klass_name, name, \"position\", created_at, updated_at) "
+                + "VALUES (990301, 'Account', 'read/write test', 1, now(), now())");
+        jdbcTemplate.update(
+            "INSERT INTO fields (id, type, field_group_id, \"position\", name, label, \"as\", "
+                + "disabled, required, created_at, updated_at) VALUES "
+                + "(990301, 'CustomField', 990301, 1, 'cf_read_write', 'Read/write', 'string', "
+                + "false, false, now(), now()), "
+                + "(990302, 'CustomField', 990301, 2, 'cf_json_only', 'JSON only', 'string', "
+                + "false, false, now(), now())");
+        Long id = jdbcTemplate.queryForObject(
+            "INSERT INTO accounts (name, cf_read_write) VALUES ('ab271-read-write', 'initial') RETURNING id",
+            Long.class);
+        registry.invalidate();
+        Account account = entityManager.find(Account.class, id);
+
+        assertThat(readService.valuesFor(account)).containsEntry("cf_read_write", "initial");
+        assertThat(readService.railsJsonValues(account)).containsEntry("cf_read_write", "initial");
+        Map<String, Object> input = new LinkedHashMap<>();
+        input.put("cf_json_only", "json-only");
+        input.put("cf_read_write", "written");
+        assertThat(writeService.write(account, input))
+            .containsEntry("cf_json_only", "json-only")
+            .containsEntry("cf_read_write", "written");
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT cf_read_write FROM accounts WHERE id = ?", String.class, id)).isEqualTo("written");
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT custom_fields ->> 'cf_json_only' FROM accounts WHERE id = ?", String.class, id))
+            .isEqualTo("json-only");
+        assertThat(writeService.write(account, java.util.Collections.singletonMap("cf_json_only", null)))
+            .doesNotContainKey("cf_json_only");
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT jsonb_exists(custom_fields, 'cf_json_only') FROM accounts WHERE id = ?",
+            Boolean.class,
+            id
+        )).isFalse();
+        assertThat(consistencyCheck.check(RailsModelType.ACCOUNT).ok()).isTrue();
+
+        entityManager.flush();
+        jdbcTemplate.execute("ALTER TABLE accounts DISABLE TRIGGER ffcrm_sync_custom_fields");
+        jdbcTemplate.update(
+            "UPDATE accounts SET custom_fields = '{\"cf_read_write\":\"stale\"}'::jsonb WHERE id = ?", id);
+        jdbcTemplate.update(
+            "INSERT INTO accounts (name, custom_fields) VALUES "
+                + "('ab271-null-column-drift', '{\"cf_read_write\":\"stale-null\"}'::jsonb)");
+        jdbcTemplate.execute("ALTER TABLE accounts ENABLE TRIGGER ffcrm_sync_custom_fields");
+        entityManager.clear();
+
+        var report = consistencyCheck.check(RailsModelType.ACCOUNT).tables().get("accounts");
+        Long nullColumnId = jdbcTemplate.queryForObject(
+            "SELECT id FROM accounts WHERE name = 'ab271-null-column-drift'", Long.class);
+        assertThat(report.driftedRows()).isEqualTo(2);
+        assertThat(report.driftedRowIds()).contains(id, nullColumnId);
+        assertThat(report.keyDriftCounts()).containsEntry("cf_read_write", 2L);
+
+        assertThatThrownBy(() -> writeService.write(
+            entityManager.find(Account.class, id), Map.of("cf_unknown", "value")))
+            .isInstanceOfSatisfying(CustomFieldValidationException.class, exception ->
+                assertThat(exception.errors()).containsKey("cf_unknown"));
+    }
+
+    @Test
+    void malformedCheckboxYamlIsReturnedByJsonbReadsAndConsistencyCheck() {
+        jdbcTemplate.execute("ALTER TABLE accounts ADD COLUMN cf_read_boxes text");
+        jdbcTemplate.execute("ALTER TABLE accounts ADD COLUMN cf_read_write text");
+        jdbcTemplate.update(
+            "INSERT INTO field_groups (id, klass_name, name, \"position\", created_at, updated_at) "
+                + "VALUES (990301, 'Account', 'read malformed YAML test', 1, now(), now())");
+        jdbcTemplate.update(
+            "INSERT INTO fields (id, type, field_group_id, \"position\", name, label, \"as\", "
+                + "disabled, required, created_at, updated_at) VALUES "
+                + "(990302, 'CustomField', 990301, 1, 'cf_read_write', 'Read/write', 'string', "
+                + "false, false, now(), now()), "
+                + "(990303, 'CustomField', 990301, 2, 'cf_read_boxes', 'Read boxes', 'check_boxes', "
+                + "false, false, now(), now())");
+        String raw = "---\n- \"\\uZZZZ\"\n";
+        Long id = jdbcTemplate.queryForObject(
+            "INSERT INTO accounts (name, cf_read_boxes, cf_read_write) "
+                + "VALUES ('ab271-read-malformed-yaml', ?, 'initial') RETURNING id",
+            Long.class,
+            raw);
+        registry.invalidate();
+        entityManager.clear();
+        Account account = entityManager.find(Account.class, id);
+
+        assertThat(readService.valuesFor(account)).containsEntry("cf_read_boxes", raw);
+        assertThat(readService.railsJsonValues(account)).containsEntry("cf_read_boxes", raw);
+        assertThat(writeService.write(account, Map.of("cf_read_write", "changed")))
+            .containsEntry("cf_read_boxes", raw)
+            .containsEntry("cf_read_write", "changed");
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT cf_read_boxes FROM accounts WHERE id = ?", String.class, id)).isEqualTo(raw);
+        assertThat(consistencyCheck.check(RailsModelType.ACCOUNT).ok()).isTrue();
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void preservesUnchangedRailsCheckboxValuesAndNormalizesChangedValues() {
+        jdbcTemplate.execute("ALTER TABLE accounts ADD COLUMN cf_read_boxes text");
+        jdbcTemplate.execute("ALTER TABLE accounts ADD COLUMN cf_read_write text");
+        jdbcTemplate.update(
+            "INSERT INTO field_groups (id, klass_name, name, \"position\", created_at, updated_at) "
+                + "VALUES (990301, 'Account', 'read/write checkbox test', 1, now(), now())");
+        jdbcTemplate.update(
+            "INSERT INTO fields (id, type, field_group_id, \"position\", name, label, \"as\", "
+                + "disabled, required, created_at, updated_at) VALUES "
+                + "(990302, 'CustomField', 990301, 1, 'cf_read_write', 'Read/write', 'string', "
+                + "false, false, now(), now()), "
+                + "(990303, 'CustomField', 990301, 2, 'cf_read_boxes', 'Read boxes', 'check_boxes', "
+                + "false, false, now(), now())");
+        String railsYaml = "---\n- alpha\n- alpha\n- ''\n";
+        Long id = jdbcTemplate.queryForObject(
+            "INSERT INTO accounts (name, cf_read_boxes, cf_read_write, updated_at) "
+                + "VALUES ('ab271-read-checkbox-round-trip', ?, 'initial', TIMESTAMP '2020-01-02 03:04:05') "
+                + "RETURNING id",
+            Long.class,
+            railsYaml);
+        registry.invalidate();
+        entityManager.clear();
+        Account account = entityManager.find(Account.class, id);
+        String originalJsonValue = jdbcTemplate.queryForObject(
+            "SELECT (custom_fields -> 'cf_read_boxes')::text FROM accounts WHERE id = ?",
+            String.class,
+            id);
+
+        assertThat(readService.valuesFor(account).get("cf_read_boxes"))
+            .isEqualTo(List.of("alpha", "alpha", ""));
+        assertThat(writeService.write(account, Map.of("cf_read_write", "changed")))
+            .containsEntry("cf_read_write", "changed")
+            .containsEntry("cf_read_boxes", List.of("alpha", "alpha", ""));
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT cf_read_boxes FROM accounts WHERE id = ?", String.class, id)).isEqualTo(railsYaml);
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT (custom_fields -> 'cf_read_boxes')::text FROM accounts WHERE id = ?", String.class, id))
+            .isEqualTo(originalJsonValue);
+
+        String updatedAt = jdbcTemplate.queryForObject(
+            "SELECT updated_at::text FROM accounts WHERE id = ?", String.class, id);
+        String xmin = jdbcTemplate.queryForObject(
+            "SELECT xmin::text FROM accounts WHERE id = ?", String.class, id);
+        entityManager.clear();
+        account = entityManager.find(Account.class, id);
+        assertThat(writeService.write(account, Map.of("cf_read_boxes", List.of("alpha", "alpha", ""))))
+            .containsEntry("cf_read_boxes", List.of("alpha", "alpha", ""));
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT cf_read_boxes FROM accounts WHERE id = ?", String.class, id)).isEqualTo(railsYaml);
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT updated_at::text FROM accounts WHERE id = ?", String.class, id)).isEqualTo(updatedAt);
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT xmin::text FROM accounts WHERE id = ?", String.class, id)).isEqualTo(xmin);
+
+        entityManager.clear();
+        account = entityManager.find(Account.class, id);
+        assertThat(writeService.write(
+            account, Map.of("cf_read_boxes", List.of("alpha", "beta", "beta", ""))))
+            .containsEntry("cf_read_boxes", List.of("alpha", "beta"));
+        String normalizedYaml = jdbcTemplate.queryForObject(
+            "SELECT cf_read_boxes FROM accounts WHERE id = ?", String.class, id);
+        assertThat(new CheckBoxesYamlCodec().decode(normalizedYaml))
+            .containsExactly("alpha", "beta");
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void ignoresCurrentValuesFromTagScopedGroupsThatDoNotApply() {
+        jdbcTemplate.execute("ALTER TABLE accounts ADD COLUMN cf_read_write text");
+        jdbcTemplate.execute("ALTER TABLE accounts ADD COLUMN cf_read_stale text");
+        jdbcTemplate.update("INSERT INTO tags (id, name) VALUES (990312, 'ab271-tag-scope')");
+        jdbcTemplate.update(
+            "INSERT INTO field_groups (id, klass_name, name, \"position\", created_at, updated_at, tag_id) "
+                + "VALUES (990301, 'Account', 'read/write test', 1, now(), now(), NULL), "
+                + "(990310, 'Account', 'stale tag group', 1, now(), now(), 990312)");
+        jdbcTemplate.update(
+            "INSERT INTO fields (id, type, field_group_id, \"position\", name, label, \"as\", "
+                + "disabled, required, created_at, updated_at) VALUES "
+                + "(990302, 'CustomField', 990301, 1, 'cf_read_write', 'Read/write', 'string', "
+                + "false, false, now(), now()), "
+                + "(990311, 'CustomField', 990310, 1, 'cf_read_stale', 'Stale', 'string', "
+                + "false, false, now(), now())");
+        Long id = jdbcTemplate.queryForObject(
+            "INSERT INTO accounts (name, cf_read_write, cf_read_stale) "
+                + "VALUES ('ab271-stale-tag-group', 'initial', 'stale-tagged-value') RETURNING id",
+            Long.class);
+        registry.invalidate();
+        entityManager.clear();
+        Account account = entityManager.find(Account.class, id);
+
+        assertThat(readService.valuesFor(account)).containsEntry("cf_read_stale", "stale-tagged-value");
+        assertThat(writeService.write(account, Map.of("cf_read_write", "changed")))
+            .containsEntry("cf_read_write", "changed");
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT cf_read_stale FROM accounts WHERE id = ?", String.class, id)).isEqualTo("stale-tagged-value");
+
+        assertThatThrownBy(() -> writeService.write(
+            account, Map.of("cf_read_stale", "stale-tagged-value")))
+            .isInstanceOfSatisfying(CustomFieldValidationException.class, exception ->
+                assertThat(exception.errors()).containsKey("cf_read_stale"));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void nullForAnAbsentOptionalFieldDoesNotIssueAnUpdate() {
+        jdbcTemplate.execute("ALTER TABLE accounts ADD COLUMN cf_read_write text");
+        jdbcTemplate.update(
+            "INSERT INTO field_groups (id, klass_name, name, \"position\", created_at, updated_at) "
+                + "VALUES (990301, 'Account', 'read/write test', 1, now(), now())");
+        jdbcTemplate.update(
+            "INSERT INTO fields (id, type, field_group_id, \"position\", name, label, \"as\", "
+                + "disabled, required, created_at, updated_at) VALUES "
+                + "(990302, 'CustomField', 990301, 1, 'cf_read_write', 'Read/write', 'string', "
+                + "false, false, now(), now())");
+        Long id = jdbcTemplate.queryForObject(
+            "INSERT INTO accounts (name, cf_read_write, updated_at) "
+                + "VALUES ('ab271-null-optional', NULL, TIMESTAMP '2020-01-02 03:04:05') RETURNING id",
+            Long.class);
+        registry.invalidate();
+        entityManager.clear();
+        Account account = entityManager.find(Account.class, id);
+        String updatedAt = jdbcTemplate.queryForObject(
+            "SELECT updated_at::text FROM accounts WHERE id = ?", String.class, id);
+        String xmin = jdbcTemplate.queryForObject(
+            "SELECT xmin::text FROM accounts WHERE id = ?", String.class, id);
+
+        assertThat(readService.valuesFor(account)).doesNotContainKey("cf_read_write");
+        assertThat(writeService.write(account, Collections.singletonMap("cf_read_write", null)))
+            .doesNotContainKey("cf_read_write");
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT updated_at::text FROM accounts WHERE id = ?", String.class, id)).isEqualTo(updatedAt);
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT xmin::text FROM accounts WHERE id = ?", String.class, id)).isEqualTo(xmin);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void nullForAnAbsentRequiredFieldReturns422WithoutAnUpdate() throws Exception {
+        jdbcTemplate.execute("ALTER TABLE accounts ADD COLUMN cf_read_required text");
+        jdbcTemplate.update(
+            "INSERT INTO field_groups (id, klass_name, name, \"position\", created_at, updated_at) "
+                + "VALUES (990320, 'Account', 'required field test', 1, now(), now())");
+        jdbcTemplate.update(
+            "INSERT INTO fields (id, type, field_group_id, \"position\", name, label, \"as\", "
+                + "disabled, required, created_at, updated_at) VALUES "
+                + "(990321, 'CustomField', 990320, 1, 'cf_read_required', 'Required', 'string', "
+                + "false, true, now(), now())");
+        Long id = jdbcTemplate.queryForObject(
+            "INSERT INTO accounts (name, cf_read_required, updated_at) "
+                + "VALUES ('ab271-null-required', NULL, TIMESTAMP '2020-01-02 03:04:05') RETURNING id",
+            Long.class);
+        registry.invalidate();
+        entityManager.clear();
+        Account account = entityManager.find(Account.class, id);
+        String updatedAt = jdbcTemplate.queryForObject(
+            "SELECT updated_at::text FROM accounts WHERE id = ?", String.class, id);
+        String xmin = jdbcTemplate.queryForObject(
+            "SELECT xmin::text FROM accounts WHERE id = ?", String.class, id);
+
+        CustomFieldValidationException exception = assertThrows(
+            CustomFieldValidationException.class,
+            () -> writeService.write(account, Collections.singletonMap("cf_read_required", null)));
+        ResponseEntity<Object> response = new ApiExceptionHandler().handleCustomFieldValidation(exception);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(response.getBody()).isEqualTo(Map.of(
+            "errors", Map.of("cf_read_required", List.of("Required is required."))));
+        assertThat(objectMapper.writeValueAsString(response.getBody()))
+            .isEqualTo("{\"errors\":{\"cf_read_required\":[\"Required is required.\"]}}");
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT updated_at::text FROM accounts WHERE id = ?", String.class, id)).isEqualTo(updatedAt);
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT xmin::text FROM accounts WHERE id = ?", String.class, id)).isEqualTo(xmin);
+    }
+}
