@@ -14,14 +14,32 @@ describe FatFreeCRM::SecretTokenGenerator, ".setup!" do
   before do
     allow(ENV).to receive(:[]).and_call_original
     allow(ENV).to receive(:[]).with("FFCRM_ENTITY_FIXTURE").and_return(flag)
+    allow(Setting).to receive(:yaml_settings).and_return(Setting.yaml_settings.except(:secret_token))
+    Setting.where(name: "secret_token").delete_all
+    Setting.clear_cache!
+  end
+
+  after { Setting.clear_cache! }
+
+  around do |example|
+    original_secret_key_base = FatFreeCRM::Application.config.secret_key_base
+    example.run
+  ensure
+    FatFreeCRM::Application.config.secret_key_base = original_secret_key_base
   end
 
   context "when FFCRM_ENTITY_FIXTURE is not set" do
     let(:flag) { nil }
 
     it "generates and persists the secret token after initialization" do
-      expect(FatFreeCRM::SecretTokenGenerator).to receive(:setup!).once
+      expect(FatFreeCRM::SecretTokenGenerator).to receive(:setup!).once.and_call_original
+      expect(Setting.secret_token).to be_blank
+
       load initializer
+
+      expect(Setting.secret_token).to match(/\A\h{128}\z/)
+      expect(Setting.where(name: "secret_token").count).to eq(1)
+      expect(FatFreeCRM::Application.config.secret_key_base).to eq(Setting.secret_token)
     end
   end
 
@@ -29,8 +47,12 @@ describe FatFreeCRM::SecretTokenGenerator, ".setup!" do
     let(:flag) { "0" }
 
     it "still sets up the secret token" do
-      expect(FatFreeCRM::SecretTokenGenerator).to receive(:setup!).once
+      expect(FatFreeCRM::SecretTokenGenerator).to receive(:setup!).once.and_call_original
+
       load initializer
+
+      expect(Setting.secret_token).to match(/\A\h{128}\z/)
+      expect(FatFreeCRM::Application.config.secret_key_base).to eq(Setting.secret_token)
     end
   end
 

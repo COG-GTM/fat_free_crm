@@ -52,11 +52,9 @@ RSpec.describe Rake::Task do
   end
 
   it "refuses to run while a join table already has rows" do
-    user = create(:user)
-    group = Group.create!(name: "Populated")
-    group.users << user
+    ActiveRecord::Base.connection.execute("INSERT INTO groups_users (group_id, user_id) VALUES (42, 42)")
 
-    expect { task.invoke }.to raise_error(RuntimeError, /\A(users|groups|groups_users) must be empty before fixture generation\z/)
+    expect { task.invoke }.to raise_error(RuntimeError, "groups_users must be empty before fixture generation")
     expect(File).not_to exist(output_path)
   end
 
@@ -64,6 +62,7 @@ RSpec.describe Rake::Task do
     paper_trail_enabled = PaperTrail.enabled?
     expect(add_column_callback_registered?).to be(true)
     expect(PaperTrail.request.whodunnit).to be_nil
+    wall_clock = Time.at(Process.clock_gettime(Process::CLOCK_REALTIME))
 
     task.invoke
 
@@ -71,20 +70,30 @@ RSpec.describe Rake::Task do
     expect(PaperTrail.enabled?).to eq(paper_trail_enabled)
     expect(PaperTrail.request.whodunnit).to be_nil
     expect(add_column_callback_registered?).to be(true)
-    expect(Time.current).to be > Time.utc(2025, 1, 3)
+    expect(Time.current).to be_within(5.minutes).of(wall_clock)
     expect(CustomField.count).to eq(0)
     expect(Account.column_names).not_to include("cf_fixture_custom")
   end
 
-  it "restores the CustomField column callback even when generation fails midway" do
-    allow(PaperTrail).to receive(:enabled=).and_call_original
-    allow(PaperTrail).to receive(:enabled=).with(true).and_raise("boom")
+  it "rolls back and restores PaperTrail, the clock and the callback when generation fails midway" do
+    paper_trail_enabled = PaperTrail.enabled?
+    wall_clock = Time.at(Process.clock_gettime(Process::CLOCK_REALTIME))
+    accounts_at_failure = nil
+    allow(ResearchTool).to receive(:create!) do
+      accounts_at_failure = Account.count
+      raise "boom"
+    end
 
     expect { task.invoke }.to raise_error(RuntimeError, "boom")
 
+    expect(accounts_at_failure).to be_positive
     expect(add_column_callback_registered?).to be(true)
+    expect(PaperTrail.enabled?).to eq(paper_trail_enabled)
+    expect(PaperTrail.request.whodunnit).to be_nil
+    expect(Time.current).to be_within(5.minutes).of(wall_clock)
     expect(Account.count).to eq(0)
     expect(Setting.count).to eq(0)
     expect(File).not_to exist(output_path)
+    expect(File).not_to exist(serialized_path)
   end
 end
