@@ -2929,5 +2929,3 @@ ALTER TABLE ONLY public.solid_queue_scheduled_executions
 --
 -- PostgreSQL database dump complete
 --
-
-

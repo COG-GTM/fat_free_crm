@@ -51,6 +51,7 @@ namespace :ffcrm do
 
         # pg_dump's psql-only restrict meta-commands are nondeterministic and break Flyway.
         dump = dump.lines.grep_v(/\A\\(?:un)?restrict /).join
+        dump = "#{dump.rstrip}\n"
         File.write(output, dump)
       else
         ActiveRecord::Tasks::DatabaseTasks.structure_dump(config, output)

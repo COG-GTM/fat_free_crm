@@ -93,7 +93,7 @@ describe "ffcrm:migration rake tasks" do # rubocop:disable RSpec/DescribeClass
     )
     allow(ActiveRecord::Base).to receive(:connection_db_config).and_return(config)
     status = instance_double(Process::Status, success?: true, exitstatus: 0)
-    dump = "\\restrict random-key\nCREATE TABLE contacts;\n\\unrestrict random-key\n"
+    dump = "\\restrict random-key\nCREATE TABLE contacts;\n\\unrestrict random-key\n\n"
     allow(Open3).to receive(:capture2).and_return([dump, status])
 
     run('ffcrm:migration:baseline_dump', 'OUTPUT' => output_path.to_s)

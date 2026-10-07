@@ -1,6 +1,6 @@
 # Custom field (`cf_*`) column census
 
-- Generated: 2026-10-07T18:44:04Z
+- Generated: 2026-10-07T18:48:12Z
 - Adapter: PostgreSQL
 - Schema version: 20260413041448
 - Row counts included: true
