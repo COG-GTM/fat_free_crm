@@ -1,0 +1,12 @@
+include:
+  - ../docker-compose.yml
+
+services:
+  gateway:
+    image: nginx:1.27-alpine
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web
