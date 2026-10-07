@@ -226,8 +226,10 @@ class AuthorizationEdgeCasesTest {
         assertThat(grants(shared)).containsExactly(UNRELATED);
         assertThat(grants(other)).containsExactly(UNRELATED);
 
+        List<Map<String, Object>> rowsBefore = rows(shared);
         permissionService.updateSharing(shared, null, null, null);
         assertThat(grants(shared)).containsExactly(UNRELATED);
+        assertThat(rows(shared)).as("same row ids and timestamps").isEqualTo(rowsBefore);
         assertThat(jdbcTemplate.queryForObject("SELECT access FROM accounts WHERE id = ?", String.class,
             shared.getId())).isEqualTo("Shared");
 
@@ -335,6 +337,13 @@ class AuthorizationEdgeCasesTest {
         return jdbcTemplate.queryForList(
             "SELECT user_id FROM permissions WHERE asset_type = 'Account' AND asset_id = ? ORDER BY user_id",
             Long.class, account.getId());
+    }
+
+    private List<Map<String, Object>> rows(Account account) {
+        return jdbcTemplate.queryForList(
+            "SELECT id, user_id, created_at, updated_at FROM permissions"
+                + " WHERE asset_type = 'Account' AND asset_id = ? ORDER BY id",
+            account.getId());
     }
 
     private boolean visibleTo(long userId, Long accountId) {

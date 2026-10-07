@@ -2,6 +2,10 @@ package com.fatfreecrm.api;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -9,6 +13,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fatfreecrm.security.SecurityConfig;
+import com.fatfreecrm.security.authz.AdminOnly;
+import com.fatfreecrm.security.authz.MethodSecurityConfig;
 import com.fatfreecrm.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -18,14 +24,15 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authorization.AuthorizationDeniedException;
-import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.access.PermissionEvaluator;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,7 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 @WebMvcTest(controllers = ApiExceptionHandlerTest.TestController.class)
-@Import({SecurityConfig.class, ApiExceptionHandlerTest.TestController.class})
+@Import({SecurityConfig.class, MethodSecurityConfig.class, ApiExceptionHandlerTest.TestController.class})
 class ApiExceptionHandlerTest {
 
     @MockitoBean
@@ -41,6 +48,9 @@ class ApiExceptionHandlerTest {
 
     @MockitoBean
     private JwtDecoder jwtDecoder;
+
+    @MockitoBean
+    private PermissionEvaluator permissionEvaluator;
 
     @Autowired
     private MockMvc mockMvc;
@@ -105,10 +115,21 @@ class ApiExceptionHandlerTest {
 
     @Test
     @WithMockUser
-    void methodSecurityDenialIsAlsoAForbiddenProblem() throws Exception {
-        assertProblem(mockMvc.perform(get("/test/authorization-denied")), 403)
+    void adminOnlyDenialRaisedByMethodSecurityIsAForbiddenProblem() throws Exception {
+        assertProblem(mockMvc.perform(get("/test/admin-only")), 403)
+            .andExpect(jsonPath("$.detail").value("You are not allowed to access this resource."))
+            .andExpect(content().string(not(containsString("hasRole"))));
+    }
+
+    @Test
+    @WithMockUser
+    void hasPermissionDenialRaisedByMethodSecurityIsAForbiddenProblem() throws Exception {
+        when(permissionEvaluator.hasPermission(any(), eq(7L), eq("Account"), eq("read"))).thenReturn(false);
+
+        assertProblem(mockMvc.perform(get("/test/records/7")), 403)
             .andExpect(jsonPath("$.detail").value("You are not allowed to access this resource."))
             .andExpect(content().string(not(containsString("hasPermission"))));
+        verify(permissionEvaluator).hasPermission(any(), eq(7L), eq("Account"), eq("read"));
     }
 
     private ResultActions assertProblem(
@@ -153,10 +174,16 @@ class ApiExceptionHandlerTest {
             throw new AccessDeniedException("internal rule name");
         }
 
-        @GetMapping("/test/authorization-denied")
-        String authorizationDenied() {
-            throw new AuthorizationDeniedException("hasPermission(#id, 'Account', 'read')",
-                new AuthorizationDecision(false));
+        @GetMapping("/test/admin-only")
+        @AdminOnly
+        String adminOnly() {
+            return "admin";
+        }
+
+        @GetMapping("/test/records/{id}")
+        @PreAuthorize("hasPermission(#id, 'Account', 'read')")
+        String record(@PathVariable("id") Long id) {
+            return "record " + id;
         }
     }
 
