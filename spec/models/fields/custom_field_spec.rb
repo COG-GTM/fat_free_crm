@@ -139,4 +139,88 @@ describe CustomField do
       event.custom_validator(foo)
     end
   end
+
+  describe "column_options" do
+    it "returns symbol-keyed options for a decimal field" do
+      options = build(:custom_field, as: "decimal").send(:column_options)
+
+      expect(options).to eq(precision: 15, scale: 2)
+      expect(options.keys).to all(be_a(Symbol))
+    end
+
+    it "symbolizes the string keys held by the indifferent-access field type registry" do
+      registry_keys = Field.field_types["decimal"][:column_options].keys
+      expect(registry_keys).to all(be_a(String))
+
+      options = build(:custom_field, as: "decimal").send(:column_options)
+      expect(options.keys.map(&:to_s)).to eq(registry_keys)
+    end
+
+    it "returns an empty hash for field types without column options" do
+      %w[string text email url tel select radio_buttons check_boxes boolean date datetime integer float].each do |as|
+        expect(build(:custom_field, as: as).send(:column_options)).to eq({}), as
+      end
+    end
+  end
+
+  describe "against the live database" do
+    let(:field_group) { create(:field_group, klass_name: "Contact", tag: nil) }
+
+    after do
+      %w[cf_live_amount cf_live_interests cf_live_count].each do |name|
+        Contact.connection.remove_column(:contacts, name) if Contact.connection.column_exists?(:contacts, name)
+      end
+      Contact.reset_column_information
+    end
+
+    it "adds a decimal column with the configured precision and scale" do
+      create(:custom_field, label: "Live amount", as: "decimal", field_group: field_group)
+
+      column = Contact.columns_hash.fetch("cf_live_amount")
+      expect(column.type).to eq(:decimal)
+      expect(column.precision).to eq(15)
+      expect(column.scale).to eq(2)
+    end
+
+    it "round-trips a decimal value through the new column" do
+      create(:custom_field, label: "Live amount", as: "decimal", field_group: field_group)
+      contact = create(:contact)
+
+      contact.update!(cf_live_amount: BigDecimal("12345.67"))
+
+      expect(Contact.find(contact.id).cf_live_amount).to eq(BigDecimal("12345.67"))
+    end
+
+    it "stores check_boxes values as a YAML-serialized array" do
+      create(:custom_field, label: "Live interests", as: "check_boxes",
+                            collection: %w[Email Events], field_group: field_group)
+      Contact.serialize_custom_fields!
+      contact = create(:contact)
+
+      contact.update!(cf_live_interests: %w[Email Events])
+
+      expect(Contact.find(contact.id).cf_live_interests).to eq(%w[Email Events])
+      raw = Contact.connection.select_value(Contact.where(id: contact.id).select(:cf_live_interests).to_sql)
+      expect(YAML.safe_load(raw)).to eq(%w[Email Events])
+    end
+
+    it "reads an unset check_boxes field as an empty array" do
+      create(:custom_field, label: "Live interests", as: "check_boxes", field_group: field_group)
+      Contact.serialize_custom_fields!
+      contact = create(:contact)
+
+      expect(Contact.find(contact.id).cf_live_interests).to eq([])
+    end
+
+    it "changes the column type for a safe transition without losing data" do
+      field = create(:custom_field, label: "Live count", as: "integer", field_group: field_group)
+      contact = create(:contact)
+      contact.update!(cf_live_count: 7)
+
+      field.update!(as: "float")
+
+      expect(Contact.columns_hash.fetch("cf_live_count").type).to eq(:float)
+      expect(Contact.find(contact.id).cf_live_count).to eq(7.0)
+    end
+  end
 end
