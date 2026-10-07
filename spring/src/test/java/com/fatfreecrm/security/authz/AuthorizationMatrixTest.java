@@ -313,6 +313,15 @@ class AuthorizationMatrixTest {
                 .containsExactly(-salesId, actors.get("shared_user").id());
             assertThat(visibleTo("shared_user", id)).isTrue();
             assertThat(visibleTo("group_member", id)).isTrue();
+
+            Account reloaded = accountRepository.findById(id).orElseThrow();
+            permissionService.setAccess(reloaded, "Private");
+            reloaded.setAccess("Shared");
+            permissionService.setUserIds(reloaded, List.of(actors.get("unrelated").id()));
+            assertThat(jdbcTemplate.queryForObject("SELECT access FROM accounts WHERE id = ?", String.class, id))
+                .isEqualTo("Shared");
+            assertThat(visibleTo("unrelated", id)).isTrue();
+            assertThat(visibleTo("group_member", id)).isFalse();
         } finally {
             jdbcTemplate.update("DELETE FROM permissions WHERE asset_type = 'Account' AND asset_id = ?", id);
             jdbcTemplate.update("DELETE FROM accounts WHERE id = ?", id);

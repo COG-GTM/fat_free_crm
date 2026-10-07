@@ -67,12 +67,24 @@ public class PermissionService {
         applyAccess(entity, managed(entity), access);
     }
 
+    /**
+     * Like Rails {@code user_ids=}, decides on the caller's in-memory {@code access}, which is persisted with the rows.
+     */
     public void setUserIds(CrmEntity entity, Collection<?> userIds) {
-        replaceUsers(managed(entity), userIds);
+        replaceUsers(withCallerAccess(entity), userIds);
     }
 
+    /**
+     * Like Rails {@code group_ids=}, decides on the caller's in-memory {@code access}, which is persisted with the rows.
+     */
     public void setGroupIds(CrmEntity entity, Collection<?> groupIds) {
-        replaceGroups(managed(entity), groupIds);
+        replaceGroups(withCallerAccess(entity), groupIds);
+    }
+
+    private CrmEntity withCallerAccess(CrmEntity entity) {
+        CrmEntity managed = managed(entity);
+        managed.setAccess(entity.getAccess());
+        return managed;
     }
 
     private void applyAccess(CrmEntity entity, CrmEntity managed, String access) {
