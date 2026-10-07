@@ -31,6 +31,47 @@ class JsonNormalizerTest {
     }
 
     @Test
+    void removingIgnoredArrayItemsDoesNotIgnoreShiftedSuccessors() throws Exception {
+        JsonNode options = JSON.readTree("""
+            {"ignore":["/items/0"]}
+            """);
+        CaseResult result = compare(
+            JSON.readTree("""
+                {"items":["a","b"]}
+                """),
+            JSON.readTree("""
+                {"items":["x","c"]}
+                """),
+            options
+        );
+
+        assertEquals(CaseResult.Outcome.DIFF, result.outcome());
+        assertEquals(1, result.differences().size());
+        assertEquals("/items/0", result.differences().getFirst().pointer());
+        assertEquals(JSON.readTree("\"b\""), result.differences().getFirst().railsValue());
+        assertEquals(JSON.readTree("\"c\""), result.differences().getFirst().springValue());
+    }
+
+    @Test
+    void ignoresTheEntireBodyWhenTheRootPointerIsIgnored() throws Exception {
+        JsonNode options = JSON.readTree("""
+            {"ignore":[""]}
+            """);
+        CaseResult result = compare(
+            JSON.readTree("""
+                {"value":"rails"}
+                """),
+            JSON.readTree("""
+                {"value":"spring"}
+                """),
+            options
+        );
+
+        assertEquals(CaseResult.Outcome.CLEAN, result.outcome());
+        assertTrue(result.differences().isEmpty());
+    }
+
+    @Test
     void sortsUnorderedArraysCanonicallyAndPairsByDeclaredKey() throws Exception {
         JsonNode options = JSON.readTree("""
             {"unorderedArrays":["/tags","/values",{"pointer":"/items","key":"/id"}]}
@@ -135,6 +176,30 @@ class JsonNormalizerTest {
             """);
         JsonNormalizer.NormalizationResult normalized =
             JsonNormalizer.normalizeWithDiagnostics(body, options, "rails");
+        assertTrue(normalized.missingKeys().isEmpty());
+
+        CaseResult result = compare(body, body, options);
+        assertEquals(CaseResult.Outcome.CLEAN, result.outcome());
+        assertTrue(result.differences().isEmpty());
+    }
+
+    @Test
+    void ignoredReceivedKeyPointersSuppressMissingKeyDiagnosticsAfterSorting() throws Exception {
+        JsonNode options = JSON.readTree("""
+            {
+              "unorderedArrays":[{"pointer":"/items","key":"/id"}],
+              "ignore":["/items/0/id"]
+            }
+            """);
+        JsonNode body = JSON.readTree("""
+            {"items":[{"id":1,"name":"a"},{"id":2,"name":"b"}]}
+            """);
+
+        JsonNormalizer.NormalizationResult normalized =
+            JsonNormalizer.normalizeWithDiagnostics(body, options, "rails");
+        assertEquals("""
+            {"items":[{"id":2,"name":"b"},{"name":"a"}]}
+            """.trim(), normalized.json().toString());
         assertTrue(normalized.missingKeys().isEmpty());
 
         CaseResult result = compare(body, body, options);

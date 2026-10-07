@@ -13,9 +13,11 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -43,7 +45,16 @@ class ContractHarnessTest {
 
     @Test
     void loadsInitialCasesFromClasspath() throws Exception {
-        assertEquals(6, CaseLoader.load().size());
+        List<ContractCase> cases = CaseLoader.load();
+        assertEquals(7, cases.size());
+        ContractCase authSelfCheck = cases.stream()
+            .filter(contractCase -> contractCase.id().equals("auth-login-spring-self-check"))
+            .findFirst()
+            .orElseThrow();
+        assertEquals("/api/v1/users/me", authSelfCheck.rails().path());
+        assertEquals(ContractCase.Target.SPRING, authSelfCheck.rails().target());
+        assertEquals("/api/v1/users/me", authSelfCheck.spring().path());
+        assertEquals(ContractCase.Target.SPRING, authSelfCheck.spring().target());
         assertEquals(5, FixtureUsers.load().size());
     }
 
@@ -140,9 +151,11 @@ class ContractHarnessTest {
 
     @Test
     void springJwtAdapterSendsBearerAndMarksMissingLoginUnavailable() throws Exception {
+        AtomicInteger loginRequests = new AtomicInteger();
         AtomicReference<String> authorization = new AtomicReference<>();
         try (StubServer server = new StubServer(exchange -> {
             if (exchange.getRequestURI().getPath().equals("/api/v1/auth/login")) {
+                loginRequests.incrementAndGet();
                 StubServer.respond(exchange, 200, "application/json", """
                     {"accessToken":"access-123","refreshToken":"refresh","tokenType":"Bearer","expiresIn":3600}
                     """);
@@ -155,12 +168,24 @@ class ContractHarnessTest {
         })) {
             SpringJwtAuth auth = new SpringJwtAuth(server.url(), Map.of("alice", user("alice")));
             AuthContext context = auth.authenticate("alice");
+            assertEquals(context, auth.authenticate("alice"));
             HttpRequest request = HttpRequest.newBuilder(URI.create(server.url() + "/api/v1/accounts"))
                 .header("Authorization", context.authorization())
                 .GET()
                 .build();
             context.client().send(request, HttpResponse.BodyHandlers.ofString());
             assertEquals("Bearer access-123", authorization.get());
+            assertEquals(1, loginRequests.get());
+
+            ContractCase springCase = CaseLoader.parse(YAML.readTree("""
+                - id: authenticated-spring-request
+                  method: GET
+                  path: /accounts
+                  auth: alice
+                """)).getFirst();
+            ContractClient client = new ContractClient(server.url(), server.url(), Map.of("alice", user("alice")));
+            ContractClient.RequestResult springResponse = client.send(springCase, false);
+            assertTrue(springResponse.authenticated());
         }
 
         try (StubServer missing = new StubServer(exchange ->
@@ -181,6 +206,43 @@ class ContractHarnessTest {
             CaseResult result = new CaseResult(enforced, CaseResult.Outcome.CLEAN, null, null, null, null,
                 List.of(context.note()), List.of(), null);
             assertEquals(CaseResult.Outcome.ERROR, result.failIfEnforcedAuthUnavailable().outcome());
+        }
+    }
+
+    @Test
+    void enforcedSpringAuthCaseFailsWhenLoginReturnsUnauthorized() throws Exception {
+        AtomicBoolean requestWasUnauthenticated = new AtomicBoolean();
+        try (StubServer server = new StubServer(exchange -> {
+            if (exchange.getRequestURI().getPath().equals("/api/v1/auth/login")) {
+                StubServer.respond(exchange, 401, "application/problem+json", """
+                    {"title":"Unauthorized","status":401}
+                    """);
+                return;
+            }
+            requestWasUnauthenticated.set(exchange.getRequestHeaders().getFirst("Authorization") == null);
+            StubServer.respond(exchange, 401, "application/problem+json", """
+                {"title":"Unauthorized","status":401}
+                """);
+        })) {
+            ContractCase enforced = CaseLoader.load().stream()
+                .filter(contractCase -> contractCase.id().equals("auth-login-spring-self-check"))
+                .findFirst()
+                .orElseThrow();
+            ContractClient client = new ContractClient(server.url(), server.url(), Map.of("admin", user("admin")));
+            ContractClient.RequestResult rails = client.send(enforced, true);
+            ContractClient.RequestResult spring = client.send(enforced, false);
+            List<String> notes = new ArrayList<>(rails.notes());
+            notes.addAll(spring.notes());
+
+            CaseResult result = new ContractDiffer().diff(enforced, rails.response(), spring.response(),
+                new Allowlist(List.of()), JSON.createObjectNode(), rails.url(), spring.url(), notes,
+                spring.authenticated())
+                .failIfEnforcedAuthUnavailable();
+
+            assertTrue(requestWasUnauthenticated.get());
+            assertFalse(spring.authenticated());
+            assertEquals(CaseResult.Outcome.ERROR, result.outcome());
+            assertTrue(result.enforcedFailure());
         }
     }
 
@@ -206,11 +268,11 @@ class ContractHarnessTest {
             ContractClient.RequestResult railsResponse = client.send(contractCase, true);
             ContractClient.RequestResult springResponse = client.send(contractCase, false);
             Allowlist allowlist = new Allowlist(List.of(
-                new AllowlistEntry("intentional-name", "*", "**", null, "pointer", "Expected", "AB-266",
+                new AllowlistEntry("intentional-name", "*", "**", null, null, "pointer", "Expected", "AB-266",
                     JSON.readTree("""
                         {"pointer":"/accounts/0/name","rule":"ignore"}
                         """)),
-                new AllowlistEntry("unused", "*", "**", null, "pointer", "", "", JSON.createObjectNode())
+                new AllowlistEntry("unused", "*", "**", null, null, "pointer", "", "", JSON.createObjectNode())
             ));
             CaseResult result = new ContractDiffer().diff(contractCase, railsResponse.response(),
                 springResponse.response(), allowlist, JSON.createObjectNode(),

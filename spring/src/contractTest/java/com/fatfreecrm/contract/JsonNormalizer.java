@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class JsonNormalizer {
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -28,10 +30,16 @@ public final class JsonNormalizer {
     public static NormalizationResult normalizeWithDiagnostics(JsonNode input, JsonNode options, String side) {
         JsonNode normalized = input.deepCopy();
         applyRenames(normalized, options.path("rename"), side);
+        Map<JsonNode, Integer> ignoredKeyElements = new IdentityHashMap<>();
+        if (!ignored("", options)) {
+            collectIgnoredKeyElements(normalized, "", options, ignoredKeyElements);
+        }
         removeIgnored(normalized, "", options.path("ignore"));
         normalizeTree(normalized, "", options);
         List<MissingKey> missingKeys = new ArrayList<>();
-        collectMissingKeys(normalized, "", options, side, missingKeys);
+        if (!ignored("", options)) {
+            collectMissingKeys(normalized, "", options, side, missingKeys, ignoredKeyElements);
+        }
         return new NormalizationResult(normalized, missingKeys);
     }
 
@@ -166,7 +174,7 @@ public final class JsonNormalizer {
             return;
         }
         List<JsonNode> values = new ArrayList<>();
-        array.forEach(value -> values.add(value.deepCopy()));
+        array.forEach(values::add);
         String keyPointer = matched.isObject() ? matched.path("key").asText(null) : null;
         if (keyPointer == null) {
             values.sort(Comparator.comparing(JsonNormalizer::canonical));
@@ -197,12 +205,13 @@ public final class JsonNormalizer {
         String pointer,
         JsonNode options,
         String side,
-        List<MissingKey> missingKeys
+        List<MissingKey> missingKeys,
+        Map<JsonNode, Integer> ignoredKeyElements
     ) {
         if (node.isObject()) {
             node.properties().forEach(entry ->
                 collectMissingKeys(entry.getValue(), pointer + "/" + escape(entry.getKey()), options,
-                    side, missingKeys));
+                    side, missingKeys, ignoredKeyElements));
         } else if (node.isArray()) {
             ArrayNode array = (ArrayNode) node;
             String keyPointer = keyPointer(pointer, options.path("unorderedArrays"));
@@ -210,12 +219,48 @@ public final class JsonNormalizer {
                 JsonNode value = array.get(index);
                 String elementPointer = pointer + "/" + index;
                 if (keyPointer != null && get(value, keyPointer) == null
-                    && !ignored(elementPointer + keyPointer, options)) {
+                    && !consumeIgnoredKeyElement(value, ignoredKeyElements)) {
                     missingKeys.add(new MissingKey(side, elementPointer, value.deepCopy()));
                 }
-                collectMissingKeys(value, elementPointer, options, side, missingKeys);
+                collectMissingKeys(value, elementPointer, options, side, missingKeys, ignoredKeyElements);
             }
         }
+    }
+
+    private static void collectIgnoredKeyElements(
+        JsonNode node,
+        String pointer,
+        JsonNode options,
+        Map<JsonNode, Integer> ignoredKeyElements
+    ) {
+        if (node.isObject()) {
+            node.properties().forEach(entry -> collectIgnoredKeyElements(entry.getValue(),
+                pointer + "/" + escape(entry.getKey()), options, ignoredKeyElements));
+        } else if (node.isArray()) {
+            ArrayNode array = (ArrayNode) node;
+            String keyPointer = keyPointer(pointer, options.path("unorderedArrays"));
+            for (int index = 0; index < array.size(); index++) {
+                JsonNode value = array.get(index);
+                String elementPointer = pointer + "/" + index;
+                if (keyPointer != null && ignored(elementPointer + keyPointer, options)) {
+                    ignoredKeyElements.merge(value, 1, Integer::sum);
+                }
+                collectIgnoredKeyElements(value, elementPointer, options, ignoredKeyElements);
+            }
+        }
+    }
+
+    private static boolean consumeIgnoredKeyElement(JsonNode element, Map<JsonNode, Integer> ignoredKeyElements) {
+        Integer count = ignoredKeyElements.get(element);
+        if (count == null) {
+            return false;
+        }
+        if (count == 1) {
+            ignoredKeyElements.remove(element);
+        } else {
+            ignoredKeyElements.put(element, count - 1);
+        }
+        return true;
     }
 
     private static String keyPointer(String pointer, JsonNode specifications) {

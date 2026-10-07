@@ -21,8 +21,23 @@ public final class ContractDiffer {
         String springUrl,
         List<String> notes
     ) {
+        return diff(contractCase, rails, spring, allowlist, globalNormalize, railsUrl, springUrl, notes, false);
+    }
+
+    public CaseResult diff(
+        ContractCase contractCase,
+        CapturedResponse rails,
+        CapturedResponse spring,
+        Allowlist allowlist,
+        JsonNode globalNormalize,
+        String railsUrl,
+        String springUrl,
+        List<String> notes,
+        boolean springAuthenticated
+    ) {
         List<Difference> differences = new ArrayList<>();
-        List<AllowlistEntry> matching = allowlist.matching(contractCase);
+        boolean authenticated = springAuthenticated && !contractCase.auth().equals("anonymous");
+        List<AllowlistEntry> matching = allowlist.matching(contractCase, authenticated);
         boolean problemBodyAllowed = matching.stream().anyMatch(entry ->
             entry.kind().equals("errorBody") && springBodyAllowed(entry, rails, spring));
         if (rails.status() != spring.status()) {
@@ -66,8 +81,10 @@ public final class ContractDiffer {
             right.missingKeys().forEach(missing ->
                 add(differences, Difference.Kind.MISSING_KEY, missing.pointer(), null, missing.value(), matching,
                     allowlist, rails, spring, contractCase, problemBodyAllowed));
-            compare(left.json(), right.json(), "", differences, matching, allowlist, rails, spring, contractCase,
-                problemBodyAllowed, options);
+            if (!JsonNormalizer.ignored("", options)) {
+                compare(left.json(), right.json(), "", differences, matching, allowlist, rails, spring, contractCase,
+                    problemBodyAllowed, options);
+            }
         }
         if (problemBodyAllowed) {
             validateProblemBody(spring, differences, matching, allowlist);
@@ -90,9 +107,6 @@ public final class ContractDiffer {
         boolean problemBodyAllowed,
         JsonNode normalize
     ) {
-        if (JsonNormalizer.ignored(pointer, normalize)) {
-            return;
-        }
         if (timestampEqual(railsValue, springValue, pointer, normalize)) {
             return;
         }

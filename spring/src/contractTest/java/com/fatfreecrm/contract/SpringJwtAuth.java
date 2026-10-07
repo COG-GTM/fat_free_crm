@@ -10,11 +10,13 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class SpringJwtAuth implements AuthAdapter {
     private static final ObjectMapper JSON = new ObjectMapper();
     private final String baseUrl;
     private final Map<String, FixtureUsers.FixtureUser> users;
+    private final Map<String, AuthContext> sessions = new ConcurrentHashMap<>();
     private final HttpClient client;
 
     public SpringJwtAuth(String baseUrl, Map<String, FixtureUsers.FixtureUser> users) {
@@ -28,13 +30,17 @@ public final class SpringJwtAuth implements AuthAdapter {
 
     @Override
     public AuthContext authenticate(String userKey) throws IOException, InterruptedException {
+        AuthContext cached = sessions.get(userKey);
+        if (cached != null) {
+            return cached;
+        }
         FixtureUsers.FixtureUser user = users.get(userKey);
         if (user == null) {
             throw new IllegalArgumentException("Unknown contract fixture user: " + userKey);
         }
         String body = JSON.writeValueAsString(Map.of("username", user.username(), "password", user.password()));
         HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + "/api/v1/auth/login"))
-            .timeout(Duration.ofSeconds(10))
+            .timeout(Duration.ofSeconds(30))
             .header("Content-Type", "application/json")
             .header("Accept", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
@@ -55,6 +61,8 @@ public final class SpringJwtAuth implements AuthAdapter {
                 "spring auth unavailable (login response omitted accessToken)");
         }
         String tokenType = tokenResponse.path("tokenType").asText("Bearer");
-        return new AuthContext(client, tokenType + " " + token, null, null);
+        AuthContext result = new AuthContext(client, tokenType + " " + token, null, null);
+        sessions.put(userKey, result);
+        return result;
     }
 }

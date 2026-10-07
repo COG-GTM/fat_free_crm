@@ -40,12 +40,19 @@ public final class ContractClient {
         HttpClient client = anonymousClient;
         String authorization = null;
         AuthContext authContext = null;
+        boolean authenticated = false;
         List<String> notes = new ArrayList<>();
         if (!contractCase.auth().equals("anonymous")) {
             AuthAdapter adapter = side.target() == ContractCase.Target.RAILS ? railsAuth : springAuth;
-            authContext = adapter.authenticate(contractCase.auth());
+            try {
+                authContext = adapter.authenticate(contractCase.auth());
+            } catch (IOException | InterruptedException exception) {
+                throw new IOException("Authentication failed for fixture user " + contractCase.auth()
+                    + " via " + side.target() + " for " + requestUrl + ": " + describe(exception), exception);
+            }
             client = authContext.client();
             authorization = authContext.authorization();
+            authenticated = authorization != null || authContext.csrfToken() != null;
             if (authContext.note() != null) {
                 notes.add((side.target() == ContractCase.Target.RAILS ? "rails" : "spring") + " "
                     + authContext.note().replaceFirst("^(rails|spring) ", ""));
@@ -69,8 +76,13 @@ public final class ContractClient {
         } else {
             request.method(contractCase.method(), HttpRequest.BodyPublishers.noBody());
         }
-        HttpResponse<String> response = client.send(request.build(), HttpResponse.BodyHandlers.ofString());
-        return new RequestResult(requestUrl, CapturedResponse.from(response), List.copyOf(notes));
+        HttpResponse<String> response;
+        try {
+            response = client.send(request.build(), HttpResponse.BodyHandlers.ofString());
+        } catch (IOException | InterruptedException exception) {
+            throw new IOException("Request failed: " + contractCase.method() + " " + requestUrl, exception);
+        }
+        return new RequestResult(requestUrl, CapturedResponse.from(response), List.copyOf(notes), authenticated);
     }
 
     private static String query(JsonNode params) {
@@ -92,11 +104,16 @@ public final class ContractClient {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
+    private static String describe(Exception exception) {
+        return exception.getClass().getSimpleName()
+            + (exception.getMessage() == null ? "" : ": " + exception.getMessage());
+    }
+
     private static String trimSlash(String url) {
         return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
     }
 
-    public record RequestResult(String url, CapturedResponse response, List<String> notes) {
+    public record RequestResult(String url, CapturedResponse response, List<String> notes, boolean authenticated) {
         public RequestResult {
             notes = List.copyOf(notes);
         }

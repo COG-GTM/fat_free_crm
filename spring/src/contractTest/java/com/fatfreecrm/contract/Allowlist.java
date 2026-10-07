@@ -35,6 +35,7 @@ public final class Allowlist {
                     match.path("method").asText("*"),
                     match.path("path").asText("**"),
                     match.path("case").asText(null),
+                    match.has("authenticated") ? match.path("authenticated").asBoolean() : null,
                     node.path("kind").asText(),
                     node.path("reason").asText(""),
                     node.path("reference").asText(""),
@@ -46,7 +47,11 @@ public final class Allowlist {
     }
 
     public List<AllowlistEntry> matching(ContractCase contractCase) {
-        return entries.stream().filter(entry -> matches(entry, contractCase)).toList();
+        return matching(contractCase, false);
+    }
+
+    public List<AllowlistEntry> matching(ContractCase contractCase, boolean authenticated) {
+        return entries.stream().filter(entry -> matches(entry, contractCase, authenticated)).toList();
     }
 
     public List<AllowlistEntry> entries() {
@@ -61,9 +66,10 @@ public final class Allowlist {
         return hits.getOrDefault(id, 0);
     }
 
-    private static boolean matches(AllowlistEntry entry, ContractCase contractCase) {
+    private static boolean matches(AllowlistEntry entry, ContractCase contractCase, boolean authenticated) {
         return (entry.method().equals("*") || entry.method().equalsIgnoreCase(contractCase.method()))
             && (entry.caseId() == null || entry.caseId().equals(contractCase.id()))
+            && (entry.authenticated() == null || entry.authenticated() == authenticated)
             && glob(entry.path(), contractCase.path());
     }
 

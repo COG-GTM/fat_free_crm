@@ -107,6 +107,41 @@ class ContractDifferTest {
     }
 
     @Test
+    void authenticatedStatusAllowlistRequiresSuccessfulSpringSideAuthentication() throws Exception {
+        CapturedResponse rails = response(401, "application/json", "");
+        CapturedResponse spring = response(403, "application/json", "");
+        JsonNode definition = JSON.readTree("""
+            {"match":{"authenticated":true},"status":{"rails":401,"spring":403}}
+            """);
+
+        Allowlist anonymousAllowlist = new Allowlist(List.of(
+            entry("authz-denied-401-vs-403", "status", "**", definition)));
+        CaseResult anonymous = diff(contractCase("anonymous", "/accounts"), rails, spring, anonymousAllowlist,
+            JSON.createObjectNode(), "/accounts", List.of(), false);
+        assertEquals(CaseResult.Outcome.DIFF, anonymous.outcome());
+        assertTrue(anonymous.differences().stream().anyMatch(difference ->
+            difference.kind() == Difference.Kind.STATUS && !difference.allowed()));
+        assertEquals(0, anonymousAllowlist.hits("authz-denied-401-vs-403"));
+
+        Allowlist authenticatedAllowlist = new Allowlist(List.of(
+            entry("authz-denied-401-vs-403", "status", "**", definition)));
+        CaseResult authenticated = diff(contractCase("authenticated", "/accounts", "alice"), rails, spring,
+            authenticatedAllowlist, JSON.createObjectNode(), "/accounts", List.of(), true);
+        assertEquals(CaseResult.Outcome.CLEAN, authenticated.outcome());
+        assertEquals(1, authenticatedAllowlist.hits("authz-denied-401-vs-403"));
+
+        Allowlist unavailableAllowlist = new Allowlist(List.of(
+            entry("authz-denied-401-vs-403", "status", "**", definition)));
+        CaseResult unavailable = diff(contractCase("unavailable", "/accounts", "alice"), rails, spring,
+            unavailableAllowlist, JSON.createObjectNode(), "/accounts",
+            List.of("spring auth unavailable (login returned 401)"), false);
+        assertEquals(CaseResult.Outcome.DIFF, unavailable.outcome());
+        assertTrue(unavailable.differences().stream().anyMatch(difference ->
+            difference.kind() == Difference.Kind.STATUS && !difference.allowed()));
+        assertEquals(0, unavailableAllowlist.hits("authz-denied-401-vs-403"));
+    }
+
+    @Test
     void errorBodyAllowsRailsInvalidJsonOnlyWithAValidSpringProblemResponse() throws Exception {
         Allowlist allowlist = new Allowlist(List.of(
             entry("authz-denied-401-vs-403", "status", "**", JSON.readTree("""
@@ -265,11 +300,29 @@ class ContractDifferTest {
             "http://rails" + path, "http://spring" + path, List.of());
     }
 
+    private CaseResult diff(
+        ContractCase contractCase,
+        CapturedResponse rails,
+        CapturedResponse spring,
+        Allowlist allowlist,
+        JsonNode normalize,
+        String path,
+        List<String> notes,
+        boolean springAuthenticated
+    ) {
+        return differ.diff(contractCase, rails, spring, allowlist, normalize,
+            "http://rails" + path, "http://spring" + path, notes, springAuthenticated);
+    }
+
     private static ContractCase contractCase(String id, String path) {
+        return contractCase(id, path, "anonymous");
+    }
+
+    private static ContractCase contractCase(String id, String path, String auth) {
         return new ContractCase(id, "AB-266", "pending", "GET", path,
             new ContractCase.SideRequest(path + ".json", ContractCase.Target.RAILS),
             new ContractCase.SideRequest("/api/v1" + path, ContractCase.Target.SPRING),
-            JSON.createObjectNode(), null, "anonymous", JSON.createObjectNode(), "");
+            JSON.createObjectNode(), null, auth, JSON.createObjectNode(), "");
     }
 
     private static CapturedResponse response(int status, String contentType, String body) throws Exception {
@@ -286,7 +339,9 @@ class ContractDifferTest {
     }
 
     private static AllowlistEntry entry(String id, String kind, String path, JsonNode definition) {
-        return new AllowlistEntry(id, "*", path, definition.path("match").path("case").asText(null), kind,
+        JsonNode match = definition.path("match");
+        return new AllowlistEntry(id, "*", path, match.path("case").asText(null),
+            match.has("authenticated") ? match.path("authenticated").asBoolean() : null, kind,
             "test reason", "test ref", definition);
     }
 }

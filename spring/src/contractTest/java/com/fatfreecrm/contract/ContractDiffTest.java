@@ -64,7 +64,8 @@ class ContractDiffTest {
                 List<String> notes = new ArrayList<>(rails.notes());
                 notes.addAll(spring.notes());
                 results.add(differ.diff(contractCase, rails.response(), spring.response(), allowlist,
-                    globalNormalize, rails.url(), spring.url(), notes).failIfEnforcedAuthUnavailable());
+                    globalNormalize, rails.url(), spring.url(), notes, spring.authenticated())
+                    .failIfEnforcedAuthUnavailable());
             } catch (Exception exception) {
                 results.add(error(contractCase, exception.getClass().getSimpleName() + ": " + exception.getMessage()));
             }

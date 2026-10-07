@@ -7,6 +7,7 @@ public record AllowlistEntry(
     String method,
     String path,
     String caseId,
+    Boolean authenticated,
     String kind,
     String reason,
     String reference,

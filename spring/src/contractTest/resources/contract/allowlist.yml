@@ -3,6 +3,7 @@ allowlist:
     match:
       method: "*"
       path: "**"
+      authenticated: true
     kind: status
     status:
       rails: 401

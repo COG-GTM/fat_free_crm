@@ -81,6 +81,18 @@ path string or `{path: /path, target: rails|spring}`; target defaults to the cor
 `params` is a query map, `body` is the JSON object sent for a non-GET request, and `auth` is
 `anonymous` or a key from `contract/users.yml`.
 
+The current initial case set is:
+
+| Case | Mode | Request | Purpose |
+|---|---|---|---|
+| `accounts-index-self-check-admin` | enforced | Rails `GET /accounts.json` on both sides | Harness and Rails-session self-check |
+| `auth-login-spring-self-check` | enforced | Spring `GET /api/v1/users/me` on both sides | AB-264 fixture JWT login and current-user self-check; expected 200 and CLEAN |
+| `accounts-index-admin` | pending | Rails `GET /accounts.json`; Spring `GET /api/v1/accounts` | AB-270 account index |
+| `accounts-show-public` | pending | Rails `GET /accounts/101.json`; Spring `GET /api/v1/accounts/101` | AB-270 public account |
+| `contacts-index-alice` | pending | Rails `GET /contacts.json`; Spring `GET /api/v1/contacts` | AB-270 contacts index |
+| `accounts-index-anonymous` | enforced | Rails `GET /accounts.json`; Spring `GET /api/v1/accounts` | Anonymous authorization and error-body self-check |
+| `accounts-show-private-denied-bob` | pending | Rails `GET /accounts/102.json`; Spring `GET /api/v1/accounts/102` | AB-268 authorization behavior |
+
 ## Normalization and allow-list
 
 `contract/config.yml` supplies global `normalize` defaults; per-case options are merged with them.
@@ -95,15 +107,19 @@ normalize:
     - {side: spring, from: "/*/createdAt", to: "/*/created_at"}
 ```
 
-Ignore pointers are evaluated against the response structure after renames and before unordered
-arrays are sorted.
+Ignore pointers remove subtrees from the received response structure after renames and before
+unordered arrays are sorted. Missing-key diagnostics are collected after sorting and use sorted
+array pointers; ignore matches for an element's key pointer are captured before sorting.
 
 Arrays remain ordered unless listed under `unorderedArrays`. A string pointer sorts by canonical
 JSON; an object with `key` pairs entries by that key pointer. Timestamp pointers compare as
 ISO-8601 instants. Renames happen only for the declared side and pointer.
 
 Allow-list entries in `contract/allowlist.yml` match HTTP method, a path glob (`*` matches one
-segment and `**` matches any path), and optionally a case ID:
+segment and `**` matches any path), and optionally a case ID or `match.authenticated` value. The
+authenticated matcher is true only for fixture-user cases whose Spring-side authentication
+succeeded; unavailable Spring auth counts as unauthenticated. If omitted, the entry matches both
+authenticated and unauthenticated requests:
 
 * `status` allows only the declared Rails and Spring status pair.
 * `pointer` supports `ignore` and `equalsAfter` with `instant`, `trim`, `lowercase`, `number`, or
@@ -129,6 +145,10 @@ while Rails returns 200 for the pending account/contact reads and 401 for Bob's 
 denial. If Spring login returns 401 or 404, the case still sends its request without credentials
 and records `spring auth unavailable`; this is report-only for pending cases but an enforced case
 fails. An unreachable Rails sign-in page fails the run clearly.
+
+`auth-login-spring-self-check` sends both compared requests to Spring with the same cached admin
+JWT and reads `/api/v1/users/me`; its response contains only stable identity and admin fields, so
+no per-case normalization ignores are needed.
 
 Cases begin as `pending` while their Spring endpoint or behavior is still in progress. Pending
 cases always pass the Gradle task but retain their live diff in the report. Later phases flip cases
