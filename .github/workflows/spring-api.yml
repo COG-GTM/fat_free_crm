@@ -12,6 +12,11 @@ on:
       - "lib/tasks/ffcrm/entity_fixture.rake"
       - "spec/lib/tasks/legacy_auth_fixture_spec.rb"
       - "spec/lib/tasks/entity_fixture_spec.rb"
+      - "app/models/users/ability.rb"
+      - "lib/fat_free_crm/permissions.rb"
+      - "lib/fat_free_crm/migration/authz_matrix.rb"
+      - "lib/tasks/ffcrm/authz_matrix.rake"
+      - "spec/lib/tasks/authz_matrix_spec.rb"
   push:
     paths:
       - "spring/**"
@@ -23,6 +28,11 @@ on:
       - "lib/tasks/ffcrm/entity_fixture.rake"
       - "spec/lib/tasks/legacy_auth_fixture_spec.rb"
       - "spec/lib/tasks/entity_fixture_spec.rb"
+      - "app/models/users/ability.rb"
+      - "lib/fat_free_crm/permissions.rb"
+      - "lib/fat_free_crm/migration/authz_matrix.rb"
+      - "lib/tasks/ffcrm/authz_matrix.rake"
+      - "spec/lib/tasks/authz_matrix_spec.rb"
 
 permissions:
   contents: read
@@ -73,3 +83,43 @@ jobs:
           docker run --rm --add-host web:127.0.0.1
           -v "$PWD/spring/gateway/nginx.conf:/etc/nginx/nginx.conf:ro"
           nginx:1.27-alpine nginx -t
+
+  authz-matrix:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      FFCRM_ENTITY_FIXTURE: "1"
+      SECRET_KEY_BASE: entity-fixture-only-secret-key-base-0123456789abcdef
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ruby/setup-ruby@v1
+        env:
+          BUNDLE_FROZEN: "false"
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - name: Use PostgreSQL database.yml
+        run: cp config/database.postgres.yml config/database.yml
+      - name: Verify committed Rails authz matrix
+        env:
+          RAILS_ENV: development
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ffcrm_authz
+        run: |
+          bundle exec rails db:create db:schema:load
+          bundle exec rake ffcrm:migration:authz_matrix
+          git diff --exit-code -- spring/src/test/resources/authz
+      - name: Rails authz matrix spec
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ffcrm_authz_test
+        run: |
+          bundle exec rails db:create db:schema:load
+          bundle exec rspec spec/lib/tasks/authz_matrix_spec.rb
