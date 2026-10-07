@@ -64,7 +64,8 @@ class AccountsControllerCustomFieldSearchIntegrationTest extends AbstractPostgre
         jdbcTemplate.update(
             "INSERT INTO fields (id, type, field_group_id, \"position\", name, label, \"as\", "
                 + "disabled, required, created_at, updated_at) VALUES "
-                + "(990801, 'CustomField', 990801, 1, 'cf_api_region', 'Region', 'string', false, false, now(), now())");
+                + "(990801, 'CustomField', 990801, 1, 'cf_api_region', 'Region', 'string', "
+                + "false, false, now(), now())");
         registry.invalidate();
 
         User alice = user("alice");
