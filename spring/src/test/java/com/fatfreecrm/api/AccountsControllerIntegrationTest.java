@@ -15,6 +15,7 @@ import com.fatfreecrm.domain.Preference;
 import com.fatfreecrm.domain.Tag;
 import com.fatfreecrm.domain.Tagging;
 import com.fatfreecrm.domain.User;
+import com.fatfreecrm.domain.support.RailsBase64;
 import com.fatfreecrm.repository.AccountRepository;
 import com.fatfreecrm.repository.PreferenceRepository;
 import com.fatfreecrm.repository.TagRepository;
@@ -187,6 +188,16 @@ class AccountsControllerIntegrationTest extends AbstractPostgresIntegrationTest 
     }
 
     @Test
+    void duplicatePreferencesUseTheLowestId() throws Exception {
+        preferenceWithId(3L, alice, "accounts_per_page", "3");
+        preferenceWithId(7L, alice, "accounts_per_page", "7");
+
+        mockMvc.perform(get("/api/v1/accounts").header(HttpHeaders.AUTHORIZATION, aliceBearer))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.perPage").value(3));
+    }
+
+    @Test
     void ignoresInvalidPreferenceValues() throws Exception {
         preference(alice, "accounts_per_page", "\"not a number\"");
         preference(alice, "accounts_sort_by", "[]");
@@ -346,6 +357,16 @@ class AccountsControllerIntegrationTest extends AbstractPostgresIntegrationTest 
         preference.setName(name);
         preference.setJsonValue(json);
         preferenceRepository.saveAndFlush(preference);
+    }
+
+    private void preferenceWithId(long id, User user, String name, String json) {
+        jdbcTemplate.update(
+            "INSERT INTO preferences (id, user_id, name, value) VALUES (?, ?, ?, ?)",
+            id,
+            user.getId(),
+            name,
+            RailsBase64.encode64(json)
+        );
     }
 
     private void addTag(Account account, String name) {

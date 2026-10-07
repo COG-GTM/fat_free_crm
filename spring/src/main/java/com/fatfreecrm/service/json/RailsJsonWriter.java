@@ -11,6 +11,7 @@ import com.fatfreecrm.repository.RailsRow;
 import com.fatfreecrm.repository.RailsRowRepository;
 import com.fatfreecrm.repository.TaggingRepository;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -103,9 +104,9 @@ public class RailsJsonWriter {
             }
             Object value = column.getValue();
             if (resource.yamlArrayColumns().contains(name)) {
-                object.set(name, yamlArray(value, true));
+                object.set(name, yamlArray(value, objectMapper));
             } else if (checkBoxColumns.contains(name)) {
-                object.set(name, yamlArray(value, false));
+                object.set(name, yamlArray(value, objectMapper));
             } else {
                 object.set(name, jsonValue(value, row.typeNames().get(name)));
             }
@@ -173,7 +174,7 @@ public class RailsJsonWriter {
         };
     }
 
-    private ArrayNode yamlArray(Object value, boolean integers) {
+    static ArrayNode yamlArray(Object value, ObjectMapper objectMapper) {
         ArrayNode result = objectMapper.createArrayNode();
         if (value == null || value.toString().isBlank()) {
             return result;
@@ -186,12 +187,22 @@ public class RailsJsonWriter {
             throw new IllegalArgumentException("Expected a YAML sequence");
         }
         for (Object item : items) {
-            if (integers) {
-                result.add(item instanceof Number number
-                    ? number.longValue()
-                    : Long.parseLong(item.toString()));
+            if (item instanceof Integer number) {
+                result.add(number);
+            } else if (item instanceof Long number) {
+                result.add(number);
+            } else if (item instanceof BigInteger number) {
+                result.add(number);
+            } else if (item instanceof Number number) {
+                result.add(objectMapper.valueToTree(number));
+            } else if (item instanceof String string) {
+                result.add(string);
+            } else if (item instanceof Boolean bool) {
+                result.add(bool);
+            } else if (item == null) {
+                result.addNull();
             } else {
-                result.add(item == null ? "" : item.toString());
+                result.add(item.toString());
             }
         }
         return result;

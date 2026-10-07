@@ -22,7 +22,7 @@
   method: GET
   path: /accounts/101
   auth: alice
-  description: Compare the public account show response and view-version side effect.
+  description: Compare the public account show response (view-version parity is covered by AccountsControllerIntegrationTest).
 - id: accounts-show-999999-alice
   ticket: AB-270
   status: enforced

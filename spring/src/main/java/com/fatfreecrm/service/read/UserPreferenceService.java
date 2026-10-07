@@ -33,7 +33,7 @@ public class UserPreferenceService {
 
     private Optional<JsonNode> read(long userId, String name) {
         try {
-            return preferenceRepository.findByUserIdAndName(userId, name)
+            return preferenceRepository.findFirstByUserIdAndNameOrderByIdAsc(userId, name)
                 .map(Preference::getValue)
                 .filter(value -> value != null)
                 .map(RailsBase64::decode64)
