@@ -53,3 +53,30 @@ commenting those directives again and reloading nginx.
 Console logs use ECS structured JSON. The `spring-api.yml` workflow runs the Spring
 build, Rails baseline drift check, and nginx configuration validation when the Spring
 project, frozen contract, Rails schema/migrations, or workflow changes.
+
+## Authentication
+
+The API provides `POST /api/v1/auth/login` with `username` and `password`,
+`POST /api/v1/auth/refresh` with `refreshToken`, authenticated `POST
+/api/v1/auth/logout`, and authenticated `GET /api/v1/users/me`. Login and refresh
+return a bearer access token and refresh token. JWTs are signed with HS256 and
+contain `sub` (the user id), `username`, `admin`, `typ` (`access` or `refresh`),
+`iat`, `exp`, and `jti`. The default access-token TTL is 15 minutes and the
+default refresh-token TTL is 14 days.
+
+Configure `FFCRM_JWT_SECRET` with at least 32 UTF-8 bytes. Optional
+`FFCRM_JWT_ACCESS_TTL` and `FFCRM_JWT_REFRESH_TTL` values use Spring duration
+syntax (for example, `15m` and `14d`). The API verifies existing Rails
+`authlogic_sha512` password hashes using `password_salt`; successful logins do
+not rehash or otherwise change password columns. Password upgrade-on-login is a
+cutover item for AB-274. Logout is currently stateless and does not revoke
+issued tokens. Every authenticated request reloads the user and rejects
+unconfirmed or suspended accounts.
+
+Regenerate the committed Rails compatibility fixture in the development
+environment with:
+
+```sh
+bundle exec rake ffcrm:migration:legacy_auth_fixture \
+  OUTPUT=spring/src/test/resources/auth/rails-legacy-users.json
+```

@@ -13,6 +13,8 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+        type:
+          preferred_instant_jdbc_type: TIMESTAMP
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -39,6 +41,15 @@ logging:
     ecs:
       service:
         name: fat-free-crm-api
+
+ffcrm:
+  security:
+    jwt:
+      secret: ${FFCRM_JWT_SECRET:}
+      access-token-ttl: ${FFCRM_JWT_ACCESS_TTL:15m}
+      refresh-token-ttl: ${FFCRM_JWT_REFRESH_TTL:14d}
+    legacy-password:
+      stretches: 20
 
 management:
   endpoints:

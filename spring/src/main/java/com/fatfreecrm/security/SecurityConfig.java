@@ -7,19 +7,57 @@ import java.io.IOException;
 import java.net.URI;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper objectMapper) throws Exception {
+    AuthenticationEntryPoint apiAuthenticationEntryPoint(ObjectMapper objectMapper) {
+        return (request, response, exception) ->
+            writeProblem(response, objectMapper, request, HttpStatus.UNAUTHORIZED,
+                "Authentication is required to access this resource.");
+    }
+
+    @Bean
+    AccessDeniedHandler apiAccessDeniedHandler(ObjectMapper objectMapper) {
+        return (request, response, exception) ->
+            writeProblem(response, objectMapper, request, HttpStatus.FORBIDDEN,
+                "You are not allowed to access this resource.");
+    }
+
+    @Bean
+    BearerTokenResolver bearerTokenResolver() {
+        DefaultBearerTokenResolver resolver = new DefaultBearerTokenResolver();
+        return request -> {
+            String path = request.getServletPath();
+            if (HttpMethod.POST.matches(request.getMethod())
+                && ("/api/v1/auth/login".equals(path) || "/api/v1/auth/refresh".equals(path))) {
+                return null;
+            }
+            return resolver.resolve(request);
+        };
+    }
+
+    @Bean
+    SecurityFilterChain securityFilterChain(
+        HttpSecurity http,
+        FfcrmJwtAuthenticationConverter jwtAuthenticationConverter,
+        AuthenticationEntryPoint authenticationEntryPoint,
+        AccessDeniedHandler accessDeniedHandler,
+        BearerTokenResolver bearerTokenResolver
+    ) throws Exception {
         return http
             .csrf(AbstractHttpConfigurer::disable)
             .formLogin(AbstractHttpConfigurer::disable)
@@ -37,18 +75,20 @@ public class SecurityConfig {
                     "/openapi.yaml",
                     "/error"
                 ).permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
                 .anyRequest().authenticated())
             .exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint((request, response, exception) ->
-                    writeProblem(response, objectMapper, request, HttpStatus.UNAUTHORIZED,
-                        "Authentication is required to access this resource."))
-                .accessDeniedHandler((request, response, exception) ->
-                    writeProblem(response, objectMapper, request, HttpStatus.FORBIDDEN,
-                        "You are not allowed to access this resource.")))
+                .authenticationEntryPoint(authenticationEntryPoint)
+                .accessDeniedHandler(accessDeniedHandler))
+            .oauth2ResourceServer(resourceServer -> resourceServer
+                .bearerTokenResolver(bearerTokenResolver)
+                .authenticationEntryPoint(authenticationEntryPoint)
+                .accessDeniedHandler(accessDeniedHandler)
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)))
             .build();
     }
 
-    private void writeProblem(
+    private static void writeProblem(
         HttpServletResponse response,
         ObjectMapper objectMapper,
         HttpServletRequest request,
