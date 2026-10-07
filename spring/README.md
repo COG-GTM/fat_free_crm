@@ -53,3 +53,8 @@ commenting those directives again and reloading nginx.
 Console logs use ECS structured JSON. The `spring-api.yml` workflow runs the Spring
 build, Rails baseline drift check, and nginx configuration validation when the Spring
 project, frozen contract, Rails schema/migrations, or workflow changes.
+
+## Contract diff
+
+See [contract-diff.md](contract-diff.md) for the Rails/Spring request harness, fixture database,
+case schema, allow-list, and report instructions.

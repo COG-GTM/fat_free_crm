@@ -92,3 +92,50 @@ tasks.register("verifyFrozenOpenApi") {
 tasks.named("check") {
     dependsOn("verifyFrozenOpenApi")
 }
+
+val contractTest by sourceSets.creating {
+    compileClasspath = configurations.getByName("contractTestCompileClasspath")
+    runtimeClasspath = output + compileClasspath + configurations.getByName("contractTestRuntimeClasspath")
+}
+
+configurations.named("testImplementation") {
+    extendsFrom(configurations.getByName("contractTestImplementation"))
+}
+
+sourceSets.named("test") {
+    compileClasspath += contractTest.output
+    runtimeClasspath += contractTest.output
+}
+
+dependencies {
+    add("contractTestImplementation", "com.fasterxml.jackson.core:jackson-databind")
+    add("contractTestImplementation", "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
+    add("contractTestImplementation", "org.junit.jupiter:junit-jupiter")
+    add("contractTestRuntimeOnly", "org.junit.platform:junit-platform-launcher")
+}
+
+fun contractSetting(environmentName: String, propertyName: String, projectName: String, defaultValue: String): Provider<String> =
+    providers.environmentVariable(environmentName)
+        .orElse(providers.systemProperty(propertyName))
+        .orElse(providers.gradleProperty(projectName))
+        .orElse(defaultValue)
+
+tasks.register<Test>("contractTest") {
+    group = "verification"
+    description = "Runs the Rails/Spring API contract-diff cases."
+    testClassesDirs = contractTest.output.classesDirs
+    classpath = contractTest.runtimeClasspath
+    systemProperty("contract.railsUrl", contractSetting("CONTRACT_RAILS_URL", "contract.railsUrl", "contractRailsUrl", "http://localhost:3000").get())
+    systemProperty("contract.springUrl", contractSetting("CONTRACT_SPRING_URL", "contract.springUrl", "contractSpringUrl", "http://localhost:8080").get())
+    systemProperty("contract.caseFilter", contractSetting("CONTRACT_CASE_FILTER", "contract.caseFilter", "contractCaseFilter", "").get())
+    systemProperty(
+        "contract.reportDir",
+        contractSetting(
+            "CONTRACT_REPORT_DIR",
+            "contract.reportDir",
+            "contractReportDir",
+            layout.buildDirectory.dir("reports/contract-diff").get().asFile.absolutePath
+        ).get()
+    )
+    outputs.upToDateWhen { false }
+}

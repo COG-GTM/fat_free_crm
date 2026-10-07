@@ -1,0 +1,48 @@
+users:
+  admin:
+    id: 1
+    username: admin
+    email: admin@contract.example
+    password: contract-password
+    admin: true
+  alice:
+    id: 2
+    username: alice
+    email: alice@contract.example
+    password: contract-password
+  bob:
+    id: 3
+    username: bob
+    email: bob@contract.example
+    password: contract-password
+  sam:
+    id: 4
+    username: sam
+    email: sam@contract.example
+    password: contract-password
+    suspended: true
+  carol:
+    id: 5
+    username: carol
+    email: carol@contract.example
+    password: contract-password
+  dave:
+    id: 6
+    username: dave
+    email: dave@contract.example
+    password: contract-password
+  erin:
+    id: 7
+    username: erin
+    email: erin@contract.example
+    password: contract-password
+  frank:
+    id: 8
+    username: frank
+    email: frank@contract.example
+    password: contract-password
+  grace:
+    id: 9
+    username: grace
+    email: grace@contract.example
+    password: contract-password
