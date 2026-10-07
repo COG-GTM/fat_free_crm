@@ -112,14 +112,18 @@ jobs:
         env:
           RAILS_ENV: development
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/ffcrm_authz
+        # Rails initializers query the database during boot, so db:create cannot create it.
         run: |
-          bundle exec rails db:create db:schema:load
+          PGPASSWORD=postgres createdb -h localhost -U postgres ffcrm_authz
+          bundle exec rails db:schema:load
           bundle exec rake ffcrm:migration:authz_matrix
           git diff --exit-code -- spring/src/test/resources/authz
       - name: Rails authz matrix spec
         env:
           RAILS_ENV: test
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/ffcrm_authz_test
+        # Rails initializers query the database during boot, so db:create cannot create it.
         run: |
-          bundle exec rails db:create db:schema:load
+          PGPASSWORD=postgres createdb -h localhost -U postgres ffcrm_authz_test
+          bundle exec rails db:schema:load
           bundle exec rspec spec/lib/tasks/authz_matrix_spec.rb
