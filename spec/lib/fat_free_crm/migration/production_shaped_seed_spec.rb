@@ -75,7 +75,7 @@ describe FatFreeCRM::Migration::ProductionShapedManifest do
   describe "script/migration/seed_production_shaped.rb" do
     let(:klass_names) { FatFreeCRM::Migration::ColumnCensus::DEFAULT_KLASS_NAMES }
 
-    after do
+    def remove_dynamic_columns
       connection = ActiveRecord::Base.connection
       klass_names.each do |klass_name|
         klass = klass_name.constantize
@@ -85,6 +85,9 @@ describe FatFreeCRM::Migration::ProductionShapedManifest do
         klass.reset_column_information
       end
     end
+
+    before { remove_dynamic_columns }
+    after { remove_dynamic_columns }
 
     it "seeds a database whose census matches the committed manifest" do
       expect { load Rails.root.join('script/migration/seed_production_shaped.rb') }
