@@ -110,12 +110,27 @@ Cases begin as `pending` while their Spring endpoint or behavior is still in pro
 cases always pass the Gradle task but retain their live diff in the report. Later phases flip cases
 to `enforced` when the endpoint lands and its intended behavior is stable.
 
+`accounts-show-private-denied-bob` is currently **CLEAN** only because Spring authentication is
+unavailable: the request is sent anonymously and both Rails and Spring return 401, with the
+`errorBody` rule allowing their different error formats. Keep this case pending until Spring
+authentication and authorization can exercise the intended 401-vs-403 behavior.
+
 ## Fixture corpus and visibility matrix
 
 The user fixture corpus is defined once in `contract/users.yml`; the Rails loader reads that same
-file. IDs use stable ranges: users 1–9, groups 1–2, accounts 101–107, contacts 201–207, leads
-301–307, opportunities 401–407, campaigns 501–507, and tasks 601–605. For each entity type, IDs
-1–7 in its range share the access patterns below:
+file.
+
+| ID | Username | Role | Groups | Admin | Suspended |
+|---:|---|---|---|---|---|
+| 1 | admin | Administrator | — | Yes | No |
+| 2 | alice | Regular user | Sales | No | No |
+| 3 | bob | Regular user | Support | No | No |
+| 4 | sam | Regular user | Sales | No | Yes |
+| 5 | carol | Regular user; no explicit permissions | — | No | No |
+
+User IDs 6–9 are reserved for later tickets. Other IDs use stable ranges: groups 1–2, accounts
+101–107, contacts 201–207, leads 301–307, opportunities 401–407, campaigns 501–507, and tasks
+601–605. For each entity type, IDs 1–7 in its range share the access patterns below:
 
 | Suffix | Owner | Assignee | Access | Share |
 |---:|---|---|---|---|
@@ -127,21 +142,22 @@ file. IDs use stable ranges: users 1–9, groups 1–2, accounts 101–107, cont
 | 6 | Bob | — | Private | — |
 | 7 | Admin | — | Private | — |
 
-Alice and Sam are in Sales (group 1); Bob is in Support (group 2). Sam is suspended. The corpus
-also links account 101 to contact 201 and opportunity 401, links contact 201 to opportunity 401,
-links lead 301 to campaign 501 and contact 201, adds comments to account 101 and shared contact
-203, tags account 101 and contact 201, and gives account 101 a billing address. Tasks 601 and 604
-are Alice-owned; 602 is Alice-owned and assigned to Bob; 603 is completed by Bob; 604 is attached
-to account 101; 605 is private to the admin.
+Alice and Sam are in Sales (group 1); Bob is in Support (group 2). Sam is suspended. Carol has no
+group memberships or explicit permissions. The corpus also links account 101 to contact 201 and
+opportunity 401, links contact 201 to opportunity 401, links lead 301 to campaign 501 and contact
+201, adds comments to account 101 and shared contact 203, tags account 101 and contact 201, and
+gives account 101 a billing address. Tasks 601 and 604 are Alice-owned; 602 is Alice-owned and
+assigned to Bob; 603 is owned by Carol and completed by Bob; 604 is attached to account 101; 605 is
+private to the admin.
 
-| Resource | Alice | Bob | Admin |
-|---|---|---|---|
-| Accounts | 101–105 | 101, 103–106 | 101–107 |
-| Contacts | 201–205 | 201, 203–206 | 201–207 |
-| Leads | 301–305 | 301, 303–306 | 301–307 |
-| Opportunities | 401–405 | 401, 403–406 | 401–407 |
-| Campaigns | 501–505 | 501, 503–506 | 501–507 |
-| Tasks | 601, 602, 604 | 602, 603 | 601–605 |
+| Resource | Alice | Bob | Admin | Carol |
+|---|---|---|---|---|
+| Accounts | 101–105 | 101, 103–106 | 101–107 | 101 |
+| Contacts | 201–205 | 201, 203–206 | 201–207 | 201 |
+| Leads | 301–305 | 301, 303–306 | 301–307 | 301 |
+| Opportunities | 401–405 | 401, 403–406 | 401–407 | 401 |
+| Campaigns | 501–505 | 501, 503–506 | 501–507 | 501 |
+| Tasks | 601, 602, 604 | 602, 603 | 601–605 | 603 |
 
 The visibility matrix is asserted by `spec/db/contract_fixtures_spec.rb`; it is the fixture contract
 that AB-268 relies on. Entity index fixtures stay below Rails' default 20-record page size.

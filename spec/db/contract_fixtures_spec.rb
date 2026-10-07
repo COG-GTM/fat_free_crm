@@ -20,10 +20,14 @@ RSpec.describe ContractFixtures, :truncate do
   end
 
   it "loads the fixture users and groups" do
-    expect(User.count).to eq(9)
+    expect(User.count).to eq(5)
     expect(Group.count).to eq(2)
     expect(Setting.count).to eq(1)
     expect(Setting.secret_token).to eq(ContractFixtures::SECRET_TOKEN)
+
+    carol = User.find(5)
+    expect(carol.groups).to be_empty
+    expect(carol.permissions).to be_empty
   end
 
   it "loads the entity corpus" do
@@ -59,23 +63,26 @@ RSpec.describe ContractFixtures, :truncate do
     alice = User.find(2)
     bob = User.find(3)
     admin = User.find(1)
+    carol = User.find(5)
     expected = {
-      Account => { alice: (101..105).to_a, bob: [101, 103, 104, 105, 106], admin: (101..107).to_a },
-      Contact => { alice: (201..205).to_a, bob: [201, 203, 204, 205, 206], admin: (201..207).to_a },
-      Lead => { alice: (301..305).to_a, bob: [301, 303, 304, 305, 306], admin: (301..307).to_a },
-      Opportunity => { alice: (401..405).to_a, bob: [401, 403, 404, 405, 406], admin: (401..407).to_a },
-      Campaign => { alice: (501..505).to_a, bob: [501, 503, 504, 505, 506], admin: (501..507).to_a }
+      Account => { alice: (101..105).to_a, bob: [101, 103, 104, 105, 106], admin: (101..107).to_a, carol: [101] },
+      Contact => { alice: (201..205).to_a, bob: [201, 203, 204, 205, 206], admin: (201..207).to_a, carol: [201] },
+      Lead => { alice: (301..305).to_a, bob: [301, 303, 304, 305, 306], admin: (301..307).to_a, carol: [301] },
+      Opportunity => { alice: (401..405).to_a, bob: [401, 403, 404, 405, 406], admin: (401..407).to_a, carol: [401] },
+      Campaign => { alice: (501..505).to_a, bob: [501, 503, 504, 505, 506], admin: (501..507).to_a, carol: [501] }
     }
 
     expected.each do |model, ids|
       expect(model.my(alice).pluck(:id).sort).to eq(ids.fetch(:alice))
       expect(model.my(bob).pluck(:id).sort).to eq(ids.fetch(:bob))
       expect(model.my(admin).pluck(:id).sort).to eq(ids.fetch(:admin))
+      expect(model.my(carol).pluck(:id).sort).to eq(ids.fetch(:carol))
     end
 
     expect(Task.accessible_by(alice.ability).pluck(:id).sort).to eq([601, 602, 604])
     expect(Task.accessible_by(bob.ability).pluck(:id).sort).to eq([602, 603])
     expect(Task.accessible_by(admin.ability).pluck(:id).sort).to eq((601..605).to_a)
+    expect(Task.accessible_by(carol.ability).pluck(:id).sort).to eq([603])
   end
 
   it "keeps users confirmed, rejects the suspended fixture and validates every fixture password" do
