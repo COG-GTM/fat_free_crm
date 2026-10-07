@@ -221,22 +221,58 @@ class CustomFieldsDualReadParityTest {
 
     @Test
     void safeColumnTypeTransitionsReadBackInTheNewType() throws Exception {
-        // CustomField::SAFE_DB_TRANSITIONS: date <-> timestamp and integer <-> float change the
-        // column without rewriting jsonb; READ normalisation must present the stored value in
-        // the field's current type.
+        // CustomField#update_column: when db_transition_safety(as_was) is :safe Rails runs
+        // connection.change_column(table, name, new_type) and saves the new fields.as. ALTER
+        // COLUMN does not fire the row trigger, so the jsonb written before the transition
+        // stays as-is until the next UPDATE; both documents must read back in the new type.
         try (Connection conn = conn(); Statement st = conn.createStatement()) {
-            st.execute("insert into spike_dual_read_accounts (name, cf_since, cf_seen_at, cf_score)"
-                + " values ('tr', '2024-01-31', '2024-01-31 10:00:00', 3)");
-            Map<String, Object> doc = jsonbDocument(conn, "tr");
+            st.execute("insert into spike_dual_read_accounts (name, cf_segment, cf_since, cf_seen_at,"
+                + " cf_score) values ('tr', 'seg', '2024-01-31', '2024-01-31 10:00:00', 3)");
+            Map<String, Object> beforeTransition = jsonbDocument(conn, "tr");
 
+            // SAFE_DB_TRANSITIONS: one: string -> text; any: date <-> timestamp, integer <-> float
+            st.execute("alter table spike_dual_read_accounts"
+                + " alter column cf_segment type text,"
+                + " alter column cf_since type timestamp,"
+                + " alter column cf_seen_at type date,"
+                + " alter column cf_score type float");
+            st.execute("update fields set \"as\" = case name"
+                + " when 'cf_segment' then 'text' when 'cf_since' then 'datetime'"
+                + " when 'cf_seen_at' then 'date' when 'cf_score' then 'float' end"
+                + " where name in ('cf_segment', 'cf_since', 'cf_seen_at', 'cf_score')");
             List<FieldDefinition> flipped = List.of(
-                field("cf_since", "datetime"),   // date -> timestamp
-                field("cf_seen_at", "date"),     // timestamp -> date
-                field("cf_score", "float"));     // integer -> float
-            Map<String, Object> read = CustomFieldsDualReader.read(Map.of(), doc, flipped);
-            assertThat(read.get("cf_since")).isEqualTo("2024-01-31T00:00:00Z");
-            assertThat(read.get("cf_seen_at")).isEqualTo("2024-01-31");
-            assertThat(read.get("cf_score")).isEqualTo(3.0d);
+                field("cf_segment", "text"),
+                field("cf_since", "datetime"),
+                field("cf_seen_at", "date"),
+                field("cf_score", "float"));
+
+            // 1. stale jsonb (not rewritten by ALTER) + new metadata
+            assertThat(jsonbDocument(conn, "tr")).isEqualTo(beforeTransition);
+            Map<String, Object> staleRead = CustomFieldsDualReader.read(Map.of(), beforeTransition, flipped);
+            assertThat(staleRead)
+                .containsEntry("cf_segment", "seg")
+                .containsEntry("cf_since", "2024-01-31T00:00:00Z")
+                .containsEntry("cf_seen_at", "2024-01-31")
+                .containsEntry("cf_score", 3.0d);
+
+            // 2. the next Rails save re-derives jsonb from the re-typed columns
+            st.execute("update spike_dual_read_accounts set name = name where name = 'tr'");
+            Map<String, Object> rewritten = jsonbDocument(conn, "tr");
+            assertThat(rewritten).isNotEqualTo(beforeTransition);
+            assertThat(CustomFieldsDualReader.read(Map.of(), rewritten, flipped)).isEqualTo(staleRead);
+
+            // 3. physical columns in their new types take precedence and agree with the jsonb
+            Map<String, Object> columns = new java.util.LinkedHashMap<>();
+            try (ResultSet rs = st.executeQuery("select cf_segment, to_json(cf_since) #>> '{}',"
+                + " to_json(cf_seen_at) #>> '{}', cf_score from spike_dual_read_accounts"
+                + " where name = 'tr'")) {
+                rs.next();
+                columns.put("cf_segment", rs.getString(1));
+                columns.put("cf_since", rs.getString(2));
+                columns.put("cf_seen_at", rs.getString(3));
+                columns.put("cf_score", rs.getDouble(4));
+            }
+            assertThat(CustomFieldsDualReader.read(columns, Map.of(), flipped)).isEqualTo(staleRead);
         }
     }
 }
