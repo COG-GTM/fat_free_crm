@@ -17,6 +17,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -92,11 +95,27 @@ class ApiExceptionHandlerTest {
             .andExpect(content().string(not(containsString("sensitive exception message"))));
     }
 
-    private void assertProblem(
+    @Test
+    @WithMockUser
+    void accessDeniedReturnsForbiddenProblemWithoutLeakingTheRule() throws Exception {
+        assertProblem(mockMvc.perform(get("/test/access-denied")), 403)
+            .andExpect(jsonPath("$.detail").value("You are not allowed to access this resource."))
+            .andExpect(content().string(not(containsString("internal rule name"))));
+    }
+
+    @Test
+    @WithMockUser
+    void methodSecurityDenialIsAlsoAForbiddenProblem() throws Exception {
+        assertProblem(mockMvc.perform(get("/test/authorization-denied")), 403)
+            .andExpect(jsonPath("$.detail").value("You are not allowed to access this resource."))
+            .andExpect(content().string(not(containsString("hasPermission"))));
+    }
+
+    private ResultActions assertProblem(
         ResultActions result,
         int expectedStatus
     ) throws Exception {
-        result.andExpect(status().is(expectedStatus))
+        return result.andExpect(status().is(expectedStatus))
             .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
             .andExpect(jsonPath("$.status").value(expectedStatus));
     }
@@ -127,6 +146,17 @@ class ApiExceptionHandlerTest {
         @GetMapping("/test/exception")
         String exception() {
             throw new IllegalStateException("sensitive exception message");
+        }
+
+        @GetMapping("/test/access-denied")
+        String accessDenied() {
+            throw new AccessDeniedException("internal rule name");
+        }
+
+        @GetMapping("/test/authorization-denied")
+        String authorizationDenied() {
+            throw new AuthorizationDeniedException("hasPermission(#id, 'Account', 'read')",
+                new AuthorizationDecision(false));
         }
     }
 
