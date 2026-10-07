@@ -32,6 +32,14 @@ Regenerate or check the baseline from the current `db/schema.rb` with
 `spring/scripts/generate-baseline.sh [--check]`. Set `PG_IMAGE` to override the
 PostgreSQL container image.
 
+### Baseline drift after V1 ships
+
+Before V1 is released, rerun the generator to regenerate both artifacts. After V1 has
+been applied to any shared database, never regenerate V1; add an additive
+`V2+__*.sql` migration and refresh only the Rails schema fixture. Splitting the check
+into a frozen V1 comparison and a current Rails fixture comparison is follow-up work
+once V1 ships.
+
 ## Gateway
 
 Start the Rails app and gateway with `docker compose -f spring/docker-compose.yml up`.

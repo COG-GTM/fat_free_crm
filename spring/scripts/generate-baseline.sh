@@ -118,7 +118,11 @@ if [[ "$CHECK_MODE" == true ]]; then
         DIFF_FOUND=true
     fi
     if [[ "$DIFF_FOUND" == true ]]; then
-        printf 'Rails baseline drift detected; rerun spring/scripts/generate-baseline.sh to update the committed files.\n' >&2
+        printf '%s\n' \
+            'Rails baseline drift detected.' \
+            'Before V1 is released, rerun spring/scripts/generate-baseline.sh to regenerate.' \
+            'After V1 has been applied to any shared database, never regenerate V1; add an additive V2+__*.sql migration and refresh only the Rails fixture.' \
+            >&2
         exit 1
     fi
     printf 'Rails baseline files match the current db/schema.rb output.\n'
