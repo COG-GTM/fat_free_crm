@@ -115,6 +115,6 @@ class RailsSearchParityTest extends AbstractPostgresIntegrationTest {
             }
             checked++;
         }
-        assertThat(checked).isEqualTo(42);
+        assertThat(checked).isEqualTo(47);
     }
 }

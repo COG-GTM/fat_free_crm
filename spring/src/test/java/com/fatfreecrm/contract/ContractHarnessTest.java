@@ -52,7 +52,7 @@ class ContractHarnessTest {
     @Test
     void loadsInitialCasesFromClasspath() throws Exception {
         List<ContractCase> cases = CaseLoader.load();
-        assertEquals(7, cases.size());
+        assertEquals(14, cases.size());
         ContractCase authSelfCheck = cases.stream()
             .filter(contractCase -> contractCase.id().equals("auth-login-spring-self-check"))
             .findFirst()
@@ -65,7 +65,9 @@ class ContractHarnessTest {
         assertEquals(1, authSelfCheck.expect().path("json").path("/id").asInt());
         assertEquals("admin", authSelfCheck.expect().path("json").path("/username").asText());
         assertTrue(authSelfCheck.expect().path("json").path("/admin").asBoolean());
-        assertEquals(200, cases.getFirst().expect().path("status").asInt());
+        assertEquals(200, cases.stream()
+            .filter(contractCase -> contractCase.id().equals("accounts-index-self-check-admin"))
+            .findFirst().orElseThrow().expect().path("status").asInt());
         assertEquals(5, FixtureUsers.load().size());
     }
 

@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.springframework.context.ApplicationContext;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -63,14 +64,18 @@ public class CrmQueryService {
         Specification<T> search = searchSpec(entity, plan, searchText, sortPlanFor(type, entity, query, plan));
         Specification<T> spec = accessPolicy.accessibleBy(user, type).and(search);
 
-        long total = repository.count(spec);
-        int totalPages = perPage == 0 ? 0 : (int) ((total + perPage - 1) / perPage);
-        List<T> items = List.of();
-        if (total > 0 && (long) (page - 1) * perPage < total) {
-            items = repository
-                .findAll(spec, PageRequest.of(page - 1, perPage, Sort.unsorted()))
-                .getContent();
+        long offset = (long) (page - 1) * perPage;
+        long total;
+        List<T> items;
+        if (offset > Integer.MAX_VALUE) {
+            total = repository.count(spec);
+            items = List.of();
+        } else {
+            Page<T> result = repository.findAll(spec, PageRequest.of(page - 1, perPage, Sort.unsorted()));
+            total = result.getTotalElements();
+            items = result.getContent();
         }
+        int totalPages = perPage == 0 ? 0 : (int) ((total + perPage - 1) / perPage);
 
         Map<String, Map<String, Long>> facets = entity.facets() == null
             ? Map.of()

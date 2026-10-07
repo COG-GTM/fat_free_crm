@@ -31,8 +31,24 @@ class SearchTextTest {
     }
 
     @Test
-    void hashesOnlyParsesToEmptyTagListZeroResults() {
-        SearchText parsed = SearchText.parse("# #", true);
+    void blankTagStringsApplyNoTagFilter() {
+        // "#"[1..-2] and "##"[1..-2] are ""; a blank tag string means tagged_with is not called.
+        for (String raw : java.util.List.of("#", "##", "# #")) {
+            SearchText parsed = SearchText.parse(raw, true);
+            assertThat(parsed.tags()).as(raw).isEmpty();
+            assertThat(parsed.tagFilterRequested()).as(raw).isFalse();
+            assertThat(parsed.text()).as(raw).isNull();
+        }
+        SearchText trailing = SearchText.parse("acme #", true);
+        assertThat(trailing.tags()).isEmpty();
+        assertThat(trailing.tagFilterRequested()).isFalse();
+        assertThat(trailing.text()).isEqualTo("acme");
+    }
+
+    @Test
+    void nonBlankTagStringWithZeroTagsYieldsNone() {
+        // "#,#" -> tag string "," which the DefaultParser parses to zero tags -> tagged_with none.
+        SearchText parsed = SearchText.parse("#,#", true);
         assertThat(parsed.tags()).isEmpty();
         assertThat(parsed.tagFilterRequested()).isTrue();
     }

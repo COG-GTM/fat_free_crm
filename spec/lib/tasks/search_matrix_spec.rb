@@ -33,7 +33,7 @@ RSpec.describe Rake::Task do
     generate_matrix
     expect(File.read(output_path, encoding: "UTF-8")).to eq(first)
     matrix = JSON.parse(first)
-    expect(matrix.fetch("cases").size).to eq(42)
+    expect(matrix.fetch("cases").size).to eq(47)
     expect(matrix.fetch("corpus").fetch("accounts").size).to eq(30)
     expect(table_counts).to eq(before_counts)
   end

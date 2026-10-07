@@ -38,7 +38,7 @@ public record SearchText(String text, List<String> tags, boolean tagFilterReques
         String tagString = null;
         boolean tagsSeen = false;
         if (raw.startsWith("#") && raw.endsWith("#")) {
-            tagString = raw.substring(1, raw.length() - 1);
+            tagString = raw.length() > 1 ? raw.substring(1, raw.length() - 1) : "";
             tagsSeen = true;
             query = null;
         } else {
@@ -57,15 +57,12 @@ public record SearchText(String text, List<String> tags, boolean tagFilterReques
             }
             query = words.isEmpty() ? null : String.join(" ", words);
         }
-        if (taggable && tagsSeen && tagString != null && !tagString.isEmpty()) {
+        if (taggable && tagString != null && !tagString.isBlank()) {
             List<String> tags = parseTagList(tagString);
             if (tags.isEmpty()) {
                 return none();
             }
             return new SearchText(query, tags, true);
-        }
-        if (tagsSeen && tagString != null && tagString.isEmpty() && query == null) {
-            return none();
         }
         return new SearchText(query, List.of(), false);
     }
