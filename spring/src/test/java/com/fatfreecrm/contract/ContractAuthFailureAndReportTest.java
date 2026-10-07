@@ -112,8 +112,9 @@ class ContractAuthFailureAndReportTest {
             assertEquals("token-123", success.csrfToken());
             assertNull(success.authorization());
             hits.assertFreshRequest();
-            assertEquals(success, auth.authenticate("alice"));
-            hits.assertNoRequest();
+            page.set("<html><body>no token here</body></html>");
+            assertEquals(success, auth.authenticate("alice"), "successful sessions are cached per user");
+            page.set(SIGN_IN_PAGE);
         }
     }
 
@@ -162,8 +163,9 @@ class ContractAuthFailureAndReportTest {
             assertNull(custom.csrfToken());
             assertNull(custom.note());
             hits.assertFreshRequest();
-            assertEquals(custom, auth.authenticate("alice"));
-            hits.assertNoRequest();
+            status.set(500);
+            assertEquals(custom, auth.authenticate("alice"), "successful sessions are cached per user");
+            status.set(200);
 
             body.set("{\"accessToken\":\"xyz\"}");
             AuthContext bob = auth.authenticate("bob");
@@ -279,7 +281,8 @@ class ContractAuthFailureAndReportTest {
     /**
      * Tracks server hits between adapter calls without depending on an exact request count:
      * the JDK {@code HttpClient} may transparently re-send a request over a stale pooled
-     * connection, so only "at least one new request" and "no new request" are asserted.
+     * connection, so only "at least one new request" is asserted. Caching is proven by
+     * flipping the stub to a failing response and checking the cached context is still returned.
      */
     private static final class HitCounter {
         private final AtomicInteger hits;
@@ -294,10 +297,6 @@ class ContractAuthFailureAndReportTest {
             int current = hits.get();
             assertTrue(current > seen, "unavailable or failed results must not be cached");
             seen = current;
-        }
-
-        void assertNoRequest() {
-            assertEquals(seen, hits.get(), "successful sessions are cached per user");
         }
     }
 
