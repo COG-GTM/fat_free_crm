@@ -1,0 +1,22 @@
+{
+  "columns": {
+    "cf_ab271_string": "written by Java",
+    "cf_ab271_text": "Java line one\nJava line two",
+    "cf_ab271_email": "java@example.test",
+    "cf_ab271_url": "https://example.test/java",
+    "cf_ab271_tel": "+1-555-0100",
+    "cf_ab271_select": "beta",
+    "cf_ab271_radio_buttons": "alpha",
+    "cf_ab271_check_boxes": "---\n- \"true\"\n- \"123\"\n- \"O'Brien\"\n",
+    "cf_ab271_boolean": "true",
+    "cf_ab271_date": "2025-02-03",
+    "cf_ab271_datetime": "2025-02-03 04:05:06.123",
+    "cf_ab271_decimal": "1000.00",
+    "cf_ab271_integer": "17",
+    "cf_ab271_float": "0.125",
+    "cf_ab271_date_pair_start": "2025-02-01",
+    "cf_ab271_date_pair_end": "2025-02-10",
+    "cf_ab271_datetime_pair_start": "2025-02-01 04:05:06.123",
+    "cf_ab271_datetime_pair_end": "2025-02-10 04:05:06.456"
+  }
+}
