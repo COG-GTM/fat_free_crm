@@ -42,7 +42,12 @@ class UserAssociationsIntegrationTest extends AbstractPostgresIntegrationTest {
 
     @AfterEach
     void cleanUp() {
-        jdbcTemplate.update("DELETE FROM permissions WHERE asset_type = 'Account' AND asset_id = 4242");
+        jdbcTemplate.update("""
+            DELETE FROM permissions
+            WHERE asset_type = 'Account' AND asset_id = 4242
+              AND (user_id IN (SELECT id FROM users WHERE username = ?)
+                   OR group_id IN (SELECT id FROM groups WHERE name = ?))
+            """, USERNAME, GROUP_NAME);
         jdbcTemplate.update(
             "DELETE FROM groups_users WHERE group_id IN (SELECT id FROM groups WHERE name = ?)", GROUP_NAME);
         jdbcTemplate.update("DELETE FROM groups WHERE name = ?", GROUP_NAME);

@@ -71,6 +71,23 @@ RSpec.describe Rake::Task do
     expect(users.fetch("legacy_spaces").fetch("password")).to eq(" leading and trailing ")
   end
 
+  it "keeps the committed Spring snapshot verifiable by Rails and in sync with the generator scenarios" do
+    snapshot_path = Rails.root.join("spring/src/test/resources/auth/rails-legacy-users.json")
+    snapshot = JSON.parse(File.read(snapshot_path, encoding: "UTF-8"))
+    snapshot_users = snapshot.fetch("users").index_by { |attributes| attributes.fetch("username") }
+    scenario_keys = %w[username email password admin confirmed suspended first_name last_name]
+
+    expect(snapshot).to include("encryptor" => "authlogic_sha512", "generated_by" => "ffcrm:migration:legacy_auth_fixture")
+    expect(snapshot_users.transform_values { |attributes| attributes.slice(*scenario_keys) })
+      .to eq(generated_users.transform_values { |attributes| attributes.slice(*scenario_keys) })
+    snapshot_users.each_value do |attributes|
+      digest = Devise::Encryptable::Encryptors::AuthlogicSha512.digest(
+        attributes.fetch("password"), snapshot.fetch("stretches"), attributes.fetch("password_salt"), Devise.pepper
+      )
+      expect(digest).to eq(attributes.fetch("encrypted_password")), "snapshot hash drifted for #{attributes.fetch('username')}"
+    end
+  end
+
   def generated_users
     previous_output = ENV.fetch("OUTPUT", nil)
     ENV["OUTPUT"] = output_path.to_s
