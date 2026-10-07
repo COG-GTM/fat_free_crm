@@ -8,6 +8,8 @@ on:
       - ".github/workflows/spring-api.yml"
       - "db/schema.rb"
       - "db/migrate/**"
+      - "lib/tasks/ffcrm/legacy_auth_fixture.rake"
+      - "spec/lib/tasks/legacy_auth_fixture_spec.rb"
   push:
     paths:
       - "spring/**"
@@ -15,6 +17,8 @@ on:
       - ".github/workflows/spring-api.yml"
       - "db/schema.rb"
       - "db/migrate/**"
+      - "lib/tasks/ffcrm/legacy_auth_fixture.rake"
+      - "spec/lib/tasks/legacy_auth_fixture_spec.rb"
 
 permissions:
   contents: read

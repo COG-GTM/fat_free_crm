@@ -1,0 +1,116 @@
+{
+  "generated_by": "ffcrm:migration:legacy_auth_fixture",
+  "rails_env": "development",
+  "encryptor": "authlogic_sha512",
+  "stretches": 20,
+  "users": [
+    {
+      "username": "legacy_plain",
+      "email": "legacy_plain@example.com",
+      "password": "PlainAsciiPassword42",
+      "encrypted_password": "22177589a7c25c0b7e552fe1bdc704d7fc6477fa17b41e3c3b1f8e75c6a27bd5d29a95d7a9ab9d187c637146a7afe9e1a63b8c3c937cf9a7ca8f7040ac93b6f8",
+      "password_salt": "L_PQcwgmR-fy6LaQQevh",
+      "admin": false,
+      "confirmed": true,
+      "suspended": false,
+      "first_name": "Legacy",
+      "last_name": "legacy_plain"
+    },
+    {
+      "username": "legacy_admin",
+      "email": "legacy_admin@example.com",
+      "password": "AdminPassword42",
+      "encrypted_password": "59241eb241eb8af6e36ca7293b0c4170d725c441bb17c82867fbed392b35bc06c2858beaf0315cd56f43709dc02429bae8f95fc9ce96153b45549e65981344e6",
+      "password_salt": "xwJ-nJPqY1iBU1yLa_XU",
+      "admin": true,
+      "confirmed": true,
+      "suspended": false,
+      "first_name": "Legacy",
+      "last_name": "legacy_admin"
+    },
+    {
+      "username": "Legacy_MixedCase",
+      "email": "legacy.mixed@example.com",
+      "password": "MixedCasePassword42",
+      "encrypted_password": "1ce2147ee544e9ece25e08c868b28c41b034991381f3b2894ef8e188967a708420dbed7993949cb094e4e7452d553758c3564716170fced52562a9e47a735f5e",
+      "password_salt": "CCCwT13DA-whTQ2AiqWU",
+      "admin": false,
+      "confirmed": true,
+      "suspended": false,
+      "first_name": "Legacy",
+      "last_name": "Legacy_MixedCase"
+    },
+    {
+      "username": "legacy_unicode",
+      "email": "legacy_unicode@example.com",
+      "password": "pässwörd-日本語-🔐",
+      "encrypted_password": "452a7e6c81ddf95a59bd5d971b1b8acd5c132d8d61127907628d584b3711535af434bdbc877dccc0505c460e2c7116c6329a007a297469343cc00058f105671e",
+      "password_salt": "jJsPdztiQZyULto1J72y",
+      "admin": false,
+      "confirmed": true,
+      "suspended": false,
+      "first_name": "Legacy",
+      "last_name": "legacy_unicode"
+    },
+    {
+      "username": "legacy_long",
+      "email": "legacy_long@example.com",
+      "password": "long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-long-",
+      "encrypted_password": "226acce063db1bcb0d6abf8f248611483d2dc408b7e0e611af628ed23a01ecaaf8b47e5d938bcbb85085dc20f59b1ffa29e806337c824b55d3107da9eb344160",
+      "password_salt": "cy8D8eZm76K7yYk5aRxZ",
+      "admin": false,
+      "confirmed": true,
+      "suspended": false,
+      "first_name": "Legacy",
+      "last_name": "legacy_long"
+    },
+    {
+      "username": "legacy_dollar",
+      "email": "legacy_dollar@example.com",
+      "password": "pa$$w0rd$",
+      "encrypted_password": "21f11d2c067c66a6265c7d03fc9f43e416ef8a5042e9bffe820746d06c634c565397292378e010320dd149174d2e6fabf5d0764736df3da7836447ebe5879a95",
+      "password_salt": "Zs9Qhxmcd3Kn4c-ioxwi",
+      "admin": false,
+      "confirmed": true,
+      "suspended": false,
+      "first_name": "Legacy",
+      "last_name": "legacy_dollar"
+    },
+    {
+      "username": "legacy_spaces",
+      "email": "legacy_spaces@example.com",
+      "password": " leading and trailing ",
+      "encrypted_password": "48910f67c66e61b7db7eb13f1a2a9465d0b2696987fa664ef798c03d477d8c01b037b547e94b046dfd9dd67db282dd0df26743b1930275fd2ba6512be4f89c02",
+      "password_salt": "Y4yLszqwz3MZVSUAKauZ",
+      "admin": false,
+      "confirmed": true,
+      "suspended": false,
+      "first_name": "Legacy",
+      "last_name": "legacy_spaces"
+    },
+    {
+      "username": "legacy_suspended",
+      "email": "legacy_suspended@example.com",
+      "password": "SuspendedPassword42",
+      "encrypted_password": "59cbf6652f64fad7015cfc3b0f8608c36e620c03d0659455d20a34c61a195e6037eab96c54816973ca11210eb0dd4b4e3b1fa98f198c09ccec3932216e62261d",
+      "password_salt": "bqFU8UJ1A41JzcusXKev",
+      "admin": false,
+      "confirmed": true,
+      "suspended": true,
+      "first_name": "Legacy",
+      "last_name": "legacy_suspended"
+    },
+    {
+      "username": "legacy_unconfirmed",
+      "email": "legacy_unconfirmed@example.com",
+      "password": "UnconfirmedPassword42",
+      "encrypted_password": "4fecc551ec8038881e36fc15026fe8cb23889988513f0d1e420b22fbbb30c72d74e2b906f1918a64d27958224a6527e2561e4634ce271ee6c54c8d14023953e8",
+      "password_salt": "yxvd91NawWxxNvfH_789",
+      "admin": false,
+      "confirmed": false,
+      "suspended": false,
+      "first_name": "Legacy",
+      "last_name": "legacy_unconfirmed"
+    }
+  ]
+}
