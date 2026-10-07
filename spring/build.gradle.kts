@@ -97,3 +97,21 @@ tasks.register("verifyFrozenOpenApi") {
 tasks.named("check") {
     dependsOn("verifyFrozenOpenApi")
 }
+
+// AB-267: custom-fields JSONB benchmark, excluded from `build`; run with ./gradlew benchmarkTest
+tasks.named<Test>("test") {
+    useJUnitPlatform { excludeTags("benchmark") }
+}
+tasks.register<Test>("benchmarkTest") {
+    group = "verification"
+    description = "Runs @Tag(\"benchmark\") tests (AB-267 custom-fields JSONB spike)."
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform { includeTags("benchmark") }
+    maxHeapSize = "2g"
+    outputs.upToDateWhen { false }
+    testLogging { showStandardStreams = true }
+    listOf("benchmark.rows", "benchmark.reps", "benchmark.warmup", "benchmark.writes", "benchmark.outputDir").forEach { key ->
+        providers.gradleProperty(key).orNull?.let { systemProperty(key, it) }
+    }
+}
