@@ -87,7 +87,8 @@ class AccountsControllerAccessIntegrationTest extends AbstractPostgresIntegratio
         Group sales = new Group();
         sales.setName("sales");
         groupRepository.saveAndFlush(sales);
-        jdbcTemplate.update("INSERT INTO groups_users (group_id, user_id) VALUES (?, ?)", sales.getId(), member.getId());
+        jdbcTemplate.update("INSERT INTO groups_users (group_id, user_id) VALUES (?, ?)",
+            sales.getId(), member.getId());
         groupPermission(sharedWithGroup, sales);
     }
 
