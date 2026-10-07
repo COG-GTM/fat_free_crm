@@ -2184,6 +2184,139 @@
         9104
       ],
       "total": 2
+    },
+    {
+      "name": "filter_customer",
+      "params": {},
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9105,
+        9101
+      ],
+      "total": 2,
+      "session_filter": "customer"
+    },
+    {
+      "name": "filter_customer_other",
+      "params": {},
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9105,
+        9104,
+        9101
+      ],
+      "total": 3,
+      "session_filter": "customer,other"
+    },
+    {
+      "name": "filter_other",
+      "params": {},
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9104
+      ],
+      "total": 1,
+      "session_filter": "other"
+    },
+    {
+      "name": "filter_ignored_with_q",
+      "params": {
+        "q[name_cont]": "delta"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9104
+      ],
+      "total": 1,
+      "session_filter": "customer"
+    },
+    {
+      "name": "preference_per_page",
+      "params": {},
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9130,
+        9129
+      ],
+      "total": 28,
+      "preferences": {
+        "accounts_per_page": 2
+      }
+    },
+    {
+      "name": "preference_sort",
+      "params": {},
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9101,
+        9106,
+        9102,
+        9104,
+        9105,
+        9108,
+        9110,
+        9111,
+        9112,
+        9113,
+        9114,
+        9115,
+        9116,
+        9117,
+        9118,
+        9119,
+        9120,
+        9121,
+        9122,
+        9123
+      ],
+      "total": 28,
+      "preferences": {
+        "accounts_sort_by": "accounts.name ASC"
+      }
+    },
+    {
+      "name": "preference_per_page_explicit",
+      "params": {
+        "per_page": "5"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9130,
+        9129,
+        9128,
+        9127,
+        9126
+      ],
+      "total": 28,
+      "preferences": {
+        "accounts_per_page": 2
+      }
+    },
+    {
+      "name": "preference_sort_explicit_per_page",
+      "params": {
+        "per_page": "5"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9101,
+        9106,
+        9102,
+        9104,
+        9105
+      ],
+      "total": 28,
+      "preferences": {
+        "accounts_sort_by": "accounts.name ASC"
+      }
     }
   ]
 }

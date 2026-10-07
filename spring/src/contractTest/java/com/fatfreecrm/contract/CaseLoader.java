@@ -70,10 +70,10 @@ public final class CaseLoader {
         if (!status.equals("pending") && !status.equals("enforced")) {
             throw new IllegalArgumentException("Contract case status must be pending or enforced: " + status);
         }
-        ContractCase.SideRequest rails = side(node.get("rails"), path == null ? null : path + ".json",
-            ContractCase.Target.RAILS);
-        ContractCase.SideRequest spring = side(node.get("spring"), path == null ? null : "/api/v1" + path,
-            ContractCase.Target.SPRING);
+        ContractCase.SideRequest rails = side(
+            node.get("rails"), path == null ? null : path + ".json", ContractCase.Target.RAILS);
+        ContractCase.SideRequest spring = side(
+            node.get("spring"), path == null ? null : "/api/v1" + path, ContractCase.Target.SPRING);
         String logicalPath = path != null ? path : removeJsonSuffix(rails.path());
         return new ContractCase(
             requiredText(node, "id"),
@@ -130,7 +130,32 @@ public final class CaseLoader {
         ContractCase.Target target = ContractCase.Target.valueOf(
             text(node, "target", defaultTarget.name()).toUpperCase(Locale.ROOT)
         );
-        return new ContractCase.SideRequest(path, target);
+        String bodyPointer = text(node, "bodyPointer", null);
+        if (bodyPointer != null) {
+            validateBodyPointer(bodyPointer);
+        }
+        return new ContractCase.SideRequest(path, target, bodyPointer);
+    }
+
+    private static void validateBodyPointer(String bodyPointer) {
+        if (!bodyPointer.startsWith("/")) {
+            throw new IllegalArgumentException("Contract side bodyPointer must start with '/': " + bodyPointer);
+        }
+        for (int index = 0; index < bodyPointer.length(); index++) {
+            if (bodyPointer.charAt(index) == '~'
+                && (index + 1 == bodyPointer.length()
+                    || (bodyPointer.charAt(index + 1) != '0' && bodyPointer.charAt(index + 1) != '1'))) {
+                throw new IllegalArgumentException("Invalid contract side bodyPointer: " + bodyPointer);
+            }
+            if (bodyPointer.charAt(index) == '~') {
+                index++;
+            }
+        }
+        try {
+            JsonPointer.compile(bodyPointer);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Invalid contract side bodyPointer: " + bodyPointer, exception);
+        }
     }
 
     private static JsonNode objectOrEmpty(JsonNode node) {

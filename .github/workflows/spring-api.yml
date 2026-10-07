@@ -176,6 +176,15 @@ jobs:
           docker run --rm --add-host web:127.0.0.1
           -v "$PWD/spring/gateway/nginx.conf:/etc/nginx/nginx.conf:ro"
           nginx:1.27-alpine nginx -t
+      - name: Validate enabled Accounts routing configuration
+        run: |
+          config="$RUNNER_TEMP/nginx-accounts.conf"
+          cp spring/gateway/nginx.conf "$config"
+          bash spring/gateway/routing.sh enable upstream accounts --file "$config"
+          docker run --rm --add-host web:127.0.0.1 \
+            --add-host host.docker.internal:127.0.0.1 \
+            -v "$config:/etc/nginx/nginx.conf:ro" \
+            nginx:1.27-alpine nginx -t
 
   authz-matrix:
     runs-on: ubuntu-latest

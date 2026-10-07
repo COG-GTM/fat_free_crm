@@ -3,6 +3,7 @@ package com.fatfreecrm.contract;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.MissingNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ public final class ContractDiffer {
         boolean springAuthenticated
     ) {
         List<Difference> differences = new ArrayList<>();
+        List<String> resultNotes = new ArrayList<>(notes);
         boolean authenticated = springAuthenticated && !contractCase.auth().equals("anonymous");
         List<AllowlistEntry> matching = allowlist.matching(contractCase, authenticated);
         boolean problemBodyAllowed = matching.stream().anyMatch(entry ->
@@ -58,6 +60,8 @@ public final class ContractDiffer {
             differences.add(new Difference("", Difference.Kind.CONTENT_TYPE, text(rails.mediaType()),
                 text(spring.mediaType()), applied));
         }
+        PointerBody railsBody = pointedBody(contractCase.rails(), rails, "rails", resultNotes, differences);
+        PointerBody springBody = pointedBody(contractCase.spring(), spring, "spring", resultNotes, differences);
         boolean invalidJson = malformedJson(rails) || malformedJson(spring)
             || (rails.json() != null) != (spring.json() != null);
         if (invalidJson) {
@@ -70,12 +74,13 @@ public final class ContractDiffer {
             }
             differences.add(new Difference("", Difference.Kind.INVALID_JSON, rawBody(rails), rawBody(spring),
                 applied));
-        } else if (rails.json() != null && spring.json() != null) {
+        } else if (!railsBody.invalid() && !springBody.invalid()
+            && railsBody.json() != null && springBody.json() != null) {
             JsonNode options = JsonNormalizer.merge(globalNormalize, contractCase.normalize());
             JsonNormalizer.NormalizationResult left = JsonNormalizer.normalizeWithDiagnostics(
-                rails.json(), options, "rails");
+                railsBody.json(), options, "rails");
             JsonNormalizer.NormalizationResult right = JsonNormalizer.normalizeWithDiagnostics(
-                spring.json(), options, "spring");
+                springBody.json(), options, "spring");
             left.missingKeys().forEach(missing ->
                 add(differences, Difference.Kind.MISSING_KEY, missing.pointer(), missing.value(), null, matching,
                     allowlist, rails, spring, contractCase, problemBodyAllowed));
@@ -94,7 +99,39 @@ public final class ContractDiffer {
         addExpectations(contractCase.expect(), spring, "spring-side", differences);
         boolean clean = differences.stream().allMatch(Difference::allowed);
         return new CaseResult(contractCase, clean ? CaseResult.Outcome.CLEAN : CaseResult.Outcome.DIFF,
-            railsUrl, springUrl, rails, spring, notes, differences, null);
+            railsUrl, springUrl, rails, spring, resultNotes, differences, null);
+    }
+
+    private static PointerBody pointedBody(
+        ContractCase.SideRequest request,
+        CapturedResponse response,
+        String side,
+        List<String> notes,
+        List<Difference> differences
+    ) {
+        String pointer = request.bodyPointer();
+        if (pointer == null) {
+            return new PointerBody(response.json(), false);
+        }
+        if (response.status() < 200 || response.status() >= 300) {
+            notes.add(side + " bodyPointer " + pointer + " ignored for HTTP " + response.status());
+            return new PointerBody(response.json(), false);
+        }
+        if (response.json() == null) {
+            notes.add(side + " bodyPointer " + pointer + " not applied because the response has no JSON");
+            return new PointerBody(null, false);
+        }
+        JsonNode selected = response.json().at(pointer);
+        if (selected.isMissingNode()) {
+            String message = "JSON Pointer " + pointer + " is missing from the 2xx JSON response";
+            notes.add(side + " bodyPointer " + pointer + " missing from 2xx JSON response");
+            differences.add(new Difference(pointer, Difference.Kind.INVALID_JSON,
+                side.equals("rails") ? TextNode.valueOf(message) : null,
+                side.equals("spring") ? TextNode.valueOf(message) : null, List.of()));
+            return new PointerBody(null, true);
+        }
+        notes.add(side + " bodyPointer " + pointer + " applied");
+        return new PointerBody(selected, false);
     }
 
     private static void addExpectations(
@@ -329,5 +366,8 @@ public final class ContractDiffer {
 
     private static String escape(String value) {
         return value.replace("~", "~0").replace("/", "~1");
+    }
+
+    private record PointerBody(JsonNode json, boolean invalid) {
     }
 }

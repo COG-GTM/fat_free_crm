@@ -17,9 +17,7 @@ namespace :ffcrm do
           "SELECT COUNT(*) FROM #{ActiveRecord::Base.connection.quote_table_name(table)}"
         ).to_i.positive?
       end
-      unless non_empty.empty?
-        abort "ffcrm:migration:search_matrix requires empty corpus tables; found rows in: #{non_empty.join(", ")}"
-      end
+      abort "ffcrm:migration:search_matrix requires empty corpus tables; found rows in: #{non_empty.join(', ')}" unless non_empty.empty?
 
       result = nil
       ActiveRecord::Base.transaction(requires_new: true) do
@@ -33,8 +31,9 @@ namespace :ffcrm do
         search_matrix_seed(alice, bob)
 
         corpus = search_matrix_corpus
-        cases = search_matrix_cases.map do |name, params, ordered|
-          search_matrix_run_case(alice, name, params, ordered)
+        cases = search_matrix_cases.map do |name, params, ordered, session_filter, preferences|
+          case_options = { session_filter: session_filter, preferences: preferences || {} }
+          search_matrix_run_case(alice, name, params, ordered, case_options)
         end
         result = {
           "generated_by" => "bundle exec rake ffcrm:migration:search_matrix " \
@@ -198,19 +197,43 @@ def search_matrix_cases
                "q[s]" => "name asc" }, true],
     ["m_or", { "q[m]" => "or", "q[category_eq]" => "vendor", "q[rating_eq]" => "5" }, false],
     ["group", { "q[g][0][m]" => "or", "q[g][0][name_cont]" => "delta", "q[g][0][email_cont]" => "beta",
-               "q[access_eq]" => "Private" }, false]
+               "q[access_eq]" => "Private" }, false],
+    ["filter_customer", {}, true, "customer"],
+    ["filter_customer_other", {}, true, "customer,other"],
+    ["filter_other", {}, true, "other"],
+    ["filter_ignored_with_q", { "q[name_cont]" => "delta" }, true, "customer"],
+    ["preference_per_page", {}, true, nil, { "accounts_per_page" => 2 }],
+    ["preference_sort", {}, true, nil, { "accounts_sort_by" => "accounts.name ASC" }],
+    ["preference_per_page_explicit", { "per_page" => "5" }, true, nil,
+     { "accounts_per_page" => 2 }],
+    ["preference_sort_explicit_per_page", { "per_page" => "5" }, true, nil,
+     { "accounts_sort_by" => "accounts.name ASC" }]
   ]
 end
 
-def search_matrix_run_case(alice, name, params, ordered)
+def search_matrix_run_case(alice, name, params, ordered, options = {})
+  session_filter = options.fetch(:session_filter, nil)
+  preferences = options.fetch(:preferences, {})
+  preference_names = preferences.keys.map(&:to_s)
+  preferences.each { |preference, value| alice.pref[preference.to_sym] = value }
   session = ActionDispatch::Integration::Session.new(Rails.application)
   session.host! "localhost"
   login_as(alice, scope: :user)
+  unless session_filter.nil?
+    allow_forgery_protection = AccountsController.allow_forgery_protection
+    AccountsController.allow_forgery_protection = false
+    begin
+      session.post "/accounts/filter", params: { category: session_filter },
+        headers: { "HTTP_ACCEPT" => "text/javascript" }
+    ensure
+      AccountsController.allow_forgery_protection = allow_forgery_protection
+    end
+  end
   session.get "/accounts.json", params: params
   status = session.response.status
   body = status == 200 ? JSON.parse(session.response.body) : nil
   controller = session.request.env["action_controller.instance"]
-  {
+  result = {
     "name" => name,
     "params" => params,
     "ordered" => ordered,
@@ -219,4 +242,10 @@ def search_matrix_run_case(alice, name, params, ordered)
     "total" => controller&.instance_variable_get(:@search_results_count),
     "facets" => controller&.instance_variable_get(:@account_category_total)
   }
+  result["session_filter"] = session_filter unless session_filter.nil?
+  result["preferences"] = preferences unless preferences.empty?
+  result
+ensure
+  Preference.where(user_id: alice.id, name: preference_names).delete_all if preference_names&.any?
+  preference_names&.each { |name| alice.pref.cached_prefs.delete(name) }
 end

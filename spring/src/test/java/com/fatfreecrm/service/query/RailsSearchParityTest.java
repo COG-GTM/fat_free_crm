@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fatfreecrm.domain.User;
+import com.fatfreecrm.domain.support.RailsBase64;
 import com.fatfreecrm.repository.UserRepository;
 import com.fatfreecrm.security.JwtTokenService;
 import com.fatfreecrm.support.AbstractPostgresIntegrationTest;
@@ -49,6 +50,7 @@ class RailsSearchParityTest extends AbstractPostgresIntegrationTest {
         try (InputStream input = getClass().getResourceAsStream("/search/accounts_search_matrix.json")) {
             matrix = JSON.readTree(input);
         }
+        jdbcTemplate.update("DELETE FROM preferences");
         for (String table : List.of("taggings", "tags", "account_contacts", "contacts", "accounts", "users")) {
             jdbcTemplate.update("DELETE FROM " + table);
         }
@@ -79,6 +81,23 @@ class RailsSearchParityTest extends AbstractPostgresIntegrationTest {
                     }
                 } else {
                     params.add(new String[] {entry.getKey(), entry.getValue().asText()});
+                }
+            }
+            JsonNode sessionFilter = testCase.get("session_filter");
+            if (sessionFilter != null && !sessionFilter.isNull()) {
+                params.add(new String[] {"category", sessionFilter.asText()});
+            }
+            JsonNode preferences = testCase.get("preferences");
+            List<String> preferenceNames = new ArrayList<>();
+            if (preferences != null && preferences.isObject()) {
+                for (Map.Entry<String, JsonNode> preference : preferences.properties()) {
+                    preferenceNames.add(preference.getKey());
+                    jdbcTemplate.update(
+                        "INSERT INTO preferences (user_id, name, value, created_at, updated_at) "
+                            + "VALUES (9001, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                        preference.getKey(),
+                        RailsBase64.encode64(preference.getValue().toString())
+                    );
                 }
             }
             var request = get("/api/v1/accounts").header(HttpHeaders.AUTHORIZATION, bearer);
@@ -113,8 +132,15 @@ class RailsSearchParityTest extends AbstractPostgresIntegrationTest {
                     }
                 }
             }
+            if (!preferenceNames.isEmpty()) {
+                String placeholders = String.join(", ", java.util.Collections.nCopies(preferenceNames.size(), "?"));
+                jdbcTemplate.update(
+                    "DELETE FROM preferences WHERE user_id = 9001 AND name IN (" + placeholders + ")",
+                    preferenceNames.toArray()
+                );
+            }
             checked++;
         }
-        assertThat(checked).isEqualTo(47);
+        assertThat(checked).isEqualTo(55);
     }
 }

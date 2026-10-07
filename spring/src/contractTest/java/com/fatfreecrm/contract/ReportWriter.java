@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 public final class ReportWriter {
@@ -61,6 +62,8 @@ public final class ReportWriter {
         item.put("auth", contractCase.auth());
         sideJson(item.putObject("rails"), result.railsUrl(), result.rails());
         sideJson(item.putObject("spring"), result.springUrl(), result.spring());
+        putBodyPointer(item.path("rails"), contractCase.rails().bodyPointer());
+        putBodyPointer(item.path("spring"), contractCase.spring().bodyPointer());
         ArrayNode notes = item.putArray("notes");
         result.notes().forEach(notes::add);
         if (result.error() != null) {
@@ -83,6 +86,12 @@ public final class ReportWriter {
             difference.allowedBy().forEach(applied::add);
         });
         return item;
+    }
+
+    private static void putBodyPointer(JsonNode node, String bodyPointer) {
+        if (bodyPointer != null && node instanceof ObjectNode object) {
+            object.put("bodyPointer", bodyPointer);
+        }
     }
 
     private static void sideJson(ObjectNode node, String url, CapturedResponse response) {
@@ -114,12 +123,13 @@ public final class ReportWriter {
         text.append("Contract diff: **").append(cases.size()).append(" cases** — ")
             .append(clean).append(" clean, ").append(diff).append(" diff, ").append(errors)
             .append(" error, ").append(enforced).append(" enforced failures.\n\n");
-        text.append("| Case | Mode | Rails | Spring | Outcome | Diffs (open/allowed) | Ticket |\n")
-            .append("|---|---|---|---|---|---:|---|\n");
+        text.append("| Case | Pointers | Mode | Rails | Spring | Outcome | Diffs (open/allowed) | Ticket |\n")
+            .append("|---|---|---|---|---|---|---:|---|\n");
         for (CaseResult result : cases) {
             long open = result.differences().stream().filter(difference -> !difference.allowed()).count();
             long allowed = result.differences().size() - open;
             text.append("| ").append(result.contractCase().id()).append(" | ")
+                .append(pointerSummary(result.contractCase())).append(" | ")
                 .append(result.contractCase().status()).append(" | ").append(sideSummary(result.rails()))
                 .append(" | ").append(sideSummary(result.spring())).append(" | ").append(result.outcome())
                 .append(" | ").append(open).append(" / ").append(allowed).append(" | ")
@@ -182,6 +192,17 @@ public final class ReportWriter {
             text.append('\n');
         });
         return text.toString();
+    }
+
+    private static String pointerSummary(ContractCase contractCase) {
+        List<String> pointers = new ArrayList<>();
+        if (contractCase.rails().bodyPointer() != null) {
+            pointers.add("Rails: `" + contractCase.rails().bodyPointer() + "`");
+        }
+        if (contractCase.spring().bodyPointer() != null) {
+            pointers.add("Spring: `" + contractCase.spring().bodyPointer() + "`");
+        }
+        return String.join("<br>", pointers);
     }
 
     private static String sideSummary(CapturedResponse response) {

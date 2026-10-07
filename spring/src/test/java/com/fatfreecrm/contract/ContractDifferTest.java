@@ -82,6 +82,104 @@ class ContractDifferTest {
     }
 
     @Test
+    void bodyPointerComparesArrayAgainstEnvelopeAndReportsThePointer() throws Exception {
+        ContractCase base = contractCase("body-pointer-match", "/accounts");
+        ContractCase contractCase = withSpringBodyPointer(base, "/items");
+
+        CaseResult result = diff(contractCase, response(200, "application/json", """
+            [{"id":101},{"id":102}]
+            """), response(200, "application/json", """
+            {"items":[{"id":101},{"id":102}],"page":1}
+            """), new Allowlist(List.of()), JSON.createObjectNode(), "/accounts", List.of(), false);
+
+        assertEquals(CaseResult.Outcome.CLEAN, result.outcome());
+        assertTrue(result.notes().contains("spring bodyPointer /items applied"));
+    }
+
+    @Test
+    void reportIncludesBodyPointerInMarkdownAndJson(@TempDir Path directory) throws Exception {
+        ContractCase contractCase = withSpringBodyPointer(contractCase("body-pointer-report", "/accounts"), "/items");
+        CaseResult result = diff(contractCase, response(200, "application/json", """
+            [{"id":101}]
+            """), response(200, "application/json", """
+            {"items":[{"id":101}]}
+            """), new Allowlist(List.of()), JSON.createObjectNode(), "/accounts", List.of(), false);
+
+        ReportWriter.write(directory, "http://rails", "http://spring", List.of(result), new Allowlist(List.of()));
+
+        JsonNode report = JSON.readTree(Files.readString(directory.resolve("report.json")));
+        assertEquals("/items", report.path("cases").get(0).path("spring").path("bodyPointer").asText());
+        assertTrue(Files.readString(directory.resolve("report.md")).contains("Spring: `/items`"));
+    }
+
+    @Test
+    void bodyPointerMismatchIsDetectedWithinTheSelectedValue() throws Exception {
+        ContractCase contractCase = withSpringBodyPointer(contractCase("body-pointer-diff", "/accounts"), "/items");
+
+        CaseResult result = diff(contractCase, response(200, "application/json", """
+            [{"id":101}]
+            """), response(200, "application/json", """
+            {"items":[{"id":102}]}
+            """), new Allowlist(List.of()), JSON.createObjectNode(), "/accounts", List.of(), false);
+
+        assertEquals(CaseResult.Outcome.DIFF, result.outcome());
+        assertEquals("/0/id", result.differences().getFirst().pointer());
+        assertEquals(Difference.Kind.VALUE, result.differences().getFirst().kind());
+    }
+
+    @Test
+    void missingBodyPointerIsOpenInvalidJsonAtThePointer() throws Exception {
+        ContractCase contractCase = withSpringBodyPointer(contractCase("body-pointer-missing", "/accounts"), "/items");
+        Allowlist allowlist = new Allowlist(List.of(entry("ignore-items", "pointer", "**", JSON.readTree("""
+            {"pointer":"/items","rule":"ignore"}
+            """))));
+
+        CaseResult result = diff(contractCase, response(200, "application/json", "[]"),
+            response(200, "application/json", """
+                {"results":[]}
+                """), allowlist, JSON.createObjectNode(), "/accounts", List.of(), false);
+
+        Difference difference = result.differences().getFirst();
+        assertEquals(Difference.Kind.INVALID_JSON, difference.kind());
+        assertEquals("/items", difference.pointer());
+        assertFalse(difference.allowed());
+        assertTrue(result.notes().contains("spring bodyPointer /items missing from 2xx JSON response"));
+        assertEquals(0, allowlist.hits("ignore-items"));
+    }
+
+    @Test
+    void bodyPointerIsIgnoredForNonSuccessResponses() throws Exception {
+        ContractCase contractCase = withSpringBodyPointer(contractCase("body-pointer-error", "/accounts"), "/items");
+
+        CaseResult result = diff(contractCase, response(404, "application/json", """
+            {"error":"missing"}
+            """), response(404, "application/json", """
+            {"error":"denied"}
+            """), new Allowlist(List.of()), JSON.createObjectNode(), "/accounts", List.of(), false);
+
+        assertEquals(Difference.Kind.VALUE, result.differences().getFirst().kind());
+        assertEquals("/error", result.differences().getFirst().pointer());
+        assertTrue(result.notes().contains("spring bodyPointer /items ignored for HTTP 404"));
+    }
+
+    @Test
+    void bodyPointerDoesNotChangeFullBodyExpectationEvaluation() throws Exception {
+        ContractCase base = contractCase("body-pointer-expectation", "/accounts", "alice", JSON.readTree("""
+            {"status":200,"json":{"/meta":"complete"}}
+            """));
+        ContractCase contractCase = withBodyPointers(base, "/items", "/items");
+        String body = """
+            {"meta":"complete","items":[{"id":101}]}
+            """;
+
+        CaseResult result = diff(contractCase, response(200, "application/json", body),
+            response(200, "application/json", body), new Allowlist(List.of()), JSON.createObjectNode(), "/accounts",
+            List.of(), false);
+
+        assertEquals(CaseResult.Outcome.CLEAN, result.outcome());
+    }
+
+    @Test
     void responseExpectationsCheckBothSidesAndCannotBeAllowListed() throws Exception {
         Allowlist allowlist = new Allowlist(List.of(entry("ignore-root", "pointer", "**", JSON.readTree("""
             {"pointer":"","rule":"ignore"}
@@ -408,6 +506,34 @@ class ContractDifferTest {
             new ContractCase.SideRequest(path + ".json", ContractCase.Target.RAILS),
             new ContractCase.SideRequest("/api/v1" + path, ContractCase.Target.SPRING),
             JSON.createObjectNode(), null, auth, JSON.createObjectNode(), "", expect);
+    }
+
+    private static ContractCase withSpringBodyPointer(ContractCase contractCase, String bodyPointer) {
+        return withBodyPointers(contractCase, null, bodyPointer);
+    }
+
+    private static ContractCase withBodyPointers(
+        ContractCase contractCase,
+        String railsPointer,
+        String springPointer
+    ) {
+        return new ContractCase(
+            contractCase.id(),
+            contractCase.ticket(),
+            contractCase.status(),
+            contractCase.method(),
+            contractCase.path(),
+            new ContractCase.SideRequest(
+                contractCase.rails().path(), contractCase.rails().target(), railsPointer),
+            new ContractCase.SideRequest(
+                contractCase.spring().path(), contractCase.spring().target(), springPointer),
+            contractCase.params(),
+            contractCase.body(),
+            contractCase.auth(),
+            contractCase.normalize(),
+            contractCase.description(),
+            contractCase.expect()
+        );
     }
 
     private static CapturedResponse response(int status, String contentType, String body) throws Exception {

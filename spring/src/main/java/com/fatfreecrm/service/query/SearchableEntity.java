@@ -18,11 +18,25 @@ public record SearchableEntity(
     Map<String, AssociationDef> associations,
     TextSearch textSearch,
     boolean taggable,
-    FacetProvider facets
+    FacetProvider facets,
+    StateFilter stateFilter
 ) {
 
     public SearchableEntity {
         associations = Map.copyOf(associations);
+    }
+
+    public SearchableEntity(
+        Class<?> entityClass,
+        String railsName,
+        int defaultPerPage,
+        SortWhitelist sortWhitelist,
+        Map<String, AssociationDef> associations,
+        TextSearch textSearch,
+        boolean taggable,
+        FacetProvider facets
+    ) {
+        this(entityClass, railsName, defaultPerPage, sortWhitelist, associations, textSearch, taggable, facets, null);
     }
 
     /** A whitelisted association: the join factory plus the target entity type. */

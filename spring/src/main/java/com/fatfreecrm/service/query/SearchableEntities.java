@@ -64,7 +64,8 @@ public class SearchableEntities {
                 likeEscaped(root, cb, "email", query)
             ),
             true,
-            user -> Map.of("category", accountCategoryFacets(user, entityManager, settingRepository, accessPolicy))
+            user -> Map.of("category", accountCategoryFacets(user, entityManager, settingRepository, accessPolicy)),
+            accountStateFilter()
         ));
         register(map, new SearchableEntity(
             Contact.class,
@@ -161,6 +162,23 @@ public class SearchableEntities {
 
     private static SearchableEntity.AssociationDef def(AssociationJoin join, Class<?> target) {
         return new SearchableEntity.AssociationDef(join, target);
+    }
+
+    private static StateFilter accountStateFilter() {
+        return new StateFilter("category", (root, builder, values) -> {
+            List<String> categories = new ArrayList<>(values);
+            boolean other = categories.removeIf("other"::equals);
+            List<Predicate> predicates = new ArrayList<>();
+            if (!categories.isEmpty()) {
+                predicates.add(root.get("category").in(categories));
+            } else if (!other) {
+                predicates.add(builder.disjunction());
+            }
+            if (other) {
+                predicates.add(builder.isNull(root.get("category")));
+            }
+            return builder.or(predicates.toArray(Predicate[]::new));
+        });
     }
 
     public SearchableEntity find(Class<?> entityClass) {

@@ -1,69 +1,92 @@
 package com.fatfreecrm.api;
 
-import com.fatfreecrm.api.dto.AccountResponse;
-import com.fatfreecrm.domain.Account;
-import com.fatfreecrm.domain.Tag;
-import com.fatfreecrm.domain.Tagging;
-import com.fatfreecrm.domain.support.RailsModelType;
-import com.fatfreecrm.repository.TaggingRepository;
-import com.fatfreecrm.security.FfcrmAuthenticationToken;
-import com.fatfreecrm.service.query.CrmQueryService;
-import com.fatfreecrm.service.query.ListQuery;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fatfreecrm.api.dto.AutocompleteResponse;
+import com.fatfreecrm.api.support.CrmApiRequestSupport;
+import com.fatfreecrm.security.AuthenticatedUser;
+import com.fatfreecrm.service.json.RailsResources;
 import com.fatfreecrm.service.query.ListResult;
-import io.swagger.v3.oas.annotations.Hidden;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import com.fatfreecrm.service.read.CrmReadService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-// throwaway: replaced by AB-270
-@Hidden
 @RestController
 @RequestMapping("/api/v1/accounts")
+@Tag(name = "accounts", description = "Read operations for CRM accounts.")
 public class AccountsController {
 
-    private final CrmQueryService crmQueryService;
-    private final TaggingRepository taggingRepository;
+    private final CrmReadService crmReadService;
+    private final RailsResources railsResources;
+    private final CrmApiRequestSupport requestSupport;
 
-    public AccountsController(CrmQueryService crmQueryService, TaggingRepository taggingRepository) {
-        this.crmQueryService = crmQueryService;
-        this.taggingRepository = taggingRepository;
+    public AccountsController(
+        CrmReadService crmReadService,
+        RailsResources railsResources,
+        CrmApiRequestSupport requestSupport
+    ) {
+        this.crmReadService = crmReadService;
+        this.railsResources = railsResources;
+        this.requestSupport = requestSupport;
     }
 
     @GetMapping
-    public ListResult<AccountResponse> index(
+    @Operation(summary = "List accounts", description = "Returns a paginated, access-scoped account list.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Account list and pagination metadata."),
+        @ApiResponse(responseCode = "401", description = "Authentication is required.")
+    })
+    public ListResult<ObjectNode> index(
         Authentication authentication,
-        @RequestParam MultiValueMap<String, String> params
+        @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> params,
+        @RequestParam(required = false) String category
     ) {
-        ListQuery query = ListQuery.fromParameters(params);
-        ListResult<Account> result = crmQueryService.list(
-            ((FfcrmAuthenticationToken) authentication).getAuthenticatedUser(), Account.class, query);
-        Map<Long, List<String>> tagsByAccount = tagLists(result.items());
-        return result.map(account -> AccountResponse.from(
-            account, tagsByAccount.getOrDefault(account.getId(), List.of())));
+        AuthenticatedUser user = requestSupport.authenticatedUser(authentication);
+        return crmReadService.list(
+            user,
+            railsResources.account,
+            requestSupport.listQuery(user, railsResources.account, params, category)
+        );
     }
 
-    /** Batch-loads tag names for the page in one query, ordered by tagging id (no N+1). */
-    private Map<Long, List<String>> tagLists(List<Account> accounts) {
-        Map<Long, List<String>> byAccount = new LinkedHashMap<>();
-        if (accounts.isEmpty()) {
-            return byAccount;
-        }
-        List<Integer> ids = accounts.stream().map(account -> account.getId().intValue()).toList();
-        for (Tagging tagging : taggingRepository.findByTaggableTypeAndContextAndTaggableIdInOrderById(
-            RailsModelType.ACCOUNT.railsName(), "tags", ids)) {
-            Tag tag = tagging.getTag();
-            if (tag != null) {
-                byAccount.computeIfAbsent(tagging.getTaggableId().longValue(), key -> new ArrayList<>())
-                    .add(tag.getName());
-            }
-        }
-        return byAccount;
+    @GetMapping("/{id:\\d+}")
+    @PreAuthorize("hasPermission(#id, 'Account', 'read')")
+    @Operation(summary = "Show an account", description = "Returns an account and records a view event.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "The requested account."),
+        @ApiResponse(responseCode = "401", description = "Authentication is required."),
+        @ApiResponse(responseCode = "403", description = "The account is outside the user's access scope."),
+        @ApiResponse(responseCode = "404", description = "The account does not exist.")
+    })
+    public ObjectNode show(Authentication authentication, @PathVariable long id) {
+        return crmReadService.show(requestSupport.authenticatedUser(authentication), railsResources.account, id);
+    }
+
+    @GetMapping("/autocomplete")
+    @Operation(summary = "Autocomplete accounts", description = "Returns up to ten accessible accounts.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Autocomplete results."),
+        @ApiResponse(responseCode = "401", description = "Authentication is required.")
+    })
+    public AutocompleteResponse autocomplete(
+        Authentication authentication,
+        @RequestParam(defaultValue = "") String term,
+        @RequestParam(required = false) String excludeRelated,
+        @RequestParam(required = false) String related
+    ) {
+        String exclusion = excludeRelated != null ? excludeRelated : related;
+        return new AutocompleteResponse(crmReadService.autocomplete(
+            requestSupport.authenticatedUser(authentication), railsResources.account, term, exclusion
+        ).results());
     }
 }

@@ -67,10 +67,10 @@ Each YAML file in `contract/cases/` contains a list of cases:
 ```yaml
 - id: accounts-index-admin
   ticket: AB-270
-  status: pending
+  status: enforced
   method: GET
   path: /accounts
-  params: {page: 1}
+  spring: {bodyPointer: /items}
   auth: admin
   description: Compare the Rails and Spring account indexes.
 ```
@@ -82,6 +82,26 @@ path string or `{path: /path, target: rails|spring}`; target defaults to the cor
 `anonymous` or a key from `contract/users.yml`. Optional `expect` checks `status` and exact JSON
 pointer values independently on each side after the normal diff; expectation differences are
 always open and cannot be allow-listed.
+
+An object-form side request may set `bodyPointer`:
+
+```yaml
+spring:
+  bodyPointer: /items
+```
+
+For a 2xx JSON response, the pointer-selected value is compared instead of the full response
+tree. This supports comparing Rails' bare index array with Spring's list envelope. A missing
+target is an open, non-allow-listable `INVALID_JSON` difference at the requested pointer.
+Non-2xx responses compare their full bodies even when a pointer is configured. Expectations
+always evaluate against each complete response body. Pointer application or bypass is noted in
+the case report.
+
+Rails keeps the list `page` and `query` in the cookie session (`current_page`/`current_query`),
+and each fixture user shares one Rails session for the whole run. Rails index cases therefore pin
+`page` and `query` explicitly (`query: ""` clears a query left by an earlier case) so a case's
+result does not depend on run order. Spring has no list session state: absent parameters always
+mean page 1 and no query.
 
 ```yaml
 expect:
@@ -95,11 +115,18 @@ The current initial case set is:
 |---|---|---|---|
 | `accounts-index-self-check-admin` | enforced | Rails `GET /accounts.json` on both sides | Harness and Rails-session self-check; expected 200 |
 | `auth-login-spring-self-check` | enforced | Spring `GET /api/v1/users/me` on both sides | AB-264 fixture JWT login and current-user identity self-check; expected admin id 1, username `admin`, and `admin: true` |
-| `accounts-index-admin` | pending | Rails `GET /accounts.json`; Spring `GET /api/v1/accounts` | AB-270 account index |
-| `accounts-show-public` | pending | Rails `GET /accounts/101.json`; Spring `GET /api/v1/accounts/101` | AB-270 public account |
+| `accounts-index-admin` | enforced | Rails `GET /accounts.json`; Spring `GET /api/v1/accounts` (`bodyPointer: /items`) | AB-270 account index |
+| `accounts-show-public` | enforced | Rails `GET /accounts/101.json`; Spring `GET /api/v1/accounts/101` | AB-270 public account |
 | `contacts-index-alice` | pending | Rails `GET /contacts.json`; Spring `GET /api/v1/contacts` | AB-270 contacts index |
-| `accounts-index-anonymous` | enforced | Rails `GET /accounts.json`; Spring `GET /api/v1/accounts` | Anonymous authorization and error-body self-check |
-| `accounts-show-private-denied-bob` | pending | Rails `GET /accounts/102.json`; Spring `GET /api/v1/accounts/102` | AB-268 authorization behavior |
+| `accounts-index-anonymous` | enforced | Rails `GET /accounts.json`; Spring `GET /api/v1/accounts` (`bodyPointer: /items` on 2xx only) | Anonymous authorization and error-body self-check |
+| `accounts-show-private-denied-bob` | enforced | Rails `GET /accounts/102.json`; Spring `GET /api/v1/accounts/102` | Rails 401 versus Spring 403 authorization behavior |
+
+`ab-269-accounts-search.yml` contains enforced Accounts index comparisons; each Spring request
+selects `/items` to compare account rows. `ab-270-accounts-read.yml` adds Accounts list, show,
+autocomplete, and Spring-vs-Spring envelope assertions; all 18 cases are enforced. Its envelope
+cases pin totals and configured category facets to the captured Rails corpus because Rails returns
+a bare array. The expected authorization and error-body distinctions remain covered only by the
+existing narrowly scoped allow-list entries.
 
 ## Normalization and allow-list
 
@@ -138,21 +165,17 @@ authenticated and unauthenticated requests:
   still requires a non-empty `title` and matching `status`.
 
 Each applied allow-list entry is counted. Zero-hit entries are marked **stale** in the report but
-do not fail the run. The `authz-denied-401-vs-403` status entry is currently stale because the
-authenticated account-show request reaches an unimplemented Spring route and gets 404, not the
-expected 403.
+do not fail the run. The enforced `accounts-show-private-denied-bob` case exercises the
+`authz-denied-401-vs-403` status entry. The `error-body-problem-json` entry handles Rails error
+formats against Spring RFC 9457 responses.
 
 ## Authentication and case lifecycle
 
 `RailsSessionAuth` performs the Devise CSRF form sign-in using an isolated cookie jar per fixture
 user. `SpringJwtAuth` posts fixture credentials to `/api/v1/auth/login` and uses the returned
-bearer token. In the current live run, login succeeded for admin, Alice, and Bob, so no
-`spring auth unavailable` notes were recorded. The account and contact resource endpoints are not
-implemented yet; authenticated requests to them return Spring 404 `application/problem+json`,
-while Rails returns 200 for the pending account/contact reads and 401 for Bob's private-account
-denial. If Spring login returns 401 or 404, the case still sends its request without credentials
-and records `spring auth unavailable`; this is report-only for pending cases but an enforced case
-fails. An unreachable Rails sign-in page fails the run clearly.
+bearer token. If Spring login returns 401 or 404, the case still sends its request without
+credentials and records `spring auth unavailable`; an enforced case then fails. An unreachable
+Rails sign-in page fails the run clearly.
 
 `auth-login-spring-self-check` sends both compared requests to Spring with the same cached admin
 JWT and reads `/api/v1/users/me`; its response contains only stable identity and admin fields, so
@@ -161,12 +184,6 @@ no per-case normalization ignores are needed.
 Cases begin as `pending` while their Spring endpoint or behavior is still in progress. Pending
 cases always pass the Gradle task but retain their live diff in the report. Later phases flip cases
 to `enforced` when the endpoint lands and its intended behavior is stable.
-
-`accounts-show-private-denied-bob` currently reports **DIFF**: Bob's JWT login succeeds, but the
-missing Spring account-show endpoint returns 404 while Rails denies the private account with 401.
-The `errorBody` rule allows the content-type and body differences; the 401-vs-404 status difference
-remains open because the authorization rule expects Spring 403. Keep this case pending until the
-Spring endpoint can exercise the intended authorization behavior.
 
 ## Fixture corpus and visibility matrix
 
