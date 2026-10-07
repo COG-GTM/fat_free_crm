@@ -10,6 +10,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class RailsResources {
 
+    /** AB-271 custom_fields JSONB is ignored by Rails across the six CRM entity resources. */
+    public static final Set<String> CRM_EXCLUDED_COLUMNS = Set.of("custom_fields");
+
     public final RailsResource account;
 
     public RailsResources(AccountRepository accountRepository, UserRepository userRepository) {
@@ -19,7 +22,7 @@ public class RailsResources {
             Account.class,
             Set.of("subscribed_users"),
             true,
-            Set.of(),
+            CRM_EXCLUDED_COLUMNS,
             "accounts",
             entity -> ((Account) entity).getName(),
             Map.of("users", new RailsResource.RelatedExclusion(userId -> {

@@ -94,6 +94,8 @@ or list plumbing:
 1. Register a `RailsResource` descriptor and `SearchableEntity` metadata. Define the table/model,
    dynamic text column, sort whitelist, association search whitelist, tag/facet behavior, and any
    state filter. Keep `SearchableEntities` limited to families in the active phase.
+   - CRM entity resources must pass `RailsResources.CRM_EXCLUDED_COLUMNS` as `excludedColumns`;
+     it excludes AB-271's Rails-ignored `custom_fields` JSONB column.
 2. Add a controller that extracts the authenticated user and query parameters, applies user
    preference defaults, and delegates list/show/autocomplete to `CrmReadService`. Protect show
    with `hasPermission(#id, '<RailsModel>', 'read')`; declare only the family's supported related

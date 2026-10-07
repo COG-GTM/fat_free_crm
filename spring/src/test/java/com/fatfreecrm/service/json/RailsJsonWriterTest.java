@@ -155,6 +155,29 @@ class RailsJsonWriterTest extends AbstractPostgresIntegrationTest {
     }
 
     @Test
+    void omitsRailsIgnoredCustomFieldsFromListAndShow() {
+        try {
+            jdbcTemplate.execute("ALTER TABLE accounts ADD COLUMN IF NOT EXISTS custom_fields jsonb");
+            jdbcTemplate.update(
+                "UPDATE accounts SET custom_fields = ?::jsonb WHERE id = ?",
+                "{\"x\":1}",
+                account.getId()
+            );
+
+            List<ObjectNode> items = jsonWriter.write(railsResources.account, List.of(account.getId()));
+            ObjectNode show = jsonWriter.writeOne(railsResources.account, account.getId());
+
+            assertThat(items).hasSize(1);
+            assertThat(items.getFirst().has("custom_fields")).isFalse();
+            assertThat(items.getFirst().path("name").asText()).isEqualTo("Serializer Corp");
+            assertThat(show.has("custom_fields")).isFalse();
+            assertThat(show.path("name").asText()).isEqualTo("Serializer Corp");
+        } finally {
+            jdbcTemplate.execute("ALTER TABLE accounts DROP COLUMN IF EXISTS custom_fields");
+        }
+    }
+
+    @Test
     void omitsSensitiveAndDescriptorExcludedColumns() {
         RailsResource resource = new RailsResource(
             "Account",
