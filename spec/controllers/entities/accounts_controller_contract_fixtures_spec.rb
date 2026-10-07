@@ -9,10 +9,11 @@ require_relative "../../../db/contract_fixtures"
 # and what Rails answers when access is denied.
 describe AccountsController, :truncate do
   before do
+    previous_reset = ENV.fetch("CONTRACT_FIXTURES_RESET", nil)
     ENV["CONTRACT_FIXTURES_RESET"] = "1"
     ContractFixtures.load!
   ensure
-    ENV.delete("CONTRACT_FIXTURES_RESET")
+    ENV["CONTRACT_FIXTURES_RESET"] = previous_reset
   end
 
   def sign_in_fixture(id)
