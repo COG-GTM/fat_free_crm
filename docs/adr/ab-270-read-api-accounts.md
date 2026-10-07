@@ -144,7 +144,7 @@ C4Container
   `routing.sh enable upstream campaigns` activates it independently of accounts.
 - **Parity evidence:** `spring/src/test/resources/search/campaigns_search_matrix.json`
   (45 recorded cases replayed by `RailsCampaignSearchParityTest`),
-  `CampaignsControllerIntegrationTest`, and `ab-270-campaigns-read.yml` (22 enforced
+  `CampaignsControllerIntegrationTest`, and `ab-270-campaigns-read.yml` (21 enforced
   contract cases, no allow-list entries).
 - **Deviations:** none vs the Accounts foundation. Recorded Rails quirk documented in the
   matrix: `POST /campaigns/filter` returns 500 when the filtered result contains a
