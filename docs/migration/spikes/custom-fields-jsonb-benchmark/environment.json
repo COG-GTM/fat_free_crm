@@ -1,0 +1,21 @@
+{
+  "generated_at": "2026-10-07T19:49:30.136258376Z",
+  "postgres_version": "PostgreSQL 16.15 (Debian 16.15-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+  "pg.shared_buffers": "1GB",
+  "pg.work_mem": "32MB",
+  "pg.maintenance_work_mem": "512MB",
+  "pg.effective_cache_size": "4GB",
+  "pg.random_page_cost": "1.1",
+  "pg.jit": "off",
+  "pg.max_parallel_workers_per_gather": "2",
+  "pg.synchronous_commit": "on",
+  "pg.fsync": "on",
+  "java.version": "21.0.12.1",
+  "os": "Linux 6.8.0-1061-aws",
+  "cpus": 8,
+  "cpu_model": "INTEL(R) XEON(R) PLATINUM 8559C",
+  "rows": [10000, 100000, 1000000],
+  "reps": 20,
+  "warmup": 3,
+  "writes": 2000
+}
