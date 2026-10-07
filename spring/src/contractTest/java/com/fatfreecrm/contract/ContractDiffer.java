@@ -45,8 +45,15 @@ public final class ContractDiffer {
         boolean invalidJson = malformedJson(rails) || malformedJson(spring)
             || (rails.json() != null) != (spring.json() != null);
         if (invalidJson) {
+            List<String> applied = new ArrayList<>();
+            if (rails.json() == null && spring.json() != null && problemBodyAllowed) {
+                matching.stream().filter(entry -> entry.kind().equals("errorBody")).forEach(entry -> {
+                    allowlist.hit(entry);
+                    applied.add(entry.id());
+                });
+            }
             differences.add(new Difference("", Difference.Kind.INVALID_JSON, rawBody(rails), rawBody(spring),
-                List.of()));
+                applied));
         } else if (rails.json() != null && spring.json() != null) {
             JsonNode options = JsonNormalizer.merge(globalNormalize, contractCase.normalize());
             JsonNormalizer.NormalizationResult left = JsonNormalizer.normalizeWithDiagnostics(

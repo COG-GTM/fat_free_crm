@@ -107,6 +107,44 @@ class ContractDifferTest {
     }
 
     @Test
+    void errorBodyAllowsRailsInvalidJsonOnlyWithAValidSpringProblemResponse() throws Exception {
+        Allowlist allowlist = new Allowlist(List.of(
+            entry("authz-denied-401-vs-403", "status", "**", JSON.readTree("""
+                {"status":{"rails":401,"spring":403}}
+                """)),
+            entry("error-body-problem-json", "errorBody", "**", JSON.createObjectNode())
+        ));
+
+        CaseResult allowed = diff(response(401, "application/json", "You are not authorized..."),
+            response(403, "application/problem+json", """
+                {"title":"Forbidden","status":403}
+                """), allowlist, JSON.createObjectNode(), "/accounts/17");
+        assertEquals(CaseResult.Outcome.CLEAN, allowed.outcome());
+        assertTrue(allowed.differences().stream().allMatch(Difference::allowed));
+        Set<String> appliedEntries = allowed.differences().stream().flatMap(difference ->
+            difference.allowedBy().stream()).collect(Collectors.toSet());
+        assertEquals(Set.of("authz-denied-401-vs-403", "error-body-problem-json"), appliedEntries);
+        assertTrue(allowlist.hits("authz-denied-401-vs-403") > 0);
+        assertTrue(allowlist.hits("error-body-problem-json") > 0);
+
+        CaseResult malformedSpring = diff(response(401, "application/json", "You are not authorized..."),
+            response(401, "application/problem+json", "{invalid"), allowlist, JSON.createObjectNode(), "/accounts/17");
+        Difference invalidSpringJson = malformedSpring.differences().stream()
+            .filter(difference -> difference.kind() == Difference.Kind.INVALID_JSON).findFirst().orElseThrow();
+        assertFalse(invalidSpringJson.allowed());
+        assertEquals(CaseResult.Outcome.DIFF, malformedSpring.outcome());
+
+        CaseResult nonProblemSpring = diff(response(401, "application/json", "You are not authorized..."),
+            response(401, "application/json", """
+                {"title":"Unauthorized","status":401}
+                """), allowlist, JSON.createObjectNode(), "/accounts/17");
+        Difference invalidWithNonProblemSpring = nonProblemSpring.differences().stream()
+            .filter(difference -> difference.kind() == Difference.Kind.INVALID_JSON).findFirst().orElseThrow();
+        assertFalse(invalidWithNonProblemSpring.allowed());
+        assertEquals(CaseResult.Outcome.DIFF, nonProblemSpring.outcome());
+    }
+
+    @Test
     void matchesCaseAndPathGlobsAndTracksStaleEntries() throws Exception {
         Allowlist allowlist = new Allowlist(List.of(
             entry("narrow", "pointer", "/accounts/*", JSON.readTree("""

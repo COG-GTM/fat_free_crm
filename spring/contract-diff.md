@@ -95,7 +95,8 @@ segment and `**` matches any path), and optionally a case ID:
 * `pointer` supports `ignore` and `equalsAfter` with `instant`, `trim`, `lowercase`, `number`, or
   `string` transforms.
 * `errorBody` handles a Spring RFC 9457 `application/problem+json` response against a Rails error
-  format. It allows content-type and body differences only when both statuses are errors, and
+  format. When both statuses are errors and the Spring body parses, it allows content-type and body
+  differences, including Rails-side `INVALID_JSON`. It never allows a malformed Spring body, and
   still requires a non-empty `title` and matching `status`.
 
 Each applied allow-list entry is counted. Zero-hit entries are marked **stale** in the report but
@@ -114,11 +115,11 @@ Cases begin as `pending` while their Spring endpoint or behavior is still in pro
 cases always pass the Gradle task but retain their live diff in the report. Later phases flip cases
 to `enforced` when the endpoint lands and its intended behavior is stable.
 
-`accounts-show-private-denied-bob` remains pending. Spring authentication is unavailable, so the
-Spring request is anonymous and also returns 401; Rails labels its plain-text denial as
-`application/json`, which is now an open `INVALID_JSON` difference that the `errorBody` rule cannot
-cover. Keep this case pending until Spring authentication and authorization can exercise the
-intended 401-vs-403 behavior.
+`accounts-show-private-denied-bob` is currently **CLEAN** only because Spring authentication is
+unavailable: the Spring request is anonymous and also returns 401. Rails labels its plain-text
+denial as `application/json`; the `errorBody` rule allows this Rails-side `INVALID_JSON` against a
+valid Spring problem response. Keep this case pending until Spring authentication and authorization
+can exercise the intended 401-vs-403 behavior.
 
 ## Fixture corpus and visibility matrix
 
