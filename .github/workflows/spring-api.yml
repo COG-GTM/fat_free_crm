@@ -8,6 +8,9 @@ on:
       - ".github/workflows/spring-api.yml"
       - "db/schema.rb"
       - "db/migrate/**"
+      - "db/contract_fixtures.rb"
+      - "app/**"
+      - "config/routes.rb"
       - "lib/tasks/ffcrm/legacy_auth_fixture.rake"
       - "lib/tasks/ffcrm/entity_fixture.rake"
       - "spec/lib/tasks/legacy_auth_fixture_spec.rb"
@@ -24,6 +27,9 @@ on:
       - ".github/workflows/spring-api.yml"
       - "db/schema.rb"
       - "db/migrate/**"
+      - "db/contract_fixtures.rb"
+      - "app/**"
+      - "config/routes.rb"
       - "lib/tasks/ffcrm/legacy_auth_fixture.rake"
       - "lib/tasks/ffcrm/entity_fixture.rake"
       - "spec/lib/tasks/legacy_auth_fixture_spec.rb"
@@ -73,6 +79,89 @@ jobs:
           bundler-cache: true
       - name: Verify generated Rails baseline
         run: spring/scripts/generate-baseline.sh --check
+
+  contract-diff:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ffcrm_contract
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      BUNDLE_FROZEN: "false"
+      CONTRACT_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/ffcrm_contract
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/ffcrm_contract
+      RAILS_ENV: development
+      FFCRM_DB_URL: jdbc:postgresql://127.0.0.1:5432/ffcrm_contract
+      FFCRM_DB_USER: postgres
+      FFCRM_DB_PASSWORD: postgres
+      FFCRM_JWT_SECRET: ab266-contract-ci-jwt-secret-0123456789abcdef
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ruby/setup-ruby@v1
+        env:
+          BUNDLE_FROZEN: "false"
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Load contract database
+        run: spring/scripts/contract-db.sh
+      - name: Start Rails
+        run: |
+          mkdir -p spring/build/reports/contract-diff
+          nohup bin/rails server -p 3000 -b 127.0.0.1 \
+            > spring/build/reports/contract-diff/rails.log 2>&1 &
+      - name: Build and start Spring
+        working-directory: spring
+        run: |
+          ./gradlew bootJar --no-daemon
+          nohup java -jar build/libs/fat-free-crm-api-0.1.0-SNAPSHOT.jar \
+            > build/reports/contract-diff/spring.log 2>&1 &
+      - name: Wait for Rails and Spring
+        run: |
+          ready=false
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail http://127.0.0.1:3000/users/sign_in >/dev/null \
+              && curl --silent --fail http://127.0.0.1:8080/actuator/health >/dev/null; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+          if [[ "$ready" != true ]]; then
+            cat spring/build/reports/contract-diff/rails.log
+            cat spring/build/reports/contract-diff/spring.log
+            exit 1
+          fi
+      - name: Run contract diff
+        working-directory: spring
+        run: ./gradlew contractTest --no-daemon
+      - name: Publish contract-diff report
+        if: always()
+        run: cat spring/build/reports/contract-diff/report.md >> "$GITHUB_STEP_SUMMARY" || true
+      - name: Upload contract-diff artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-diff-report
+          path: |
+            spring/build/reports/contract-diff/report.json
+            spring/build/reports/contract-diff/report.md
+            spring/build/reports/contract-diff/rails.log
+            spring/build/reports/contract-diff/spring.log
 
   gateway:
     runs-on: ubuntu-latest
