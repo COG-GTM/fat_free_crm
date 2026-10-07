@@ -245,4 +245,163 @@ describe FatFreeCRM::Migration::ColumnCensus do
       Contact.reset_column_information
     end
   end
+
+  describe "field metadata query" do
+    def core_field(field_group, name)
+      CoreField.create!(field_group: field_group, label: name.titleize, name: name, as: 'string')
+    end
+
+    it "excludes CoreField rows like Field.custom_fields does" do
+      field_group = create(:field_group, klass_name: 'Contact')
+      core = core_field(field_group, 'cf_core_attached')
+      detached_core = core_field(nil, 'cf_core_detached')
+      report = census_for([]).report
+
+      expect(Field.custom_fields.where(id: [core.id, detached_core.id])).to be_empty
+      expect(columns_of[report, 'Contact']).to be_empty
+      expect(report[:unattached_fields]).to be_empty
+    end
+
+    it "excludes rows with no STI type like Field.custom_fields does" do
+      field = contact_field('cf_untyped')
+      Field.where(id: field.id).update_all(type: nil)
+      report = census_for([column('cf_untyped')]).report
+
+      expect(Field.custom_fields.where(id: field.id)).to be_empty
+      expect(columns_of[report, 'Contact'].first).to include(status: described_class::ORPHANED, field_id: nil)
+      expect(report[:unattached_fields]).to be_empty
+    end
+
+    it "treats a field whose field group row no longer exists as unattached" do
+      field = contact_field('cf_dangling')
+      Field.where(id: field.id).update_all(field_group_id: FieldGroup.maximum(:id).to_i + 1000)
+      report = census_for([column('cf_dangling')]).report
+
+      expect(columns_of[report, 'Contact'].first).to include(status: described_class::ORPHANED, field_id: nil)
+      expect(report[:unattached_fields]).to contain_exactly(
+        hash_including(name: 'cf_dangling', field_id: field.id, status: described_class::UNATTACHED_FIELD)
+      )
+    end
+
+    it "does not map a physical column to an unattached field of the same name" do
+      field = contact_field('cf_homeless')
+      Field.where(id: field.id).update_all(field_group_id: nil)
+      report = census_for([column('cf_homeless')]).report
+
+      expect(columns_of[report, 'Contact'].first).to include(status: described_class::ORPHANED, field_id: nil)
+      expect(report[:unattached_fields].pluck(:field_id)).to eq([field.id])
+      expect(report[:summary]).to include(mapped: 0, orphaned: 1, unattached_fields: 1)
+    end
+
+    it "queries field metadata once for every entity table" do
+      contact_field('cf_hobby')
+      census = census_for([column('cf_hobby')], klass_names: %w[Contact Account Lead])
+      census.report
+      census.to_markdown
+      census.to_json
+
+      expect(census.connection).to have_received(:select_all).once
+      expect(census.connection).to have_received(:select_all).with(/FROM "fields" f LEFT JOIN "field_groups" fg/)
+    end
+
+    it "quotes identifiers through the supplied connection" do
+      census = census_for([])
+      census.report
+
+      expect(census.connection).to have_received(:quote_table_name).with('fields')
+      expect(census.connection).to have_received(:quote_table_name).with('field_groups')
+      expect(census.connection).to have_received(:quote_column_name).with('as').at_least(:once)
+      expect(census.connection).to have_received(:select_all).with(/WHERE f."type" <> 'CoreField'/)
+    end
+
+    it "accepts metadata rows keyed by symbols" do
+      connection = instance_double(ActiveRecord::ConnectionAdapters::AbstractAdapter, adapter_name: 'PostgreSQL')
+      allow(connection).to receive_messages(table_exists?: true, columns: [column('cf_sym')], select_value: 0)
+      allow(connection).to receive(:quote_table_name) { |name| %("#{name}") }
+      allow(connection).to receive(:quote_column_name) { |name| %("#{name}") }
+      allow(connection).to receive(:select_all).and_return([
+                                                             { id: 5, type: 'CustomField', name: 'cf_sym', label: 'Sym',
+                                                               as: 'string', group_id: 9, klass_name: 'Contact' },
+                                                             { id: 6, type: 'CustomField', name: 'cf_loose', label: 'Loose',
+                                                               as: 'text', group_id: nil, klass_name: nil }
+                                                           ])
+      report = described_class.new(klass_names: %w[Contact], count_rows: false, connection: connection).report
+
+      expect(columns_of[report, 'Contact'].first).to include(status: described_class::MAPPED, field_id: 5,
+                                                             field_label: 'Sym', field_as: 'string')
+      expect(report[:unattached_fields]).to contain_exactly(
+        hash_including(name: 'cf_loose', field_id: 6, field_type: 'CustomField', field_as: 'text')
+      )
+    end
+
+    it "matches the rows Field.custom_fields.includes(:field_group) would return" do
+      contact_group = create(:field_group, klass_name: 'Contact')
+      account_group = create(:field_group, klass_name: 'Account')
+      create(:custom_field, name: 'cf_contact_a', label: 'Contact A', as: 'string', field_group: contact_group)
+      create(:custom_field, name: 'cf_account_b', label: 'Account B', as: 'string', field_group: account_group)
+      core_field(contact_group, 'cf_core')
+      loose = create(:custom_field, name: 'cf_loose', label: 'Loose', as: 'string', field_group: contact_group)
+      Field.where(id: loose.id).update_all(field_group_id: nil)
+
+      expected = Field.custom_fields.includes(:field_group).to_a
+      expected_by_klass = expected.select(&:field_group).group_by { |f| f.field_group.klass_name }
+      report = census_for([], klass_names: %w[Contact Account]).report
+
+      expect(columns_of[report, 'Contact'].pluck(:name)).to match_array(expected_by_klass['Contact'].map(&:name))
+      expect(columns_of[report, 'Account'].pluck(:name)).to match_array(expected_by_klass['Account'].map(&:name))
+      expect(report[:unattached_fields].pluck(:name)).to match_array(expected.reject(&:field_group).map(&:name))
+      expect(report[:unattached_fields].pluck(:name)).to eq(%w[cf_loose])
+    end
+  end
+
+  describe "Markdown escaping" do
+    def formatter_for(tables: [], unattached_fields: [], by_field_as: {}, by_sql_type: {})
+      report = {
+        generated_at: '2026-10-07T00:00:00Z', adapter: 'PostgreSQL', schema_version: '1',
+        row_counts_included: false, tables: tables, unattached_fields: unattached_fields,
+        summary: { tables: tables.size, custom_columns: 0, mapped: 0, orphaned: 0, missing_columns: 0,
+                   unattached_fields: unattached_fields.size, type_mismatches: 0, yaml_serialized: 0,
+                   by_field_as: by_field_as, by_sql_type: by_sql_type }
+      }
+      described_class::MarkdownFormatter.new(report)
+    end
+
+    def cells(row)
+      row.scan(/(?<!\\)(?:\\\\)*\|/).length - 1
+    end
+
+    it "escapes pipes and backslashes in the summary tallies" do
+      markdown = formatter_for(by_field_as: { 'odd|as' => 2 }, by_sql_type: { 'back\\slash' => 1 }).to_s
+
+      expect(markdown).to include('| field type `odd\\|as` | 2 |')
+      expect(markdown).to include('| sql type `back\\\\slash` | 1 |')
+    end
+
+    it "escapes every cell of the unattached fields table" do
+      field = { name: 'cf_a|b', status: 'unattached_field', field_type: 'Custom|Field', field_as: 'str|ing' }
+      row = formatter_for(unattached_fields: [field]).to_s.lines.find { |line| line.include?('cf_a') }
+
+      expect(row).to eq("| `cf_a\\|b` | Custom\\|Field | str\\|ing |\n")
+      expect(cells(row)).to eq(3)
+    end
+
+    it "escapes every cell of a column row" do
+      column = { name: 'cf_x|y', status: 'mapped', sql_type: 'char|acter', field_as: 'sel|ect',
+                 field_label: 'Pipe | Label', populated_rows: 4, type_mismatch: false, yaml_serialized: false }
+      table = { klass: 'Contact', table: 'contacts', total_rows: 4, columns: [column] }
+      row = formatter_for(tables: [table]).to_s.lines.find { |line| line.include?('cf_x') }
+
+      expect(row).to eq("| `cf_x\\|y` | mapped | `char\\|acter` | sel\\|ect | Pipe \\| Label | 4 |\n")
+      expect(cells(row)).to eq(6)
+    end
+
+    it "leaves placeholder cells untouched" do
+      column = { name: 'cf_orphan', status: 'orphaned', sql_type: nil, field_as: nil, field_label: nil,
+                 populated_rows: nil, type_mismatch: nil, yaml_serialized: false }
+      table = { klass: 'Contact', table: 'contacts', total_rows: nil, columns: [column] }
+      markdown = formatter_for(tables: [table]).to_s
+
+      expect(markdown).to include('| `cf_orphan` | orphaned | — | — | — | — |')
+    end
+  end
 end
