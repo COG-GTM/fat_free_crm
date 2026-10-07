@@ -11,12 +11,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fatfreecrm.security.SecurityConfig;
 import com.fatfreecrm.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -92,6 +95,20 @@ class ApiExceptionHandlerTest {
             .andExpect(content().string(not(containsString("sensitive exception message"))));
     }
 
+    @Test
+    @WithMockUser
+    void authenticationExceptionsReturnAGenericUnauthorizedProblemWithoutTheCause() throws Exception {
+        for (String path : List.of("/test/bad-credentials", "/test/locked")) {
+            mockMvc.perform(get(path))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.detail").value("Invalid credentials."))
+                .andExpect(content().string(not(containsString("legacy_plain"))))
+                .andExpect(content().string(not(containsString("suspended"))));
+        }
+    }
+
     private void assertProblem(
         ResultActions result,
         int expectedStatus
@@ -107,6 +124,16 @@ class ApiExceptionHandlerTest {
         @GetMapping("/test/entity-not-found")
         String entityNotFound() {
             throw new EntityNotFoundException("internal database key");
+        }
+
+        @GetMapping("/test/bad-credentials")
+        String badCredentials() {
+            throw new BadCredentialsException("wrong password for legacy_plain");
+        }
+
+        @GetMapping("/test/locked")
+        String locked() {
+            throw new LockedException("legacy_plain is suspended");
         }
 
         @GetMapping("/test/not-found-with-reason")
