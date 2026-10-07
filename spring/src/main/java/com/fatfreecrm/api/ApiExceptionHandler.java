@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -33,6 +34,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         HttpServletRequest request
     ) {
         return problemResponse(HttpStatus.UNAUTHORIZED, "Invalid credentials.", request);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Object> handleAccessDenied(AccessDeniedException exception, HttpServletRequest request) {
+        return problemResponse(HttpStatus.FORBIDDEN, "You are not allowed to access this resource.", request);
     }
 
     @ExceptionHandler(EntityNotFoundException.class)

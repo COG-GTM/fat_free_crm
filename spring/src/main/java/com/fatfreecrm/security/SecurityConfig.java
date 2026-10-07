@@ -76,6 +76,7 @@ public class SecurityConfig {
                     "/error"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
             .exceptionHandling(exceptions -> exceptions
                 .authenticationEntryPoint(authenticationEntryPoint)

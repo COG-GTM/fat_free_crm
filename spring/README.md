@@ -195,3 +195,98 @@ and also in Rails 8 (`Psych::DisallowedClass`: Set is not in
 `yaml_column_permitted_classes`). Repair them to YAML arrays at migration time.
 Settings/field YAML is exposed read-only because arbitrary Ruby-object YAML
 cannot be emitted faithfully by the Java model.
+
+## Authorization (row-level access)
+
+`com.fatfreecrm.security.authz.AccessPolicy#accessibleBy(user, type)` returns a JPA
+`Specification` that reproduces Rails `Klass.my(user)` / `accessible_by(user.ability)`
+(`app/models/users/ability.rb`). List queries compose it with search as
+`accessibleBy(user, type).and(search)`. `CrmAccessPolicy` builds the predicate in SQL:
+
+| Type | Rule (non-admin) |
+| --- | --- |
+| Account, Campaign, Contact, Lead, Opportunity | `access = 'Public'` OR `user_id = me` OR `assigned_to = me` OR `EXISTS (permissions WHERE asset_type = '<Class>' AND asset_id = id AND (user_id = me OR group_id IN (my groups)))` |
+| Task | `user_id = me` OR `assigned_to = me` OR `completed_by = me` |
+| Comment, Email | `user_id = me` (the parent's visibility is not checked) |
+| User | `id = me` |
+
+Admins get a conjunction (no filter). Any other entity type throws `IllegalArgumentException`.
+The admin flag and group membership are re-read from the database on every call, never taken
+from JWT claims; an unknown user id sees nothing. Permission and group checks are `EXISTS` / `IN`
+subqueries, so `count` and `Page.getTotalElements()` never fan out and no `DISTINCT` is needed.
+
+Single-record checks use `@PreAuthorize("hasPermission(#id, 'Account', 'read')")`
+(`CrmPermissionEvaluator`, wired by `MethodSecurityConfig`). It evaluates
+`repository.exists(byId.and(accessibleBy(...)))` with the same Specification, so list and fetch
+cannot disagree. `read`, `update`, `destroy` and `manage` are equivalent, because every Rails rule
+grants `:manage`. Responses:
+
+| Case | Rails (JSON) | Spring |
+| --- | --- | --- |
+| No credentials | 401 | 401 problem+json |
+| Record exists but is outside the user's scope | 401 `CanCan::AccessDenied` (`load_and_authorize_resource` loads by id, then authorizes) | **403** problem+json (settled, allow-listed delta) |
+| Record id does not exist | 404 | 404 problem+json (the evaluator throws `EntityNotFoundException`) |
+
+Rails also exposes whether a record exists (401 vs 404), and Spring matches this.
+`/api/v1/admin/**` requires `ROLE_ADMIN` in `SecurityConfig`. `@AdminOnly` is the same guard as a
+method annotation. `ROLE_ADMIN` comes from `users.admin`, re-read on every request.
+
+`PermissionService` mirrors `FatFreeCRM::Permissions` for Shared-access writes. AB-272 wires it to
+endpoints. `setAccess` with any value other than `Shared` deletes all of the asset's permission
+rows. `setUserIds` / `setGroupIds` delete every row when access is not `Shared`. Otherwise they
+flatten the ids, drop blanks, convert them like Ruby `to_i`, delete rows of that kind that are no
+longer listed, and insert the missing ones. Rows of the other kind are left alone.
+`updateSharing(entity, access, userIds, groupIds)` applies the three in Rails attribute order.
+Rows carry the Rails `asset_type` (e.g. `Account`) and identical `created_at`/`updated_at`.
+
+### Rails semantics reproduced (verified by the matrix)
+
+- A `Private` record with a permission row **is** visible to the permitted user or group. CanCan
+  ORs every rule and never checks `access` on the permission rule.
+- `Shared` with no permission rows is visible only to the owner, the assignee and admins.
+- A NULL `assigned_to` or `user_id` never matches (SQL `=` on NULL).
+- Permissions left behind by a **destroyed group** grant nothing, even if a stale `groups_users` row
+  remains. Rails reads `user.group_ids` through the `groups` table, so the group subquery selects
+  from `groups`.
+- A permission row only grants access for its own `asset_type`. For example, a `Contact` row with
+  the same id as an Account does not expose that Account.
+- Inherited raw `access` values (`Lead`, `Campaign`) are not `Public`, so they are visible only via
+  owner, assignee or permission.
+- Soft-deleted rows (`deleted_at` set) stay visible. Rails has no paranoia filter.
+- Tasks are authorized by owner, assignee or `completed_by`. `Task.my` (the dashboard filter:
+  `(user_id = me AND assigned_to IS NULL) OR assigned_to = me`) is a view scope, not the
+  authorization rule. For example, a task the user created and assigned to someone else is not in
+  `Task.my` but is still fetchable. Task permission rows are ignored, as in `Ability`.
+- Deliberate deviation: Ruby runs `uniq` before `to_i`, so `["3", 3]` builds two identical
+  permission rows. Java de-duplicates after conversion. Visibility is the same.
+
+### Rails parity matrix
+
+`rake ffcrm:migration:authz_matrix` seeds 8 actors (owner, assignee, shared_user, group_member,
+completer, stale_member, unrelated, admin), 12 records per CRM entity, and tasks, comments and
+emails, using real Rails models inside a rollback-only transaction. It records
+`Klass.my(user).pluck(:id)` and `count` for every actor and type, plus the rows Rails writes for a
+sequence of `access=` / `user_ids=` / `group_ids=` assignments. Output goes to
+`spring/src/test/resources/authz/authz_matrix.json` and `authz_fixture.sql`.
+`AuthorizationMatrixTest` loads the same seed and asserts identical ids, counts and
+`PageRequest` totals for all 72 cells, evaluator/Specification agreement for every record × actor,
+the HTTP 401/403/404 and admin-namespace behavior, and Java-written permission rows identical to
+the Rails-written ones. Regenerate against an empty Rails-migrated PostgreSQL database:
+
+```sh
+FFCRM_ENTITY_FIXTURE=1 SECRET_KEY_BASE=entity-fixture-only-secret-key-base-0123456789abcdef \
+  DATABASE_URL=postgres://postgres:postgres@localhost:5432/ffcrm_authz RAILS_ENV=development \
+  bundle exec rake ffcrm:migration:authz_matrix
+```
+
+The same task also records `Klass.my(user)` / `accessible_by` for admin, alice, bob, sam and
+carol on the AB-266 contract-diff corpus (`db/contract_fixtures.rb`, also rolled back), writing
+`contract_corpus_matrix.json` and `contract_corpus.sql`. `ContractCorpusAuthorizationTest` asserts
+identical list ids, page totals and evaluator decisions on that corpus, so the Specifications are
+checked on the data the harness runs against. The matrix matches the visibility table in
+[contract-diff.md](contract-diff.md). The harness case `accounts-show-private-denied-bob` stays
+`pending`: this ticket adds no account-show route, and it is enforced once AB-270 adds one (bob
+reading account 102 is then a 403, which the `authz-denied-401-vs-403` entry allow-lists).
+
+The `authz-matrix` job in `spring-api.yml` regenerates both matrices on a PostgreSQL service,
+fails if the committed files drift, and runs `spec/lib/tasks/authz_matrix_spec.rb`.

@@ -1,0 +1,842 @@
+{
+  "generated_by": "ffcrm:migration:authz_matrix",
+  "regenerate": "FFCRM_ENTITY_FIXTURE=1 SECRET_KEY_BASE=entity-fixture-only-secret-key-base-0123456789abcdef bundle exec rake ffcrm:migration:authz_matrix",
+  "actors": {
+    "owner": 1,
+    "assignee": 2,
+    "shared_user": 3,
+    "group_member": 4,
+    "completer": 5,
+    "stale_member": 6,
+    "unrelated": 7,
+    "admin": 8
+  },
+  "groups": {
+    "sales": 1
+  },
+  "records": {
+    "Account": {
+      "public": 1,
+      "private_owned": 2,
+      "private_assigned": 3,
+      "shared_user": 4,
+      "shared_group": 5,
+      "shared_user_and_group": 6,
+      "shared_no_permissions": 7,
+      "private_with_permission": 8,
+      "shared_ghost_group": 9,
+      "inherited_access": 10,
+      "orphan_private": 11,
+      "deleted_assigned": 12
+    },
+    "Campaign": {
+      "public": 1,
+      "private_owned": 2,
+      "private_assigned": 3,
+      "shared_user": 4,
+      "shared_group": 5,
+      "shared_user_and_group": 6,
+      "shared_no_permissions": 7,
+      "private_with_permission": 8,
+      "shared_ghost_group": 9,
+      "inherited_access": 10,
+      "orphan_private": 11,
+      "deleted_assigned": 12
+    },
+    "Contact": {
+      "public": 1,
+      "private_owned": 2,
+      "private_assigned": 3,
+      "shared_user": 4,
+      "shared_group": 5,
+      "shared_user_and_group": 6,
+      "shared_no_permissions": 7,
+      "private_with_permission": 8,
+      "shared_ghost_group": 9,
+      "inherited_access": 10,
+      "orphan_private": 11,
+      "deleted_assigned": 12
+    },
+    "Lead": {
+      "public": 1,
+      "private_owned": 2,
+      "private_assigned": 3,
+      "shared_user": 4,
+      "shared_group": 5,
+      "shared_user_and_group": 6,
+      "shared_no_permissions": 7,
+      "private_with_permission": 8,
+      "shared_ghost_group": 9,
+      "inherited_access": 10,
+      "orphan_private": 11,
+      "deleted_assigned": 12
+    },
+    "Opportunity": {
+      "public": 1,
+      "private_owned": 2,
+      "private_assigned": 3,
+      "shared_user": 4,
+      "shared_group": 5,
+      "shared_user_and_group": 6,
+      "shared_no_permissions": 7,
+      "private_with_permission": 8,
+      "shared_ghost_group": 9,
+      "inherited_access": 10,
+      "orphan_private": 11,
+      "deleted_assigned": 12
+    },
+    "Task": {
+      "owned_unassigned": 1,
+      "owned_assigned": 2,
+      "assigned_to_owner": 3,
+      "completed_by": 4,
+      "unrelated": 5
+    },
+    "Comment": {
+      "by_owner": 1,
+      "by_admin": 2,
+      "by_unrelated_on_private": 3
+    },
+    "Email": {
+      "by_owner": 1,
+      "by_admin": 2,
+      "by_unrelated_on_private": 3
+    },
+    "User": {
+      "owner": 1,
+      "assignee": 2,
+      "shared_user": 3,
+      "group_member": 4,
+      "completer": 5,
+      "stale_member": 6,
+      "unrelated": 7,
+      "admin": 8
+    }
+  },
+  "visible": {
+    "Account": {
+      "owner": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          12,
+          13
+        ],
+        "count": 12
+      },
+      "assignee": {
+        "ids": [
+          1,
+          3,
+          12,
+          13
+        ],
+        "count": 4
+      },
+      "shared_user": {
+        "ids": [
+          1,
+          4,
+          8,
+          13
+        ],
+        "count": 4
+      },
+      "group_member": {
+        "ids": [
+          1,
+          5,
+          6,
+          13
+        ],
+        "count": 4
+      },
+      "completer": {
+        "ids": [
+          1,
+          13
+        ],
+        "count": 2
+      },
+      "stale_member": {
+        "ids": [
+          1,
+          13
+        ],
+        "count": 2
+      },
+      "unrelated": {
+        "ids": [
+          1,
+          13
+        ],
+        "count": 2
+      },
+      "admin": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "count": 13
+      }
+    },
+    "Campaign": {
+      "owner": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          12
+        ],
+        "count": 11
+      },
+      "assignee": {
+        "ids": [
+          1,
+          3,
+          12
+        ],
+        "count": 3
+      },
+      "shared_user": {
+        "ids": [
+          1,
+          4,
+          8
+        ],
+        "count": 3
+      },
+      "group_member": {
+        "ids": [
+          1,
+          5,
+          6
+        ],
+        "count": 3
+      },
+      "completer": {
+        "ids": [
+          1
+        ],
+        "count": 1
+      },
+      "stale_member": {
+        "ids": [
+          1
+        ],
+        "count": 1
+      },
+      "unrelated": {
+        "ids": [
+          1
+        ],
+        "count": 1
+      },
+      "admin": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "count": 12
+      }
+    },
+    "Contact": {
+      "owner": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          12
+        ],
+        "count": 11
+      },
+      "assignee": {
+        "ids": [
+          1,
+          3,
+          12
+        ],
+        "count": 3
+      },
+      "shared_user": {
+        "ids": [
+          1,
+          4,
+          8
+        ],
+        "count": 3
+      },
+      "group_member": {
+        "ids": [
+          1,
+          5,
+          6
+        ],
+        "count": 3
+      },
+      "completer": {
+        "ids": [
+          1
+        ],
+        "count": 1
+      },
+      "stale_member": {
+        "ids": [
+          1
+        ],
+        "count": 1
+      },
+      "unrelated": {
+        "ids": [
+          1,
+          2
+        ],
+        "count": 2
+      },
+      "admin": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "count": 12
+      }
+    },
+    "Lead": {
+      "owner": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          12
+        ],
+        "count": 11
+      },
+      "assignee": {
+        "ids": [
+          1,
+          3,
+          12
+        ],
+        "count": 3
+      },
+      "shared_user": {
+        "ids": [
+          1,
+          4,
+          8
+        ],
+        "count": 3
+      },
+      "group_member": {
+        "ids": [
+          1,
+          5,
+          6
+        ],
+        "count": 3
+      },
+      "completer": {
+        "ids": [
+          1
+        ],
+        "count": 1
+      },
+      "stale_member": {
+        "ids": [
+          1
+        ],
+        "count": 1
+      },
+      "unrelated": {
+        "ids": [
+          1
+        ],
+        "count": 1
+      },
+      "admin": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "count": 12
+      }
+    },
+    "Opportunity": {
+      "owner": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          12
+        ],
+        "count": 11
+      },
+      "assignee": {
+        "ids": [
+          1,
+          3,
+          12
+        ],
+        "count": 3
+      },
+      "shared_user": {
+        "ids": [
+          1,
+          4,
+          8
+        ],
+        "count": 3
+      },
+      "group_member": {
+        "ids": [
+          1,
+          5,
+          6
+        ],
+        "count": 3
+      },
+      "completer": {
+        "ids": [
+          1
+        ],
+        "count": 1
+      },
+      "stale_member": {
+        "ids": [
+          1
+        ],
+        "count": 1
+      },
+      "unrelated": {
+        "ids": [
+          1
+        ],
+        "count": 1
+      },
+      "admin": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "count": 12
+      }
+    },
+    "Task": {
+      "owner": {
+        "ids": [
+          1,
+          2,
+          3
+        ],
+        "count": 3
+      },
+      "assignee": {
+        "ids": [
+          2
+        ],
+        "count": 1
+      },
+      "shared_user": {
+        "ids": [],
+        "count": 0
+      },
+      "group_member": {
+        "ids": [],
+        "count": 0
+      },
+      "completer": {
+        "ids": [
+          4
+        ],
+        "count": 1
+      },
+      "stale_member": {
+        "ids": [],
+        "count": 0
+      },
+      "unrelated": {
+        "ids": [],
+        "count": 0
+      },
+      "admin": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "count": 5
+      }
+    },
+    "Comment": {
+      "owner": {
+        "ids": [
+          1
+        ],
+        "count": 1
+      },
+      "assignee": {
+        "ids": [],
+        "count": 0
+      },
+      "shared_user": {
+        "ids": [],
+        "count": 0
+      },
+      "group_member": {
+        "ids": [],
+        "count": 0
+      },
+      "completer": {
+        "ids": [],
+        "count": 0
+      },
+      "stale_member": {
+        "ids": [],
+        "count": 0
+      },
+      "unrelated": {
+        "ids": [
+          3
+        ],
+        "count": 1
+      },
+      "admin": {
+        "ids": [
+          1,
+          2,
+          3
+        ],
+        "count": 3
+      }
+    },
+    "Email": {
+      "owner": {
+        "ids": [
+          1
+        ],
+        "count": 1
+      },
+      "assignee": {
+        "ids": [],
+        "count": 0
+      },
+      "shared_user": {
+        "ids": [],
+        "count": 0
+      },
+      "group_member": {
+        "ids": [],
+        "count": 0
+      },
+      "completer": {
+        "ids": [],
+        "count": 0
+      },
+      "stale_member": {
+        "ids": [],
+        "count": 0
+      },
+      "unrelated": {
+        "ids": [
+          3
+        ],
+        "count": 1
+      },
+      "admin": {
+        "ids": [
+          1,
+          2,
+          3
+        ],
+        "count": 3
+      }
+    },
+    "User": {
+      "owner": {
+        "ids": [
+          1
+        ],
+        "count": 1
+      },
+      "assignee": {
+        "ids": [
+          2
+        ],
+        "count": 1
+      },
+      "shared_user": {
+        "ids": [
+          3
+        ],
+        "count": 1
+      },
+      "group_member": {
+        "ids": [
+          4
+        ],
+        "count": 1
+      },
+      "completer": {
+        "ids": [
+          5
+        ],
+        "count": 1
+      },
+      "stale_member": {
+        "ids": [
+          6
+        ],
+        "count": 1
+      },
+      "unrelated": {
+        "ids": [
+          7
+        ],
+        "count": 1
+      },
+      "admin": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "count": 8
+      }
+    }
+  },
+  "permission_writes": {
+    "asset_type": "Account",
+    "asset_id": 13,
+    "steps": [
+      {
+        "name": "share_users_and_group",
+        "access": "Shared",
+        "user_ids": [
+          "shared_user",
+          "group_member"
+        ],
+        "group_ids": [
+          "sales"
+        ],
+        "result_access": "Shared",
+        "rows": [
+          {
+            "user": "shared_user",
+            "group": null,
+            "asset_type": "Account",
+            "timestamps_present": true,
+            "created_equals_updated": true
+          },
+          {
+            "user": "group_member",
+            "group": null,
+            "asset_type": "Account",
+            "timestamps_present": true,
+            "created_equals_updated": true
+          },
+          {
+            "user": null,
+            "group": "sales",
+            "asset_type": "Account",
+            "timestamps_present": true,
+            "created_equals_updated": true
+          }
+        ]
+      },
+      {
+        "name": "replace_users",
+        "access": null,
+        "user_ids": [
+          "group_member",
+          "unrelated"
+        ],
+        "group_ids": null,
+        "result_access": "Shared",
+        "rows": [
+          {
+            "user": "group_member",
+            "group": null,
+            "asset_type": "Account",
+            "timestamps_present": true,
+            "created_equals_updated": true
+          },
+          {
+            "user": "unrelated",
+            "group": null,
+            "asset_type": "Account",
+            "timestamps_present": true,
+            "created_equals_updated": true
+          },
+          {
+            "user": null,
+            "group": "sales",
+            "asset_type": "Account",
+            "timestamps_present": true,
+            "created_equals_updated": true
+          }
+        ]
+      },
+      {
+        "name": "clear_groups",
+        "access": null,
+        "user_ids": null,
+        "group_ids": [],
+        "result_access": "Shared",
+        "rows": [
+          {
+            "user": "group_member",
+            "group": null,
+            "asset_type": "Account",
+            "timestamps_present": true,
+            "created_equals_updated": true
+          },
+          {
+            "user": "unrelated",
+            "group": null,
+            "asset_type": "Account",
+            "timestamps_present": true,
+            "created_equals_updated": true
+          }
+        ]
+      },
+      {
+        "name": "make_private",
+        "access": "Private",
+        "user_ids": null,
+        "group_ids": null,
+        "result_access": "Private",
+        "rows": []
+      },
+      {
+        "name": "user_ids_while_private",
+        "access": null,
+        "user_ids": [
+          "shared_user"
+        ],
+        "group_ids": null,
+        "result_access": "Private",
+        "rows": []
+      },
+      {
+        "name": "share_again",
+        "access": "Shared",
+        "user_ids": [
+          "assignee"
+        ],
+        "group_ids": null,
+        "result_access": "Shared",
+        "rows": [
+          {
+            "user": "assignee",
+            "group": null,
+            "asset_type": "Account",
+            "timestamps_present": true,
+            "created_equals_updated": true
+          }
+        ]
+      },
+      {
+        "name": "make_public",
+        "access": "Public",
+        "user_ids": null,
+        "group_ids": null,
+        "result_access": "Public",
+        "rows": []
+      }
+    ]
+  }
+}
