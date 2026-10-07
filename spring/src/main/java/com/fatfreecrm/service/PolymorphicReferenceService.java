@@ -17,9 +17,14 @@ public class PolymorphicReferenceService {
     }
 
     public Optional<Object> resolve(RailsModelType type, Integer id) {
-        if (type == null || id == null) {
+        return resolve(type == null ? null : type.railsName(), id);
+    }
+
+    public Optional<Object> resolve(String type, Integer id) {
+        if (id == null) {
             return Optional.empty();
         }
-        return Optional.ofNullable(entityManager.find(type.entityClass(), id.longValue()));
+        return RailsModelType.fromRailsName(type)
+            .map(modelType -> entityManager.find(modelType.entityClass(), id.longValue()));
     }
 }

@@ -1,35 +1,39 @@
 package com.fatfreecrm.domain;
 
 import com.fatfreecrm.domain.support.RailsModelType;
-import com.fatfreecrm.domain.support.RailsModelTypeConverter;
 import com.fatfreecrm.domain.support.TimestampedEntity;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Optional;
 import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "addresses")
 @DynamicUpdate
-@SQLRestriction("deleted_at IS NULL")
 public class Address extends TimestampedEntity {
 
-    @Convert(converter = RailsModelTypeConverter.class)
     @Column(name = "addressable_type")
-    private RailsModelType addressableType;
+    private String addressableType;
 
     @Column(name = "addressable_id")
     private Integer addressableId;
 
-    public RailsModelType getAddressableType() {
+    public String getAddressableType() {
         return addressableType;
     }
 
-    public void setAddressableType(RailsModelType addressableType) {
+    public void setAddressableType(String addressableType) {
         this.addressableType = addressableType;
+    }
+
+    public Optional<RailsModelType> addressableModelType() {
+        return RailsModelType.fromRailsName(addressableType);
+    }
+
+    public void setAddressableModelType(RailsModelType type) {
+        addressableType = type == null ? null : type.railsName();
     }
 
     public Integer getAddressableId() {

@@ -4,7 +4,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
-import org.hibernate.Hibernate;
+import org.hibernate.proxy.HibernateProxy;
 
 @MappedSuperclass
 public abstract class BaseEntity {
@@ -22,14 +22,27 @@ public abstract class BaseEntity {
         if (this == other) {
             return true;
         }
-        if (!(other instanceof BaseEntity that) || Hibernate.getClass(this) != Hibernate.getClass(that)) {
+        if (!(other instanceof BaseEntity that) || persistentClass(this) != persistentClass(that)) {
             return false;
         }
-        return id != null && id.equals(that.id);
+        Long thisId = identifier(this);
+        return thisId != null && thisId.equals(identifier(that));
     }
 
     @Override
     public final int hashCode() {
-        return Hibernate.getClass(this).hashCode();
+        return persistentClass(this).hashCode();
+    }
+
+    private static Class<?> persistentClass(Object entity) {
+        return entity instanceof HibernateProxy proxy
+            ? proxy.getHibernateLazyInitializer().getPersistentClass()
+            : entity.getClass();
+    }
+
+    private static Long identifier(BaseEntity entity) {
+        return entity instanceof HibernateProxy proxy
+            ? (Long) proxy.getHibernateLazyInitializer().getIdentifier()
+            : entity.id;
     }
 }

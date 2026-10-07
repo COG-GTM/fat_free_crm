@@ -3,8 +3,10 @@ package com.fatfreecrm;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fatfreecrm.domain.Account;
-import com.fatfreecrm.domain.support.BaseEntity;
+import com.fatfreecrm.domain.Lead;
 import com.fatfreecrm.domain.support.RailsModelType;
+import com.fatfreecrm.repository.AccountRepository;
+import com.fatfreecrm.repository.LeadRepository;
 import com.fatfreecrm.service.PolymorphicReferenceService;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Column;
@@ -28,7 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 import org.hibernate.Hibernate;
 import org.hibernate.SessionFactory;
 import org.hibernate.proxy.HibernateProxy;
@@ -85,6 +87,12 @@ class RailsEntityFixtureFidelityTest {
     private EntityManager entityManager;
 
     @Autowired
+    private AccountRepository accountRepository;
+
+    @Autowired
+    private LeadRepository leadRepository;
+
+    @Autowired
     private EntityManagerFactory entityManagerFactory;
 
     @Autowired
@@ -103,6 +111,18 @@ class RailsEntityFixtureFidelityTest {
         for (FixtureRow row : rows) {
             assertMappedColumns(row);
         }
+        Account invalidAccessAccount = accountRepository.findAll().stream()
+            .filter(account -> account.getName().equals("Lead access fixture"))
+            .findFirst()
+            .orElseThrow();
+        Lead invalidAccessLead = leadRepository.findAll().stream()
+            .filter(lead -> lead.getFirstName().equals("Campaign access fixture"))
+            .findFirst()
+            .orElseThrow();
+        assertThat(invalidAccessAccount.getAccess()).isEqualTo("Lead");
+        assertThat(invalidAccessAccount.accessLevel()).isEmpty();
+        assertThat(invalidAccessLead.getAccess()).isEqualTo("Campaign");
+        assertThat(invalidAccessLead.accessLevel()).isEmpty();
 
         Map<String, List<String>> before = snapshots();
         Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
@@ -128,43 +148,89 @@ class RailsEntityFixtureFidelityTest {
 
     @Test
     @Transactional
-    void resolvesPolymorphicReferencesOrIdentifiesSoftDeletedTargets() throws ReflectiveOperationException {
-        for (EntityType<?> entityType : entityManagerFactory.getMetamodel().getEntities()) {
-            Class<?> entityClass = entityType.getJavaType();
-            String table = entityClass.getAnnotation(Table.class).name();
-            for (Field field : entityClass.getDeclaredFields()) {
-                if (!field.getName().endsWith("Type") || field.getType() != RailsModelType.class) {
+    void resolvesKnownPolymorphicReferencesIncludingDeletedTargets() throws ReflectiveOperationException {
+        for (PolymorphicPair pair : polymorphicPairs()) {
+            List<Map<String, Object>> references = jdbcTemplate.queryForList(
+                "SELECT " + columnName(pair.typeField()) + ", " + columnName(pair.idField())
+                    + " FROM public." + pair.table()
+            );
+            for (Map<String, Object> reference : references) {
+                Object typeValue = reference.get(columnName(pair.typeField()));
+                Object idValue = reference.get(columnName(pair.idField()));
+                if (typeValue == null || idValue == null) {
                     continue;
                 }
-                String prefix = field.getName().substring(0, field.getName().length() - "Type".length());
-                String typeColumn = camelToSnake(field.getName());
-                String idColumn = camelToSnake(prefix + "Id");
-                List<Map<String, Object>> references = jdbcTemplate.queryForList(
-                    "SELECT " + typeColumn + ", " + idColumn + " FROM public." + table
-                );
-                for (Map<String, Object> reference : references) {
-                    Object typeValue = reference.get(typeColumn);
-                    Object idValue = reference.get(idColumn);
-                    if (typeValue == null || idValue == null) {
-                        continue;
-                    }
-                    RailsModelType type = RailsModelType.fromRailsName((String) typeValue);
-                    Integer id = ((Number) idValue).intValue();
-                    String targetTable = type.entityClass().getAnnotation(Table.class).name();
-                    boolean softDeleted = SOFT_DELETE_TABLES.contains(targetTable)
-                        && jdbcTemplate.queryForObject(
-                            "SELECT deleted_at IS NOT NULL FROM public." + targetTable + " WHERE id = ?",
-                            Boolean.class,
-                            id
-                        );
-                    var resolved = polymorphicReferenceService.resolve(type, id);
-                    if (softDeleted) {
-                        assertThat(resolved).as("soft-deleted target %s %d", type.railsName(), id).isEmpty();
-                    } else {
-                        assertThat(resolved).as("live target %s %d", type.railsName(), id).isPresent();
-                    }
+                Optional<RailsModelType> type = RailsModelType.fromRailsName((String) typeValue);
+                if (type.isEmpty()) {
+                    continue;
                 }
+                Integer id = ((Number) idValue).intValue();
+                assertThat(polymorphicReferenceService.resolve(type.orElseThrow(), id))
+                    .as("known target %s %d", type.orElseThrow().railsName(), id)
+                    .isPresent();
             }
+        }
+    }
+
+    @Test
+    @Transactional
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    void preservesUnknownPolymorphicTypesAcrossLoadsAndNoOpSaves() throws ReflectiveOperationException {
+        Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+        for (PolymorphicPair pair : polymorphicPairs()) {
+            entityManager.clear();
+            statistics.clear();
+            Long rowId = jdbcTemplate.queryForObject(
+                "SELECT id FROM public." + pair.table() + " ORDER BY id LIMIT 1", Long.class
+            );
+            jdbcTemplate.update(
+                "UPDATE public." + pair.table() + " SET " + columnName(pair.typeField()) + " = ?, "
+                    + columnName(pair.idField()) + " = COALESCE(" + columnName(pair.idField()) + ", 1) WHERE id = ?",
+                "SomeUnknownModel",
+                rowId
+            );
+            Integer polymorphicId = jdbcTemplate.queryForObject(
+                "SELECT " + columnName(pair.idField()) + " FROM public." + pair.table() + " WHERE id = ?",
+                Integer.class,
+                rowId
+            );
+            String before = rowSnapshot(pair.table(), rowId);
+
+            JpaRepository<?, Long> repository = (JpaRepository<?, Long>) repositoryFor(pair.entityClass());
+            List<?> allRows = repository.findAll();
+            Object fromAll = allRows.stream()
+                .filter(row -> {
+                    try {
+                        return entityId(row).equals(rowId);
+                    } catch (ReflectiveOperationException exception) {
+                        throw new IllegalStateException(exception);
+                    }
+                })
+                .findFirst()
+                .orElseThrow();
+            Object fromId = repository.findById(rowId).orElseThrow();
+            String suffix = capitalize(pair.prefix());
+            var rawTypeGetter = pair.entityClass().getMethod("get" + suffix + "Type");
+            var modelTypeAccessor = pair.entityClass().getMethod(pair.prefix() + "ModelType");
+            assertThat(rawTypeGetter.invoke(fromAll)).isEqualTo("SomeUnknownModel");
+            assertThat(rawTypeGetter.invoke(fromId)).isEqualTo("SomeUnknownModel");
+            assertThat(modelTypeAccessor.invoke(fromAll)).isEqualTo(Optional.empty());
+            assertThat(polymorphicReferenceService.resolve("SomeUnknownModel", polymorphicId)).isEmpty();
+            assertThat(polymorphicReferenceService.resolve((String) null, polymorphicId)).isEmpty();
+            assertThat(polymorphicReferenceService.resolve("Account", null)).isEmpty();
+
+            Object sample = pair.entityClass().getDeclaredConstructor().newInstance();
+            pair.entityClass().getMethod("set" + suffix + "ModelType", RailsModelType.class)
+                .invoke(sample, RailsModelType.ACCOUNT);
+            assertThat(rawTypeGetter.invoke(sample)).isEqualTo("Account");
+            pair.entityClass().getMethod("set" + suffix + "ModelType", RailsModelType.class)
+                .invoke(sample, (Object) null);
+            assertThat(rawTypeGetter.invoke(sample)).isNull();
+
+            ((JpaRepository) repository).saveAll(List.of(fromId));
+            entityManager.flush();
+            assertThat(rowSnapshot(pair.table(), rowId)).isEqualTo(before);
+            assertThat(statistics.getEntityUpdateCount()).isZero();
         }
     }
 
@@ -223,21 +289,7 @@ class RailsEntityFixtureFidelityTest {
                 assertThat(deletedCount).as("deleted fixture rows for %s", table).isPositive();
             }
             Object repository = repositoryFor(entityClass);
-            List<?> values;
-            if (SOFT_DELETE_TABLES.contains(table)) {
-                List<?> live = ((JpaRepository<?, ?>) repository).findAll();
-                List<?> all = findAllIncludingDeleted(repository);
-                Set<Long> deletedIds = Set.copyOf(jdbcTemplate.queryForList(
-                    "SELECT id FROM public." + table + " WHERE deleted_at IS NOT NULL", Long.class
-                ));
-                List<?> deleted = all.stream()
-                    .filter(value -> deletedIds.contains(((BaseEntity) value).getId()))
-                    .toList();
-                assertThat(live).as("live rows for %s", table).hasSize(rowCount - deleted.size());
-                values = java.util.stream.Stream.concat(live.stream(), deleted.stream()).toList();
-            } else {
-                values = ((JpaRepository<?, ?>) repository).findAll();
-            }
+            List<?> values = ((JpaRepository<?, ?>) repository).findAll();
             assertThat(values).as("loaded rows for %s", table).hasSize(rowCount);
             for (Object value : values) {
                 result.add(new FixtureRow(entityType, table, value));
@@ -256,10 +308,6 @@ class RailsEntityFixtureFidelityTest {
     private Object repositoryFor(Class<?> entityClass) {
         return new Repositories(applicationContext).getRepositoryFor(entityClass)
             .orElseThrow(() -> new IllegalStateException("No Spring Data repository for " + entityClass.getName()));
-    }
-
-    private List<?> findAllIncludingDeleted(Object repository) throws ReflectiveOperationException {
-        return (List<?>) repository.getClass().getMethod("findAllIncludingDeleted").invoke(repository);
     }
 
     private void assertMappedColumns(FixtureRow row) throws ReflectiveOperationException {
@@ -383,6 +431,36 @@ class RailsEntityFixtureFidelityTest {
         return result;
     }
 
+    private String rowSnapshot(String table, Long id) {
+        return jdbcTemplate.queryForObject(
+            "SELECT row_to_json(t)::text FROM public." + table + " t WHERE id = ?", String.class, id
+        );
+    }
+
+    private List<PolymorphicPair> polymorphicPairs() {
+        List<PolymorphicPair> result = new ArrayList<>();
+        for (EntityType<?> entityType : entityManagerFactory.getMetamodel().getEntities()) {
+            Class<?> entityClass = entityType.getJavaType();
+            String table = entityClass.getAnnotation(Table.class).name();
+            for (Field typeField : entityClass.getDeclaredFields()) {
+                if (!typeField.getName().endsWith("Type") || typeField.getType() != String.class) {
+                    continue;
+                }
+                String prefix = typeField.getName().substring(0, typeField.getName().length() - "Type".length());
+                try {
+                    Field idField = entityClass.getDeclaredField(prefix + "Id");
+                    if (idField.getType() == Integer.class) {
+                        result.add(new PolymorphicPair(table, entityClass, prefix, typeField, idField));
+                    }
+                } catch (NoSuchFieldException ignored) {
+                    // Non-polymorphic fields named *Type have no matching *Id.
+                }
+            }
+        }
+        assertThat(result).hasSize(11);
+        return result;
+    }
+
     private String unquote(String identifier) {
         return identifier.replace("\"", "").replace("`", "");
     }
@@ -391,7 +469,20 @@ class RailsEntityFixtureFidelityTest {
         return value.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
     }
 
+    private String capitalize(String value) {
+        return Character.toUpperCase(value.charAt(0)) + value.substring(1);
+    }
+
     private record FixtureRow(EntityType<?> entityType, String table, Object value) {
+    }
+
+    private record PolymorphicPair(
+        String table,
+        Class<?> entityClass,
+        String prefix,
+        Field typeField,
+        Field idField
+    ) {
     }
 
     private static void loadSql(String path) throws IOException, InterruptedException {

@@ -1,9 +1,7 @@
 package com.fatfreecrm.domain;
 
 import com.fatfreecrm.domain.support.RailsModelType;
-import com.fatfreecrm.domain.support.RailsModelTypeConverter;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -13,6 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Optional;
 
 @Entity
 @Table(name = "permissions")
@@ -30,9 +29,8 @@ public class Permission {
     @JoinColumn(name = "group_id", columnDefinition = "int4")
     private Group group;
 
-    @Convert(converter = RailsModelTypeConverter.class)
     @Column(name = "asset_type")
-    private RailsModelType assetType;
+    private String assetType;
 
     @Column(name = "asset_id")
     private Integer assetId;
@@ -63,12 +61,20 @@ public class Permission {
         this.group = group;
     }
 
-    public RailsModelType getAssetType() {
+    public String getAssetType() {
         return assetType;
     }
 
-    public void setAssetType(RailsModelType assetType) {
+    public void setAssetType(String assetType) {
         this.assetType = assetType;
+    }
+
+    public Optional<RailsModelType> assetModelType() {
+        return RailsModelType.fromRailsName(assetType);
+    }
+
+    public void setAssetModelType(RailsModelType type) {
+        assetType = type == null ? null : type.railsName();
     }
 
     public Integer getAssetId() {

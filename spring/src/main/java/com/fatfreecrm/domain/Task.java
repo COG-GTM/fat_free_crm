@@ -1,7 +1,6 @@
 package com.fatfreecrm.domain;
 
 import com.fatfreecrm.domain.support.RailsModelType;
-import com.fatfreecrm.domain.support.RailsModelTypeConverter;
 import com.fatfreecrm.domain.support.SubscribedUsersConverter;
 import com.fatfreecrm.domain.support.TimestampedEntity;
 import jakarta.persistence.Column;
@@ -14,13 +13,12 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "tasks")
 @DynamicUpdate
-@SQLRestriction("deleted_at IS NULL")
 public class Task extends TimestampedEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -59,19 +57,26 @@ public class Task extends TimestampedEntity {
         this.completedBy = completedBy;
     }
 
-    @Convert(converter = RailsModelTypeConverter.class)
     @Column(name = "asset_type")
-    private RailsModelType assetType;
+    private String assetType;
 
     @Column(name = "asset_id")
     private Integer assetId;
 
-    public RailsModelType getAssetType() {
+    public String getAssetType() {
         return assetType;
     }
 
-    public void setAssetType(RailsModelType assetType) {
+    public void setAssetType(String assetType) {
         this.assetType = assetType;
+    }
+
+    public Optional<RailsModelType> assetModelType() {
+        return RailsModelType.fromRailsName(assetType);
+    }
+
+    public void setAssetModelType(RailsModelType type) {
+        assetType = type == null ? null : type.railsName();
     }
 
     public Integer getAssetId() {

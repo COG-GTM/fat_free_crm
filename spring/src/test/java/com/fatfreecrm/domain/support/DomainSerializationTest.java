@@ -3,41 +3,43 @@ package com.fatfreecrm.domain.support;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fatfreecrm.domain.Account;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class DomainSerializationTest {
 
-    private final AccessConverter accessConverter = new AccessConverter();
-    private final RailsModelTypeConverter modelTypeConverter = new RailsModelTypeConverter();
     private final SubscribedUsersConverter subscribedUsersConverter = new SubscribedUsersConverter();
 
     @Test
     void convertsAccessNamesExactly() {
         for (Access access : Access.values()) {
-            assertThat(accessConverter.convertToDatabaseColumn(access)).isEqualTo(access.railsValue());
-            assertThat(accessConverter.convertToEntityAttribute(access.railsValue())).isEqualTo(access);
+            assertThat(Access.fromRailsValue(access.railsValue())).contains(access);
         }
-        assertThat(accessConverter.convertToDatabaseColumn(null)).isNull();
-        assertThat(accessConverter.convertToEntityAttribute(null)).isNull();
-        assertThatThrownBy(() -> accessConverter.convertToEntityAttribute("Lead"))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Lead");
+        assertThat(Access.fromRailsValue(null)).isEmpty();
+        assertThat(Access.fromRailsValue("Lead")).isEmpty();
+
+        Account account = new Account();
+        assertThat(account.getAccess()).isEqualTo("Public");
+        account.setAccessLevel(Access.PRIVATE);
+        assertThat(account.getAccess()).isEqualTo("Private");
+        assertThat(account.accessLevel()).contains(Access.PRIVATE);
+        account.setAccessLevel(null);
+        assertThat(account.getAccess()).isNull();
+        assertThat(account.accessLevel()).isEmpty();
     }
 
     @Test
-    void mapsRailsPolymorphicNamesAndRejectsUnknownValues() {
+    void mapsKnownRailsPolymorphicNamesAndPreservesUnknownValues() {
         assertThat(RailsModelType.values()).hasSize(26);
-        assertThat(RailsModelType.fromRailsName("List")).isEqualTo(RailsModelType.LIST);
+        assertThat(RailsModelType.fromRailsName("List")).contains(RailsModelType.LIST);
         assertThat(RailsModelType.LIST.entityClass()).isEqualTo(com.fatfreecrm.domain.SavedList.class);
         for (RailsModelType type : RailsModelType.values()) {
-            assertThat(modelTypeConverter.convertToDatabaseColumn(type)).isEqualTo(type.railsName());
-            assertThat(modelTypeConverter.convertToEntityAttribute(type.railsName())).isEqualTo(type);
+            assertThat(RailsModelType.fromRailsName(type.railsName())).contains(type);
         }
-        assertThatThrownBy(() -> modelTypeConverter.convertToEntityAttribute("CustomField"))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("CustomField");
+        assertThat(RailsModelType.fromRailsName("CustomField")).isEmpty();
+        assertThat(RailsModelType.fromRailsName(null)).isEmpty();
     }
 
     @Test

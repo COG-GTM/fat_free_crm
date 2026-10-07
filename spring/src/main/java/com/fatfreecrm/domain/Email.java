@@ -1,23 +1,20 @@
 package com.fatfreecrm.domain;
 
 import com.fatfreecrm.domain.support.RailsModelType;
-import com.fatfreecrm.domain.support.RailsModelTypeConverter;
 import com.fatfreecrm.domain.support.TimestampedEntity;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Optional;
 import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "emails")
 @DynamicUpdate
-@SQLRestriction("deleted_at IS NULL")
 public class Email extends TimestampedEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -32,19 +29,26 @@ public class Email extends TimestampedEntity {
         this.user = user;
     }
 
-    @Convert(converter = RailsModelTypeConverter.class)
     @Column(name = "mediator_type")
-    private RailsModelType mediatorType;
+    private String mediatorType;
 
     @Column(name = "mediator_id")
     private Integer mediatorId;
 
-    public RailsModelType getMediatorType() {
+    public String getMediatorType() {
         return mediatorType;
     }
 
-    public void setMediatorType(RailsModelType mediatorType) {
+    public void setMediatorType(String mediatorType) {
         this.mediatorType = mediatorType;
+    }
+
+    public Optional<RailsModelType> mediatorModelType() {
+        return RailsModelType.fromRailsName(mediatorType);
+    }
+
+    public void setMediatorModelType(RailsModelType type) {
+        mediatorType = type == null ? null : type.railsName();
     }
 
     public Integer getMediatorId() {

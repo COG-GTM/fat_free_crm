@@ -7,5 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AvatarRepository extends JpaRepository<Avatar, Long> {
 
-    List<Avatar> findByEntityTypeAndEntityId(RailsModelType entityType, Integer entityId);
+    List<Avatar> findByEntityTypeAndEntityId(String entityType, Integer entityId);
+
+    default List<Avatar> findByEntityTypeAndEntityId(RailsModelType type, Integer id) {
+        return findByEntityTypeAndEntityId(type == null ? null : type.railsName(), id);
+    }
 }

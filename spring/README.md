@@ -119,20 +119,26 @@ own user and assignee fields and are not CRM entities. The existing
 `User.groups` association maps `groups_users`; the other join tables are
 entities with their own identity and timestamps.
 
-Spring applies `@SQLRestriction("deleted_at IS NULL")` to accounts, contacts,
-leads, opportunities, campaigns, tasks, emails, addresses, account_contacts,
-account_opportunities, and contact_opportunities. **This intentionally differs
-from Rails 8:** Rails hard-deletes these records and does not filter
-`deleted_at`, whereas Spring hides them in normal ORM queries. The corresponding
-repositories expose explicit including-deleted finders. Initializing a lazy
-association to a soft-deleted row can throw `EntityNotFoundException`; no
-`@NotFound` fallback is installed.
+### Deviation from Jira: soft delete
 
-Rails polymorphic references remain a type and integer ID pair rather than an
-inheritance hierarchy or Hibernate `@Any`. `RailsModelType` converts Rails class
-names (including `List` for `SavedList`) and unknown names fail fast. The
-read-only `PolymorphicReferenceService` resolves a pair with `EntityManager.find`;
-soft-delete restrictions apply to the result.
+AB-265 requested `@SQLRestriction`-based soft delete; it is not implemented
+because Rails 8 has no paranoia gem (removed long ago), no Rails runtime code
+in `app/` or `lib/` filters or sets `deleted_at` (the fixture task writes
+representative values only inside its rolled-back transaction), and Rails shows
+those rows and hard-deletes on destroy. The epic coexistence rule is that Rails
+semantics win: a restriction would break the contract-diff parity AB-270
+depends on. Real soft delete needs a Rails change plus a product decision and
+is out of scope. `deleted_at` is mapped as a plain column.
+
+Rails polymorphic references remain a raw `String` type and integer ID pair
+rather than an inheritance hierarchy or Hibernate `@Any`. Typed
+`xModelType()` accessors recognize Rails class names (including `List` for
+`SavedList`); unknown type strings are preserved and resolve to an empty
+`Optional`. The read-only `PolymorphicReferenceService` resolves known pairs
+with `EntityManager.find`.
+
+CRM `access` values are also stored as raw strings. `accessLevel()` recognizes
+`Public`, `Private`, and `Shared`, while retaining Rails-accepted unknown values.
 
 | Column(s) | Representation |
 | --- | --- |
@@ -179,8 +185,9 @@ the existing Rails test environment with the same opt-out flag. The
 `spring-api.yml` workflow currently runs the Spring build, baseline check, and
 gateway validation, but does **not** run RSpec.
 
-Known gaps: counter caches are not maintained by Spring; unknown polymorphic
-type strings throw rather than resolving dynamically; and lazy references to
-soft-deleted rows can fail as described above. Settings/field YAML is exposed
-read-only because arbitrary Ruby-object YAML cannot be emitted faithfully by
-the Java model.
+Known gaps: counter caches are not maintained by Spring; `subscribed_users`
+rows still in the pre-2012 `!ruby/object:Set` YAML form fail to load in Spring,
+and also in Rails 8 (`Psych::DisallowedClass`: Set is not in
+`yaml_column_permitted_classes`). Repair them to YAML arrays at migration time.
+Settings/field YAML is exposed read-only because arbitrary Ruby-object YAML
+cannot be emitted faithfully by the Java model.

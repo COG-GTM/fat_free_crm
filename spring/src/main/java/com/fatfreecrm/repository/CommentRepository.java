@@ -7,5 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
 
-    List<Comment> findByCommentableTypeAndCommentableId(RailsModelType commentableType, Integer commentableId);
+    List<Comment> findByCommentableTypeAndCommentableId(String commentableType, Integer commentableId);
+
+    default List<Comment> findByCommentableTypeAndCommentableId(RailsModelType type, Integer id) {
+        return findByCommentableTypeAndCommentableId(type == null ? null : type.railsName(), id);
+    }
 }

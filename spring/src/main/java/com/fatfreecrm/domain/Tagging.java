@@ -2,15 +2,14 @@ package com.fatfreecrm.domain;
 
 import com.fatfreecrm.domain.support.BaseEntity;
 import com.fatfreecrm.domain.support.RailsModelType;
-import com.fatfreecrm.domain.support.RailsModelTypeConverter;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Optional;
 import org.hibernate.annotations.DynamicUpdate;
 
 @Entity
@@ -30,19 +29,26 @@ public class Tagging extends BaseEntity {
         this.tag = tag;
     }
 
-    @Convert(converter = RailsModelTypeConverter.class)
     @Column(name = "taggable_type")
-    private RailsModelType taggableType;
+    private String taggableType;
 
     @Column(name = "taggable_id")
     private Integer taggableId;
 
-    public RailsModelType getTaggableType() {
+    public String getTaggableType() {
         return taggableType;
     }
 
-    public void setTaggableType(RailsModelType taggableType) {
+    public void setTaggableType(String taggableType) {
         this.taggableType = taggableType;
+    }
+
+    public Optional<RailsModelType> taggableModelType() {
+        return RailsModelType.fromRailsName(taggableType);
+    }
+
+    public void setTaggableModelType(RailsModelType type) {
+        taggableType = type == null ? null : type.railsName();
     }
 
     public Integer getTaggableId() {
@@ -53,19 +59,26 @@ public class Tagging extends BaseEntity {
         this.taggableId = taggableId;
     }
 
-    @Convert(converter = RailsModelTypeConverter.class)
     @Column(name = "tagger_type")
-    private RailsModelType taggerType;
+    private String taggerType;
 
     @Column(name = "tagger_id")
     private Integer taggerId;
 
-    public RailsModelType getTaggerType() {
+    public String getTaggerType() {
         return taggerType;
     }
 
-    public void setTaggerType(RailsModelType taggerType) {
+    public void setTaggerType(String taggerType) {
         this.taggerType = taggerType;
+    }
+
+    public Optional<RailsModelType> taggerModelType() {
+        return RailsModelType.fromRailsName(taggerType);
+    }
+
+    public void setTaggerModelType(RailsModelType type) {
+        taggerType = type == null ? null : type.railsName();
     }
 
     public Integer getTaggerId() {

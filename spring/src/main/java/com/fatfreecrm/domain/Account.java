@@ -6,12 +6,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "accounts")
 @DynamicUpdate
-@SQLRestriction("deleted_at IS NULL")
 public class Account extends CrmEntity {
 
     @Column(name = "name", length = 64, nullable = false)

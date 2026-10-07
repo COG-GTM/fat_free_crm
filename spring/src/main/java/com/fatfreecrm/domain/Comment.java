@@ -1,15 +1,14 @@
 package com.fatfreecrm.domain;
 
 import com.fatfreecrm.domain.support.RailsModelType;
-import com.fatfreecrm.domain.support.RailsModelTypeConverter;
 import com.fatfreecrm.domain.support.TimestampedEntity;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.util.Optional;
 import org.hibernate.annotations.DynamicUpdate;
 
 @Entity
@@ -29,19 +28,26 @@ public class Comment extends TimestampedEntity {
         this.user = user;
     }
 
-    @Convert(converter = RailsModelTypeConverter.class)
     @Column(name = "commentable_type")
-    private RailsModelType commentableType;
+    private String commentableType;
 
     @Column(name = "commentable_id")
     private Integer commentableId;
 
-    public RailsModelType getCommentableType() {
+    public String getCommentableType() {
         return commentableType;
     }
 
-    public void setCommentableType(RailsModelType commentableType) {
+    public void setCommentableType(String commentableType) {
         this.commentableType = commentableType;
+    }
+
+    public Optional<RailsModelType> commentableModelType() {
+        return RailsModelType.fromRailsName(commentableType);
+    }
+
+    public void setCommentableModelType(RailsModelType type) {
+        commentableType = type == null ? null : type.railsName();
     }
 
     public Integer getCommentableId() {

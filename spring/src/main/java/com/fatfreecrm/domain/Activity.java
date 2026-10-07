@@ -1,15 +1,14 @@
 package com.fatfreecrm.domain;
 
 import com.fatfreecrm.domain.support.RailsModelType;
-import com.fatfreecrm.domain.support.RailsModelTypeConverter;
 import com.fatfreecrm.domain.support.TimestampedEntity;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.util.Optional;
 import org.hibernate.annotations.DynamicUpdate;
 
 @Entity
@@ -29,19 +28,26 @@ public class Activity extends TimestampedEntity {
         this.user = user;
     }
 
-    @Convert(converter = RailsModelTypeConverter.class)
     @Column(name = "subject_type")
-    private RailsModelType subjectType;
+    private String subjectType;
 
     @Column(name = "subject_id")
     private Integer subjectId;
 
-    public RailsModelType getSubjectType() {
+    public String getSubjectType() {
         return subjectType;
     }
 
-    public void setSubjectType(RailsModelType subjectType) {
+    public void setSubjectType(String subjectType) {
         this.subjectType = subjectType;
+    }
+
+    public Optional<RailsModelType> subjectModelType() {
+        return RailsModelType.fromRailsName(subjectType);
+    }
+
+    public void setSubjectModelType(RailsModelType type) {
+        subjectType = type == null ? null : type.railsName();
     }
 
     public Integer getSubjectId() {

@@ -2,12 +2,11 @@ package com.fatfreecrm.domain;
 
 import com.fatfreecrm.domain.support.BaseEntity;
 import com.fatfreecrm.domain.support.RailsModelType;
-import com.fatfreecrm.domain.support.RailsModelTypeConverter;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Optional;
 import org.hibernate.annotations.DynamicUpdate;
 
 @Entity
@@ -15,19 +14,26 @@ import org.hibernate.annotations.DynamicUpdate;
 @DynamicUpdate
 public class Version extends BaseEntity {
 
-    @Convert(converter = RailsModelTypeConverter.class)
     @Column(name = "item_type", nullable = false)
-    private RailsModelType itemType;
+    private String itemType;
 
     @Column(name = "item_id", nullable = false)
     private Integer itemId;
 
-    public RailsModelType getItemType() {
+    public String getItemType() {
         return itemType;
     }
 
-    public void setItemType(RailsModelType itemType) {
+    public void setItemType(String itemType) {
         this.itemType = itemType;
+    }
+
+    public Optional<RailsModelType> itemModelType() {
+        return RailsModelType.fromRailsName(itemType);
+    }
+
+    public void setItemModelType(RailsModelType type) {
+        itemType = type == null ? null : type.railsName();
     }
 
     public Integer getItemId() {
@@ -38,19 +44,26 @@ public class Version extends BaseEntity {
         this.itemId = itemId;
     }
 
-    @Convert(converter = RailsModelTypeConverter.class)
     @Column(name = "related_type")
-    private RailsModelType relatedType;
+    private String relatedType;
 
     @Column(name = "related_id")
     private Integer relatedId;
 
-    public RailsModelType getRelatedType() {
+    public String getRelatedType() {
         return relatedType;
     }
 
-    public void setRelatedType(RailsModelType relatedType) {
+    public void setRelatedType(String relatedType) {
         this.relatedType = relatedType;
+    }
+
+    public Optional<RailsModelType> relatedModelType() {
+        return RailsModelType.fromRailsName(relatedType);
+    }
+
+    public void setRelatedModelType(RailsModelType type) {
+        relatedType = type == null ? null : type.railsName();
     }
 
     public Integer getRelatedId() {

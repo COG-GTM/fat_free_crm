@@ -10,6 +10,7 @@ import jakarta.persistence.MappedSuperclass;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @MappedSuperclass
 public abstract class CrmEntity extends TimestampedEntity {
@@ -22,9 +23,8 @@ public abstract class CrmEntity extends TimestampedEntity {
     @JoinColumn(name = "assigned_to", columnDefinition = "int4")
     private User assignedTo;
 
-    @Convert(converter = AccessConverter.class)
     @Column(name = "access")
-    private Access access = Access.PUBLIC;
+    private String access = Access.PUBLIC.railsValue();
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
@@ -49,12 +49,20 @@ public abstract class CrmEntity extends TimestampedEntity {
         this.assignedTo = assignedTo;
     }
 
-    public Access getAccess() {
+    public String getAccess() {
         return access;
     }
 
-    public void setAccess(Access access) {
+    public void setAccess(String access) {
         this.access = access;
+    }
+
+    public Optional<Access> accessLevel() {
+        return Access.fromRailsValue(access);
+    }
+
+    public void setAccessLevel(Access access) {
+        this.access = access == null ? null : access.railsValue();
     }
 
     public Instant getDeletedAt() {

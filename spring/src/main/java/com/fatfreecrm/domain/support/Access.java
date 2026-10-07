@@ -1,5 +1,7 @@
 package com.fatfreecrm.domain.support;
 
+import java.util.Optional;
+
 public enum Access {
     PUBLIC("Public"),
     PRIVATE("Private"),
@@ -15,12 +17,15 @@ public enum Access {
         return railsValue;
     }
 
-    public static Access fromRailsValue(String value) {
+    public static Optional<Access> fromRailsValue(String value) {
+        if (value == null) {
+            return Optional.empty();
+        }
         for (Access access : values()) {
             if (access.railsValue.equals(value)) {
-                return access;
+                return Optional.of(access);
             }
         }
-        throw new IllegalArgumentException("Unknown access value: " + value);
+        return Optional.empty();
     }
 }

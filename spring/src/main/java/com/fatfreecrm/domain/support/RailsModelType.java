@@ -26,6 +26,7 @@ import com.fatfreecrm.domain.Tagging;
 import com.fatfreecrm.domain.Task;
 import com.fatfreecrm.domain.User;
 import com.fatfreecrm.domain.Version;
+import java.util.Optional;
 
 public enum RailsModelType {
     ACCOUNT("Account", Account.class),
@@ -71,12 +72,15 @@ public enum RailsModelType {
         return entityClass;
     }
 
-    public static RailsModelType fromRailsName(String name) {
+    public static Optional<RailsModelType> fromRailsName(String name) {
+        if (name == null) {
+            return Optional.empty();
+        }
         for (RailsModelType type : values()) {
             if (type.railsName.equals(name)) {
-                return type;
+                return Optional.of(type);
             }
         }
-        throw new IllegalArgumentException("Unknown Rails model type: " + name);
+        return Optional.empty();
     }
 }

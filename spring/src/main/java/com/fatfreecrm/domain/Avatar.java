@@ -1,15 +1,14 @@
 package com.fatfreecrm.domain;
 
 import com.fatfreecrm.domain.support.RailsModelType;
-import com.fatfreecrm.domain.support.RailsModelTypeConverter;
 import com.fatfreecrm.domain.support.TimestampedEntity;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.util.Optional;
 import org.hibernate.annotations.DynamicUpdate;
 
 @Entity
@@ -29,19 +28,26 @@ public class Avatar extends TimestampedEntity {
         this.user = user;
     }
 
-    @Convert(converter = RailsModelTypeConverter.class)
     @Column(name = "entity_type")
-    private RailsModelType entityType;
+    private String entityType;
 
     @Column(name = "entity_id")
     private Integer entityId;
 
-    public RailsModelType getEntityType() {
+    public String getEntityType() {
         return entityType;
     }
 
-    public void setEntityType(RailsModelType entityType) {
+    public void setEntityType(String entityType) {
         this.entityType = entityType;
+    }
+
+    public Optional<RailsModelType> entityModelType() {
+        return RailsModelType.fromRailsName(entityType);
+    }
+
+    public void setEntityModelType(RailsModelType type) {
+        entityType = type == null ? null : type.railsName();
     }
 
     public Integer getEntityId() {

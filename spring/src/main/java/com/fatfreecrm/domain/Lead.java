@@ -8,12 +8,10 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "leads")
 @DynamicUpdate
-@SQLRestriction("deleted_at IS NULL")
 public class Lead extends CrmEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

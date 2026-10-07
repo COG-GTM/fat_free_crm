@@ -9,12 +9,10 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "account_contacts")
 @DynamicUpdate
-@SQLRestriction("deleted_at IS NULL")
 public class AccountContact extends TimestampedEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

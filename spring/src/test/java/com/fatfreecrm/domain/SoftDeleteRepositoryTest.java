@@ -17,17 +17,21 @@ import com.fatfreecrm.support.AbstractPostgresIntegrationTest;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.transaction.annotation.Transactional;
 
-@Transactional
 class SoftDeleteRepositoryTest extends AbstractPostgresIntegrationTest {
+
+    private static final Instant DELETED_AT = Instant.parse("2025-03-04T05:06:07Z");
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Autowired
     private AccountRepository accountRepository;
@@ -62,140 +66,113 @@ class SoftDeleteRepositoryTest extends AbstractPostgresIntegrationTest {
     @Autowired
     private ContactOpportunityRepository contactOpportunityRepository;
 
-    @Autowired
-    private EntityManager entityManager;
-
     @Test
-    void exposesLiveRowsNormallyAndDeletedRowsOnlyThroughExplicitFinders() {
-        Account account = new Account();
-        account.setName("soft delete account");
-        verify(
-            accountRepository, accountRepository::findAllIncludingDeleted, accountRepository::findByIdIncludingDeleted,
-            Account::getId, account, new Account()
-        );
-        Campaign campaign = new Campaign();
-        campaign.setName("soft delete campaign");
-        verify(campaignRepository, campaignRepository::findAllIncludingDeleted,
-            campaignRepository::findByIdIncludingDeleted, Campaign::getId, campaign, new Campaign());
-        Contact contact = new Contact();
-        contact.setFirstName("live");
+    @Transactional
+    void normalQueriesIncludeRowsWithDeletedAtLikeRails() {
+        Account liveAccount = new Account();
+        liveAccount.setName("Live account");
+        Account deletedAccount = new Account();
+        deletedAccount.setName("Deleted account");
+        verify(accountRepository, accountRepository, Account::getId, Account::getDeletedAt,
+            Account::setDeletedAt, liveAccount, deletedAccount);
+
+        Campaign liveCampaign = new Campaign();
+        liveCampaign.setName("Live campaign");
+        Campaign deletedCampaign = new Campaign();
+        deletedCampaign.setName("Deleted campaign");
+        verify(campaignRepository, campaignRepository, Campaign::getId, Campaign::getDeletedAt,
+            Campaign::setDeletedAt, liveCampaign, deletedCampaign);
+
+        Contact liveContact = new Contact();
+        liveContact.setFirstName("Live");
+        liveContact.setLastName("Contact");
         Contact deletedContact = new Contact();
-        deletedContact.setFirstName("deleted");
-        verify(contactRepository, contactRepository::findAllIncludingDeleted,
-            contactRepository::findByIdIncludingDeleted, Contact::getId, contact, deletedContact);
-        Lead lead = new Lead();
-        lead.setFirstName("live");
+        deletedContact.setFirstName("Deleted");
+        deletedContact.setLastName("Contact");
+        verify(contactRepository, contactRepository, Contact::getId, Contact::getDeletedAt,
+            Contact::setDeletedAt, liveContact, deletedContact);
+
+        Lead liveLead = new Lead();
+        liveLead.setFirstName("Live");
+        liveLead.setLastName("Lead");
         Lead deletedLead = new Lead();
-        deletedLead.setFirstName("deleted");
-        verify(leadRepository, leadRepository::findAllIncludingDeleted,
-            leadRepository::findByIdIncludingDeleted, Lead::getId, lead, deletedLead);
-        Opportunity opportunity = new Opportunity();
-        opportunity.setName("soft delete opportunity");
-        verify(opportunityRepository, opportunityRepository::findAllIncludingDeleted,
-            opportunityRepository::findByIdIncludingDeleted, Opportunity::getId, opportunity, new Opportunity());
-        Task task = new Task();
-        task.setName("soft delete task");
-        verify(taskRepository, taskRepository::findAllIncludingDeleted, taskRepository::findByIdIncludingDeleted,
-            Task::getId, task, new Task());
+        deletedLead.setFirstName("Deleted");
+        deletedLead.setLastName("Lead");
+        verify(leadRepository, leadRepository, Lead::getId, Lead::getDeletedAt,
+            Lead::setDeletedAt, liveLead, deletedLead);
 
-        Email email = new Email();
-        email.setImapMessageId("soft-delete@example.test");
-        email.setSentFrom("from@example.test");
-        email.setSentTo("to@example.test");
+        Opportunity liveOpportunity = new Opportunity();
+        liveOpportunity.setName("Live opportunity");
+        Opportunity deletedOpportunity = new Opportunity();
+        deletedOpportunity.setName("Deleted opportunity");
+        verify(opportunityRepository, opportunityRepository, Opportunity::getId, Opportunity::getDeletedAt,
+            Opportunity::setDeletedAt, liveOpportunity, deletedOpportunity);
+
+        Task liveTask = new Task();
+        liveTask.setName("Live task");
+        Task deletedTask = new Task();
+        deletedTask.setName("Deleted task");
+        verify(taskRepository, taskRepository, Task::getId, Task::getDeletedAt,
+            Task::setDeletedAt, liveTask, deletedTask);
+
+        Email liveEmail = new Email();
+        liveEmail.setImapMessageId("live-email");
+        liveEmail.setSentFrom("live@example.test");
+        liveEmail.setSentTo("recipient@example.test");
         Email deletedEmail = new Email();
-        deletedEmail.setImapMessageId("deleted@example.test");
-        deletedEmail.setSentFrom("from@example.test");
-        deletedEmail.setSentTo("to@example.test");
-        verify(emailRepository, emailRepository::findAllIncludingDeleted, emailRepository::findByIdIncludingDeleted,
-            Email::getId, email, deletedEmail);
-        verify(addressRepository, addressRepository::findAllIncludingDeleted,
-            addressRepository::findByIdIncludingDeleted, Address::getId, new Address(), new Address());
-        verify(accountContactRepository, accountContactRepository::findAllIncludingDeleted,
-            accountContactRepository::findByIdIncludingDeleted, AccountContact::getId,
-            new AccountContact(), new AccountContact());
-        verify(accountOpportunityRepository, accountOpportunityRepository::findAllIncludingDeleted,
-            accountOpportunityRepository::findByIdIncludingDeleted, AccountOpportunity::getId,
-            new AccountOpportunity(), new AccountOpportunity());
-        verify(contactOpportunityRepository, contactOpportunityRepository::findAllIncludingDeleted,
-            contactOpportunityRepository::findByIdIncludingDeleted, ContactOpportunity::getId,
-            new ContactOpportunity(), new ContactOpportunity());
+        deletedEmail.setImapMessageId("deleted-email");
+        deletedEmail.setSentFrom("deleted@example.test");
+        deletedEmail.setSentTo("recipient@example.test");
+        verify(emailRepository, null, Email::getId, Email::getDeletedAt,
+            Email::setDeletedAt, liveEmail, deletedEmail);
 
-        assertThat(accountRepository.findAll(isLiveAccount())).extracting(Account::getId).contains(account.getId());
-        assertThat(campaignRepository.findAll(isLiveCampaign())).extracting(Campaign::getId).contains(campaign.getId());
-        assertThat(contactRepository.findAll(isLiveContact())).extracting(Contact::getId).contains(contact.getId());
-        assertThat(leadRepository.findAll(isLiveLead())).extracting(Lead::getId).contains(lead.getId());
-        assertThat(opportunityRepository.findAll(isLiveOpportunity()))
-            .extracting(Opportunity::getId).contains(opportunity.getId());
-        assertThat(taskRepository.findAll(isLiveTask())).extracting(Task::getId).contains(task.getId());
+        Address liveAddress = new Address();
+        liveAddress.setAddressType("Business");
+        Address deletedAddress = new Address();
+        deletedAddress.setAddressType("Billing");
+        verify(addressRepository, null, Address::getId, Address::getDeletedAt,
+            Address::setDeletedAt, liveAddress, deletedAddress);
+
+        verify(accountContactRepository, null, AccountContact::getId, AccountContact::getDeletedAt,
+            AccountContact::setDeletedAt, new AccountContact(), new AccountContact());
+        verify(accountOpportunityRepository, null, AccountOpportunity::getId, AccountOpportunity::getDeletedAt,
+            AccountOpportunity::setDeletedAt, new AccountOpportunity(), new AccountOpportunity());
+        verify(contactOpportunityRepository, null, ContactOpportunity::getId, ContactOpportunity::getDeletedAt,
+            ContactOpportunity::setDeletedAt, new ContactOpportunity(), new ContactOpportunity());
     }
 
     private <T> void verify(
-            JpaRepository<T, Long> repository,
-            Supplier<List<T>> includeAll,
-            Function<Long, Optional<T>> includeById,
-            Function<T, Long> id,
-            T live,
-            T deleted) {
+        JpaRepository<T, Long> repository,
+        JpaSpecificationExecutor<T> specificationExecutor,
+        Function<T, Long> id,
+        Function<T, Instant> deletedAt,
+        BiConsumer<T, Instant> setDeletedAt,
+        T live,
+        T deleted
+    ) {
         repository.saveAndFlush(live);
-        markDeleted(deleted);
+        setDeletedAt.accept(deleted, DELETED_AT);
         repository.saveAndFlush(deleted);
+        Long liveId = id.apply(live);
+        Long deletedId = id.apply(deleted);
+
         entityManager.clear();
-        assertThat(repository.findAll()).extracting(id).contains(id.apply(live)).doesNotContain(id.apply(deleted));
-        assertThat(repository.findById(id.apply(deleted))).isEmpty();
-        assertThat(includeAll.get()).extracting(id).contains(id.apply(live), id.apply(deleted));
-        assertThat(includeById.apply(id.apply(deleted))).isPresent();
-    }
 
-    private void markDeleted(Object entity) {
-        Instant deletedAt = Instant.parse("2025-01-01T00:00:00Z");
-        if (entity instanceof Account value) {
-            value.setDeletedAt(deletedAt);
-        } else if (entity instanceof Campaign value) {
-            value.setDeletedAt(deletedAt);
-        } else if (entity instanceof Contact value) {
-            value.setDeletedAt(deletedAt);
-        } else if (entity instanceof Lead value) {
-            value.setDeletedAt(deletedAt);
-        } else if (entity instanceof Opportunity value) {
-            value.setDeletedAt(deletedAt);
-        } else if (entity instanceof Task value) {
-            value.setDeletedAt(deletedAt);
-        } else if (entity instanceof Email value) {
-            value.setDeletedAt(deletedAt);
-        } else if (entity instanceof Address value) {
-            value.setDeletedAt(deletedAt);
-        } else if (entity instanceof AccountContact value) {
-            value.setDeletedAt(deletedAt);
-        } else if (entity instanceof AccountOpportunity value) {
-            value.setDeletedAt(deletedAt);
-        } else if (entity instanceof ContactOpportunity value) {
-            value.setDeletedAt(deletedAt);
-        } else {
-            throw new IllegalArgumentException("Unsupported soft-delete entity: " + entity.getClass());
+        List<T> all = repository.findAll();
+        assertThat(all).anyMatch(value -> id.apply(value).equals(liveId));
+        T fromAll = all.stream().filter(value -> id.apply(value).equals(deletedId)).findFirst().orElseThrow();
+        assertThat(deletedAt.apply(fromAll)).isEqualTo(DELETED_AT);
+        assertThat(repository.findById(deletedId).orElseThrow())
+            .extracting(deletedAt)
+            .isEqualTo(DELETED_AT);
+
+        if (specificationExecutor != null) {
+            Specification<T> allRows = (root, query, criteriaBuilder) -> criteriaBuilder.conjunction();
+            T fromSpecification = specificationExecutor.findAll(allRows).stream()
+                .filter(value -> id.apply(value).equals(deletedId))
+                .findFirst()
+                .orElseThrow();
+            assertThat(deletedAt.apply(fromSpecification)).isEqualTo(DELETED_AT);
         }
-    }
-
-    private Specification<Account> isLiveAccount() {
-        return (root, query, builder) -> builder.isNull(root.get("deletedAt"));
-    }
-
-    private Specification<Campaign> isLiveCampaign() {
-        return (root, query, builder) -> builder.isNull(root.get("deletedAt"));
-    }
-
-    private Specification<Contact> isLiveContact() {
-        return (root, query, builder) -> builder.isNull(root.get("deletedAt"));
-    }
-
-    private Specification<Lead> isLiveLead() {
-        return (root, query, builder) -> builder.isNull(root.get("deletedAt"));
-    }
-
-    private Specification<Opportunity> isLiveOpportunity() {
-        return (root, query, builder) -> builder.isNull(root.get("deletedAt"));
-    }
-
-    private Specification<Task> isLiveTask() {
-        return (root, query, builder) -> builder.conjunction();
     }
 }
