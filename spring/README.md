@@ -203,7 +203,7 @@ cannot be emitted faithfully by the Java model.
 | --- | --- |
 | Account, Campaign, Contact, Lead, Opportunity | `access = 'Public'` OR `user_id = me` OR `assigned_to = me` OR `EXISTS (permissions WHERE asset_type = '<Class>' AND asset_id = id AND (user_id = me OR group_id IN (my groups)))` |
 | Task | `user_id = me` OR `assigned_to = me` OR `completed_by = me` |
-| Comment, Email | `user_id = me` |
+| Comment, Email | `user_id = me` (the parent's visibility is not checked) |
 | User | `id = me` |
 
 Admins get a conjunction (no filter). Any other entity type throws `IllegalArgumentException`.

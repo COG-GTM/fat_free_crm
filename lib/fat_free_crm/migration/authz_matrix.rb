@@ -159,22 +159,35 @@ module FatFreeCRM
         record.id
       end
 
+      # Ability ignores the parent: a comment or email by "unrelated" on a private account is still theirs.
       def seed_comments
-        account = Account.find(@records["Account"]["public"])
+        public_account = Account.find(@records["Account"]["public"])
+        private_account = Account.find(@records["Account"]["private_owned"])
         {
-          "by_owner" => Comment.create!(user: @actors["owner"], commentable: account, comment: "owner note").id,
-          "by_admin" => Comment.create!(user: @actors["admin"], commentable: account, comment: "admin note").id
+          "by_owner" => comment(@actors["owner"], public_account, "owner note"),
+          "by_admin" => comment(@actors["admin"], public_account, "admin note"),
+          "by_unrelated_on_private" => comment(@actors["unrelated"], private_account, "unrelated note")
         }
       end
 
+      def comment(user, commentable, text)
+        Comment.create!(user: user, commentable: commentable, comment: text).id
+      end
+
       def seed_emails
-        account = Account.find(@records["Account"]["public"])
-        %w[owner admin].to_h do |name|
-          email = Email.create!(user: @actors[name], mediator: account, imap_message_id: "authz-#{name}",
-                                sent_from: "#{name}@authz.test", sent_to: "crm@authz.test", subject: "Authz #{name}",
-                                body: "body", state: "Expanded")
-          ["by_#{name}", email.id]
-        end
+        public_account = Account.find(@records["Account"]["public"])
+        private_account = Account.find(@records["Account"]["private_owned"])
+        {
+          "by_owner" => email("owner", public_account),
+          "by_admin" => email("admin", public_account),
+          "by_unrelated_on_private" => email("unrelated", private_account)
+        }
+      end
+
+      def email(name, mediator)
+        Email.create!(user: @actors[name], mediator: mediator, imap_message_id: "authz-#{name}",
+                      sent_from: "#{name}@authz.test", sent_to: "crm@authz.test", subject: "Authz #{name}",
+                      body: "body", state: "Expanded").id
       end
 
       def permission_writes

@@ -94,11 +94,13 @@
     },
     "Comment": {
       "by_owner": 1,
-      "by_admin": 2
+      "by_admin": 2,
+      "by_unrelated_on_private": 3
     },
     "Email": {
       "by_owner": 1,
-      "by_admin": 2
+      "by_admin": 2,
+      "by_unrelated_on_private": 3
     },
     "User": {
       "owner": 1,
@@ -582,15 +584,18 @@
         "count": 0
       },
       "unrelated": {
-        "ids": [],
-        "count": 0
+        "ids": [
+          3
+        ],
+        "count": 1
       },
       "admin": {
         "ids": [
           1,
-          2
+          2,
+          3
         ],
-        "count": 2
+        "count": 3
       }
     },
     "Email": {
@@ -621,15 +626,18 @@
         "count": 0
       },
       "unrelated": {
-        "ids": [],
-        "count": 0
+        "ids": [
+          3
+        ],
+        "count": 1
       },
       "admin": {
         "ids": [
           1,
-          2
+          2,
+          3
         ],
-        "count": 2
+        "count": 3
       }
     },
     "User": {

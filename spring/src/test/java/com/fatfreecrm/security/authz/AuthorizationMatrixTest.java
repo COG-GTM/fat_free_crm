@@ -292,6 +292,34 @@ class AuthorizationMatrixTest {
     }
 
     @Test
+    void sharingADetachedEntityWritesTheRequestedAccessAndBothGrantKinds() {
+        Map<String, AuthenticatedUser> actors = actors();
+        Long salesId = jdbcTemplate.queryForObject("SELECT id FROM groups WHERE name = 'Authz Sales'", Long.class);
+        Account account = new Account();
+        account.setName("Java detached account");
+        account.setUser(userRepository.getReferenceById(actors.get("owner").id()));
+        account.setAccess("Private");
+        Account detached = accountRepository.saveAndFlush(account);
+        Long id = detached.getId();
+        try {
+            permissionService.updateSharing(detached, "Shared", List.of(actors.get("shared_user").id()),
+                List.of(salesId));
+            assertThat(jdbcTemplate.queryForObject("SELECT access FROM accounts WHERE id = ?", String.class, id))
+                .isEqualTo("Shared");
+            assertThat(detached.getAccess()).isEqualTo("Shared");
+            assertThat(jdbcTemplate.queryForList(
+                "SELECT COALESCE(user_id, -group_id) FROM permissions WHERE asset_type = 'Account' AND asset_id = ?"
+                    + " ORDER BY 1", Long.class, id))
+                .containsExactly(-salesId, actors.get("shared_user").id());
+            assertThat(visibleTo("shared_user", id)).isTrue();
+            assertThat(visibleTo("group_member", id)).isTrue();
+        } finally {
+            jdbcTemplate.update("DELETE FROM permissions WHERE asset_type = 'Account' AND asset_id = ?", id);
+            jdbcTemplate.update("DELETE FROM accounts WHERE id = ?", id);
+        }
+    }
+
+    @Test
     void recordFetchIs401WithoutToken200InScope403OutOfScopeAnd404WhenMissing() throws Exception {
         mockMvc.perform(get("/api/v1/authz-probe/Account/2"))
             .andExpect(status().isUnauthorized())

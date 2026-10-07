@@ -8,6 +8,7 @@ import com.fatfreecrm.domain.support.CrmEntity;
 import com.fatfreecrm.domain.support.RailsModelType;
 import com.fatfreecrm.repository.PermissionRepository;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -50,32 +51,45 @@ public class PermissionService {
 
     /** Applies {@code access}, {@code user_ids} and {@code group_ids} in Rails attribute order; nulls are skipped. */
     public void updateSharing(CrmEntity entity, String access, Collection<?> userIds, Collection<?> groupIds) {
+        CrmEntity managed = managed(entity);
         if (access != null) {
-            setAccess(entity, access);
+            applyAccess(entity, managed, access);
         }
         if (userIds != null) {
-            setUserIds(entity, userIds);
+            replaceUsers(managed, userIds);
         }
         if (groupIds != null) {
-            setGroupIds(entity, groupIds);
+            replaceGroups(managed, groupIds);
         }
     }
 
     public void setAccess(CrmEntity entity, String access) {
-        CrmEntity managed = managed(entity);
+        applyAccess(entity, managed(entity), access);
+    }
+
+    public void setUserIds(CrmEntity entity, Collection<?> userIds) {
+        replaceUsers(managed(entity), userIds);
+    }
+
+    public void setGroupIds(CrmEntity entity, Collection<?> groupIds) {
+        replaceGroups(managed(entity), groupIds);
+    }
+
+    private void applyAccess(CrmEntity entity, CrmEntity managed, String access) {
         if (!Access.SHARED.railsValue().equals(access)) {
             removePermissions(managed);
         }
         managed.setAccess(access);
+        entity.setAccess(access);
     }
 
-    public void setUserIds(CrmEntity entity, Collection<?> userIds) {
-        replace(managed(entity), userIds, Permission::getUser, User::getId, (permission, id) ->
+    private void replaceUsers(CrmEntity managed, Collection<?> userIds) {
+        replace(managed, userIds, Permission::getUser, User::getId, (permission, id) ->
             permission.setUser(entityManager.getReference(User.class, id)));
     }
 
-    public void setGroupIds(CrmEntity entity, Collection<?> groupIds) {
-        replace(managed(entity), groupIds, Permission::getGroup, Group::getId, (permission, id) ->
+    private void replaceGroups(CrmEntity managed, Collection<?> groupIds) {
+        replace(managed, groupIds, Permission::getGroup, Group::getId, (permission, id) ->
             permission.setGroup(entityManager.getReference(Group.class, id)));
     }
 
@@ -152,7 +166,15 @@ public class PermissionService {
     private CrmEntity managed(CrmEntity entity) {
         Objects.requireNonNull(entity, "entity");
         Objects.requireNonNull(entity.getId(), "entity must be persisted before permissions are written");
-        return entityManager.contains(entity) ? entity : entityManager.merge(entity);
+        if (entityManager.contains(entity)) {
+            return entity;
+        }
+        // Load the current row instead of merging, so stale fields on a detached instance are never written back.
+        Object current = entityManager.find(Hibernate.getClass(entity), entity.getId());
+        if (current == null) {
+            throw new EntityNotFoundException(Hibernate.getClass(entity).getSimpleName() + " " + entity.getId());
+        }
+        return (CrmEntity) current;
     }
 
     private static String assetType(CrmEntity entity) {
