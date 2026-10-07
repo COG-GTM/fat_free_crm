@@ -292,7 +292,11 @@ class ContractAuthFailureAndReportTest {
         assertTrue(markdown.contains("- `never-used` (status): 0 hits — **stale**"), markdown);
     }
 
-    /** Tracks stub hits between adapter calls so each call can assert exactly one or zero new requests. */
+    /**
+     * Tracks stub hits between adapter calls. Uncached calls must produce at least one new request
+     * (the JDK {@code HttpClient} may legitimately resend over a stale pooled connection); cached
+     * calls must produce none.
+     */
     private static final class HitCounter {
         private final AtomicInteger hits;
         private int seen;
@@ -303,8 +307,9 @@ class ContractAuthFailureAndReportTest {
         }
 
         void assertFreshRequest() {
-            seen++;
-            assertEquals(seen, hits.get(), "unavailable or failed results must not be cached");
+            int current = hits.get();
+            assertTrue(current > seen, "unavailable or failed results must not be cached");
+            seen = current;
         }
 
         void assertNoRequest() {
