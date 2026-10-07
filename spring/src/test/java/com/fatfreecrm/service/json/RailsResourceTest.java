@@ -10,7 +10,10 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-/** The table name is interpolated into SQL by {@code RailsRowRepository}, so the descriptor must reject anything unsafe. */
+/**
+ * The table name is interpolated into SQL by {@code RailsRowRepository}, so the descriptor must reject
+ * anything unsafe.
+ */
 class RailsResourceTest {
 
     private static RailsResource resource(String table) {
