@@ -65,14 +65,19 @@ public class CustomFieldWriteService {
         RailsModelType type = modelType(entity);
         List<CustomFieldDefinition> applicable = applicableDefinitions(entity, type);
         Map<String, Object> current = readService.valuesFor(entity);
-        Map<String, Object> merged = new LinkedHashMap<>(current);
+        Map<String, Object> merged = new LinkedHashMap<>();
+        for (CustomFieldDefinition definition : applicable) {
+            String name = definition.name();
+            if (current.containsKey(name)) {
+                merged.put(name, current.get(name));
+            }
+        }
         Set<String> changedNames = new LinkedHashSet<>();
         for (Map.Entry<String, Object> entry : input.entrySet()) {
-            if (!current.containsKey(entry.getKey())
-                || !Objects.deepEquals(current.get(entry.getKey()), entry.getValue())) {
+            if (!Objects.deepEquals(current.get(entry.getKey()), entry.getValue())) {
                 changedNames.add(entry.getKey());
-                merged.put(entry.getKey(), entry.getValue());
             }
+            merged.put(entry.getKey(), entry.getValue());
         }
         ValidationResult validation = validator.validateChanged(applicable, merged, changedNames);
         if (!validation.ok()) {
