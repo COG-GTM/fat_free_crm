@@ -53,6 +53,7 @@ public final class SpringJwtAuth implements AuthAdapter {
             .header("Accept", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
             .build();
+        Instant requestedAt = clock.instant();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 404 || response.statusCode() == 401) {
             return new AuthContext(client, null, null, "spring auth unavailable (login returned "
@@ -72,7 +73,7 @@ public final class SpringJwtAuth implements AuthAdapter {
         AuthContext result = new AuthContext(client, tokenType + " " + token, null, null);
         long expiresIn = tokenResponse.path("expiresIn").asLong(0);
         if (expiresIn > 0) {
-            sessions.put(userKey, new CachedToken(result, clock.instant().plusSeconds(expiresIn)));
+            sessions.put(userKey, new CachedToken(result, requestedAt.plusSeconds(expiresIn)));
         }
         return result;
     }

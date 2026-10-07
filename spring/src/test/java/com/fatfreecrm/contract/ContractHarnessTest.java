@@ -253,6 +253,31 @@ class ContractHarnessTest {
     }
 
     @Test
+    void springJwtAdapterExpiryStartsWhenLoginRequestStarts() throws Exception {
+        AtomicInteger loginRequests = new AtomicInteger();
+        MutableClock clock = new MutableClock(Instant.parse("2026-10-07T12:00:00Z"));
+        try (StubServer server = new StubServer(exchange -> {
+            if (exchange.getRequestURI().getPath().equals("/api/v1/auth/login")) {
+                int login = loginRequests.incrementAndGet();
+                clock.advance(Duration.ofSeconds(25));
+                StubServer.respond(exchange, 200, "application/json", """
+                    {"accessToken":"access-%d","tokenType":"Bearer","expiresIn":60}
+                    """.formatted(login));
+            } else {
+                StubServer.respond(exchange, 200, "application/json", "{}");
+            }
+        })) {
+            SpringJwtAuth auth = new SpringJwtAuth(server.url(), Map.of("alice", user("alice")), clock);
+            auth.authenticate("alice");
+
+            clock.advance(Duration.ofSeconds(25));
+            auth.authenticate("alice");
+
+            assertEquals(2, loginRequests.get());
+        }
+    }
+
+    @Test
     void springJwtAdapterDoesNotCacheTokensWithoutPositiveExpiry() throws Exception {
         AtomicInteger loginRequests = new AtomicInteger();
         AtomicInteger zeroExpiryLogins = new AtomicInteger();
