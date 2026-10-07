@@ -47,12 +47,13 @@ class UserRepositoryIntegrationTest extends AbstractPostgresIntegrationTest {
     @BeforeEach
     @AfterEach
     void cleanUp() {
-        jdbcTemplate.update("DELETE FROM permissions WHERE user_id IN (SELECT id FROM users WHERE username LIKE ?)",
-            PREFIX + "%");
-        jdbcTemplate.update("DELETE FROM groups_users WHERE user_id IN (SELECT id FROM users WHERE username LIKE ?)",
-            PREFIX + "%");
-        jdbcTemplate.update("DELETE FROM groups WHERE name LIKE ?", PREFIX + "%");
-        jdbcTemplate.update("DELETE FROM users WHERE username LIKE ? OR email LIKE ?", PREFIX + "%", PREFIX + "%");
+        jdbcTemplate.update(
+            "DELETE FROM permissions WHERE user_id IN (SELECT id FROM users WHERE starts_with(username, ?))", PREFIX);
+        jdbcTemplate.update(
+            "DELETE FROM groups_users WHERE user_id IN (SELECT id FROM users WHERE starts_with(username, ?))", PREFIX);
+        jdbcTemplate.update("DELETE FROM groups WHERE starts_with(name, ?)", PREFIX);
+        jdbcTemplate.update(
+            "DELETE FROM users WHERE starts_with(username, ?) OR starts_with(email, ?)", PREFIX, PREFIX);
     }
 
     @Test

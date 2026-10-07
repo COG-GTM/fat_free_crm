@@ -140,16 +140,18 @@ class AuthServiceTest {
     @Test
     void currentUserReturnsTheRailsFieldNamesForTheAuthenticatedRow() {
         User user = user(9L, Instant.EPOCH, null);
-        user.setEmail("legacy_admin@example.com");
-        user.setFirstName("Legacy");
-        user.setLastName("legacy_admin");
+        user.setUsername("row_username");
+        user.setEmail("row@example.com");
+        user.setFirstName("Row");
+        user.setLastName("Name");
         user.setAdmin(true);
         when(userRepository.findById(9L)).thenReturn(Optional.of(user));
 
-        CurrentUserResponse response = service.currentUser(new AuthenticatedUser(9L, "legacy_admin", true));
+        CurrentUserResponse response = service.currentUser(new AuthenticatedUser(9L, "token_username", false));
 
-        assertThat(response).isEqualTo(
-            new CurrentUserResponse(9L, "legacy_plain", "legacy_admin@example.com", "Legacy", "legacy_admin", true));
+        assertThat(response)
+            .as("username and admin come from the database row, not from the token principal")
+            .isEqualTo(new CurrentUserResponse(9L, "row_username", "row@example.com", "Row", "Name", true));
     }
 
     @Test

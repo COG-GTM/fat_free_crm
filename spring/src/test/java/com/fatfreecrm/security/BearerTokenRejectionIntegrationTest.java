@@ -54,7 +54,7 @@ class BearerTokenRejectionIntegrationTest extends AbstractPostgresIntegrationTes
 
     @AfterEach
     void deleteUsers() {
-        jdbcTemplate.update("DELETE FROM users WHERE username LIKE ?", PREFIX + "%");
+        jdbcTemplate.update("DELETE FROM users WHERE starts_with(username, ?)", PREFIX);
     }
 
     @Test
