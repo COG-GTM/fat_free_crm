@@ -36,6 +36,9 @@ public class SearchableEntities {
     private static final List<String> DEFAULT_ACCOUNT_CATEGORIES = List.of(
         "affiliate", "competitor", "customer", "partner", "reseller", "vendor");
 
+    private static final List<String> DEFAULT_CAMPAIGN_STATUSES = List.of(
+        "planned", "started", "completed", "on_hold", "called_off");
+
     private final Map<Class<?>, SearchableEntity> byClass;
 
     public SearchableEntities(
@@ -151,7 +154,9 @@ public class SearchableEntities {
             ),
             (root, cb, query) -> likeEscaped(root, cb, "name", query),
             true,
-            null
+            user -> Map.of("status",
+                campaignStatusFacets(user, entityManager, settingRepository, accessPolicy)),
+            campaignStateFilter()
         ));
         byClass = Map.copyOf(map);
     }
@@ -176,6 +181,23 @@ public class SearchableEntities {
             }
             if (other) {
                 predicates.add(builder.isNull(root.get("category")));
+            }
+            return builder.or(predicates.toArray(Predicate[]::new));
+        });
+    }
+
+    private static StateFilter campaignStateFilter() {
+        return new StateFilter("status", (root, builder, values) -> {
+            List<String> statuses = new ArrayList<>(values);
+            boolean other = statuses.removeIf("other"::equals);
+            List<Predicate> predicates = new ArrayList<>();
+            if (!statuses.isEmpty()) {
+                predicates.add(root.get("status").in(statuses));
+            } else if (!other) {
+                predicates.add(builder.disjunction());
+            }
+            if (other) {
+                predicates.add(builder.isNull(root.get("status")));
             }
             return builder.or(predicates.toArray(Predicate[]::new));
         });
@@ -249,6 +271,67 @@ public class SearchableEntities {
                 }
             })
             .orElse(DEFAULT_ACCOUNT_CATEGORIES);
+    }
+
+    /**
+     * Rails {@code CampaignsController#get_data_for_sidebar}: {@code all} and {@code other} first,
+     * then one count per configured status, over the accessible scope only. {@code other} covers
+     * NULL and unconfigured statuses (unlike the {@code other} filter, which matches NULL only).
+     */
+    private static Map<String, Long> campaignStatusFacets(
+        AuthenticatedUser user,
+        EntityManager entityManager,
+        SettingRepository settingRepository,
+        AccessPolicy accessPolicy
+    ) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> query = cb.createQuery(Object[].class);
+        Root<Campaign> root = query.from(Campaign.class);
+        Expression<String> status = root.get("status");
+        query.multiselect(List.of(status, cb.count(root.get("id"))).toArray(Selection[]::new));
+        query.groupBy(status);
+        Predicate accessible = accessPolicy.accessibleBy(user, Campaign.class).toPredicate(root, query, cb);
+        if (accessible != null) {
+            query.where(accessible);
+        }
+        Map<String, Long> counts = new LinkedHashMap<>();
+        long total = 0;
+        for (Object[] row : entityManager.createQuery(query).getResultList()) {
+            Long count = (Long) row[1];
+            if (row[0] != null) {
+                counts.merge((String) row[0], count, Long::sum);
+            }
+            total += count;
+        }
+
+        Map<String, Long> facets = new LinkedHashMap<>();
+        facets.put("all", total);
+        long known = 0;
+        Map<String, Long> perStatus = new LinkedHashMap<>();
+        for (String key : campaignStatuses(settingRepository)) {
+            long count = counts.getOrDefault(key, 0L);
+            perStatus.put(key, count);
+            known += count;
+        }
+        facets.put("other", total - known);
+        facets.putAll(perStatus);
+        return facets;
+    }
+
+    private static List<String> campaignStatuses(SettingRepository settingRepository) {
+        return settingRepository.findByName("campaign_status")
+            .map(Setting::getValue)
+            .map(value -> {
+                try {
+                    List<String> statuses = RailsYaml.readStringList(value).stream()
+                        .map(status -> status.startsWith(":") ? status.substring(1) : status)
+                        .toList();
+                    return statuses.isEmpty() ? DEFAULT_CAMPAIGN_STATUSES : statuses;
+                } catch (IllegalArgumentException exception) {
+                    return DEFAULT_CAMPAIGN_STATUSES;
+                }
+            })
+            .orElse(DEFAULT_CAMPAIGN_STATUSES);
     }
 
     /** {@code lower(path) LIKE '%q%' ESCAPE '\\'} with %, _, \ escaped — the Ransack {@code cont} semantics. */

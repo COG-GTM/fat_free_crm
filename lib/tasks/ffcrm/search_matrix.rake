@@ -49,6 +49,15 @@ namespace :ffcrm do
 
       File.write(output, JSON.pretty_generate(result) + "\n")
       puts "wrote #{output}"
+
+      campaigns_output = if ENV["CAMPAIGNS_OUTPUT"]
+                           Rails.root.join(ENV["CAMPAIGNS_OUTPUT"])
+                         elsif ENV["OUTPUT"]
+                           output.sub_ext(".campaigns.json")
+                         else
+                           Rails.root.join("spring/src/test/resources/search/campaigns_search_matrix.json")
+                         end
+      search_matrix_campaigns(campaigns_output)
     end
   end
 end
