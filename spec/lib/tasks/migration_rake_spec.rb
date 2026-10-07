@@ -84,6 +84,27 @@ describe "ffcrm:migration rake tasks" do # rubocop:disable RSpec/DescribeClass
     expect(File.read(output_path)).to eq("CREATE TABLE contacts;\n")
   end
 
+  it "uses PG_DUMP_HOST when the configured connection has no host" do
+    config = instance_double(
+      ActiveRecord::DatabaseConfigurations::HashConfig,
+      adapter: 'postgresql',
+      configuration_hash: { port: 5432, username: 'crm', password: 'secret' },
+      database: 'ffcrm_test'
+    )
+    allow(ActiveRecord::Base).to receive(:connection_db_config).and_return(config)
+    status = instance_double(Process::Status, success?: true, exitstatus: 0)
+    arguments = [
+      'pg_dump', '--schema-only', '--no-owner', '--no-privileges',
+      '--host', '127.0.0.1', '--port', '5432', '--username', 'crm', 'ffcrm_test'
+    ]
+    expect(Open3).to receive(:capture2)
+      .with({ 'PGPASSWORD' => 'secret' }, *arguments)
+      .and_return(["CREATE TABLE contacts;\n", status])
+
+    run('ffcrm:migration:baseline_dump', 'OUTPUT' => output_path.to_s,
+                                         'PG_DUMP' => 'pg_dump', 'PG_DUMP_HOST' => '127.0.0.1')
+  end
+
   it "removes PostgreSQL restrict meta-commands from the captured dump" do
     config = instance_double(
       ActiveRecord::DatabaseConfigurations::HashConfig,

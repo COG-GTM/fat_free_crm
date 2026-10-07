@@ -1,5 +1,13 @@
 # Production-shaped baseline artifacts
 
+> **Warning — do not use the synthetic rehearsal schema as V1.**
+> `production-shaped-schema.sql` is a rehearsal artifact with deliberate drift: missing
+> `leads.cf_partner_code`, type-mismatched `opportunities.cf_confidence_score`, and orphan
+> columns. It must **not** be copied to
+> `spring/src/main/resources/db/migration/V1__baseline_rails_schema.sql`. V1 must come from
+> `ffcrm:migration:baseline_dump` against the target production database, after its census has
+> been reviewed.
+
 These artifacts were generated on 2026-10-07 by running:
 
 ```bash

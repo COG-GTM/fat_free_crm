@@ -42,7 +42,8 @@ namespace :ffcrm do
         env['PGPASSWORD'] = config.configuration_hash[:password].to_s if config.configuration_hash[:password]
         args = Shellwords.split(ENV.fetch('PG_DUMP', 'pg_dump'))
         args += ['--schema-only', '--no-owner', '--no-privileges']
-        args += ['--host', config.configuration_hash[:host].to_s] if config.configuration_hash[:host]
+        host = ENV['PG_DUMP_HOST'].presence || config.configuration_hash[:host]
+        args += ['--host', host.to_s] if host
         args += ['--port', config.configuration_hash[:port].to_s] if config.configuration_hash[:port]
         args += ['--username', config.configuration_hash[:username].to_s] if config.configuration_hash[:username]
         args << config.database
