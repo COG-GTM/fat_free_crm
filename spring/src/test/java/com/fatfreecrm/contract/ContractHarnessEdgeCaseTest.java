@@ -101,6 +101,32 @@ class ContractHarnessEdgeCaseTest {
                 path: /accounts
                 """)));
         assertTrue(notAList.getMessage().contains("list of cases"), notAList.getMessage());
+
+        IllegalArgumentException expectNotObject = assertThrows(IllegalArgumentException.class,
+            () -> CaseLoader.parse(YAML.readTree("""
+                - id: bad-expect
+                  path: /accounts.json
+                  expect: 200
+                """)));
+        assertTrue(expectNotObject.getMessage().contains("expect must be an object"), expectNotObject.getMessage());
+
+        IllegalArgumentException expectStatusNotInt = assertThrows(IllegalArgumentException.class,
+            () -> CaseLoader.parse(YAML.readTree("""
+                - id: bad-expect-status
+                  path: /accounts.json
+                  expect: {status: "200"}
+                """)));
+        assertTrue(expectStatusNotInt.getMessage().contains("status must be an integer"),
+            expectStatusNotInt.getMessage());
+
+        IllegalArgumentException expectBadPointer = assertThrows(IllegalArgumentException.class,
+            () -> CaseLoader.parse(YAML.readTree("""
+                - id: bad-expect-pointer
+                  path: /accounts.json
+                  expect: {json: {"id": 1}}
+                """)));
+        assertTrue(expectBadPointer.getMessage().contains("Invalid expectation JSON pointer: id"),
+            expectBadPointer.getMessage());
     }
 
     @Test

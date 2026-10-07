@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -113,7 +115,8 @@ class ContractAuthFailureAndReportTest {
             assertNull(success.authorization());
             hits.assertFreshRequest();
             page.set("<html><body>no token here</body></html>");
-            assertEquals(success, auth.authenticate("alice"), "successful sessions are cached per user");
+            assertSame(success, auth.authenticate("alice"), "successful sessions are cached per user");
+            hits.assertNoRequest();
             page.set(SIGN_IN_PAGE);
         }
     }
@@ -157,20 +160,31 @@ class ContractAuthFailureAndReportTest {
             assertThrows(IOException.class, () -> auth.authenticate("alice"));
             hits.assertFreshRequest();
 
-            body.set("{\"accessToken\":\"abc.def\",\"tokenType\":\"JWT\"}");
+            body.set("{\"accessToken\":\"no.expiry\",\"tokenType\":\"JWT\"}");
+            AuthContext uncached = auth.authenticate("alice");
+            assertEquals("JWT no.expiry", uncached.authorization());
+            assertNull(uncached.note());
+            hits.assertFreshRequest();
+            assertNotSame(uncached, auth.authenticate("alice"),
+                "a login response without expiresIn must not be cached");
+            hits.assertFreshRequest();
+
+            body.set("{\"accessToken\":\"abc.def\",\"tokenType\":\"JWT\",\"expiresIn\":3600}");
             AuthContext custom = auth.authenticate("alice");
             assertEquals("JWT abc.def", custom.authorization());
             assertNull(custom.csrfToken());
             assertNull(custom.note());
             hits.assertFreshRequest();
             status.set(500);
-            assertEquals(custom, auth.authenticate("alice"), "successful sessions are cached per user");
+            assertSame(custom, auth.authenticate("alice"), "successful sessions are cached per user");
+            hits.assertNoRequest();
             status.set(200);
 
-            body.set("{\"accessToken\":\"xyz\"}");
+            body.set("{\"accessToken\":\"xyz\",\"expiresIn\":3600}");
             AuthContext bob = auth.authenticate("bob");
             assertEquals("Bearer xyz", bob.authorization());
             assertNotEquals(custom, bob);
+            hits.assertFreshRequest();
 
             assertThrows(IllegalArgumentException.class, () -> auth.authenticate("ghost"));
         }
@@ -278,12 +292,7 @@ class ContractAuthFailureAndReportTest {
         assertTrue(markdown.contains("- `never-used` (status): 0 hits — **stale**"), markdown);
     }
 
-    /**
-     * Tracks server hits between adapter calls without depending on an exact request count:
-     * the JDK {@code HttpClient} may transparently re-send a request over a stale pooled
-     * connection, so only "at least one new request" is asserted. Caching is proven by
-     * flipping the stub to a failing response and checking the cached context is still returned.
-     */
+    /** Tracks stub hits between adapter calls so each call can assert exactly one or zero new requests. */
     private static final class HitCounter {
         private final AtomicInteger hits;
         private int seen;
@@ -294,9 +303,12 @@ class ContractAuthFailureAndReportTest {
         }
 
         void assertFreshRequest() {
-            int current = hits.get();
-            assertTrue(current > seen, "unavailable or failed results must not be cached");
-            seen = current;
+            seen++;
+            assertEquals(seen, hits.get(), "unavailable or failed results must not be cached");
+        }
+
+        void assertNoRequest() {
+            assertEquals(seen, hits.get(), "successful sessions are cached per user");
         }
     }
 
