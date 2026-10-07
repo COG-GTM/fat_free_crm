@@ -1,5 +1,6 @@
 package com.fatfreecrm.domain;
 
+import com.fatfreecrm.domain.support.RailsModelType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -10,6 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Optional;
 
 @Entity
 @Table(name = "permissions")
@@ -65,6 +67,14 @@ public class Permission {
 
     public void setAssetType(String assetType) {
         this.assetType = assetType;
+    }
+
+    public Optional<RailsModelType> assetModelType() {
+        return RailsModelType.fromRailsName(assetType);
+    }
+
+    public void setAssetModelType(RailsModelType type) {
+        assetType = type == null ? null : type.railsName();
     }
 
     public Integer getAssetId() {

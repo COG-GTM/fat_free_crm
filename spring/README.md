@@ -80,3 +80,114 @@ environment with:
 bundle exec rake ffcrm:migration:legacy_auth_fixture \
   OUTPUT=spring/src/test/resources/auth/rails-legacy-users.json
 ```
+
+## Domain model
+
+The JPA domain maps the V1 Rails tables as follows:
+
+| Entity | Table |
+| --- | --- |
+| `Account` | `accounts` |
+| `AccountContact` | `account_contacts` |
+| `AccountOpportunity` | `account_opportunities` |
+| `Activity` | `activities` |
+| `Address` | `addresses` |
+| `Avatar` | `avatars` |
+| `Campaign` | `campaigns` |
+| `Comment` | `comments` |
+| `Contact` | `contacts` |
+| `ContactOpportunity` | `contact_opportunities` |
+| `Email` | `emails` |
+| `FieldGroup`, `Field` | `field_groups`, `fields` |
+| `Lead` | `leads` |
+| `Opportunity` | `opportunities` |
+| `Preference` | `preferences` |
+| `ResearchTool` | `research_tools` |
+| `SavedList` | `lists` |
+| `Setting` | `settings` |
+| `Tag`, `Tagging` | `tags`, `taggings` |
+| `Task` | `tasks` |
+| `Version` | `versions` |
+| Existing `User`, `Group`, `Permission` | `users`, `groups`, `permissions` |
+
+`BaseEntity` supplies identity IDs and proxy-safe equality. `TimestampedEntity`
+adds UTC `Instant` timestamps with microsecond precision; creation preserves
+explicit timestamps, while updates replace `updated_at`. `CrmEntity` adds the
+owner/assignee, access, soft-delete timestamp, and ordered subscribed-user IDs
+for accounts, campaigns, contacts, leads, and opportunities. Tasks have their
+own user and assignee fields and are not CRM entities. The existing
+`User.groups` association maps `groups_users`; the other join tables are
+entities with their own identity and timestamps.
+
+### Deviation from Jira: soft delete
+
+AB-265 requested `@SQLRestriction`-based soft delete; it is not implemented
+because Rails 8 has no paranoia gem (removed long ago), no Rails runtime code
+in `app/` or `lib/` filters or sets `deleted_at` (the fixture task writes
+representative values only inside its rolled-back transaction), and Rails shows
+those rows and hard-deletes on destroy. The epic coexistence rule is that Rails
+semantics win: a restriction would break the contract-diff parity AB-270
+depends on. Real soft delete needs a Rails change plus a product decision and
+is out of scope. `deleted_at` is mapped as a plain column.
+
+Rails polymorphic references remain a raw `String` type and integer ID pair
+rather than an inheritance hierarchy or Hibernate `@Any`. Typed
+`xModelType()` accessors recognize Rails class names (including `List` for
+`SavedList`); unknown type strings are preserved and resolve to an empty
+`Optional`. The read-only `PolymorphicReferenceService` resolves known pairs
+with `EntityManager.find`.
+
+CRM `access` values are also stored as raw strings. `accessLevel()` recognizes
+`Public`, `Private`, and `Shared`, while retaining Rails-accepted unknown values.
+
+| Column(s) | Representation |
+| --- | --- |
+| `subscribed_users` on CRM entities and tasks | Ordered `List<Long>` using Psych-compatible YAML; empty/null writes NULL; the legacy `"--- []\n"` form remains readable. |
+| `preferences.value` | Raw Base64 Rails string plus typed JSON accessors using Ruby-compatible `Base64.encode64` wrapping. |
+| `settings.value` | Raw YAML string plus a safe read-only parsed value. |
+| `fields.collection`, `fields.settings` | Raw YAML strings plus read-only list/map accessors; unknown Rails YAML tags are treated as their underlying safe values. |
+| `versions.object`, `versions.object_changes` | Raw PaperTrail YAML strings with no typed accessors. |
+
+The deliberately unmapped tables are `sessions`, `schema_migrations`,
+`ar_internal_metadata`, the `active_storage_*` tables,
+`action_text_rich_texts`, all named `solid_queue_*` tables, and
+`flyway_schema_history`. They are Rails/session, migration bookkeeping,
+attachment, rich-text, background-queue, or Spring infrastructure tables. No
+`cf_*` custom columns are mapped; V1 does not contain production custom-field
+columns.
+
+Regenerate the Rails-created fixture and serializer golden file in a throwaway
+PostgreSQL 16 database:
+
+```sh
+docker run --rm -d --name ffcrm-entity-fixture \
+  -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=ffcrm_entity_fixture -p 5433:5432 postgres:16
+FFCRM_ENTITY_FIXTURE=1 SECRET_KEY_BASE=entity-fixture-only-secret-key-base-0123456789abcdef \
+DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5433/ffcrm_entity_fixture \
+  bundle exec rails db:create db:schema:load
+FFCRM_ENTITY_FIXTURE=1 SECRET_KEY_BASE=entity-fixture-only-secret-key-base-0123456789abcdef \
+DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5433/ffcrm_entity_fixture \
+  bundle exec rake ffcrm:migration:entity_fixture
+FFCRM_ENTITY_FIXTURE=1 SECRET_KEY_BASE=entity-fixture-only-secret-key-base-0123456789abcdef \
+  bundle exec rspec spec/lib/tasks/entity_fixture_spec.rb
+docker rm -f ffcrm-entity-fixture
+```
+
+The task aborts if any mapped table is non-empty or any `cf_*` column exists,
+creates actual Rails model rows inside a rollback-only transaction, and writes
+`spring/src/test/resources/db/rails/entity_fixture.sql` and
+`serialized_formats.json`. The PostgreSQL fixture uses text-preserving literals
+and sequence resets. `FFCRM_ENTITY_FIXTURE=1` prevents application boot from
+seeding the `settings.secret_token` row, preserving the task's empty-table
+precondition; the example secret key is local-only. The RSpec coverage runs in
+the existing Rails test environment with the same opt-out flag. The
+`spring-api.yml` workflow currently runs the Spring build, baseline check, and
+gateway validation, but does **not** run RSpec.
+
+Known gaps: counter caches are not maintained by Spring; `subscribed_users`
+rows still in the pre-2012 `!ruby/object:Set` YAML form fail to load in Spring,
+and also in Rails 8 (`Psych::DisallowedClass`: Set is not in
+`yaml_column_permitted_classes`). Repair them to YAML arrays at migration time.
+Settings/field YAML is exposed read-only because arbitrary Ruby-object YAML
+cannot be emitted faithfully by the Java model.
