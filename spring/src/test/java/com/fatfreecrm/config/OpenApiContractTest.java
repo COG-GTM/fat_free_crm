@@ -9,15 +9,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fatfreecrm.support.AbstractPostgresIntegrationTest;
 import io.swagger.v3.core.util.Yaml31;
 import io.swagger.v3.oas.models.OpenAPI;
+import java.util.HashSet;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.test.web.servlet.MockMvc;
 
 class OpenApiContractTest extends AbstractPostgresIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -54,8 +52,8 @@ class OpenApiContractTest extends AbstractPostgresIntegrationTest {
         assertThat(published).containsExactly(packaged);
     }
 
-    private java.util.Set<String> fieldNames(JsonNode node) {
-        java.util.Set<String> names = new java.util.HashSet<>();
+    private Set<String> fieldNames(JsonNode node) {
+        Set<String> names = new HashSet<>();
         node.fieldNames().forEachRemaining(names::add);
         return names;
     }

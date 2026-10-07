@@ -2,6 +2,7 @@ package com.fatfreecrm.api;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -10,11 +11,15 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
@@ -65,7 +70,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         HttpStatus httpStatus = HttpStatus.valueOf(status.value());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
         problem.setTitle(httpStatus.getReasonPhrase());
-        problem.setInstance(java.net.URI.create(request.getRequestURI()));
+        problem.setInstance(URI.create(request.getRequestURI()));
         return problem;
     }
 
@@ -76,12 +81,19 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     private String exceptionDetail(Exception exception) {
+        if (exception instanceof ResponseStatusException responseStatusException
+            && responseStatusException.getStatusCode().is4xxClientError()) {
+            String reason = responseStatusException.getReason();
+            if (reason != null && !reason.isBlank()) {
+                return reason;
+            }
+        }
         return switch (exception) {
-            case org.springframework.web.servlet.resource.NoResourceFoundException ignored ->
+            case NoResourceFoundException ignored ->
                 "The requested resource was not found.";
-            case org.springframework.http.converter.HttpMessageNotReadableException ignored ->
+            case HttpMessageNotReadableException ignored ->
                 "The request body is invalid.";
-            case org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ignored ->
+            case MethodArgumentTypeMismatchException ignored ->
                 "A request parameter has an invalid value.";
             default -> "The request could not be processed.";
         };
