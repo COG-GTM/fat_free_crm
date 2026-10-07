@@ -17,6 +17,9 @@ describe FatFreeCRM::Migration::ColumnCensus do
     allow(connection).to receive_messages(table_exists?: true, columns: columns, select_value: 0)
     allow(connection).to receive(:quote_table_name) { |name| %("#{name}") }
     allow(connection).to receive(:quote_column_name) { |name| %("#{name}") }
+    allow(connection).to receive(:select_all) do |sql|
+      ActiveRecord::Base.connection.select_all(sql)
+    end
     described_class.new(klass_names: klass_names, count_rows: count_rows, connection: connection)
   end
 
@@ -25,9 +28,9 @@ describe FatFreeCRM::Migration::ColumnCensus do
                     name: name, type: type, sql_type: sql_type, null: true, default: nil)
   end
 
-  def contact_field(name, as: 'string')
+  def contact_field(name, as: 'string', label: name.titleize)
     field_group = create(:field_group, klass_name: 'Contact')
-    create(:custom_field, name: name, as: as, label: name.titleize, field_group: field_group)
+    create(:custom_field, name: name, as: as, label: label, field_group: field_group)
   end
 
   let(:columns_of) { ->(report, klass) { report[:tables].find { |t| t[:klass] == klass }[:columns] } }
@@ -52,6 +55,39 @@ describe FatFreeCRM::Migration::ColumnCensus do
                              expected_column_type: 'string',
                              type_mismatch: false,
                              yaml_serialized: false)
+  end
+
+  it "reads field metadata through the supplied connection" do
+    contact_field('cf_default_only')
+    connection = instance_double(ActiveRecord::ConnectionAdapters::AbstractAdapter,
+                                 adapter_name: 'PostgreSQL')
+    allow(connection).to receive_messages(
+      table_exists?: true,
+      columns: [column('cf_default_only'), column('cf_supplied_only')],
+      select_value: 0
+    )
+    allow(connection).to receive(:quote_table_name) { |name| %("#{name}") }
+    allow(connection).to receive(:quote_column_name) { |name| %("#{name}") }
+    allow(connection).to receive(:select_all).and_return([
+                                                           {
+                                                             'id' => 987,
+                                                             'type' => 'CustomField',
+                                                             'name' => 'cf_supplied_only',
+                                                             'label' => 'Supplied connection',
+                                                             'as' => 'integer',
+                                                             'group_id' => 123,
+                                                             'klass_name' => 'Contact'
+                                                           }
+                                                         ])
+
+    report = described_class.new(klass_names: %w[Contact], connection: connection).report
+    entries = columns_of[report, 'Contact'].index_by { |entry| entry[:name] }
+
+    expect(entries['cf_default_only']).to include(status: described_class::ORPHANED)
+    expect(entries['cf_supplied_only']).to include(
+      status: described_class::MAPPED, field_id: 987, field_label: 'Supplied connection',
+      field_as: 'integer'
+    )
   end
 
   it "marks a column with no field metadata as orphaned" do
@@ -172,6 +208,15 @@ describe FatFreeCRM::Migration::ColumnCensus do
       expect(markdown).to include('## Contact (`contacts`')
       expect(markdown).to include('| `cf_hobby` | mapped |')
       expect(markdown).to include('| `cf_orphan` | orphaned |')
+    end
+
+    it "escapes pipes in field labels without adding Markdown cells" do
+      contact_field('cf_region', label: 'Region | Area')
+      markdown = census_for([column('cf_region')]).to_markdown
+      row = markdown.lines.find { |line| line.include?('cf_region') }
+
+      expect(row).to include('Region \\| Area')
+      expect(row.split(/(?<!\\)\|/).length - 2).to eq(6)
     end
   end
 

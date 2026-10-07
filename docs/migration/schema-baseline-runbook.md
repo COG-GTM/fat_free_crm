@@ -31,7 +31,8 @@ RAILS_ENV=production bundle exec rake ffcrm:migration:baseline_dump \
 
 The tasks use the selected Rails environment's configured connection. The PostgreSQL dumper
 captures `pg_dump` stdout and supplies database host, port, username, and password from the active
-connection configuration. Override the executable (or provide a Docker command) with `PG_DUMP`:
+connection configuration. `PG_DUMP_HOST` overrides the configured host. Override the executable
+(or provide a Docker command) with `PG_DUMP`:
 
 ```bash
 PG_DUMP='pg_dump --no-password' RAILS_ENV=production \
@@ -42,6 +43,10 @@ PG_DUMP='docker run --rm --network host -e PGPASSWORD postgres:16 pg_dump' \
   RAILS_ENV=production bundle exec rake ffcrm:migration:baseline_dump \
   OUTPUT=tmp/schema-baseline.sql
 ```
+
+When using Dockerized `pg_dump`, the database must be reachable over TCP. If Rails connects through
+a Unix socket, set `PG_DUMP_HOST` to a TCP-reachable address (for example, `127.0.0.1` when using
+`--network host`).
 
 `PG_DUMP` is split as shell-style arguments; it is not evaluated by a shell. Do not put a
 production password in that value. The password travels to the child process as `PGPASSWORD`.
@@ -81,7 +86,8 @@ shared manifest.
 script/migration/build_production_shaped_db.sh
 ```
 
-The command prints `PRODUCTION_SHAPED_DATABASE_URL` for the optional live census spec. The
+The command prints a password-redacted URL and a copy-pasteable `export PRODUCTION_SHAPED_DATABASE_URL=...`
+line that expands `PRODUCTION_SHAPED_PASSWORD` (defaulting to the rehearsal password). The
 container stays running for inspection. Remove it when finished with:
 
 ```bash
@@ -98,6 +104,13 @@ See [`baseline/README.md`](baseline/README.md) for the command, generation date,
 version, and schema migration version recorded for these artifacts.
 
 ## 3. Hand off the dump to Flyway
+
+> **Warning — do not use the synthetic rehearsal schema as V1.** `production-shaped-schema.sql`
+> is a rehearsal artifact with deliberate drift, including missing `leads.cf_partner_code`,
+> type-mismatched `opportunities.cf_confidence_score`, and orphan columns. It must **not** be
+> copied to `spring/src/main/resources/db/migration/V1__baseline_rails_schema.sql`. V1 must come
+> from `ffcrm:migration:baseline_dump` against the target production database, after its census
+> has been reviewed.
 
 For Phase 1 A1, place the verified Rails-migrated dump in
 `spring/src/main/resources/db/migration/V1__baseline_rails_schema.sql`. Use it as the baseline

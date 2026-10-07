@@ -36,6 +36,10 @@ module FatFreeCRM
       # A +fields+ row with no field group, so it belongs to no entity class.
       UNATTACHED_FIELD = 'unattached_field'
 
+      CustomFieldRow = Struct.new(
+        :id, :type, :name, :label, :as, :klass_name, :attached, keyword_init: true
+      )
+
       attr_reader :klass_names
 
       def initialize(klass_names: DEFAULT_KLASS_NAMES, count_rows: true, connection: nil)
@@ -139,21 +143,51 @@ module FatFreeCRM
       # Custom-field metadata rows for one entity class, keyed by column name.
       def custom_fields_by_name(klass_name)
         custom_field_rows
-          .select { |field| field.field_group&.klass_name == klass_name }
+          .select { |field| field.klass_name == klass_name }
           .index_by(&:name)
       end
 
       def custom_field_rows
         @custom_field_rows ||=
           if connection.table_exists?(Field.table_name)
-            Field.custom_fields.includes(:field_group).to_a
+            field_table = connection.quote_table_name(Field.table_name)
+            group_table = connection.quote_table_name(FieldGroup.table_name)
+            quote_column = ->(name) { connection.quote_column_name(name) }
+            field_column = ->(name) { "f.#{quote_column.call(name)}" }
+            group_column = ->(name) { "fg.#{quote_column.call(name)}" }
+            sql = <<~SQL.squish
+              SELECT #{field_column.call('id')} AS id,
+                     #{field_column.call('type')} AS type,
+                     #{field_column.call('name')} AS name,
+                     #{field_column.call('label')} AS label,
+                     #{field_column.call('as')} AS #{quote_column.call('as')},
+                     #{group_column.call('id')} AS group_id,
+                     #{group_column.call('klass_name')} AS klass_name
+              FROM #{field_table} f
+              LEFT JOIN #{group_table} fg
+                ON #{group_column.call('id')} = #{field_column.call('field_group_id')}
+              WHERE #{field_column.call('type')} <> 'CoreField'
+            SQL
+
+            connection.select_all(sql).map do |row|
+              metadata = row.to_h.stringify_keys
+              CustomFieldRow.new(
+                id: metadata['id'],
+                type: metadata['type'],
+                name: metadata['name'],
+                label: metadata['label'],
+                as: metadata['as'],
+                klass_name: metadata['klass_name'],
+                attached: metadata['group_id'].present?
+              )
+            end
           else
             []
           end
       end
 
       def unattached_fields
-        custom_field_rows.reject(&:field_group).map do |field|
+        custom_field_rows.reject(&:attached).map do |field|
           {
             name: field.name,
             status: UNATTACHED_FIELD,
@@ -245,8 +279,8 @@ module FatFreeCRM
         def summary
           summary = report[:summary]
           rows = summary.except(:by_field_as, :by_sql_type).map { |key, value| "| #{key} | #{value} |" }
-          rows += summary[:by_field_as].map { |as, count| "| field type `#{as}` | #{count} |" }
-          rows += summary[:by_sql_type].map { |type, count| "| sql type `#{type}` | #{count} |" }
+          rows += summary[:by_field_as].map { |as, count| "| field type `#{escape(as)}` | #{count} |" }
+          rows += summary[:by_sql_type].map { |type, count| "| sql type `#{escape(type)}` | #{count} |" }
           ["\n## Summary\n", '| Metric | Value |', '|---|---|', *rows, ''].join("\n")
         end
 
@@ -271,8 +305,12 @@ module FatFreeCRM
             column[:field_as] || '—',
             column[:field_label] || '—',
             column[:populated_rows] || '—'
-          ]
+          ].map { |value| escape(value) }
           "| #{cells.join(' | ')} |"
+        end
+
+        def escape(value)
+          value.to_s.gsub('|', '\|')
         end
 
         def status_cell(column)
@@ -286,7 +324,9 @@ module FatFreeCRM
           fields = report[:unattached_fields]
           return nil if fields.empty?
 
-          rows = fields.map { |field| "| `#{field[:name]}` | #{field[:field_type]} | #{field[:field_as]} |" }
+          rows = fields.map do |field|
+            "| `#{escape(field[:name])}` | #{escape(field[:field_type])} | #{escape(field[:field_as])} |"
+          end
           ["\n## Fields with no field group\n", '| Name | Type | Field type |', '|---|---|---|', *rows, ''].join("\n")
         end
       end

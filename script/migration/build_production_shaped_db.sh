@@ -57,6 +57,17 @@ database_url="postgres://postgres:${password}@127.0.0.1:${pg_port}/ffcrm_product
 export DATABASE_URL="$database_url"
 export RAILS_ENV=development
 
+bundle exec ruby -ractive_record -ractive_record/database_configurations -e '
+  config = ActiveRecord::DatabaseConfigurations::UrlConfig.new(
+    ENV.fetch("RAILS_ENV"), "primary", ENV.fetch("DATABASE_URL")
+  )
+  ActiveRecord::Base.establish_connection(config.configuration_hash)
+  begin
+    ActiveRecord::Base.connection.select_value("SELECT 1")
+  rescue ActiveRecord::ConnectionNotEstablished, PG::ConnectionBad
+    abort "container ffcrm-prodshape-pg was created with a different password; rerun with the original PRODUCTION_SHAPED_PASSWORD or --down first."
+  end
+'
 bin/rails runner 'abort "DATABASE_URL did not select PostgreSQL" unless ActiveRecord::Base.connection_db_config.adapter == "postgresql"'
 DISABLE_DATABASE_ENVIRONMENT_CHECK=1 bin/rails db:drop db:create db:migrate
 bin/rails runner script/migration/seed_production_shaped.rb
@@ -75,4 +86,5 @@ FORMAT=markdown COUNT_ROWS=true OUTPUT=docs/migration/baseline/column-census.md 
 FORMAT=json COUNT_ROWS=true OUTPUT=docs/migration/baseline/column-census.json bin/rails ffcrm:migration:column_census
 
 echo "Production-shaped baseline artifacts generated."
-echo "PRODUCTION_SHAPED_DATABASE_URL=$database_url"
+printf 'PRODUCTION_SHAPED_DATABASE_URL=postgres://postgres:REDACTED@127.0.0.1:%s/ffcrm_production_shaped\n' "$pg_port"
+printf 'export PRODUCTION_SHAPED_DATABASE_URL="postgres://postgres:${PRODUCTION_SHAPED_PASSWORD:-ffcrm_prodshape_local}@127.0.0.1:%s/ffcrm_production_shaped"\n' "$pg_port"
