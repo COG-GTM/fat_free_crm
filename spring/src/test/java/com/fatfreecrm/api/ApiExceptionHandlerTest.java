@@ -17,6 +17,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -66,6 +67,17 @@ class ApiExceptionHandlerTest {
 
     @Test
     @WithMockUser
+    void accessDeniedReturnsForbiddenProblemWithoutLeakingTheReason() throws Exception {
+        mockMvc.perform(get("/test/access-denied"))
+            .andExpect(status().isForbidden())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.status").value(403))
+            .andExpect(jsonPath("$.detail").value("You are not allowed to access this resource."))
+            .andExpect(content().string(not(containsString("internal authorization reason"))));
+    }
+
+    @Test
+    @WithMockUser
     void typeMismatchReturnsBadRequestProblem() throws Exception {
         assertProblem(mockMvc.perform(get("/test/number").param("value", "not-a-number")), 400);
     }
@@ -107,6 +119,11 @@ class ApiExceptionHandlerTest {
         @GetMapping("/test/entity-not-found")
         String entityNotFound() {
             throw new EntityNotFoundException("internal database key");
+        }
+
+        @GetMapping("/test/access-denied")
+        String accessDenied() {
+            throw new AccessDeniedException("internal authorization reason");
         }
 
         @GetMapping("/test/not-found-with-reason")
