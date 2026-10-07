@@ -21,7 +21,7 @@ public class TrackableService {
 
     @Transactional
     public void recordSuccessfulSignIn(Long userId, String remoteAddress) {
-        userRepository.findById(userId).ifPresent(user -> updateTrackable(user, remoteAddress));
+        userRepository.findByIdForUpdate(userId).ifPresent(user -> updateTrackable(user, remoteAddress));
     }
 
     private void updateTrackable(User user, String remoteAddress) {

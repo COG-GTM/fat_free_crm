@@ -15,10 +15,16 @@ import com.fatfreecrm.support.LegacyAuthFixtures.LegacyUser;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.AfterEach;
@@ -140,9 +146,22 @@ class AuthenticationIntegrationTest extends AbstractPostgresIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"));
         }
+        Map<String, Object> beforeOversizedLogins = trackableRow("legacy_plain");
+        login("u".repeat(256), "password")
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentTypeCompatibleWith("application/problem+json"));
+        assertThat(trackableRow("legacy_plain")).isEqualTo(beforeOversizedLogins);
+        login("legacy_plain", "p".repeat(1025))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentTypeCompatibleWith("application/problem+json"));
+        assertThat(trackableRow("legacy_plain")).isEqualTo(beforeOversizedLogins);
+
         mockMvc.perform(post("/api/v1/auth/refresh")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"refreshToken\":\" \"}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentTypeCompatibleWith("application/problem+json"));
+        postRefresh("r".repeat(4097))
             .andExpect(status().isBadRequest())
             .andExpect(content().contentTypeCompatibleWith("application/problem+json"));
     }
@@ -286,6 +305,46 @@ class AuthenticationIntegrationTest extends AbstractPostgresIntegrationTest {
         assertThat(afterFailure).isEqualTo(beforeFailure);
         assertThat(afterFailure.get("encrypted_password")).isEqualTo(user.encryptedPassword());
         assertThat(afterFailure.get("password_salt")).isEqualTo(user.passwordSalt());
+    }
+
+    @Test
+    void serializesConcurrentSuccessfulSignIns() throws Exception {
+        LegacyUser user = LegacyAuthFixtures.user("legacy_plain");
+        Map<String, Object> before = trackableRow(user.username());
+        String originalHash = (String) before.get("encrypted_password");
+        String originalSalt = (String) before.get("password_salt");
+        int concurrentLogins = 8;
+        ExecutorService executor = Executors.newFixedThreadPool(concurrentLogins);
+        CountDownLatch ready = new CountDownLatch(concurrentLogins);
+        CountDownLatch start = new CountDownLatch(1);
+        List<Future<?>> logins = new ArrayList<>();
+
+        try {
+            for (int index = 0; index < concurrentLogins; index++) {
+                logins.add(executor.submit(() -> {
+                    ready.countDown();
+                    if (!start.await(10, TimeUnit.SECONDS)) {
+                        throw new IllegalStateException("Timed out waiting to start concurrent login");
+                    }
+                    login(user.username(), user.password()).andExpect(status().isOk());
+                    return null;
+                }));
+            }
+            assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            for (Future<?> login : logins) {
+                login.get(60, TimeUnit.SECONDS);
+            }
+        } finally {
+            start.countDown();
+            executor.shutdownNow();
+            assertThat(executor.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
+        }
+
+        Map<String, Object> after = trackableRow(user.username());
+        assertThat(after.get("sign_in_count")).isEqualTo(concurrentLogins);
+        assertThat(after.get("encrypted_password")).isEqualTo(originalHash);
+        assertThat(after.get("password_salt")).isEqualTo(originalSalt);
     }
 
     private ResultActions login(String username, String password) throws Exception {

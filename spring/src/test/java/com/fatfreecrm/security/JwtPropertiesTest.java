@@ -28,4 +28,24 @@ class JwtPropertiesTest {
         assertThat(properties.accessTokenTtl()).isEqualTo(Duration.ofMinutes(15));
         assertThat(properties.refreshTokenTtl()).isEqualTo(Duration.ofDays(14));
     }
+
+    @Test
+    void rejectsNonPositiveAccessTokenTtls() {
+        for (Duration ttl : new Duration[] {Duration.ZERO, Duration.ofSeconds(-1)}) {
+            assertThatThrownBy(() -> new JwtProperties("a".repeat(32), ttl, Duration.ofDays(14)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("FFCRM_JWT_ACCESS_TTL")
+                .hasMessageContaining("positive");
+        }
+    }
+
+    @Test
+    void rejectsNonPositiveRefreshTokenTtls() {
+        for (Duration ttl : new Duration[] {Duration.ZERO, Duration.ofSeconds(-1)}) {
+            assertThatThrownBy(() -> new JwtProperties("a".repeat(32), Duration.ofMinutes(15), ttl))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("FFCRM_JWT_REFRESH_TTL")
+                .hasMessageContaining("positive");
+        }
+    }
 }

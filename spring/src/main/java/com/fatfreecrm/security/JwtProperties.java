@@ -17,5 +17,11 @@ public record JwtProperties(String secret, Duration accessTokenTtl, Duration ref
         }
         accessTokenTtl = accessTokenTtl == null ? Duration.ofMinutes(15) : accessTokenTtl;
         refreshTokenTtl = refreshTokenTtl == null ? Duration.ofDays(14) : refreshTokenTtl;
+        if (accessTokenTtl.isZero() || accessTokenTtl.isNegative()) {
+            throw new IllegalStateException("FFCRM_JWT_ACCESS_TTL must be positive");
+        }
+        if (refreshTokenTtl.isZero() || refreshTokenTtl.isNegative()) {
+            throw new IllegalStateException("FFCRM_JWT_REFRESH_TTL must be positive");
+        }
     }
 }
