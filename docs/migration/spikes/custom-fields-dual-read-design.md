@@ -80,6 +80,11 @@ Trigger details (`dual_read_trigger.sql`, tested by `CustomFieldsSyncTriggerTest
   `spike_yaml_string_array()`. If it returns NULL (anything other than a simple Psych block sequence of
   scalars, e.g. the `|-` multi-line block scalar), the value is stored as `{"$yaml": "<raw>"}` and decoded
   in Java (`psychFixturesDecodeOrProduceMarker`: 8 of 9 Psych fixtures decode in SQL, 1 marker).
+  Note: the SQL decoder assumes Psych-emitted YAML — Rails writes check_boxes via
+  `serialize(type: Array)`/Psych, which quotes ambiguous scalars (`'true'`, `'123'`, `'2024-01-01'`),
+  so plain scalars are literal strings. Hand-edited or imported rows may not be canonical; G4's
+  pre-cutover verification should therefore compare the SQL decode against Psych `YAML.safe_load` for
+  every check_boxes row and turn mismatches into `$yaml` markers.
 - Values are taken from `to_jsonb(NEW)`, so types follow PostgreSQL's canonical JSON rendering:
   numeric → JSON number (scale is **not** preserved: `1234.50` becomes `1234.5`), date → `"YYYY-MM-DD"`,
   timestamp → `"YYYY-MM-DDTHH:MI:SS[.ffffff]"` (no offset; Rails stores UTC), boolean → JSON boolean.
@@ -93,9 +98,14 @@ Trigger details (`dual_read_trigger.sql`, tested by `CustomFieldsSyncTriggerTest
 
 ### Backfill
 
-- **Initial**: one set-based `UPDATE <table> SET custom_fields = jsonb_strip_nulls(jsonb_build_object(...))`
-  generated from the census columns (the benchmark's `setBasedBackfillExpression()`), batched by `id`
-  range in production (e.g. 10k rows per transaction) to keep lock time and WAL bursts small. Measured
+- **Initial**: one set-based `UPDATE <table> SET custom_fields = (coalesce(custom_fields,'{}') - <every
+  cf_ column>) || jsonb_strip_nulls(jsonb_build_object(...))` generated from the census columns
+  (`CustomFieldsBackfill.setBasedExpression()`), batched by `id`
+  range in production (e.g. 10k rows per transaction) to keep lock time and WAL bursts small. The
+  subtraction form keeps Java-only keys (no `cf_` column), and check_boxes values fall back to the
+  `{"$yaml": ...}` marker when the SQL decoder cannot handle them — the same merge semantics as the
+  trigger, which the benchmark verifies against (`setBasedBackfillIsLossless` also asserts Java-only
+  key preservation, marker fallback and trigger equality). Measured
   at about half the cost of a no-op `UPDATE ... SET custom_fields = custom_fields` through the trigger
   (benchmark `writes.csv`, `backfill_set_based` vs `backfill_via_trigger_noop_update`), and both produce
   identical documents (asserted by the benchmark).
@@ -187,7 +197,7 @@ that cannot be coerced is returned raw instead of failing the read.
 | `check_boxes` | `text`, YAML `Array` | array of strings | scalar is wrapped into a 1-element array; blanks removed; duplicates removed, order preserved; every element in `collection` | same normalisation; membership not checked; YAML decoded upstream |
 | `boolean` | `boolean` | boolean | `true`/`false`, or `"1"/"0"/"true"/"false"/"t"/"f"` (case-insensitive) | same |
 | `date` | `date` | `"YYYY-MM-DD"` | ISO local date only | also accepts an ISO datetime and truncates (former `timestamp` column, `SAFE_DB_TRANSITIONS`) |
-| `datetime` | `timestamp` (UTC) | `"YYYY-MM-DDTHH:MM:SSZ"` | ISO-8601; offset converted to UTC; no offset = UTC (Rails `timestamp without time zone` holds UTC) | also accepts a bare date as midnight UTC |
+| `datetime` | `timestamp` (UTC) | `"YYYY-MM-DDTHH:MM:SS[.ffffff]Z"` | ISO-8601; offset converted to UTC; no offset = UTC (Rails `timestamp without time zone` holds UTC) | also accepts a bare date as midnight UTC |
 | `decimal` | `numeric(15,2)` | JSON number | number or numeric string; HALF_UP to scale 2 (PostgreSQL rounding); integer part ≤ 13 digits | same, raw on failure |
 | `integer` | `integer` | JSON number | int32 range; fractional values rejected (stricter than Rails, which truncates; documented delta) | same, raw on failure |
 | `float` | `double precision` | JSON number | finite only (NaN/±Infinity rejected; JSON cannot carry them) | same |

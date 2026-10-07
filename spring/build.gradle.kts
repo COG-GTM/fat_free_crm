@@ -111,7 +111,7 @@ tasks.register<Test>("benchmarkTest") {
     maxHeapSize = "2g"
     outputs.upToDateWhen { false }
     testLogging { showStandardStreams = true }
-    listOf("benchmark.rows", "benchmark.reps", "benchmark.warmup", "benchmark.outputDir").forEach { key ->
+    listOf("benchmark.rows", "benchmark.reps", "benchmark.warmup", "benchmark.writes", "benchmark.outputDir").forEach { key ->
         providers.gradleProperty(key).orNull?.let { systemProperty(key, it) }
     }
 }

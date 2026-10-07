@@ -453,15 +453,9 @@ class CustomFieldsJsonbBenchmark {
     }
 
     private static String setBasedBackfillExpression() {
-        return CF_COLUMNS.stream().map(c -> {
-            String value = switch (CF_TYPES.get(c)) {
-                case "check_boxes" -> "spike_yaml_string_array(" + c + ")";
-                case "datetime" -> "to_char(" + c + ", 'YYYY-MM-DD\"T\"HH24:MI:SS')";
-                case "date" -> "to_char(" + c + ", 'YYYY-MM-DD')";
-                default -> c;
-            };
-            return "'" + c + "', " + value;
-        }).collect(Collectors.joining(", ", "jsonb_strip_nulls(jsonb_build_object(", "))"));
+        // lossless merge form (see CustomFieldsBackfill): preserves Java-only keys
+        // and marks undecodable check_boxes YAML instead of dropping it
+        return CustomFieldsBackfill.setBasedExpression(CF_TYPES);
     }
 
     private static String createTableSql(String table, boolean withCf, boolean withJsonb) {

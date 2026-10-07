@@ -278,4 +278,33 @@ class CustomFieldTypeValidatorTest {
             "cf_start", "2024-01-31T10:00:00",
             "cf_end", "2024-01-31T11:00:00")).ok()).isTrue();
     }
+
+    @Test
+    void readModeNeverRunsPairCheck() {
+        // end < start stored data: no error in READ (normalization only)
+        assertThat(read(datePair(),
+            Map.of("cf_from", "2024-02-01", "cf_to", "2024-01-01")).ok()).isTrue();
+        // a raw unparseable half is kept as-is and cannot blow up the pair check
+        ValidationResult r = read(datePair(),
+            Map.of("cf_from", "2024-02-01", "cf_to", 123));
+        assertThat(r.ok()).isTrue();
+        assertThat(r.normalized().get("cf_to")).isEqualTo(123);
+    }
+
+    @Test
+    void datetimePreservesPostgresMicrosecondPrecision() {
+        List<FieldDefinition> fields = List.of(f("cf_t", "datetime"));
+        // full Postgres microsecond precision round-trips
+        assertThat(write(fields, Map.of("cf_t", "2024-01-31T10:00:00.123456Z"))
+            .normalized().get("cf_t")).isEqualTo("2024-01-31T10:00:00.123456Z");
+        // offset conversion keeps the fraction
+        assertThat(write(fields, Map.of("cf_t", "2024-01-31T12:00:00.5+02:00"))
+            .normalized().get("cf_t")).isEqualTo("2024-01-31T10:00:00.5Z");
+        // trigger form (no offset, fractional seconds) gains Z in READ
+        assertThat(read(fields, Map.of("cf_t", "2024-01-31T10:00:00.123456"))
+            .normalized().get("cf_t")).isEqualTo("2024-01-31T10:00:00.123456Z");
+        // whole seconds print no fraction
+        assertThat(write(fields, Map.of("cf_t", "2024-01-31T10:00:00Z"))
+            .normalized().get("cf_t")).isEqualTo("2024-01-31T10:00:00Z");
+    }
 }

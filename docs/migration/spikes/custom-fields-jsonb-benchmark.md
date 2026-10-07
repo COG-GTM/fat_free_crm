@@ -196,6 +196,12 @@ fields would TOAST the whole document; worth re-measuring in G4 if a deployment 
 | Via trigger (`UPDATE ... SET custom_fields = custom_fields`) | 63.1 s | 15.9k rows/s |
 | Set-based `jsonb_build_object` | 23.3 s | 43.1k rows/s |
 
+Note: the committed backfill timings above were measured with the earlier plain-assignment expression;
+the lossless merge form (`(custom_fields - cf_* keys) || jsonb_build_object`, which preserves Java-only
+keys and marks undecodable YAML) re-measured at 10k/100k to trigger backfill 626.6 / 6,079.7 ms and
+set-based backfill 276.5 / 2,215.6 ms (committed: 617.4 / 5,945.9 ms and 262.1 / 2,201.0 ms) — the
+merge form costs the same within noise.
+
 10k and 100k show the same ratios (`writes.csv`). JSONB-only writes cost the same as `cf_*` writes
 (`jsonb_set` on one key rewrites the row either way under MVCC). The trigger's overhead is `to_jsonb(NEW)`
 plus one `fields` lookup per row; caching the check_boxes list (dual-read design §4) will reduce it.

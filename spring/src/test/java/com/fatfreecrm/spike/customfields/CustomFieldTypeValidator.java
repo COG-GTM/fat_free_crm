@@ -7,7 +7,9 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -36,8 +38,15 @@ public class CustomFieldTypeValidator {
         Set.of("select", "radio_buttons");
     private static final Set<String> TRUE_WORDS = Set.of("1", "true", "t");
     private static final Set<String> FALSE_WORDS = Set.of("0", "false", "f");
-    private static final DateTimeFormatter DATETIME_OUT =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    // PostgreSQL timestamp precision: microseconds; no fraction for whole seconds,
+    // sub-microsecond digits dropped.
+    private static final DateTimeFormatter DATETIME_OUT = new DateTimeFormatterBuilder()
+        .append(DateTimeFormatter.ISO_LOCAL_DATE)
+        .appendLiteral('T')
+        .appendPattern("HH:mm:ss")
+        .appendFraction(ChronoField.MICRO_OF_SECOND, 0, 6, true)
+        .appendLiteral('Z')
+        .toFormatter();
 
     /**
      * Validates {@code input} (Jackson-parsed values) against {@code fields}.
@@ -98,19 +107,24 @@ public class CustomFieldTypeValidator {
             }
         }
 
-        // pair check: both halves present and end < start -> error on the end field
-        for (FieldDefinition field : fields) {
-            if (field.pairId() == null) {
-                continue;
-            }
-            FieldDefinition start = byId.get(field.pairId());
-            if (start == null) {
-                continue;
-            }
-            Object from = normalizedByName.get(start.name());
-            Object to = normalizedByName.get(field.name());
-            if (from != null && to != null && isBefore(to, from)) {
-                addError(errors, field.name(), start.label() + " cannot end before it begins.");
+        // pair check (WRITE only: READ is normalization-only, and a raw unparseable
+        // half kept as-is could not be compared anyway): both halves present and
+        // end < start -> error on the end field
+        if (mode == Mode.WRITE) {
+            for (FieldDefinition field : fields) {
+                if (field.pairId() == null) {
+                    continue;
+                }
+                FieldDefinition start = byId.get(field.pairId());
+                if (start == null) {
+                    continue;
+                }
+                Object from = normalizedByName.get(start.name());
+                Object to = normalizedByName.get(field.name());
+                if (from != null && to != null && from.getClass().equals(to.getClass())
+                    && isBefore(to, from)) {
+                    addError(errors, field.name(), start.label() + " cannot end before it begins.");
+                }
             }
         }
 

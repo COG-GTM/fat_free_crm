@@ -186,6 +186,54 @@ class CustomFieldsSyncTriggerTest {
     }
 
     @Test
+    void setBasedBackfillIsLossless() throws Exception {
+        // ordered cf column -> fields."as" for spike_trigger_accounts
+        java.util.Map<String, String> cfColumnTypes = new java.util.LinkedHashMap<>();
+        cfColumnTypes.put("cf_segment", "string");
+        cfColumnTypes.put("cf_amount", "decimal");
+        cfColumnTypes.put("cf_score", "integer");
+        cfColumnTypes.put("cf_opt_in", "boolean");
+        cfColumnTypes.put("cf_since", "date");
+        cfColumnTypes.put("cf_seen_at", "datetime");
+        cfColumnTypes.put("cf_interests", "check_boxes");
+        String expr = CustomFieldsBackfill.setBasedExpression(cfColumnTypes);
+
+        try (Connection conn = conn(); Statement st = conn.createStatement()) {
+            // row 1: Java-only key + a multiline block-scalar YAML the SQL decoder cannot handle
+            st.execute("insert into spike_trigger_accounts (name, cf_segment, cf_interests,"
+                + " custom_fields) values ('bl1', 'prospect',"
+                + " '---\n- |-\n  multi\n  line\n', '{\"cf_java_only\":\"kept\"}'::jsonb)");
+            // row 2: a simple decodable YAML array
+            st.execute("insert into spike_trigger_accounts (name, cf_interests)"
+                + " values ('bl2', '---\n- A\n- B\n')");
+
+            // capture the trigger's output for the same rows first
+            JsonNode trigger1 = customFields(conn, jsonId(conn, "bl1"));
+            JsonNode trigger2 = customFields(conn, jsonId(conn, "bl2"));
+
+            // reset documents as if never backfilled, then run the set-based UPDATE
+            st.execute("update spike_trigger_accounts set custom_fields ="
+                + " case when name = 'bl1' then '{\"cf_java_only\":\"kept\"}'::jsonb"
+                + " else '{}'::jsonb end");
+            st.execute("alter table spike_trigger_accounts disable trigger spike_sync_cf");
+            st.execute("update spike_trigger_accounts set custom_fields = " + expr);
+            st.execute("alter table spike_trigger_accounts enable trigger spike_sync_cf");
+
+            JsonNode backfill1 = customFields(conn, jsonId(conn, "bl1"));
+            JsonNode backfill2 = customFields(conn, jsonId(conn, "bl2"));
+
+            // Java-only key preserved; multiline YAML becomes the $yaml marker; simple array decoded
+            assertThat(backfill1.get("cf_java_only").asText()).isEqualTo("kept");
+            assertThat(backfill1.get("cf_interests").get("$yaml").asText())
+                .isEqualTo("---\n- |-\n  multi\n  line\n");
+            assertThat(backfill2.get("cf_interests")).isEqualTo(MAPPER.readTree("[\"A\",\"B\"]"));
+            // identical to what the trigger produces for the same rows
+            assertThat(backfill1).isEqualTo(trigger1);
+            assertThat(backfill2).isEqualTo(trigger2);
+        }
+    }
+
+    @Test
     void runtimeAddedColumnAndOrphanAndBackfill() throws Exception {
         try (Connection conn = conn(); Statement st = conn.createStatement()) {
             // runtime ADD COLUMN: no trigger change needed, key appears on next write
