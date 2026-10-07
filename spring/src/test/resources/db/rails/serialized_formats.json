@@ -1,0 +1,51 @@
+{
+  "generated_by": "ffcrm:migration:entity_fixture",
+  "subscribed_users": [
+    {
+      "value": [],
+      "serialized": null
+    },
+    {
+      "value": [
+        1
+      ],
+      "serialized": "---\n- 1\n"
+    },
+    {
+      "value": [
+        3,
+        1,
+        2
+      ],
+      "serialized": "---\n- 3\n- 1\n- 2\n"
+    }
+  ],
+  "subscribed_users_legacy_reads": [
+    {
+      "serialized": "--- []\n",
+      "value": []
+    }
+  ],
+  "preferences": [
+    {
+      "name": "fixture_short",
+      "json": "\"all\"",
+      "serialized": "ImFsbCI=\n"
+    },
+    {
+      "name": "fixture_hash",
+      "json": "{\"alpha\":1,\"beta\":[true,false]}",
+      "serialized": "eyJhbHBoYSI6MSwiYmV0YSI6W3RydWUsZmFsc2VdfQ==\n"
+    },
+    {
+      "name": "fixture_long",
+      "json": "\"long preference long preference long preference long preference long preference long preference long preference long preference long preference long preference long preference long preference \"",
+      "serialized": "ImxvbmcgcHJlZmVyZW5jZSBsb25nIHByZWZlcmVuY2UgbG9uZyBwcmVmZXJl\nbmNlIGxvbmcgcHJlZmVyZW5jZSBsb25nIHByZWZlcmVuY2UgbG9uZyBwcmVm\nZXJlbmNlIGxvbmcgcHJlZmVyZW5jZSBsb25nIHByZWZlcmVuY2UgbG9uZyBw\ncmVmZXJlbmNlIGxvbmcgcHJlZmVyZW5jZSBsb25nIHByZWZlcmVuY2UgbG9u\nZyBwcmVmZXJlbmNlICI=\n"
+    },
+    {
+      "name": "fixture_unicode",
+      "json": "\"café-日本語-🔐\"",
+      "serialized": "ImNhZsOpLeaXpeacrOiqni3wn5SQIg==\n"
+    }
+  ]
+}
