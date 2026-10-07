@@ -134,3 +134,21 @@ C4Container
 
 - Ownership, SLO and latency targets (TBD above).
 - Whether API clients need persisted list preferences writes (Rails `redraw` writes them; Spring only reads them).
+
+## Family: campaigns
+
+- **Routed surface:** `GET /api/v1/campaigns` (list + `status` facet envelope),
+  `GET /api/v1/campaigns/{id}` (show + `view` version row), and
+  `GET /api/v1/campaigns/autocomplete` (`related` supports bare ids and `users/<id>`).
+- **Gateway block:** `Spring routing: campaigns` markers in `spring/gateway/nginx.conf`;
+  `routing.sh enable upstream campaigns` activates it independently of accounts.
+- **Parity evidence:** `spring/src/test/resources/search/campaigns_search_matrix.json`
+  (45 recorded cases replayed by `RailsCampaignSearchParityTest`),
+  `CampaignsControllerIntegrationTest`, and `ab-270-campaigns-read.yml` (22 enforced
+  contract cases, no allow-list entries).
+- **Deviations:** none vs the Accounts foundation. Recorded Rails quirk documented in the
+  matrix: `POST /campaigns/filter` returns 500 when the filtered result contains a
+  NULL-status campaign (`campaigns/_status.html.haml` calls `status.to_sym`), so the
+  `other` session filter never persists in real Rails; those cases carry `post_status`
+  and are replayed unfiltered. Facet key order is `all, other, <statuses>` (sidebar
+  build order), unlike accounts' `<categories>, all, other`.
