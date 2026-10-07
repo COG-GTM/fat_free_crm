@@ -132,4 +132,66 @@ describe "ffcrm:migration rake tasks" do # rubocop:disable RSpec/DescribeClass
 
     expect(File.read(output_path)).to include('CREATE TABLE')
   end
+
+  it "accepts md as an alias for markdown" do
+    expect do
+      run('ffcrm:migration:column_census', 'OUTPUT' => output_path.to_s, 'FORMAT' => 'md', 'COUNT_ROWS' => 'false')
+    end.to output(/Wrote md census/).to_stdout
+
+    expect(File.read(output_path)).to include('# Custom field (`cf_*`) column census')
+  end
+
+  it "matches FORMAT case-insensitively" do
+    run('ffcrm:migration:column_census', 'OUTPUT' => output_path.to_s, 'FORMAT' => 'JSON', 'COUNT_ROWS' => 'false')
+
+    expect(JSON.parse(File.read(output_path))).to include('adapter', 'tables', 'summary')
+  end
+
+  it "includes row counts unless COUNT_ROWS is false" do
+    run('ffcrm:migration:column_census', 'OUTPUT' => output_path.to_s, 'FORMAT' => 'json', 'COUNT_ROWS' => nil)
+
+    report = JSON.parse(File.read(output_path))
+    expect(report['row_counts_included']).to be true
+    expect(report['tables'].pluck('total_rows')).to all(be_an(Integer))
+  end
+
+  it "writes the baseline dump to a timestamped file under tmp when OUTPUT is not given" do
+    config = instance_double(
+      ActiveRecord::DatabaseConfigurations::HashConfig,
+      adapter: 'sqlite3',
+      configuration_hash: {},
+      database: 'db/fat_free_crm_test.sqlite3'
+    )
+    allow(ActiveRecord::Base).to receive(:connection_db_config).and_return(config)
+    default_path = Rails.root.join('tmp/schema-baseline-20260107T120000Z.sql').to_s
+    expect(ActiveRecord::Tasks::DatabaseTasks).to receive(:structure_dump)
+      .with(config, default_path) { File.write(default_path, 'CREATE TABLE contacts;') }
+
+    Timecop.freeze(Time.utc(2026, 1, 7, 12, 0, 0)) do
+      expect { run('ffcrm:migration:baseline_dump', 'OUTPUT' => nil) }
+        .to output(/Wrote sqlite3 schema dump to #{Regexp.escape(default_path)}/).to_stdout
+    end
+
+    expect(File.read(default_path)).to include('CREATE TABLE')
+  ensure
+    FileUtils.rm_f(default_path) if default_path
+  end
+
+  it "omits PGPASSWORD and connection flags the PostgreSQL configuration does not define" do
+    config = instance_double(
+      ActiveRecord::DatabaseConfigurations::HashConfig,
+      adapter: 'postgresql',
+      configuration_hash: { host: 'db.internal' },
+      database: 'ffcrm_test'
+    )
+    allow(ActiveRecord::Base).to receive(:connection_db_config).and_return(config)
+    status = instance_double(Process::Status, success?: true, exitstatus: 0)
+    expect(Open3).to receive(:capture2)
+      .with({}, 'pg_dump', '--schema-only', '--no-owner', '--no-privileges', '--host', 'db.internal', 'ffcrm_test')
+      .and_return(["CREATE TABLE contacts;", status])
+
+    run('ffcrm:migration:baseline_dump', 'OUTPUT' => output_path.to_s, 'PG_DUMP' => nil)
+
+    expect(File.read(output_path)).to eq("CREATE TABLE contacts;\n")
+  end
 end

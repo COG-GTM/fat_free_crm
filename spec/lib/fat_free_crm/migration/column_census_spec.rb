@@ -191,4 +191,169 @@ describe FatFreeCRM::Migration::ColumnCensus do
       Contact.reset_column_information
     end
   end
+
+  describe "edge cases" do
+    after { Contact.reset_column_information }
+
+    def bare_connection
+      instance_double(ActiveRecord::ConnectionAdapters::AbstractAdapter, adapter_name: 'PostgreSQL')
+    end
+
+    it "accepts a single class name" do
+      census = described_class.new(klass_names: 'Contact', connection: bare_connection)
+
+      expect(census.klass_names).to eq(%w[Contact])
+    end
+
+    it "reports no columns and no row count for a table that does not exist" do
+      connection = bare_connection
+      allow(connection).to receive_messages(table_exists?: false, select_value: nil)
+      census = described_class.new(klass_names: %w[Contact], count_rows: true, connection: connection)
+
+      expect(census.report[:tables].first).to include(table: 'contacts', total_rows: nil, columns: [])
+      expect(census.report[:summary]).to include(tables: 1, custom_columns: 0)
+    end
+
+    it "treats every cf_ column as orphaned when the fields table is missing" do
+      contact_field('cf_hobby')
+      connection = bare_connection
+      allow(connection).to receive(:table_exists?) { |table| table.to_s != Field.table_name }
+      allow(connection).to receive_messages(columns: [column('cf_hobby')], select_value: nil)
+      report = described_class.new(klass_names: %w[Contact], count_rows: false, connection: connection).report
+
+      expect(columns_of[report, 'Contact'].first).to include(status: described_class::ORPHANED, field_id: nil)
+      expect(report[:unattached_fields]).to be_empty
+    end
+
+    it "records a nil schema version when schema_migrations cannot be queried" do
+      connection = bare_connection
+      allow(connection).to receive_messages(table_exists?: true, columns: [])
+      allow(connection).to receive(:select_value).and_raise(ActiveRecord::StatementInvalid, 'no such table')
+      census = described_class.new(klass_names: %w[Contact], count_rows: false, connection: connection)
+
+      expect(census.report[:schema_version]).to be_nil
+      expect(census.to_markdown).to include('Schema version: unknown')
+    end
+
+    it "does not flag a type mismatch for a field type with no registered column type" do
+      field = contact_field('cf_ghost')
+      Field.where(id: field.id).update_all(as: 'ghost')
+      entry = columns_of[census_for([column('cf_ghost')]).report, 'Contact'].first
+
+      expect(entry).to include(status: described_class::MAPPED, field_as: 'ghost',
+                               expected_column_type: nil, type_mismatch: false)
+    end
+
+    it "records column nullability and defaults" do
+      flag = instance_double(ActiveRecord::ConnectionAdapters::Column,
+                             name: 'cf_flag', type: :boolean, sql_type: 'boolean', null: false, default: 'false')
+      entry = columns_of[census_for([flag]).report, 'Contact'].first
+
+      expect(entry).to include(null: false, default: 'false', sql_type: 'boolean', active_record_type: 'boolean')
+    end
+
+    it "sorts missing-column entries alongside physical columns by name" do
+      contact_field('cf_a_missing')
+      report = census_for([column('cf_c'), column('cf_b')]).report
+
+      expect(columns_of[report, 'Contact'].pluck(:name)).to eq(%w[cf_a_missing cf_b cf_c])
+    end
+
+    it "tallies type mismatches and SQL types in the summary" do
+      contact_field('cf_amount', as: 'integer')
+      report = census_for([column('cf_amount'), column('cf_note', type: :text, sql_type: 'text')]).report
+
+      expect(report[:summary]).to include(type_mismatches: 1, missing_columns: 0)
+      expect(report[:summary][:by_sql_type]).to eq('character varying' => 1, 'text' => 1)
+    end
+
+    it "censuses several entity tables independently" do
+      contact_field('cf_hobby')
+      report = census_for([column('cf_hobby')], klass_names: %w[Contact Account]).report
+
+      expect(report[:tables].map { |table| table.values_at(:klass, :table) })
+        .to eq([%w[Contact contacts], %w[Account accounts]])
+      expect(columns_of[report, 'Contact'].first[:status]).to eq(described_class::MAPPED)
+      expect(columns_of[report, 'Account'].first[:status]).to eq(described_class::ORPHANED)
+      expect(report[:summary]).to include(tables: 2, custom_columns: 2, mapped: 1, orphaned: 1)
+    end
+
+    it "uses the registered column type for paired custom fields" do
+      field_group = create(:field_group, klass_name: 'Contact')
+      CustomFieldDatePair.create!(field_group: field_group, label: 'Starts', name: 'cf_starts', as: 'date_pair')
+      entry = columns_of[census_for([column('cf_starts', type: :date, sql_type: 'date')]).report, 'Contact'].first
+
+      expect(entry).to include(status: described_class::MAPPED, field_type: 'CustomFieldDatePair',
+                               field_as: 'date_pair', expected_column_type: 'date', type_mismatch: false)
+    end
+
+    it "stamps the report with an ISO 8601 generation time" do
+      census = census_for([])
+
+      expect { Time.iso8601(census.report[:generated_at]) }.not_to raise_error
+    end
+  end
+
+  describe FatFreeCRM::Migration::ColumnCensus::MarkdownFormatter do
+    subject(:markdown) { described_class.new(report).to_s }
+
+    let(:report) do
+      {
+        generated_at: '2026-10-07T00:00:00Z',
+        adapter: 'PostgreSQL',
+        schema_version: nil,
+        row_counts_included: false,
+        tables: [
+          {
+            klass: 'Contact', table: 'contacts', total_rows: nil,
+            columns: [
+              { name: 'cf_interests', status: 'mapped', sql_type: 'text', field_as: 'check_boxes',
+                field_label: 'Interests', populated_rows: nil, type_mismatch: false, yaml_serialized: true },
+              { name: 'cf_score', status: 'mapped', sql_type: 'integer', field_as: 'float',
+                field_label: 'Score', populated_rows: nil, type_mismatch: true, yaml_serialized: false },
+              { name: 'cf_gone', status: 'missing_column', sql_type: nil, field_as: 'string',
+                field_label: 'Gone', populated_rows: nil, type_mismatch: nil, yaml_serialized: false },
+              { name: 'cf_orphan', status: 'orphaned', sql_type: 'character varying', field_as: nil,
+                field_label: nil, populated_rows: nil, type_mismatch: nil, yaml_serialized: false }
+            ]
+          }
+        ],
+        unattached_fields: [{ name: 'cf_loose', status: 'unattached_field', field_type: 'CustomField', field_as: 'string' }],
+        summary: { tables: 1, custom_columns: 3, mapped: 2, orphaned: 1, missing_columns: 1, unattached_fields: 1,
+                   type_mismatches: 1, yaml_serialized: 1, by_field_as: { 'string' => 1 }, by_sql_type: { 'text' => 1 } }
+      }
+    end
+
+    it "falls back to unknown for a missing schema version and ? for missing row counts" do
+      expect(markdown).to include('- Schema version: unknown')
+      expect(markdown).to include('## Contact (`contacts`, ? rows)')
+    end
+
+    it "annotates status cells with YAML and type mismatch flags" do
+      expect(markdown).to include('| `cf_interests` | mapped (YAML) | `text` | check_boxes | Interests | — |')
+      expect(markdown).to include('| `cf_score` | mapped (type mismatch) | `integer` | float | Score | — |')
+    end
+
+    it "renders placeholders for entries without a column or field metadata" do
+      expect(markdown).to include('| `cf_gone` | missing_column | — | string | Gone | — |')
+      expect(markdown).to include('| `cf_orphan` | orphaned | `character varying` | — | — | — |')
+    end
+
+    it "breaks the summary down by field type and SQL type" do
+      expect(markdown).to include('| type_mismatches | 1 |')
+      expect(markdown).to include('| field type `string` | 1 |')
+      expect(markdown).to include('| sql type `text` | 1 |')
+    end
+
+    it "lists fields that belong to no field group" do
+      expect(markdown).to include('## Fields with no field group')
+      expect(markdown).to include('| `cf_loose` | CustomField | string |')
+    end
+
+    it "omits the unattached section when every field has a group" do
+      report[:unattached_fields] = []
+
+      expect(markdown).not_to include('## Fields with no field group')
+    end
+  end
 end
