@@ -73,9 +73,11 @@ class CustomFieldsDualReaderEdgeCasesTest {
     }
 
     @Test
-    void legacyColumnValuesAreCoercedInReadMode() {
-        // JDBC hands back BigDecimal / Integer / java.sql.Date-ish strings; READ
-        // normalises them like the jsonb path does
+    void legacyNumericAndTextTimestampColumnsAreCoercedInReadMode() {
+        // JDBC BigDecimal / Long and a text-typed legacy timestamp are normalised like
+        // the jsonb path. Real java.sql.Date / LocalDate objects are NOT covered: the
+        // validator only parses CharSequence dates and keeps other objects raw on READ,
+        // which is reported as an open gap in the PR description rather than pinned.
         Map<String, Object> cols = Map.of(
             "cf_amount", new BigDecimal("1234.5"),
             "cf_score", 7L,
