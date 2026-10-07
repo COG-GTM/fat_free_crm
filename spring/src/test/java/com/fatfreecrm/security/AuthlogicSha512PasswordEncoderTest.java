@@ -1,12 +1,14 @@
 package com.fatfreecrm.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fatfreecrm.support.LegacyAuthFixtures;
 import com.fatfreecrm.support.LegacyAuthFixtures.LegacyUser;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
+import java.util.Locale;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -69,5 +71,51 @@ class AuthlogicSha512PasswordEncoderTest {
         LegacyUser user = LegacyAuthFixtures.users().getFirst();
         String legacy = "{authlogic-sha512}" + user.encryptedPassword() + "$" + user.passwordSalt();
         assertThat(delegating.matches(user.password(), legacy)).isTrue();
+    }
+
+    @Test
+    void rejectsZeroOrNegativeStretchesLikeDeviseWhichAlwaysHashesAtLeastOnce() {
+        assertThatThrownBy(() -> new AuthlogicSha512PasswordEncoder(0)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new AuthlogicSha512PasswordEncoder(-1)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void neverMatchesANullOrEmptyRawPasswordAgainstARealHash() {
+        LegacyUser user = LegacyAuthFixtures.users().getFirst();
+        String encoded = user.encryptedPassword() + "$" + user.passwordSalt();
+
+        assertThat(encoder.matches(null, encoded)).isFalse();
+        assertThat(encoder.matches("", encoded)).isFalse();
+    }
+
+    @Test
+    void stretchCountChangesTheDigestSoTestAndProductionHashesAreNotInterchangeable() {
+        LegacyUser user = LegacyAuthFixtures.users().getFirst();
+        String encoded = user.encryptedPassword() + "$" + user.passwordSalt();
+
+        assertThat(new AuthlogicSha512PasswordEncoder(1).matches(user.password(), encoded)).isFalse();
+        assertThat(new AuthlogicSha512PasswordEncoder(19).matches(user.password(), encoded)).isFalse();
+        assertThat(new AuthlogicSha512PasswordEncoder(21).matches(user.password(), encoded)).isFalse();
+    }
+
+    @Test
+    void secondStretchIsTheSha512OfTheFirstRoundsHexDigest() throws Exception {
+        MessageDigest sha512 = MessageDigest.getInstance("SHA-512");
+        String first = HexFormat.of().formatHex(sha512.digest("passwordsalt".getBytes(StandardCharsets.UTF_8)));
+        String second = HexFormat.of().formatHex(sha512.digest(first.getBytes(StandardCharsets.UTF_8)));
+
+        assertThat(new AuthlogicSha512PasswordEncoder(2).digest("password", "salt")).isEqualTo(second);
+    }
+
+    @Test
+    void comparesTheStoredHashCaseSensitivelyAndRejectsTruncatedHashes() {
+        LegacyUser user = LegacyAuthFixtures.users().getFirst();
+
+        String upper = user.encryptedPassword().toUpperCase(Locale.ROOT) + "$" + user.passwordSalt();
+        assertThat(encoder.matches(user.password(), upper)).isFalse();
+        String truncated = user.encryptedPassword().substring(0, 127) + "$" + user.passwordSalt();
+        assertThat(encoder.matches(user.password(), truncated)).isFalse();
+        String otherSalt = user.encryptedPassword() + "$" + LegacyAuthFixtures.users().get(1).passwordSalt();
+        assertThat(encoder.matches(user.password(), otherSalt)).isFalse();
     }
 }
