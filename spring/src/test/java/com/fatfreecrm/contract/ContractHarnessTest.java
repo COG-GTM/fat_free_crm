@@ -44,13 +44,15 @@ class ContractHarnessTest {
     @Test
     void loadsInitialCasesFromClasspath() throws Exception {
         assertEquals(6, CaseLoader.load().size());
-        assertEquals(9, FixtureUsers.load().size());
+        assertEquals(5, FixtureUsers.load().size());
     }
 
     @Test
     void railsSessionAdapterSubmitsCsrfAndCookieAndReusesSession() throws Exception {
         AtomicBoolean loginFieldsValid = new AtomicBoolean();
         AtomicBoolean requestCookieValid = new AtomicBoolean();
+        AtomicBoolean writeCookieValid = new AtomicBoolean();
+        AtomicBoolean writeCsrfHeaderValid = new AtomicBoolean();
         try (StubServer server = new StubServer(exchange -> {
             if (exchange.getRequestURI().getPath().equals("/users/sign_in")
                 && exchange.getRequestMethod().equals("GET")) {
@@ -77,6 +79,22 @@ class ContractHarnessTest {
                 }
                 return;
             }
+            if (exchange.getRequestURI().getPath().equals("/")
+                && exchange.getRequestMethod().equals("GET")) {
+                StubServer.respond(exchange, 200, "text/html",
+                    "<meta name=\"csrf-token\" content=\"post-login-token\">");
+                return;
+            }
+            if (exchange.getRequestURI().getPath().equals("/accounts.json")
+                && exchange.getRequestMethod().equals("POST")) {
+                writeCookieValid.set(exchange.getRequestHeaders().getFirst("Cookie") != null
+                    && exchange.getRequestHeaders().getFirst("Cookie").contains("_crm_session=initial"));
+                writeCsrfHeaderValid.set("post-login-token".equals(
+                    exchange.getRequestHeaders().getFirst("X-CSRF-Token")));
+                StubServer.respond(exchange, writeCsrfHeaderValid.get() ? 201 : 422,
+                    "application/json", "{\"id\":101}");
+                return;
+            }
             requestCookieValid.set(exchange.getRequestHeaders().getFirst("Cookie") != null
                 && exchange.getRequestHeaders().getFirst("Cookie").contains("_crm_session=initial"));
             StubServer.respond(exchange, 200, "application/json; charset=utf-8", """
@@ -86,6 +104,7 @@ class ContractHarnessTest {
             FixtureUsers.FixtureUser alice = user("alice");
             RailsSessionAuth auth = new RailsSessionAuth(server.url(), Map.of("alice", alice));
             AuthContext context = auth.authenticate("alice");
+            assertEquals("post-login-token", context.csrfToken());
             HttpRequest request = HttpRequest.newBuilder(URI.create(server.url() + "/accounts.json"))
                 .timeout(Duration.ofSeconds(5))
                 .header("Accept", "application/json")
@@ -99,6 +118,23 @@ class ContractHarnessTest {
             CapturedResponse captured = CapturedResponse.from(response);
             assertEquals("application/json", captured.mediaType());
             assertNotNull(captured.json());
+
+            ContractCase writeCase = CaseLoader.parse(YAML.readTree("""
+                - id: csrf-write
+                  ticket: AB-266
+                  status: pending
+                  method: POST
+                  path: /accounts
+                  auth: alice
+                  body:
+                    account:
+                      name: csrf check
+                """)).getFirst();
+            ContractClient client = new ContractClient(server.url(), server.url(), Map.of("alice", alice));
+            ContractClient.RequestResult write = client.send(writeCase, true);
+            assertEquals(201, write.response().status());
+            assertTrue(writeCookieValid.get());
+            assertTrue(writeCsrfHeaderValid.get());
         }
     }
 

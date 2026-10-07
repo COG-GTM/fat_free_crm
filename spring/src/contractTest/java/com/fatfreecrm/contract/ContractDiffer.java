@@ -42,11 +42,24 @@ public final class ContractDiffer {
             differences.add(new Difference("", Difference.Kind.CONTENT_TYPE, text(rails.mediaType()),
                 text(spring.mediaType()), applied));
         }
-        if (rails.json() != null && spring.json() != null) {
+        boolean invalidJson = malformedJson(rails) || malformedJson(spring)
+            || (rails.json() != null) != (spring.json() != null);
+        if (invalidJson) {
+            differences.add(new Difference("", Difference.Kind.INVALID_JSON, rawBody(rails), rawBody(spring),
+                List.of()));
+        } else if (rails.json() != null && spring.json() != null) {
             JsonNode options = JsonNormalizer.merge(globalNormalize, contractCase.normalize());
-            JsonNode left = JsonNormalizer.normalize(rails.json(), options, "rails");
-            JsonNode right = JsonNormalizer.normalize(spring.json(), options, "spring");
-            compare(left, right, "", differences, matching, allowlist, rails, spring, contractCase,
+            JsonNormalizer.NormalizationResult left = JsonNormalizer.normalizeWithDiagnostics(
+                rails.json(), options, "rails");
+            JsonNormalizer.NormalizationResult right = JsonNormalizer.normalizeWithDiagnostics(
+                spring.json(), options, "spring");
+            left.missingKeys().forEach(missing ->
+                differences.add(new Difference(missing.pointer(), Difference.Kind.MISSING_KEY,
+                    missing.value(), null, List.of())));
+            right.missingKeys().forEach(missing ->
+                differences.add(new Difference(missing.pointer(), Difference.Kind.MISSING_KEY,
+                    null, missing.value(), List.of())));
+            compare(left.json(), right.json(), "", differences, matching, allowlist, rails, spring, contractCase,
                 problemBodyAllowed, options);
         }
         if (problemBodyAllowed) {
@@ -237,6 +250,17 @@ public final class ContractDiffer {
 
     private static JsonNode text(String value) {
         return JSON.getNodeFactory().textNode(value);
+    }
+
+    private static boolean malformedJson(CapturedResponse response) {
+        String mediaType = response.mediaType();
+        boolean jsonMediaType = mediaType.equals("application/json") || mediaType.endsWith("+json");
+        return jsonMediaType && !response.rawBody().isBlank() && response.json() == null;
+    }
+
+    private static JsonNode rawBody(CapturedResponse response) {
+        String body = response.rawBody();
+        return text(body.substring(0, Math.min(200, body.length())));
     }
 
     private static boolean pointerMatches(String pattern, String pointer) {

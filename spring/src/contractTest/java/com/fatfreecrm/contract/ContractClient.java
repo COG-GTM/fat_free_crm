@@ -39,15 +39,16 @@ public final class ContractClient {
         String requestUrl = targetBase + side.path() + query(contractCase.params());
         HttpClient client = anonymousClient;
         String authorization = null;
+        AuthContext authContext = null;
         List<String> notes = new ArrayList<>();
         if (!contractCase.auth().equals("anonymous")) {
             AuthAdapter adapter = side.target() == ContractCase.Target.RAILS ? railsAuth : springAuth;
-            AuthContext auth = adapter.authenticate(contractCase.auth());
-            client = auth.client();
-            authorization = auth.authorization();
-            if (auth.note() != null) {
+            authContext = adapter.authenticate(contractCase.auth());
+            client = authContext.client();
+            authorization = authContext.authorization();
+            if (authContext.note() != null) {
                 notes.add((side.target() == ContractCase.Target.RAILS ? "rails" : "spring") + " "
-                    + auth.note().replaceFirst("^(rails|spring) ", ""));
+                    + authContext.note().replaceFirst("^(rails|spring) ", ""));
             }
         }
         HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(requestUrl))
@@ -55,6 +56,11 @@ public final class ContractClient {
             .header("Accept", "application/json");
         if (authorization != null) {
             request.header("Authorization", authorization);
+        }
+        if (authContext != null && side.target() == ContractCase.Target.RAILS
+            && !contractCase.method().equalsIgnoreCase("GET")
+            && !contractCase.method().equalsIgnoreCase("HEAD") && authContext.csrfToken() != null) {
+            request.header("X-CSRF-Token", authContext.csrfToken());
         }
         if (contractCase.body() != null && !contractCase.body().isNull()) {
             request.header("Content-Type", "application/json")

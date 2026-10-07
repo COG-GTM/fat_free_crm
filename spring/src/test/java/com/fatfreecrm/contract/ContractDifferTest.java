@@ -45,6 +45,40 @@ class ContractDifferTest {
     }
 
     @Test
+    void malformedJsonAndOneSidedJsonBodiesAreOpenDifferences() throws Exception {
+        Allowlist allowlist = new Allowlist(List.of(entry("ignore-root", "pointer", "/accounts/**",
+            JSON.readTree("""
+                {"pointer":"","rule":"ignore"}
+                """))));
+        String longInvalidBody = "{".repeat(250);
+        CaseResult malformedRails = diff(response(200, "application/json", longInvalidBody),
+            response(200, "application/json", "{}"), allowlist, JSON.createObjectNode(), "/accounts/1");
+        Difference railsInvalidJson = malformedRails.differences().stream()
+            .filter(difference -> difference.kind() == Difference.Kind.INVALID_JSON).findFirst().orElseThrow();
+        assertEquals("", railsInvalidJson.pointer());
+        assertEquals(200, railsInvalidJson.railsValue().asText().length());
+        assertFalse(railsInvalidJson.allowed());
+
+        CaseResult malformedSpring = diff(response(200, "application/json", "{}"),
+            response(200, "application/problem+json", "{invalid"), allowlist, JSON.createObjectNode(), "/accounts/1");
+        Difference springInvalidJson = malformedSpring.differences().stream()
+            .filter(difference -> difference.kind() == Difference.Kind.INVALID_JSON).findFirst().orElseThrow();
+        assertEquals("", springInvalidJson.pointer());
+        assertEquals("{invalid", springInvalidJson.springValue().asText());
+        assertFalse(springInvalidJson.allowed());
+        assertEquals(0, allowlist.hits("ignore-root"));
+
+        CaseResult blankBodies = diff(response(200, "application/json", " "),
+            response(200, "application/json", "\n"), new Allowlist(List.of()), JSON.createObjectNode(), "/accounts/1");
+        assertEquals(CaseResult.Outcome.CLEAN, blankBodies.outcome());
+
+        CaseResult oneSidedJson = diff(response(200, "application/json", "{\"ok\":true}"),
+            response(200, "application/json", ""), new Allowlist(List.of()), JSON.createObjectNode(), "/accounts/1");
+        assertEquals(Difference.Kind.INVALID_JSON, oneSidedJson.differences().getFirst().kind());
+        assertEquals("", oneSidedJson.differences().getFirst().pointer());
+    }
+
+    @Test
     void appliesStatusAndProblemBodyAllowlistAndValidatesProblemShape() throws Exception {
         Allowlist allowlist = new Allowlist(List.of(
             entry("authz", "status", "/accounts/**", JSON.readTree("""
@@ -87,6 +121,29 @@ class ContractDifferTest {
         assertTrue(allowlist.matching(contractCase("other", "/accounts/17")).isEmpty());
         assertTrue(allowlist.matching(contractCase("selected", "/accounts/17/child")).isEmpty());
         assertEquals(0, allowlist.hits("stale"));
+    }
+
+    @Test
+    void recursivePathGlobsMatchPrefixAndZeroOrMoreSegments() throws Exception {
+        Allowlist recursive = new Allowlist(List.of(entry("recursive", "pointer", "/accounts/**",
+            JSON.createObjectNode())));
+        assertEquals(1, recursive.matching(contractCase("selected", "/accounts")).size());
+        assertEquals(1, recursive.matching(contractCase("selected", "/accounts/101")).size());
+        assertEquals(1, recursive.matching(contractCase("selected", "/accounts/101/contacts")).size());
+        assertTrue(recursive.matching(contractCase("selected", "/accountsx")).isEmpty());
+
+        Allowlist anyPath = new Allowlist(List.of(entry("all", "pointer", "**", JSON.createObjectNode())));
+        assertEquals(1, anyPath.matching(contractCase("selected", "/accounts/101/contacts")).size());
+
+        Allowlist oneSegment = new Allowlist(List.of(entry("one", "pointer", "/accounts/*",
+            JSON.createObjectNode())));
+        assertTrue(oneSegment.matching(contractCase("selected", "/accounts")).isEmpty());
+        assertEquals(1, oneSegment.matching(contractCase("selected", "/accounts/101")).size());
+
+        Allowlist middleRecursive = new Allowlist(List.of(entry("middle", "pointer", "/accounts/**/contacts",
+            JSON.createObjectNode())));
+        assertEquals(1, middleRecursive.matching(contractCase("selected", "/accounts/contacts")).size());
+        assertEquals(1, middleRecursive.matching(contractCase("selected", "/accounts/101/contacts")).size());
     }
 
     @Test
@@ -135,9 +192,15 @@ class ContractDifferTest {
     }
 
     private static CapturedResponse response(int status, String contentType, String body) throws Exception {
-        String cleanMediaType = contentType.split(";", 2)[0];
-        JsonNode json = cleanMediaType.equals("application/json") || cleanMediaType.endsWith("+json")
-            ? JSON.readTree(body) : null;
+        String cleanMediaType = contentType.split(";", 2)[0].trim();
+        JsonNode json = null;
+        if ((cleanMediaType.equals("application/json") || cleanMediaType.endsWith("+json")) && !body.isBlank()) {
+            try {
+                json = JSON.readTree(body);
+            } catch (Exception ignored) {
+                json = null;
+            }
+        }
         return new CapturedResponse(status, cleanMediaType, body, json);
     }
 

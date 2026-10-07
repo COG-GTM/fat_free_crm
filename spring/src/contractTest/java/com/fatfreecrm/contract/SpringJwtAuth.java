@@ -41,19 +41,20 @@ public final class SpringJwtAuth implements AuthAdapter {
             .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 404 || response.statusCode() == 401) {
-            return new AuthContext(client, null, "spring auth unavailable (login returned " + response.statusCode()
-                + ")");
+            return new AuthContext(client, null, null, "spring auth unavailable (login returned "
+                + response.statusCode() + ")");
         }
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            return new AuthContext(client, null,
+            return new AuthContext(client, null, null,
                 "spring auth unavailable (login returned " + response.statusCode() + ")");
         }
         JsonNode tokenResponse = JSON.readTree(response.body());
         String token = tokenResponse.path("accessToken").asText();
         if (token.isBlank()) {
-            return new AuthContext(client, null, "spring auth unavailable (login response omitted accessToken)");
+            return new AuthContext(client, null, null,
+                "spring auth unavailable (login response omitted accessToken)");
         }
         String tokenType = tokenResponse.path("tokenType").asText("Bearer");
-        return new AuthContext(client, tokenType + " " + token, null);
+        return new AuthContext(client, tokenType + " " + token, null, null);
     }
 }

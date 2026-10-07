@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 public final class Allowlist {
     private static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
@@ -69,30 +68,33 @@ public final class Allowlist {
     }
 
     private static boolean glob(String glob, String path) {
-        StringBuilder regex = new StringBuilder("^");
-        String[] segments = glob.split("/", -1);
-        for (int index = 0; index < segments.length; index++) {
-            if (index > 0) {
-                regex.append('/');
-            }
-            String segment = segments[index];
-            if (segment.equals("**")) {
-                if (index == segments.length - 1) {
-                    regex.append(".*");
-                } else {
-                    regex.append("(?:[^/]+/)*");
-                    index++;
-                    if (index < segments.length) {
-                        regex.append(Pattern.quote(segments[index]));
-                    }
-                }
-            } else if (segment.equals("*")) {
-                regex.append("[^/]+");
-            } else {
-                regex.append(Pattern.quote(segment));
-            }
+        return matchesSegments(segments(glob), 0, segments(path), 0);
+    }
+
+    private static boolean matchesSegments(String[] pattern, int patternIndex, String[] path, int pathIndex) {
+        if (patternIndex == pattern.length) {
+            return pathIndex == path.length;
         }
-        regex.append('$');
-        return Pattern.matches(regex.toString(), path);
+        if (pattern[patternIndex].equals("**")) {
+            if (patternIndex == pattern.length - 1) {
+                return true;
+            }
+            for (int index = pathIndex; index <= path.length; index++) {
+                if (matchesSegments(pattern, patternIndex + 1, path, index)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (pathIndex == path.length) {
+            return false;
+        }
+        return (pattern[patternIndex].equals("*") || pattern[patternIndex].equals(path[pathIndex]))
+            && matchesSegments(pattern, patternIndex + 1, path, pathIndex + 1);
+    }
+
+    private static String[] segments(String path) {
+        String withoutLeadingSlash = path.startsWith("/") ? path.substring(1) : path;
+        return withoutLeadingSlash.isEmpty() ? new String[0] : withoutLeadingSlash.split("/", -1);
     }
 }

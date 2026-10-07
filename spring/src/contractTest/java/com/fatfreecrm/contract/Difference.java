@@ -7,6 +7,8 @@ public record Difference(String pointer, Kind kind, JsonNode railsValue, JsonNod
     public enum Kind {
         STATUS,
         CONTENT_TYPE,
+        INVALID_JSON,
+        MISSING_KEY,
         VALUE,
         TYPE,
         MISSING_IN_SPRING,

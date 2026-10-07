@@ -1,6 +1,7 @@
 package com.fatfreecrm.contract;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -47,6 +48,46 @@ class JsonNormalizerTest {
         );
         assertEquals(CaseResult.Outcome.CLEAN, result.outcome());
         assertTrue(result.differences().isEmpty());
+    }
+
+    @Test
+    void sortsKeylessItemsLastAndReportsMissingKeysForBothSides() throws Exception {
+        JsonNode options = JSON.readTree("""
+            {"unorderedArrays":[{"pointer":"/items","key":"/id"}]}
+            """);
+        JsonNode railsJson = JSON.readTree("""
+            {"items":[{"id":2,"name":"two"},{"name":"z"},{"id":1,"name":"one"},{"name":"a"}]}
+            """);
+        JsonNode springJson = JSON.readTree("""
+            {"items":[{"name":"b"},{"id":2,"name":"two"},{"id":1,"name":"one"}]}
+            """);
+
+        JsonNormalizer.NormalizationResult normalizedRails =
+            JsonNormalizer.normalizeWithDiagnostics(railsJson, options, "rails");
+        assertEquals("""
+            {"items":[{"id":1,"name":"one"},{"id":2,"name":"two"},{"name":"a"},{"name":"z"}]}
+            """.trim(), normalizedRails.json().toString());
+        assertEquals(List.of("/items/2", "/items/3"), normalizedRails.missingKeys().stream()
+            .map(JsonNormalizer.MissingKey::pointer).toList());
+
+        CaseResult result = compare(railsJson, springJson, options);
+        List<Difference> missingKeys = result.differences().stream()
+            .filter(difference -> difference.kind() == Difference.Kind.MISSING_KEY).toList();
+        assertEquals(3, missingKeys.size());
+        assertEquals("/items/2", missingKeys.get(0).pointer());
+        assertEquals(JSON.readTree("""
+            {"name":"a"}
+            """), missingKeys.get(0).railsValue());
+        assertNull(missingKeys.get(0).springValue());
+        assertEquals("/items/3", missingKeys.get(1).pointer());
+        assertEquals(JSON.readTree("""
+            {"name":"z"}
+            """), missingKeys.get(1).railsValue());
+        assertEquals("/items/2", missingKeys.get(2).pointer());
+        assertEquals(JSON.readTree("""
+            {"name":"b"}
+            """), missingKeys.get(2).springValue());
+        assertTrue(missingKeys.stream().noneMatch(Difference::allowed));
     }
 
     @Test

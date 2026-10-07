@@ -77,7 +77,17 @@ public final class RailsSessionAuth implements AuthAdapter {
         String location = login.headers().firstValue("Location").orElse("");
         if (login.statusCode() >= 300 && login.statusCode() < 400
             && !location.contains("/users/sign_in")) {
-            AuthContext result = new AuthContext(client, null, null);
+            HttpRequest homeRequest = HttpRequest.newBuilder(URI.create(baseUrl + "/"))
+                .timeout(Duration.ofSeconds(10))
+                .header("Accept", "text/html")
+                .GET()
+                .build();
+            HttpResponse<String> home = send(client, homeRequest);
+            String postLoginToken = token(home.body());
+            if (postLoginToken == null) {
+                return unavailable(client, "rails auth unavailable (post-login CSRF token missing)");
+            }
+            AuthContext result = new AuthContext(client, null, postLoginToken, null);
             sessions.put(userKey, result);
             return result;
         }
@@ -85,7 +95,7 @@ public final class RailsSessionAuth implements AuthAdapter {
     }
 
     private static AuthContext unavailable(HttpClient client, String note) {
-        return new AuthContext(client, null, note);
+        return new AuthContext(client, null, null, note);
     }
 
     private static String token(String html) {

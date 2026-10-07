@@ -22,10 +22,16 @@ public final class JsonNormalizer {
     }
 
     public static JsonNode normalize(JsonNode input, JsonNode options, String side) {
+        return normalizeWithDiagnostics(input, options, side).json();
+    }
+
+    public static NormalizationResult normalizeWithDiagnostics(JsonNode input, JsonNode options, String side) {
         JsonNode normalized = input.deepCopy();
         applyRenames(normalized, options.path("rename"), side);
         normalizeTree(normalized, "", options);
-        return normalized;
+        List<MissingKey> missingKeys = new ArrayList<>();
+        collectMissingKeys(normalized, "", options.path("unorderedArrays"), side, missingKeys);
+        return new NormalizationResult(normalized, missingKeys);
     }
 
     public static boolean ignored(String pointer, JsonNode options) {
@@ -119,36 +125,68 @@ public final class JsonNormalizer {
     }
 
     private static void sortIfUnordered(ArrayNode array, String pointer, JsonNode specifications) {
-        String keyPointer = null;
+        JsonNode matched = null;
         for (JsonNode spec : specifications) {
             String declaredPointer = spec.isTextual() ? spec.asText() : spec.path("pointer").asText();
             if (matches(declaredPointer, pointer)) {
-                keyPointer = spec.isObject() ? spec.path("key").asText(null) : null;
+                matched = spec;
                 break;
             }
         }
-        if (keyPointer == null && !matchesAnyString(specifications, pointer)) {
+        if (matched == null) {
             return;
         }
         List<JsonNode> values = new ArrayList<>();
         array.forEach(value -> values.add(value.deepCopy()));
-        String selectedKey = keyPointer;
-        values.sort(Comparator.comparing(value -> selectedKey == null
-            ? canonical(value)
-            : canonical(get(value, selectedKey))));
+        String keyPointer = matched.isObject() ? matched.path("key").asText(null) : null;
+        if (keyPointer == null) {
+            values.sort(Comparator.comparing(JsonNormalizer::canonical));
+        } else {
+            String selectedKey = keyPointer;
+            values.sort(Comparator.comparingInt((JsonNode value) -> get(value, selectedKey) == null ? 1 : 0)
+                .thenComparing(value -> {
+                    JsonNode key = get(value, selectedKey);
+                    return key == null ? "" : canonical(key);
+                })
+                .thenComparing(JsonNormalizer::canonical));
+        }
         array.removeAll();
         values.forEach(array::add);
     }
 
-    private static boolean matchesAnyString(JsonNode specifications, String pointer) {
+    private static void collectMissingKeys(
+        JsonNode node,
+        String pointer,
+        JsonNode specifications,
+        String side,
+        List<MissingKey> missingKeys
+    ) {
+        if (node.isObject()) {
+            node.properties().forEach(entry ->
+                collectMissingKeys(entry.getValue(), pointer + "/" + escape(entry.getKey()), specifications,
+                    side, missingKeys));
+        } else if (node.isArray()) {
+            ArrayNode array = (ArrayNode) node;
+            String keyPointer = keyPointer(pointer, specifications);
+            for (int index = 0; index < array.size(); index++) {
+                JsonNode value = array.get(index);
+                if (keyPointer != null && get(value, keyPointer) == null) {
+                    missingKeys.add(new MissingKey(side, pointer + "/" + index, value.deepCopy()));
+                }
+                collectMissingKeys(value, pointer + "/" + index, specifications, side, missingKeys);
+            }
+        }
+    }
+
+    private static String keyPointer(String pointer, JsonNode specifications) {
         for (JsonNode specification : specifications) {
             String declared = specification.isTextual()
                 ? specification.asText() : specification.path("pointer").asText();
             if (matches(declared, pointer)) {
-                return true;
+                return specification.isObject() ? specification.path("key").asText(null) : null;
             }
         }
-        return false;
+        return null;
     }
 
     private static boolean matches(String pattern, String pointer) {
@@ -249,5 +287,14 @@ public final class JsonNormalizer {
     }
 
     private record Rename(String from, String to) {
+    }
+
+    public record MissingKey(String side, String pointer, JsonNode value) {
+    }
+
+    public record NormalizationResult(JsonNode json, List<MissingKey> missingKeys) {
+        public NormalizationResult {
+            missingKeys = List.copyOf(missingKeys);
+        }
     }
 }

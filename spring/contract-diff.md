@@ -6,7 +6,7 @@ Cases and fixture credentials live under `src/contractTest/resources/contract/`.
 
 ## Run locally
 
-The default database command creates or replaces a PostgreSQL 16 container named
+The default database command creates or reuses a PostgreSQL 16 container named
 `ffcrm-contract-db` on `127.0.0.1:5433`; it intentionally leaves the container running:
 
 ```sh
@@ -43,7 +43,11 @@ Override endpoints with `CONTRACT_RAILS_URL` and `CONTRACT_SPRING_URL`, select c
 `CONTRACT_REPORT_DIR`.
 
 To use an existing PostgreSQL database instead of Docker, set `CONTRACT_DATABASE_URL` to its
-PostgreSQL URL. The script still loads `db/schema.rb` and the fixed fixture corpus into that DB.
+PostgreSQL URL. For both Docker and URL targets, the script checks for an existing `users` table
+after `db:create` and refuses to load the schema if one exists. Set `CONTRACT_FIXTURES_RESET=1`
+only when it is safe to wipe the target; the script disconnects its active sessions and drops and
+recreates the database before loading `db/schema.rb` and the fixed fixture corpus. CI uses a fresh
+PostgreSQL service database and does not need the reset variable.
 
 ## Case YAML
 
@@ -110,10 +114,11 @@ Cases begin as `pending` while their Spring endpoint or behavior is still in pro
 cases always pass the Gradle task but retain their live diff in the report. Later phases flip cases
 to `enforced` when the endpoint lands and its intended behavior is stable.
 
-`accounts-show-private-denied-bob` is currently **CLEAN** only because Spring authentication is
-unavailable: the request is sent anonymously and both Rails and Spring return 401, with the
-`errorBody` rule allowing their different error formats. Keep this case pending until Spring
-authentication and authorization can exercise the intended 401-vs-403 behavior.
+`accounts-show-private-denied-bob` remains pending. Spring authentication is unavailable, so the
+Spring request is anonymous and also returns 401; Rails labels its plain-text denial as
+`application/json`, which is now an open `INVALID_JSON` difference that the `errorBody` rule cannot
+cover. Keep this case pending until Spring authentication and authorization can exercise the
+intended 401-vs-403 behavior.
 
 ## Fixture corpus and visibility matrix
 

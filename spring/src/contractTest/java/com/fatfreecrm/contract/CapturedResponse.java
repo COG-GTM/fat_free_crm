@@ -12,7 +12,7 @@ public record CapturedResponse(int status, String mediaType, String rawBody, Jso
         String contentType = response.headers().firstValue("Content-Type").orElse("");
         String mediaType = contentType.split(";", 2)[0].trim().toLowerCase(Locale.ROOT);
         JsonNode parsed = null;
-        if (mediaType.equals("application/json") || mediaType.endsWith("+json")) {
+        if ((mediaType.equals("application/json") || mediaType.endsWith("+json")) && !response.body().isBlank()) {
             try {
                 parsed = JSON.readTree(response.body());
             } catch (Exception ignored) {
