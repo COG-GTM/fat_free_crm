@@ -127,16 +127,56 @@ class VersionRecorderTest {
     }
 
     @Test
-    void recordsOnlyAnExplicitUpdatedAtChange() {
+    void recordsTouchWhenTheTimestampIsUnchanged() {
+        Account account = mock(Account.class);
+        when(account.getId()).thenReturn(43L);
+        Instant touchedAt = Instant.parse("2025-02-01T12:00:00Z");
+        Map<String, Object> attributes = Map.of("updated_at", touchedAt);
+
+        Version version = versionRecorder.recordTouch(null, account, attributes, attributes);
+
+        assertThat(version.getEvent()).isEqualTo("update");
+        assertThat(version.getObjectChanges()).isNull();
+    }
+
+    @Test
+    void movesAssignedUpdateAttributesFirstAndKeepsChangesColumnOrdered() {
         Account account = mock(Account.class);
         when(account.getId()).thenReturn(42L);
+        Map<String, Object> before = new LinkedHashMap<>();
+        before.put("id", 42L);
+        before.put("name", "Before");
+        before.put("access", "Public");
+        Map<String, Object> after = new LinkedHashMap<>(before);
+        after.put("name", "After");
+        after.put("access", "Private");
+
+        Version version = versionRecorder.recordUpdate(null, account, before, after, List.of("access", "name"));
+
+        assertThat(version.getObject()).isEqualTo("---\naccess: Public\nname: Before\nid: 42\n");
+        assertThat(version.getObjectChanges()).startsWith("---\nname:\n- Before\n- After\naccess:");
+    }
+
+    @Test
+    void recordsAnExplicitUpdatedAtOnlyChange() {
+        Account account = mock(Account.class);
+        when(account.getId()).thenReturn(44L);
         Map<String, Object> before = Map.of("updated_at", Instant.parse("2025-02-01T11:59:00Z"));
         Map<String, Object> after = Map.of("updated_at", Instant.parse("2025-02-01T12:00:00Z"));
 
-        assertThat(versionRecorder.recordUpdate(null, account, before, after)).isNull();
         Version version = versionRecorder.recordUpdate(null, account, before, after, List.of("updated_at"));
 
-        assertThat(version.getEvent()).isEqualTo("update");
-        assertThat(version.getObjectChanges()).contains("updated_at:");
+        assertThat(version.getObject()).startsWith("---\nupdated_at: ");
+        assertThat(version.getObjectChanges()).startsWith("---\nupdated_at:\n");
+    }
+
+    @Test
+    void doesNotRecordAnImplicitUpdatedAtOnlyChange() {
+        Account account = mock(Account.class);
+        when(account.getId()).thenReturn(45L);
+        Map<String, Object> before = Map.of("updated_at", Instant.parse("2025-02-01T11:59:00Z"));
+        Map<String, Object> after = Map.of("updated_at", Instant.parse("2025-02-01T12:00:00Z"));
+
+        assertThat(versionRecorder.recordUpdate(null, account, before, after, List.of())).isNull();
     }
 }

@@ -13,6 +13,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.springframework.stereotype.Service;
@@ -100,8 +101,10 @@ public class VersionRecorder {
     }
 
     /**
-     * PaperTrail {@code update} version. {@code assignedOrder} is retained for callers that track
-     * request assignment order; PaperTrail serializes both YAML fields in model column order.
+     * PaperTrail {@code update} version where {@code assignedOrder} lists the attribute names the
+     * save call assigned ({@code update(k: v, ...)} args / mass-assigned params), in order: the
+     * dumped {@code object} leads with those changed attributes (before values) and then emits the
+     * remaining columns in column order. {@code object_changes} stays column-ordered.
      */
     @Transactional
     public Version recordUpdate(
@@ -109,7 +112,7 @@ public class VersionRecorder {
         Object entity,
         Map<String, Object> before,
         Map<String, Object> after,
-        java.util.List<String> assignedOrder
+        List<String> assignedOrder
     ) {
         PaperTrailOptions options = options(entity);
         Map<String, Object[]> changes = new LinkedHashMap<>();
@@ -122,16 +125,20 @@ public class VersionRecorder {
                 changes.put(name, new Object[] {old, value});
             }
         });
-        // Rails does not record an automatic timestamp-only save; an explicitly assigned
-        // updated_at still creates the PaperTrail version.
-        boolean notable = changes.keySet().stream()
-            .anyMatch(name -> !name.equals("created_at")
-                && (!name.equals("updated_at") || assignedOrder.contains(name)));
+        // A timestamp-only change is notable when the caller explicitly assigned updated_at.
+        boolean explicitUpdatedAt = assignedOrder.contains("updated_at") && changes.containsKey("updated_at");
+        boolean notable = explicitUpdatedAt || changes.keySet().stream()
+            .anyMatch(name -> !name.equals("updated_at") && !name.equals("created_at"));
         if (!notable) {
             return null;
         }
         Version version = base(user, options, entity, "update");
-        version.setObject(PaperTrailYaml.dumpObject(before));
+        Map<String, Object> orderedBefore = new LinkedHashMap<>();
+        assignedOrder.stream()
+            .filter(changes::containsKey)
+            .forEach(name -> orderedBefore.put(name, before.get(name)));
+        before.forEach(orderedBefore::putIfAbsent);
+        version.setObject(PaperTrailYaml.dumpObject(orderedBefore));
         version.setObjectChanges(PaperTrailYaml.dumpChanges(changes));
         return versionRepository.save(version);
     }
@@ -146,9 +153,10 @@ public class VersionRecorder {
     ) {
         Objects.requireNonNull(after, "after");
         PaperTrailOptions options = options(entity);
-        boolean notable = after.entrySet().stream()
-            .anyMatch(entry -> !options.ignore().contains(entry.getKey())
-                && !Objects.equals(before.get(entry.getKey()), entry.getValue()));
+        boolean notable = after.containsKey("updated_at") && !options.ignore().contains("updated_at")
+            || after.entrySet().stream()
+                .anyMatch(entry -> !options.ignore().contains(entry.getKey())
+                    && !Objects.equals(before.get(entry.getKey()), entry.getValue()));
         if (!notable) {
             return null;
         }
