@@ -17,3 +17,48 @@ allowlist:
     kind: errorBody
     reason: Spring errors use RFC 9457 problem+json while Rails errors use Rails response formats.
     reference: docs/migration/target-architecture.md §2.6
+  - id: users-admin-authentication-token-omitted
+    match:
+      method: GET
+      path: /admin/users
+    kind: pointer
+    pointer: /*/authentication_token
+    rule: ignore
+    reason: The Spring RailsJsonWriter never emits token columns.
+    reference: AB-270 Phase B captured Rails user-list key set
+  - id: activities-object-secrets-scrubbed
+    match:
+      method: GET
+      path: /activities
+    kind: pointer
+    pointer: /*/object
+    rule: ignore
+    reason: Spring removes secret top-level YAML entries from version objects.
+    reference: AB-270 Phase B ActivitiesControllerIntegrationTest
+  - id: activities-object-changes-secrets-scrubbed
+    match:
+      method: GET
+      path: /activities
+    kind: pointer
+    pointer: /*/object_changes
+    rule: ignore
+    reason: Spring removes secret top-level YAML entries from version change objects.
+    reference: AB-270 Phase B ActivitiesControllerIntegrationTest
+  - id: ab-271-accounts-custom-fields-index
+    match:
+      method: GET
+      path: /accounts
+    kind: pointer
+    pointer: /*/custom_fields
+    rule: ignore
+    reason: Spring excludes the Rails-ignored custom_fields JSONB column while Rails emits null values.
+    reference: AB-271
+  - id: ab-271-accounts-custom-fields-show
+    match:
+      method: GET
+      path: /accounts/*
+    kind: pointer
+    pointer: /custom_fields
+    rule: ignore
+    reason: Spring excludes the Rails-ignored custom_fields JSONB column while Rails emits null values.
+    reference: AB-271

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    echo "Usage: routing.sh enable|disable <upstream|accounts>... [--file <path>]" >&2
+    echo "Usage: routing.sh enable|disable <upstream|accounts|users|me|home|admin|metadata>... [--file <path>]" >&2
     exit 2
 }
 
@@ -20,7 +20,7 @@ while [[ $# -gt 0 ]]; do
             config_file=$2
             shift 2
             ;;
-        upstream|accounts)
+        upstream|accounts|users|me|home|admin|metadata)
             blocks+=("$1")
             shift
             ;;

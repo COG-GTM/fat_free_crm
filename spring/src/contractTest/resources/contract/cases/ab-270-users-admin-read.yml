@@ -1,0 +1,358 @@
+- id: users-show-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /users/2
+  spring: {path: /api/v1/users/2}
+  auth: alice
+  description: Compare Alice's Rails-compatible name array.
+- id: users-show-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /users/1
+  spring: {path: /api/v1/users/1}
+  auth: admin
+  description: Compare administrator name serialization.
+- id: users-show-forbidden
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /users/3
+  spring: {path: /api/v1/users/3}
+  auth: alice
+  description: Existing Rails 401 versus Spring 403 authorization delta.
+- id: users-show-missing
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /users/999999
+  spring: {path: /api/v1/users/999999}
+  auth: alice
+  description: Compare missing user behavior.
+- id: users-show-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /users/2
+  spring: {path: /api/v1/users/2}
+  auth: anonymous
+  description: Compare unauthenticated user-show behavior.
+- id: profile-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /profile
+  rails: {path: /profile}
+  spring: {path: /api/v1/me}
+  auth: alice
+  description: Compare authenticated profile name arrays.
+- id: profile-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /profile
+  rails: {path: /profile}
+  spring: {path: /api/v1/me}
+  auth: admin
+  description: Compare administrator profile name arrays.
+- id: profile-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /profile
+  rails: {path: /profile}
+  spring: {path: /api/v1/me}
+  auth: anonymous
+  description: Compare unauthenticated profile behavior.
+- id: activities-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /activities
+  spring: {path: /api/v1/activities}
+  auth: alice
+  description: Compare Alice's activity feed, allowing only secret-bearing YAML fields.
+- id: activities-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /activities
+  spring: {path: /api/v1/activities}
+  auth: admin
+  description: Compare administrator activity visibility (admins receive no visibility exemption).
+- id: activities-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /activities
+  spring: {path: /api/v1/activities}
+  auth: anonymous
+  description: Compare unauthenticated activity-feed behavior.
+- id: admin-users-index
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /admin/users
+  params: {page: 1, query: ""}
+  spring: {path: /api/v1/admin/users, bodyPointer: /items}
+  auth: admin
+  description: Compare default admin user rows after extracting Spring's paginated items.
+- id: admin-users-query
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /admin/users
+  params: {page: 1, query: ali}
+  spring: {path: /api/v1/admin/users, bodyPointer: /items}
+  auth: admin
+  description: Compare admin list text search.
+- id: admin-users-ransack
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /admin/users
+  params: {page: 1, query: "", "q[username_cont]": a}
+  spring: {path: /api/v1/admin/users, bodyPointer: /items}
+  auth: admin
+  description: Compare admin list Ransack search.
+- id: admin-users-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /admin/users
+  spring: {path: /api/v1/admin/users, bodyPointer: /items}
+  auth: anonymous
+  description: Compare unauthenticated admin-list behavior.
+- id: admin-user-show
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /admin/users/2
+  spring: {path: /api/v1/admin/users/2}
+  auth: admin
+  description: Compare admin user name serialization.
+- id: admin-user-show-missing
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /admin/users/999999
+  spring: {path: /api/v1/admin/users/999999}
+  auth: admin
+  description: Compare missing admin user behavior.
+- id: admin-group-show
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /admin/groups/1
+  spring: {path: /api/v1/admin/groups/1}
+  auth: admin
+  description: Compare admin Group serialization.
+- id: admin-group-show-missing
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /admin/groups/999999
+  spring: {path: /api/v1/admin/groups/999999}
+  auth: admin
+  description: Compare missing admin Group behavior.
+- id: admin-group-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /admin/groups/1
+  spring: {path: /api/v1/admin/groups/1}
+  auth: anonymous
+  description: Compare anonymous Group access.
+- id: admin-field-show-missing
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /admin/fields/999999
+  spring: {path: /api/v1/admin/fields/999999}
+  auth: admin
+  description: Compare missing admin Field behavior.
+- id: admin-tags-index
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /admin/tags
+  spring: {path: /api/v1/admin/tags}
+  auth: admin
+  description: Compare bare-array admin Tag index.
+- id: admin-tags-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /admin/tags
+  spring: {path: /api/v1/admin/tags}
+  auth: anonymous
+  description: Compare anonymous Tag index behavior.
+- id: admin-research-tools-index
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /admin/research_tools
+  spring: {path: /api/v1/admin/research_tools}
+  auth: admin
+  description: Compare bare-array admin ResearchTool index.
+- id: users-autocomplete-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /users/auto_complete
+  rails: {path: /api/v1/users/autocomplete, target: spring}
+  spring: {path: /api/v1/users/autocomplete}
+  params: {term: a}
+  auth: admin
+  expect:
+    status: 200
+    json:
+      /results/0/id: 2
+      /results/0/text: "Alice Fixture (@alice)"
+      /results/1/id: 3
+      /results/1/text: "Bob Fixture (@bob)"
+      /results/2/id: 5
+      /results/2/text: "Carol Fixture (@carol)"
+      /results/3/id: 1
+      /results/3/text: "Contract Fixture (@admin)"
+      /results/4/id: 4
+      /results/4/text: "Sam Fixture (@sam)"
+  description: Pin accessible autocomplete results in Rails first-name order.
+- id: users-autocomplete-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /users/auto_complete
+  rails: {path: /api/v1/users/autocomplete, target: spring}
+  spring: {path: /api/v1/users/autocomplete}
+  params: {term: a}
+  auth: alice
+  expect:
+    status: 200
+    json:
+      /results/0/id: 2
+      /results/0/text: "Alice Fixture (@alice)"
+  description: Pin Alice's accessible autocomplete result.
+- id: users-autocomplete-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /users/auto_complete
+  rails: {path: /users/auto_complete}
+  spring: {path: /api/v1/users/autocomplete}
+  params: {term: a}
+  auth: anonymous
+  description: Compare unauthenticated autocomplete behavior.
+- id: admin-users-envelope
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /api/v1/admin/users
+  rails: {path: /api/v1/admin/users, target: spring}
+  spring: {path: /api/v1/admin/users, target: spring}
+  auth: admin
+  expect:
+    status: 200
+    json:
+      /page: 1
+      /perPage: 20
+      /totalCount: 5
+      /totalPages: 1
+  description: Pin the Spring admin-users pagination envelope.
+- id: metadata-accounts
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /api/v1/metadata/accounts
+  rails: {path: /api/v1/metadata/accounts, target: spring}
+  spring: {path: /api/v1/metadata/accounts, target: spring}
+  auth: alice
+  expect:
+    status: 200
+    json:
+      /entity: accounts
+      /fields: []
+  description: Pin the empty Accounts metadata response from the fixture corpus.
+- id: metadata-unknown-entity
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /api/v1/metadata/widgets
+  rails: {path: /api/v1/metadata/widgets, target: spring}
+  spring: {path: /api/v1/metadata/widgets, target: spring}
+  auth: alice
+  expect:
+    status: 404
+  description: Unknown metadata entity names return not found.
+- id: metadata-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /api/v1/metadata/accounts
+  rails: {path: /api/v1/metadata/accounts, target: spring}
+  spring: {path: /api/v1/metadata/accounts, target: spring}
+  auth: anonymous
+  expect:
+    status: 401
+  description: Metadata requires JWT authentication.
+- id: admin-users-non-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /api/v1/admin/users
+  rails: {path: /api/v1/admin/users, target: spring}
+  spring: {path: /api/v1/admin/users, target: spring}
+  auth: alice
+  expect: {status: 403}
+  description: Spring returns 403; Rails redirects an authenticated non-admin with 302 to /.
+- id: admin-user-non-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /api/v1/admin/users/2
+  rails: {path: /api/v1/admin/users/2, target: spring}
+  spring: {path: /api/v1/admin/users/2, target: spring}
+  auth: alice
+  expect: {status: 403}
+  description: Spring returns 403; Rails redirects an authenticated non-admin with 302 to /.
+- id: admin-group-non-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /api/v1/admin/groups/1
+  rails: {path: /api/v1/admin/groups/1, target: spring}
+  spring: {path: /api/v1/admin/groups/1, target: spring}
+  auth: alice
+  expect: {status: 403}
+  description: Spring returns 403; Rails redirects an authenticated non-admin with 302 to /.
+- id: admin-field-non-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /api/v1/admin/fields/999999
+  rails: {path: /api/v1/admin/fields/999999, target: spring}
+  spring: {path: /api/v1/admin/fields/999999, target: spring}
+  auth: alice
+  expect: {status: 403}
+  description: Spring returns 403; Rails redirects an authenticated non-admin with 302 to /.
+- id: admin-tags-non-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /api/v1/admin/tags
+  rails: {path: /api/v1/admin/tags, target: spring}
+  spring: {path: /api/v1/admin/tags, target: spring}
+  auth: alice
+  expect: {status: 403}
+  description: Spring returns 403; Rails redirects an authenticated non-admin with 302 to /.
+- id: admin-research-tools-non-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /api/v1/admin/research_tools
+  rails: {path: /api/v1/admin/research_tools, target: spring}
+  spring: {path: /api/v1/admin/research_tools, target: spring}
+  auth: alice
+  expect: {status: 403}
+  description: Spring returns 403; Rails redirects an authenticated non-admin with 302 to /.
