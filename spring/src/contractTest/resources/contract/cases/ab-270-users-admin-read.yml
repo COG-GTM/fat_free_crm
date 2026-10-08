@@ -72,7 +72,7 @@
   path: /activities
   spring: {path: /api/v1/activities}
   auth: alice
-  description: Compare Alice's activity feed, allowing only secret-bearing YAML fields.
+  description: Compare Alice's feed after normalizing only secret top-level YAML entries.
 - id: activities-admin
   ticket: AB-270
   status: enforced
@@ -81,6 +81,23 @@
   spring: {path: /api/v1/activities}
   auth: admin
   description: Compare administrator activity visibility (admins receive no visibility exemption).
+- id: activities-bob
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /activities
+  spring: {path: /api/v1/activities}
+  auth: bob
+  expect:
+    status: 200
+    json:
+      /0/item_type: User
+      /0/item_id: 2
+      /1/item_type: Account
+      /1/item_id: 101
+      /2/item_type: Account
+      /2/item_id: 103
+  description: Compare Bob's preference-filtered feed for seeded events by admin; group-only Shared and Alice-private accounts are hidden.
 - id: activities-anonymous
   ticket: AB-270
   status: enforced
