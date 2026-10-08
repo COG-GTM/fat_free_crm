@@ -31,7 +31,7 @@ class OpportunitiesSearchParityTest extends AbstractPostgresIntegrationTest {
         "users", "accounts", "contacts", "campaigns", "opportunities", "account_opportunities",
         "contact_opportunities", "tags", "taggings");
     private static final Set<String> KNOWN_RAILS_DEFECT_CASES =
-        Set.of("preference_weighted_sort", "query_tag_positive");
+        Set.of("preference_weighted_sort");
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -120,14 +120,6 @@ class OpportunitiesSearchParityTest extends AbstractPostgresIntegrationTest {
                 if ("preference_weighted_sort".equals(name)) {
                     assertThat(actualIds).as("weighted-sort order")
                         .containsExactly(9674L, 9672L, 9671L, 9673L);
-                } else if ("query_tag_positive".equals(name)) {
-                    List<Long> opportunityIds = new ArrayList<>();
-                    matrix.path("corpus").path("opportunities")
-                        .forEach(opportunity -> opportunityIds.add(opportunity.path("id").asLong()));
-                    assertThat(expectedIds).as("Rails tag-query IDs retain the joined tagging ID defect")
-                        .noneMatch(opportunityIds::contains);
-                    assertThat(actualIds).as("Spring tag-query returns the matching opportunity")
-                        .containsExactly(9661L);
                 } else {
                     if (testCase.path("ordered").asBoolean()) {
                         assertThat(actualIds).as("ids for case %s", name).isEqualTo(expectedIds);
@@ -154,7 +146,7 @@ class OpportunitiesSearchParityTest extends AbstractPostgresIntegrationTest {
             checked++;
         }
         assertThat(KNOWN_RAILS_DEFECT_CASES)
-            .containsExactlyInAnyOrder("preference_weighted_sort", "query_tag_positive");
+            .containsExactlyInAnyOrder("preference_weighted_sort");
         assertThat(checked).isEqualTo(36);
 
         for (JsonNode show : matrix.path("shows")) {

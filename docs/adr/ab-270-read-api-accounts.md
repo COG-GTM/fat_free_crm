@@ -231,7 +231,9 @@ ignores only `/*/?column?` on GET `/opportunities`. Show and autocomplete respon
 Deviation: Rails 8 500s on the weighted-sort preference; Spring sorts by the weighted product.
 The Rails 500 is `ActiveRecord::UnknownAttributeReference` for
 `opportunities.amount*probability DESC`; Spring safely resolves it through the sort whitelist.
-Rails' tagged-list `SELECT DISTINCT *, amount*probability` joins taggings and overwrites the
-opportunity `id` with the tagging `id`; Spring returns the matching opportunity ID. The parity
-replay names these two Rails defects explicitly and asserts Spring's correct behavior, while
+`Opportunity.weighted_sort` now projects the table's qualified non-ignored columns instead of
+`*`; that preserves AB-271's guarantee that Rails JSON does not expose `custom_fields`, and it
+fixed the tagged-list defect where `SELECT DISTINCT *` let the tagging `id` overwrite the
+opportunity `id`, so tag search cases assert exact parity. The parity replay names the
+remaining weighted-sort Rails defect explicitly and asserts Spring's correct behavior, while
 keeping strict parity for all other cases.

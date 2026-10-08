@@ -152,8 +152,9 @@ when an advanced `q[...]` search is present.
 Deviation: Rails 8 500s on the weighted-sort preference; Spring sorts by the weighted product.
 The Rails 500 is `ActiveRecord::UnknownAttributeReference` for
 `opportunities.amount*probability DESC`; Spring resolves the preference through its sort
-whitelist. Rails' tagged-list select joins taggings and can return the tagging ID instead of the
-opportunity ID; Spring returns the opportunity ID.
+whitelist. `Opportunity.weighted_sort` projects qualified table columns instead of `*`, so
+tagged-list selects keep the opportunity ID rather than the tagging ID, and AB-271's
+guarantee that Rails JSON never exposes `custom_fields` holds on the index.
 The live contract run also confirmed Rails list rows expose a PostgreSQL-generated `?column?`
 alias; the contract allow-list ignores only `/*/?column?` on GET `/opportunities`. Show and
 autocomplete responses are unaffected.

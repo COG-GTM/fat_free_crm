@@ -155,6 +155,17 @@ describe Opportunity do
         expect(Opportunity.unassigned).not_to include(assigned_opportunity)
       end
     end
+
+    describe "weighted_sort" do
+      it "keeps opportunity ids when joined to taggings" do
+        opportunity = create(:opportunity)
+        opportunity.tag_list = "priority"
+        opportunity.save!
+
+        ids = Opportunity.joins(:taggings).weighted_sort.map(&:id)
+        expect(ids).to include(opportunity.id)
+      end
+    end
   end
 
   describe "Attach" do
