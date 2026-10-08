@@ -5,7 +5,7 @@ import java.time.LocalDate;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  * with {@code utc}/{@code zone}/{@code time} members, and Psych anchors: objects referenced more
  * than once get {@code &N} at first use and {@code *N} later, numbered in document order. The
  * {@code ActiveSupport::TimeZone} instance is shared by every TimeWithZone in the document, and
- * equal UTC timestamps share anchors. The {@code time:} member is always literal.
+ * repeated UTC {@link Instant} instances share anchors. The {@code time:} member is always literal.
  */
 public final class PaperTrailYaml {
 
@@ -190,6 +190,7 @@ public final class PaperTrailYaml {
             return "|-\n  " + text.replace("\n", "\n  ");
         }
         if (text.startsWith(" ")
+            || text.startsWith("<")
             || text.codePoints().anyMatch(Character::isSupplementaryCodePoint)
             || text.codePoints().anyMatch(Character::isISOControl)) {
             StringBuilder quoted = new StringBuilder("\"");
@@ -215,7 +216,7 @@ public final class PaperTrailYaml {
 
     /** Psych only anchors objects referenced more than once; scan the document up front. */
     private static AnchorState preScan(List<Object> values) {
-        Map<Instant, int[]> counts = new HashMap<>();
+        Map<Instant, int[]> counts = new IdentityHashMap<>();
         int zones = 0;
         for (Object value : values) {
             if (value instanceof Instant instant) {
@@ -228,7 +229,7 @@ public final class PaperTrailYaml {
 
     private static final class AnchorState {
         private final Map<Instant, int[]> occurrences;
-        private final Map<Instant, Integer> emitted = new HashMap<>();
+        private final Map<Instant, Integer> emitted = new IdentityHashMap<>();
         private final boolean zoneShared;
         private int count;
         private Integer zoneId;

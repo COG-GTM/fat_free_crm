@@ -1,6 +1,7 @@
 package com.fatfreecrm.service.audit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -54,18 +55,48 @@ class PaperTrailYamlTest {
     }
 
     @Test
+    void equalButDistinctUtcTimestampsAreNotAnchored() {
+        Instant first = Instant.ofEpochSecond(1_791_431_045L, 999_999_999);
+        Instant second = Instant.ofEpochSecond(1_791_431_045L, 999_999_999);
+        assertNotSame(first, second);
+        Map<String, Object[]> changes = new LinkedHashMap<>();
+        changes.put("created_at", new Object[] {null, first});
+        changes.put("updated_at", new Object[] {null, second});
+
+        String yaml = PaperTrailYaml.dumpChanges(changes);
+
+        org.junit.jupiter.api.Assertions.assertFalse(yaml.contains("utc: &"), yaml);
+        org.junit.jupiter.api.Assertions.assertFalse(yaml.contains("utc: *"), yaml);
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("zone: &1"), yaml);
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("zone: *1"), yaml);
+    }
+
+    @Test
     void dumpChangesQuotingMatchesPsych() {
         Map<String, Object[]> changes = new LinkedHashMap<>();
         changes.put("body", new Object[] {"", "yes"});
         changes.put("notes", new Object[] {null, "a: b"});
         changes.put("street1", new Object[] {null, "  leading"});
         changes.put("suffix", new Object[] {null, "leading "});
+        changes.put("imap_message_id", new Object[] {null, "<contract-701@ffcrm>"});
         String yaml = PaperTrailYaml.dumpChanges(changes);
         org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- ''"));
         org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- 'yes'"));
         org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- 'a: b'"));
         org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- \"  leading\""));
         org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- 'leading '"));
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- \"<contract-701@ffcrm>\""));
+    }
+
+    @Test
+    void contractEmailMessageIdMatchesRailsDestroyGolden() {
+        Map<String, Object> attributes = new LinkedHashMap<>();
+        attributes.put("id", 701L);
+        attributes.put("imap_message_id", "<contract-701@ffcrm>");
+
+        assertEquals(
+            "---\nid: 701\nimap_message_id: \"<contract-701@ffcrm>\"\n",
+            PaperTrailYaml.dumpObject(attributes));
     }
 
     @Test
