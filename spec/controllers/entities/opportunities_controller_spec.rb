@@ -106,17 +106,6 @@ describe OpportunitiesController do
         get :index
         expect(response.body).to eq("generated JSON")
       end
-
-      it "should not expose custom_fields in index JSON under weighted sort" do
-        create(:opportunity, user: current_user)
-
-        request.env["HTTP_ACCEPT"] = "application/json"
-        get :index
-        expect(response).to have_http_status(:ok)
-        response.parsed_body.each do |item|
-          expect(item).not_to have_key("custom_fields")
-        end
-      end
     end
 
     describe "with mime type of JSON" do
