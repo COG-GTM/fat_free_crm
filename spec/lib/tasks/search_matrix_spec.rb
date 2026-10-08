@@ -42,7 +42,7 @@ RSpec.describe Rake::Task do
     expect(matrix.fetch("cases").size).to eq(55)
     expect(matrix.fetch("corpus").fetch("accounts").size).to eq(30)
     users_matrix = JSON.parse(File.read(users_output_path, encoding: "UTF-8"))
-    expect(users_matrix.fetch("cases").size).to eq(14)
+    expect(users_matrix.fetch("cases").size).to eq(16)
     expect(users_matrix.fetch("corpus").size).to eq(6)
     expect(table_counts).to eq(before_counts)
   end

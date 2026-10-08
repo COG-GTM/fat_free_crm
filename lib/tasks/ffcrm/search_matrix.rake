@@ -329,7 +329,9 @@ def search_matrix_users_cases
     ["admin_eq", { "q[admin_eq]" => "1" }],
     ["suspended_at_null", { "q[suspended_at_null]" => "1" }],
     ["username_or_email_cont", { "q[username_or_email_cont]" => "matrix" }],
-    ["query_and_ransack", { "query" => "Zoë", "q[username_cont]" => "uni" }]
+    ["query_and_ransack", { "query" => "Zoë", "q[username_cont]" => "uni" }],
+    ["suspended_at_null_zero", { "q[suspended_at_null]" => "0" }],
+    ["suspended_at_null_false", { "q[suspended_at_null]" => "false" }]
   ]
 end
 

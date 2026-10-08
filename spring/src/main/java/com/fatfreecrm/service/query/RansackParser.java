@@ -13,7 +13,9 @@ import jakarta.persistence.criteria.Subquery;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,6 +46,8 @@ public class RansackParser {
         "matches", "does_not_match", "lt", "lteq", "gt", "gteq");
     private static final Set<String> BOOLEAN_PREDICATES = Set.of(
         "null", "not_null", "present", "blank", "true", "false");
+    private static final Set<String> BOOLEAN_TRUE_VALUES = Set.of("1", "t", "true", "y", "yes", "on");
+    private static final Set<String> BOOLEAN_FALSE_VALUES = Set.of("0", "f", "false", "n", "no", "off");
     private static final Set<String> LIST_PREDICATES = Set.of("in", "not_in");
     private static final char LIKE_ESCAPE = '\\';
 
@@ -589,14 +593,11 @@ public class RansackParser {
 
         Boolean flag = null;
         if (BOOLEAN_PREDICATES.contains(predicate)) {
-            String value = cleaned.get(0);
-            if (RubyScalars.TRUE_VALUES.contains(value)) {
-                flag = Boolean.TRUE;
-            } else if (RubyScalars.FALSE_VALUES.contains(value)) {
-                flag = Boolean.FALSE;
-            } else {
+            Optional<Boolean> parsedFlag = ransackBoolean(cleaned.get(0));
+            if (parsedFlag.isEmpty()) {
                 return null;
             }
+            flag = parsedFlag.get();
         }
 
         boolean listForm = compound != null || LIST_PREDICATES.contains(predicate);
@@ -607,7 +608,7 @@ public class RansackParser {
 
         List<Target> targets = new ArrayList<>();
         for (String attributeName : attributeNames) {
-            Target target = resolveTarget(attributeName, predicate, cleaned, entityType);
+            Target target = resolveTarget(attributeName, predicate, cleaned, flag, entityType);
             if (target == null) {
                 context.invalidKeys.add(key);
                 return null;
@@ -626,7 +627,7 @@ public class RansackParser {
     }
 
     private Target resolveTarget(
-        String name, String predicate, List<String> values, Class<?> entityType) {
+        String name, String predicate, List<String> values, Boolean flag, Class<?> entityType) {
         List<Hop> hops = new ArrayList<>();
         Attribute attribute = resolveAttribute(name, entityType, hops);
         if (attribute != null) {
@@ -635,7 +636,7 @@ public class RansackParser {
             }
             List<Object> castedValues = new ArrayList<>();
             if (BOOLEAN_PREDICATES.contains(predicate)) {
-                castedValues.add(Boolean.TRUE);
+                castedValues.add(flag);
             } else {
                 for (String value : values) {
                     Object castedValue = cast(attribute.kind(), value);
@@ -655,6 +656,17 @@ public class RansackParser {
             }
         }
         return null;
+    }
+
+    private static Optional<Boolean> ransackBoolean(String value) {
+        String normalized = value.toLowerCase(Locale.ROOT);
+        if (BOOLEAN_TRUE_VALUES.contains(normalized)) {
+            return Optional.of(Boolean.TRUE);
+        }
+        if (BOOLEAN_FALSE_VALUES.contains(normalized)) {
+            return Optional.of(Boolean.FALSE);
+        }
+        return Optional.empty();
     }
 
     /** Resolves a ransack attribute path, pushing association hops into {@code hops}. */

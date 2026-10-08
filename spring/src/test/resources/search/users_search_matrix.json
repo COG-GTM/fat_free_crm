@@ -244,6 +244,28 @@
         9604
       ],
       "total": 1
+    },
+    {
+      "name": "suspended_at_null_zero",
+      "params": {
+        "q[suspended_at_null]": "0"
+      },
+      "status": 200,
+      "ids": [
+        9602
+      ],
+      "total": 1
+    },
+    {
+      "name": "suspended_at_null_false",
+      "params": {
+        "q[suspended_at_null]": "false"
+      },
+      "status": 200,
+      "ids": [
+        9602
+      ],
+      "total": 1
     }
   ]
 }
