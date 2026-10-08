@@ -4,9 +4,15 @@ import com.fatfreecrm.domain.Account;
 import com.fatfreecrm.domain.Campaign;
 import com.fatfreecrm.domain.Comment;
 import com.fatfreecrm.domain.Contact;
+import com.fatfreecrm.domain.Field;
+import com.fatfreecrm.domain.Group;
 import com.fatfreecrm.domain.Lead;
 import com.fatfreecrm.domain.Opportunity;
+import com.fatfreecrm.domain.ResearchTool;
+import com.fatfreecrm.domain.Tag;
 import com.fatfreecrm.domain.Task;
+import com.fatfreecrm.domain.User;
+import com.fatfreecrm.domain.Version;
 import com.fatfreecrm.repository.AccountContactRepository;
 import com.fatfreecrm.repository.AccountOpportunityRepository;
 import com.fatfreecrm.repository.AccountRepository;
@@ -36,6 +42,12 @@ public class RailsResources {
     public final RailsResource opportunity;
     public final RailsResource task;
     public final RailsResource comment;
+    public final RailsResource user;
+    public final RailsResource group;
+    public final RailsResource field;
+    public final RailsResource tag;
+    public final RailsResource researchTool;
+    public final RailsResource version;
 
     public RailsResources(
         AccountRepository accountRepository,
@@ -194,6 +206,39 @@ public class RailsResources {
             "comments",
             entity -> ((Comment) entity).getTitle(),
             Map.of()
+        );
+        user = new RailsResource(
+            "User",
+            "users",
+            User.class,
+            Set.of(),
+            false,
+            Set.of(
+                "encrypted_password", "password_salt", "last_sign_in_at", "current_sign_in_at",
+                "last_sign_in_ip", "current_sign_in_ip", "sign_in_count", "unconfirmed_email",
+                "reset_password_token", "reset_password_sent_at", "remember_token", "remember_created_at",
+                "confirmation_token", "confirmed_at", "confirmation_sent_at"
+            ),
+            "users",
+            entity -> ((User) entity).getUsername(),
+            Map.of()
+        );
+        group = new RailsResource(
+            "Group", "groups", Group.class, Set.of(), false, Set.of(), "groups", entity -> null, Map.of()
+        );
+        field = new RailsResource(
+            "Field", "fields", Field.class, Set.of("collection"), false, Set.of("type"), "fields",
+            entity -> null, Map.of()
+        );
+        tag = new RailsResource(
+            "Tag", "tags", Tag.class, Set.of(), false, Set.of(), "tags", entity -> null, Map.of()
+        );
+        researchTool = new RailsResource(
+            "ResearchTool", "research_tools", ResearchTool.class, Set.of(), false, Set.of(),
+            "research_tools", entity -> null, Map.of()
+        );
+        version = new RailsResource(
+            "Version", "versions", Version.class, Set.of(), false, Set.of(), "activities", entity -> null, Map.of()
         );
     }
 

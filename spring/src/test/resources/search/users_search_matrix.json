@@ -1,0 +1,271 @@
+{
+  "generated_by": "bundle exec rake ffcrm:migration:search_matrix USERS_OUTPUT=spring/src/test/resources/search/users_search_matrix.json",
+  "corpus": [
+    {
+      "id": 9600,
+      "username": "search_admin",
+      "email": "admin@search-matrix.test",
+      "first_name": "Search",
+      "last_name": "Admin",
+      "admin": true,
+      "suspended_at": null
+    },
+    {
+      "id": 9601,
+      "username": "alice_matrix",
+      "email": "alice@search-matrix.test",
+      "first_name": "Alice",
+      "last_name": "Matrix",
+      "admin": false,
+      "suspended_at": null
+    },
+    {
+      "id": 9602,
+      "username": "paused",
+      "email": "paused@search-matrix.test",
+      "first_name": "Paused",
+      "last_name": "User",
+      "admin": false,
+      "suspended_at": "2025-01-01 00:00:00 UTC"
+    },
+    {
+      "id": 9603,
+      "username": "blank_first",
+      "email": "blank@search-matrix.test",
+      "first_name": "",
+      "last_name": "",
+      "admin": false,
+      "suspended_at": null
+    },
+    {
+      "id": 9604,
+      "username": "uni_ñ",
+      "email": "unicode@search-matrix.test",
+      "first_name": "Zoë",
+      "last_name": "O'Neil",
+      "admin": false,
+      "suspended_at": null
+    },
+    {
+      "id": 9605,
+      "username": "under_score",
+      "email": "under@search-matrix.test",
+      "first_name": "User_Name",
+      "last_name": "O'Neil",
+      "admin": false,
+      "suspended_at": null
+    }
+  ],
+  "cases": [
+    {
+      "name": "empty",
+      "params": {},
+      "status": 200,
+      "ids": [
+        9605,
+        9604,
+        9603,
+        9602,
+        9601,
+        9600
+      ],
+      "total": 6
+    },
+    {
+      "name": "query_case_insensitive",
+      "params": {
+        "query": "ALICE"
+      },
+      "status": 200,
+      "ids": [
+        9601
+      ],
+      "total": 1
+    },
+    {
+      "name": "query_email_fragment",
+      "params": {
+        "query": "search-matrix.test"
+      },
+      "status": 200,
+      "ids": [
+        9605,
+        9604,
+        9603,
+        9602,
+        9601,
+        9600
+      ],
+      "total": 6
+    },
+    {
+      "name": "query_punctuation_stripped",
+      "params": {
+        "query": "!!!"
+      },
+      "status": 200,
+      "ids": [
+        9605,
+        9604,
+        9603,
+        9602,
+        9601,
+        9600
+      ],
+      "total": 6
+    },
+    {
+      "name": "query_apostrophe",
+      "params": {
+        "query": "o'"
+      },
+      "status": 200,
+      "ids": [
+        9605,
+        9604
+      ],
+      "total": 2
+    },
+    {
+      "name": "query_underscore",
+      "params": {
+        "query": "_"
+      },
+      "status": 200,
+      "ids": [
+        9605,
+        9604,
+        9603,
+        9602,
+        9601,
+        9600
+      ],
+      "total": 6
+    },
+    {
+      "name": "query_unicode",
+      "params": {
+        "query": "Zoë"
+      },
+      "status": 200,
+      "ids": [
+        9604
+      ],
+      "total": 1
+    },
+    {
+      "name": "username_cont",
+      "params": {
+        "q[username_cont]": "alice"
+      },
+      "status": 200,
+      "ids": [
+        9601
+      ],
+      "total": 1
+    },
+    {
+      "name": "email_end",
+      "params": {
+        "q[email_end]": "search-matrix.test"
+      },
+      "status": 200,
+      "ids": [
+        9605,
+        9604,
+        9603,
+        9602,
+        9601,
+        9600
+      ],
+      "total": 6
+    },
+    {
+      "name": "first_name_eq",
+      "params": {
+        "q[first_name_eq]": "Zoë"
+      },
+      "status": 200,
+      "ids": [
+        9604
+      ],
+      "total": 1
+    },
+    {
+      "name": "admin_eq",
+      "params": {
+        "q[admin_eq]": "1"
+      },
+      "status": 200,
+      "ids": [
+        9600
+      ],
+      "total": 1
+    },
+    {
+      "name": "suspended_at_null",
+      "params": {
+        "q[suspended_at_null]": "1"
+      },
+      "status": 200,
+      "ids": [
+        9605,
+        9604,
+        9603,
+        9601,
+        9600
+      ],
+      "total": 5
+    },
+    {
+      "name": "username_or_email_cont",
+      "params": {
+        "q[username_or_email_cont]": "matrix"
+      },
+      "status": 200,
+      "ids": [
+        9605,
+        9604,
+        9603,
+        9602,
+        9601,
+        9600
+      ],
+      "total": 6
+    },
+    {
+      "name": "query_and_ransack",
+      "params": {
+        "query": "Zoë",
+        "q[username_cont]": "uni"
+      },
+      "status": 200,
+      "ids": [
+        9604
+      ],
+      "total": 1
+    },
+    {
+      "name": "suspended_at_null_zero",
+      "params": {
+        "q[suspended_at_null]": "0"
+      },
+      "status": 200,
+      "ids": [
+        9602
+      ],
+      "total": 1
+    },
+    {
+      "name": "suspended_at_null_false",
+      "params": {
+        "q[suspended_at_null]": "false"
+      },
+      "status": 200,
+      "ids": [
+        9602
+      ],
+      "total": 1
+    }
+  ]
+}

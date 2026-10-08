@@ -237,3 +237,48 @@ fixed the tagged-list defect where `SELECT DISTINCT *` let the tagging `id` over
 opportunity `id`, so tag search cases assert exact parity. The parity replay names the
 remaining weighted-sort Rails defect explicitly and asserts Spring's correct behavior, while
 keeping strict parity for all other cases.
+
+## Family: users-admin
+
+AB-270 Phase B adds read-only user, profile, activity, and selected admin endpoints under
+`/api/v1`. Controllers delegate to read services and repositories; the existing Rails JSON writer
+serializes database-backed rows.
+
+| Rails route | Spring route | Spring response |
+| --- | --- | --- |
+| `GET /users/:id.json` | `GET /api/v1/users/:id` | `[name]`, using nonblank `first_name` or `username` |
+| `GET /profile.json` | `GET /api/v1/me` | `[name]` for the authenticated user |
+| `GET /users/auto_complete.json` | `GET /api/v1/users/autocomplete` | `{results:[{id,text}]}` with Rails JavaScript escaping |
+| `GET /activities.json` | `GET /api/v1/activities` | Unpaginated bare array of filtered, visible version rows |
+| `GET /admin/users.json` | `GET /api/v1/admin/users` | Paginated `ListResult` envelope |
+| `GET /admin/users/:id.json` | `GET /api/v1/admin/users/:id` | `[name]` |
+| `GET /admin/groups/:id.json` | `GET /api/v1/admin/groups/:id` | One serialized Group |
+| `GET /admin/fields/:id.json` | `GET /api/v1/admin/fields/:id` | One serialized Field; collection and settings are decoded |
+| `GET /admin/tags.json` | `GET /api/v1/admin/tags` | Unpaginated bare array |
+| `GET /admin/research_tools.json` | `GET /api/v1/admin/research_tools` | Unpaginated bare array |
+| No Rails JSON equivalent | `GET /api/v1/metadata/{entity}` | `{entity, fields}` from the AB-271 custom-field registry |
+
+Unpaginated Rails collections remain bare arrays; the Spring admin users list uses an envelope to
+support pagination. Spring's autocomplete envelope is deliberately different from Rails' array of
+strings. Admin list paging is also a deliberate delta: Rails JSON ignores `page`, while Spring
+returns the requested page. Rails redirects an authenticated non-admin from admin pages with
+`302 → /`; Spring returns `403`.
+
+Activities read `asset`, `event`, `user`, and `duration` from request parameters, falling back to
+the corresponding user preferences only when each parameter is absent. Visibility is applied after
+the latest-500 query, including for admins; Shared access checks only direct user permissions.
+Deleted items are reified from the version YAML where possible, null-object and unknown item types
+are dropped, and secret top-level YAML entries are removed from `object` and `object_changes`.
+The Spring user-list serializer omits Rails' `authentication_token`; User list rows otherwise match
+Rails' Devise-filtered 29-key shape. Metadata accepts `accounts`, `campaigns`, `contacts`, `leads`,
+`opportunities`, and `tasks`, and returns the custom-field definitions in registry order.
+
+The `users`, `me`, `home`, and `admin` gateway blocks are disabled by default and can be enabled
+independently with `spring/gateway/routing.sh`.
+
+ARB triage for this family (manual review; the detector's T3/T7 hits were false positives from
+test data and a contract path): **ARB_REQUIRED** under **T4** (new supported sync read contracts
+for users, profile, activities, admin reads and metadata) and **T6** (new authenticated endpoints,
+including the `ROLE_ADMIN` boundary under `/api/v1/admin/**`, plus disabled-by-default gateway
+routing blocks `users`, `me`, `home`, `admin`, `metadata`). Covered by this ADR's ARB submission
+(ARB ticket TO BE CREATED). No new data store, dependency, or infrastructure.

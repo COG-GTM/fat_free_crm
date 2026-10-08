@@ -790,3 +790,103 @@ def search_matrix_opportunities_shows(alice)
     }
   end
 end
+
+namespace :ffcrm do
+  namespace :migration do
+    task search_matrix: :environment do
+      output = Rails.root.join(
+        ENV.fetch(
+          "USERS_OUTPUT", "spring/src/test/resources/search/users_search_matrix.json"
+        )
+      )
+      result = nil
+      ActiveRecord::Base.transaction(requires_new: true) do
+        include Warden::Test::Helpers
+
+        Warden.test_mode!
+
+        admin = search_matrix_users_seed
+        corpus = search_matrix_users_corpus
+        cases = search_matrix_users_cases.map do |name, params|
+          search_matrix_run_users_case(admin, name, params)
+        end
+        result = {
+          "generated_by" => "bundle exec rake ffcrm:migration:search_matrix " \
+                            "USERS_OUTPUT=spring/src/test/resources/search/users_search_matrix.json",
+          "corpus" => corpus,
+          "cases" => cases
+        }
+        raise ActiveRecord::Rollback
+      end
+      Warden.test_reset!
+      File.write(output, JSON.pretty_generate(result) + "\n")
+      puts "wrote #{output}"
+    end
+  end
+end
+
+def search_matrix_users_seed
+  rows = [
+    [9600, "search_admin", "admin@search-matrix.test", "Search", "Admin", true, nil],
+    [9601, "alice_matrix", "alice@search-matrix.test", "Alice", "Matrix", false, nil],
+    [9602, "paused", "paused@search-matrix.test", "Paused", "User", false, Time.utc(2025, 1, 1)],
+    [9603, "blank_first", "blank@search-matrix.test", "", "", false, nil],
+    [9604, "uni_ñ", "unicode@search-matrix.test", "Zoë", "O'Neil", false, nil],
+    [9605, "under_score", "under@search-matrix.test", "User_Name", "O'Neil", false, nil]
+  ]
+  rows.each do |row|
+    id, username, email, first_name, last_name, admin, suspended_at = row
+    user = User.new(
+      id: id, username: username, email: email, first_name: first_name, last_name: last_name,
+      admin: admin, suspended_at: suspended_at, encrypted_password: "fixed-encrypted-#{username}",
+      password_salt: "fixed-salt-#{username}", confirmed_at: Time.utc(2025, 1, 1),
+      created_at: Time.utc(2025, 1, 1), updated_at: Time.utc(2025, 1, 1)
+    )
+    user.skip_confirmation! if user.respond_to?(:skip_confirmation!)
+    user.confirmed_at = Time.utc(2025, 1, 1) if user.respond_to?(:confirmed_at=)
+    user.save!(validate: false)
+  end
+  User.find(9600)
+end
+
+def search_matrix_users_corpus
+  ActiveRecord::Base.connection.select_all(
+    "SELECT id, username, email, first_name, last_name, admin, suspended_at FROM users ORDER BY id"
+  ).to_a
+end
+
+def search_matrix_users_cases
+  [
+    ["empty", {}],
+    ["query_case_insensitive", { "query" => "ALICE" }],
+    ["query_email_fragment", { "query" => "search-matrix.test" }],
+    ["query_punctuation_stripped", { "query" => "!!!" }],
+    ["query_apostrophe", { "query" => "o'" }],
+    ["query_underscore", { "query" => "_" }],
+    ["query_unicode", { "query" => "Zoë" }],
+    ["username_cont", { "q[username_cont]" => "alice" }],
+    ["email_end", { "q[email_end]" => "search-matrix.test" }],
+    ["first_name_eq", { "q[first_name_eq]" => "Zoë" }],
+    ["admin_eq", { "q[admin_eq]" => "1" }],
+    ["suspended_at_null", { "q[suspended_at_null]" => "1" }],
+    ["username_or_email_cont", { "q[username_or_email_cont]" => "matrix" }],
+    ["query_and_ransack", { "query" => "Zoë", "q[username_cont]" => "uni" }],
+    ["suspended_at_null_zero", { "q[suspended_at_null]" => "0" }],
+    ["suspended_at_null_false", { "q[suspended_at_null]" => "false" }]
+  ]
+end
+
+def search_matrix_run_users_case(admin, name, params)
+  session = ActionDispatch::Integration::Session.new(Rails.application)
+  session.host! "localhost"
+  login_as(admin, scope: :user)
+  session.get "/admin/users.json", params: params
+  body = session.response.status == 200 ? JSON.parse(session.response.body) : nil
+  {
+    "name" => name,
+    "params" => params,
+    "status" => session.response.status,
+    "ids" => body&.pluck("id"),
+    "total" => body&.size
+  }
+end
