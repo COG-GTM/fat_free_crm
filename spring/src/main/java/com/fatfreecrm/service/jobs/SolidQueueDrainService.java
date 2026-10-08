@@ -7,6 +7,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -125,12 +127,13 @@ public class SolidQueueDrainService {
         transactionTemplate.executeWithoutResult(status -> {
             jdbcTemplate.update("DELETE FROM solid_queue_claimed_executions WHERE job_id = ?", id);
             jdbcTemplate.update(
-                "INSERT INTO solid_queue_failed_executions(job_id, error, created_at) VALUES (?, ?, ?)",
+                """
+                    INSERT INTO solid_queue_failed_executions(job_id, error, created_at) VALUES (?, ?, ?)
+                    ON CONFLICT (job_id) DO UPDATE SET error = EXCLUDED.error
+                    """,
                 id,
                 error,
                 timestamp());
-            jdbcTemplate.update("UPDATE solid_queue_jobs SET finished_at = ?, updated_at = ? WHERE id = ?",
-                timestamp(), timestamp(), id);
         });
     }
 
@@ -140,10 +143,15 @@ public class SolidQueueDrainService {
 
     private String failureDetails(Exception exception) {
         try {
-            return objectMapper.writeValueAsString(Map.of(
-                "exception_class", exception.getClass().getName(),
-                "message", exception.getMessage() == null ? "" : exception.getMessage(),
-                "backtrace", List.of()));
+            String exceptionClass = exception.getClass().getName();
+            Map<String, Object> details = new LinkedHashMap<>();
+            details.put("exception_class", exceptionClass);
+            details.put("message", exception.getMessage() == null ? exceptionClass : exception.getMessage());
+            details.put("backtrace", Arrays.stream(exception.getStackTrace())
+                .limit(50)
+                .map(StackTraceElement::toString)
+                .toList());
+            return objectMapper.writeValueAsString(details);
         } catch (JsonProcessingException serializationFailure) {
             throw new IllegalStateException("Unable to serialize Solid Queue failure", serializationFailure);
         }
