@@ -601,7 +601,7 @@ harness can observe them.
   `RailsParams` (Rails-flavoured string/integer/boolean/timestamp casts; `"abc"`→nil
   for integers, `"1"/true`→true, ISO strings→instants).
 - **Statuses**: POST → 201 + resource JSON + `Location`; PUT/DELETE → 204 empty;
-  validation → 422 `{"errors": {attr: [full messages]}}`; missing → 404;
+  validation → 422 `{"errors": {attr: [message]}}` (`errors.as_json` raw messages, caret verbatim — no `full_message` prefix); missing → 404;
   CanCan-denied → 401 in Rails, 403 in Spring (allow-listed `authz-denied-401-vs-403`).
 - **Validation**: `ActiveModelMessages` resolves messages through the ActiveRecord
   lookup chain (`models.<m>.attributes.<a>.<key>` → `models.<m>.<key>` → `messages.<key>`
@@ -649,3 +649,5 @@ commentable, which itself writes a commentable version), commentable-visibility
    register it in `routing.sh`.
 6. Add enforced contract cases (reset + dbAssert incl. `versions`) and bump the
    `ContractHarnessTest` case count.
+7. Extend `dualWriteSoak` with the family's writes and per-(item_type,event)
+   version assertions; report any unfixable cross-stack races as observations.
