@@ -12,6 +12,7 @@ import com.fatfreecrm.repository.ContactOpportunityRepository;
 import com.fatfreecrm.repository.ContactRepository;
 import com.fatfreecrm.repository.LeadRepository;
 import com.fatfreecrm.repository.OpportunityRepository;
+import com.fatfreecrm.repository.TaskRepository;
 import com.fatfreecrm.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +28,7 @@ class RailsResourcesAutocompleteTest {
             mock(ContactRepository.class),
             mock(LeadRepository.class),
             mock(OpportunityRepository.class),
+            mock(TaskRepository.class),
             mock(UserRepository.class)
         );
         Contact contact = new Contact();

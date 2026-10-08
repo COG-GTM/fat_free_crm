@@ -22,11 +22,12 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.springframework.stereotype.Component;
 
 /**
  * Registry of the five CRM entities that support list search.
- * Task and User lists are intentionally out of scope for AB-269 (handled by AB-270).
+ * AB-270 adds Task (Rails {@code Task.text_search}); User lists remain with their own family.
  */
 @Component
 public class SearchableEntities {
@@ -159,6 +160,16 @@ public class SearchableEntities {
             user -> Map.of("status",
                 campaignStatusFacets(user, entityManager, settingRepository, accessPolicy)),
             campaignStateFilter()
+        ));
+        register(map, new SearchableEntity(
+            com.fatfreecrm.domain.Task.class,
+            "Task",
+            DEFAULT_PER_PAGE,
+            SortWhitelist.of(com.fatfreecrm.domain.Task.class, "name ASC", "name ASC"),
+            Map.of(),
+            SearchableEntities::taskSearch,
+            false,
+            null
         ));
         byClass = Map.copyOf(map);
     }
@@ -475,5 +486,15 @@ public class SearchableEntities {
             }
         }
         return likeEscaped(root, cb, "name", query);
+    }
+
+    /**
+     * Rails {@code Task.text_search}: strip characters outside {@code [\w\s\-.'\p{L}]}, trim, then
+     * {@code upper(name) LIKE upper('%q%')} without escaping (PostgreSQL's default backslash escape applies).
+     */
+    static Predicate taskSearch(From<?, ?> root, CriteriaBuilder cb, String rawQuery) {
+        String query = rawQuery.replaceAll("[^\\w\\s\\-.'\\p{L}]", "").replaceAll("^\\s+|\\s+$", "");
+        return cb.like(cb.upper(root.get("name")),
+            cb.upper(((HibernateCriteriaBuilder) cb).value("%" + query + "%")));
     }
 }

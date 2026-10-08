@@ -2,8 +2,10 @@ package com.fatfreecrm.service.json;
 
 import com.fatfreecrm.domain.Account;
 import com.fatfreecrm.domain.Campaign;
+import com.fatfreecrm.domain.Comment;
 import com.fatfreecrm.domain.Contact;
 import com.fatfreecrm.domain.Lead;
+import com.fatfreecrm.domain.Task;
 import com.fatfreecrm.repository.AccountContactRepository;
 import com.fatfreecrm.repository.AccountRepository;
 import com.fatfreecrm.repository.CampaignRepository;
@@ -11,7 +13,9 @@ import com.fatfreecrm.repository.ContactOpportunityRepository;
 import com.fatfreecrm.repository.ContactRepository;
 import com.fatfreecrm.repository.LeadRepository;
 import com.fatfreecrm.repository.OpportunityRepository;
+import com.fatfreecrm.repository.TaskRepository;
 import com.fatfreecrm.repository.UserRepository;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -28,6 +32,10 @@ public class RailsResources {
     public final RailsResource contact;
     public final RailsResource lead;
 
+    public final RailsResource task;
+
+    public final RailsResource comment;
+
     public RailsResources(
         AccountRepository accountRepository,
         AccountContactRepository accountContactRepository,
@@ -36,6 +44,7 @@ public class RailsResources {
         ContactRepository contactRepository,
         LeadRepository leadRepository,
         OpportunityRepository opportunityRepository,
+        TaskRepository taskRepository,
         UserRepository userRepository
     ) {
         account = new RailsResource(
@@ -126,5 +135,46 @@ public class RailsResources {
                 })
             )
         );
+        task = new RailsResource(
+            "Task",
+            "tasks",
+            Task.class,
+            Set.of("subscribed_users"),
+            false,
+            CRM_EXCLUDED_COLUMNS,
+            "tasks",
+            entity -> ((Task) entity).getName(),
+            taskRelatedExclusions(taskRepository)
+        );
+        comment = new RailsResource(
+            "Comment",
+            "comments",
+            Comment.class,
+            Set.of(),
+            false,
+            Set.of(),
+            "comments",
+            entity -> ((Comment) entity).getTitle(),
+            Map.of()
+        );
+    }
+
+    /** Rails {@code related.classify.constantize.find_by_id(id).tasks}: singular or plural asset names. */
+    private static Map<String, RailsResource.RelatedExclusion> taskRelatedExclusions(TaskRepository taskRepository) {
+        Map<String, RailsResource.RelatedExclusion> exclusions = new LinkedHashMap<>();
+        Map<String, String> assets = Map.of(
+            "account", "Account", "campaign", "Campaign", "contact", "Contact", "lead", "Lead",
+            "opportunity", "Opportunity");
+        assets.forEach((name, railsModel) -> {
+            RailsResource.RelatedExclusion exclusion = new RailsResource.RelatedExclusion(assetId ->
+                assetId > Integer.MAX_VALUE || assetId < Integer.MIN_VALUE
+                    ? Set.of()
+                    : taskRepository.findByAssetTypeAndAssetId(railsModel, assetId.intValue()).stream()
+                        .map(Task::getId)
+                        .collect(java.util.stream.Collectors.toUnmodifiableSet()));
+            exclusions.put(name, exclusion);
+            exclusions.put("opportunity".equals(name) ? "opportunities" : name + "s", exclusion);
+        });
+        return Map.copyOf(exclusions);
     }
 }

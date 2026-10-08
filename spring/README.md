@@ -506,3 +506,46 @@ The search task writes `contacts_search_matrix.json` and `leads_search_matrix.js
 Accounts matrix; `CONTACTS_OUTPUT` and `LEADS_OUTPUT` override those paths. The vCard task writes
 `spring/src/test/resources/vcard/rails_vcard_matrix.json` and accepts `VCARD_OUTPUT`. Spring parity
 tests replay all generated list and vCard cases.
+
+## Tasks and comments read API (AB-270, family `tasks`)
+
+| Spring | Rails | Notes |
+|---|---|---|
+| `GET /api/v1/tasks?view=pending\|assigned\|completed&timeZone=<IANA>` | `GET /tasks.json` | `{buckets:{...}}`; the Rails body is the bare bucket object (contract cases use `spring: {bodyPointer: /buckets}`) |
+| `GET /api/v1/tasks/{id}` | `GET /tasks/:id.json` | `Task.tracked_by` (owner or assignee) |
+| `GET /api/v1/tasks/autocomplete?term=&related=` | `GET /tasks/auto_complete.json` | `Task.my(user).text_search(term)`, 10 rows, `{results:[{id,text}]}` |
+| `GET /api/v1/comments?<parent>_id=` | `GET /comments.json` | bare JSON array, newest first; parent = `account`, `campaign`, `contact`, `lead`, `opportunity`, `task`, `user` |
+
+- **Buckets** (`Task.find_all_grouped`): keys and order come from the `task_bucket` / `task_completed` rows in
+  `settings` when present, else `config/settings.default.yml`: `overdue, due_asap, due_today, due_tomorrow,
+  due_this_week, due_next_week, due_later` and `completed_today, completed_yesterday, completed_last_week,
+  completed_this_month, completed_last_month` (`completed_this_week` is a Rails scope but not in the default
+  setting). Views: `pending` = `Task.my(user).<bucket>.pending`, `assigned` = `Task.assigned_by(user).<bucket>.pending`,
+  `completed` = `Task.my(user).<bucket>.completed`; unknown/missing views fall back to `pending`. Row order is the
+  Rails `ORDER BY` chain (`name ASC` from `my`, then the bucket scope's order, then the view's order). Admins are
+  not widened: like Rails, buckets only use `my`/`assigned_by`, which are narrower than the AB-268 Task policy
+  (owner, assignee, completed_by), so the policy is not composed into the bucket queries.
+- **Time zone**: Rails takes bucket boundaries from `Time.zone`, which `ApplicationController#set_context` sets from
+  `session[:timezone_offset]` (written by `GET /home/timezone?offset=<JS getTimezoneOffset>`), else the app default
+  (UTC). The stateless API has no session, so the zone is the explicit `timeZone` query parameter (IANA id; unknown
+  ids are 400), defaulting to `ffcrm.time-zone` (UTC). Boundaries are computed in that zone with Rails semantics
+  (`midnight`, `tomorrow`, `next_week` = next Monday 00:00, `end_of_week` = Sunday 23:59:59.999999 then `+ 1.day`,
+  month starts). Spring always renders timestamps in UTC (`Z`); Rails renders them in the session zone (same instant).
+- **Show**: Rails 404s anything outside `tracked_by`. Spring evaluates `hasPermission(#id,'Task','read')` first
+  (AB-268: 401 / 404 missing / 403 out of policy), then applies `tracked_by`, so a completed_by-only task is 404 like
+  Rails and a fully out-of-scope task is 403 (allow-listed for `tasks-show-601-bob`). Rails `TasksController#show`
+  records no PaperTrail `view` row, so Spring does not either.
+- **Autocomplete**: same sanitisation as Rails `text_search` (`[^\w\s\-.'\p{L}]` stripped). Rails orders only by
+  `name`; Spring adds `id` as a tiebreak so equal names are deterministic.
+- **Comments**: the parent must be visible through the AB-268 policy (Rails `<Model>.my(current_user)`; for tasks
+  `Task.my`; for `user_id`, `User.my` = yourself, or anyone for admins, listing comments whose commentable is that
+  user), else 404 "The notes are not available.". Without a `*_id` parameter Rails lists
+  `Comment.accessible_by` (own comments, every comment for admins) and so does Spring. An unsupported `*_id`
+  parameter is 400 (Rails: 406/500).
+- **Emails and saved lists**: Rails exposes no JSON read (`EmailsController` has only `destroy`, `ListsController`
+  only `create`/`destroy`; `openapi.yaml` has no GET), so nothing is ported and there are no `emails`/`lists`
+  gateway blocks.
+- **Parity**: `rake ffcrm:migration:task_buckets_matrix` drives the real Rails `/tasks.json`, `/tasks/:id.json` and
+  `/tasks/auto_complete.json` on a frozen clock (`2026-03-12T02:30:00Z`) with session offsets for UTC-10, UTC-3,
+  UTC+1 and UTC+13 and writes `spring/src/test/resources/search/tasks_search_matrix.json` (27 cases, 32 tasks);
+  `RailsTaskBucketsParityTest` replays it. Gateway blocks: `tasks`, `comments` (disabled).
