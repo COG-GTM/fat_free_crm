@@ -142,6 +142,21 @@ class UsersAdminControllerIntegrationTest extends AbstractPostgresIntegrationTes
     }
 
     @Test
+    void userTextSearchUsesPostgresUpperForSearchAndAutocompletePatterns() throws Exception {
+        User strasse = user("straße", "Straße", "Search", false);
+
+        JsonNode adminList = JSON.readTree(mockMvc.perform(get("/api/v1/admin/users").param("query", "ß")
+                .header(HttpHeaders.AUTHORIZATION, adminBearer))
+            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(adminList.path("items").findValuesAsText("id")).contains(strasse.getId().toString());
+
+        JsonNode autocomplete = JSON.readTree(mockMvc.perform(get("/api/v1/users/autocomplete").param("term", "ß")
+                .header(HttpHeaders.AUTHORIZATION, adminBearer))
+            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(autocomplete.path("results").findValuesAsText("id")).contains(strasse.getId().toString());
+    }
+
+    @Test
     void adminUsersListIsPaginatedAndOmitsDeviseSecrets() throws Exception {
         user("charlie", "Charlie", "Other", false);
 

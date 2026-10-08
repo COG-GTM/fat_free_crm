@@ -162,11 +162,12 @@ public class SearchableEntities {
             (root, cb, query) -> {
                 String sanitized = query.replaceAll("[^\\w\\s\\-.'\\p{L}]", "").strip();
                 String pattern = "%" + sanitized + "%";
+                Expression<String> upperPattern = cb.upper(cb.literal(pattern));
                 return cb.or(
-                    cb.like(cb.upper(root.get("username")), pattern.toUpperCase(java.util.Locale.ROOT)),
-                    cb.like(cb.upper(root.get("email")), pattern.toUpperCase(java.util.Locale.ROOT)),
-                    cb.like(cb.upper(root.get("firstName")), pattern.toUpperCase(java.util.Locale.ROOT)),
-                    cb.like(cb.upper(root.get("lastName")), pattern.toUpperCase(java.util.Locale.ROOT))
+                    cb.like(cb.upper(root.get("username")), upperPattern),
+                    cb.like(cb.upper(root.get("email")), upperPattern),
+                    cb.like(cb.upper(root.get("firstName")), upperPattern),
+                    cb.like(cb.upper(root.get("lastName")), upperPattern)
                 );
             },
             false,

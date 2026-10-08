@@ -106,6 +106,24 @@ class ActivitiesControllerIntegrationTest extends AbstractPostgresIntegrationTes
     }
 
     @Test
+    void actorWithoutWhitespacePrefersFirstNameMatchesBeforeLastNameMatches() throws Exception {
+        bob.setLastName("SharedMatch");
+        userRepository.saveAndFlush(bob);
+        admin.setFirstName("SharedMatch");
+        userRepository.saveAndFlush(admin);
+        insertVersion("User", bob.getId().intValue(), "update", bob.getId(), Instant.now(), "---\nusername: Bob\n");
+        insertVersion("User", admin.getId().intValue(), "update", admin.getId(), Instant.now(),
+            "---\nusername: Admin\n");
+
+        JsonNode matches = feed(aliceBearer, new String[][] {
+            {"event", "all_events"}, {"user", "SharedMatch"}
+        });
+
+        assertThat(matches).hasSize(1);
+        assertThat(matches.get(0).path("item_id").asLong()).isEqualTo(admin.getId());
+    }
+
+    @Test
     void durationOverrideAndRailsVisibilityRulesCoverReifiedItemsAndDirectPermissions() throws Exception {
         Instant now = Instant.now();
         insertVersion("User", alice.getId().intValue(), "update", alice.getId(), now.minusSeconds(5_400),
@@ -160,6 +178,30 @@ class ActivitiesControllerIntegrationTest extends AbstractPostgresIntegrationTes
         assertThat(itemIds).contains(802, 804, 899).doesNotContain(801, 803, 900, 901, 902);
         JsonNode adminVisible = feed(adminBearer, new String[][] {{"asset", "accounts"}, {"event", "all_events"}});
         assertThat(adminVisible).isEmpty();
+    }
+
+    @Test
+    void deletedAccountWithTimeWithZoneYamlRemainsVisibleWhenPublic() throws Exception {
+        Instant now = Instant.now();
+        String privateObject = "--- !ruby/object:Account\n"
+            + "id: 990\n"
+            + "user_id: " + bob.getId() + "\n"
+            + "assigned_to:\n"
+            + "access: Private\n"
+            + "created_at: !ruby/object:ActiveSupport::TimeWithZone\n"
+            + "  utc: 2025-01-01 00:00:00.000000000 Z\n"
+            + "  zone: !ruby/object:ActiveSupport::TimeZone\n"
+            + "    name: UTC\n"
+            + "  time: 2025-01-01 00:00:00.000000000 Z\n";
+        String publicObject = privateObject.replace("id: 990", "id: 991").replace("access: Private", "access: Public");
+        insertVersion("Account", 990, "destroy", bob.getId(), now, privateObject);
+        insertVersion("Account", 991, "destroy", bob.getId(), now, publicObject);
+
+        JsonNode visible = feed(aliceBearer, new String[][] {{"event", "all_events"}, {"asset", "accounts"}});
+        List<Integer> itemIds = new ArrayList<>();
+        visible.forEach(version -> itemIds.add(version.path("item_id").asInt()));
+
+        assertThat(itemIds).contains(991).doesNotContain(990);
     }
 
     @Test

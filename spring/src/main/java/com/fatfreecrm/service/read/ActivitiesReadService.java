@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -44,6 +45,8 @@ public class ActivitiesReadService {
         "Opportunity", "opportunities"
     );
     private static final Pattern TOP_LEVEL_KEY = Pattern.compile("^([A-Za-z_]\\w*):");
+    private static final Pattern REIFIED_FIELD =
+        Pattern.compile("^(user_id|assigned_to|access):[ \\t]*(.*?)[ \\t]*$");
     private static final Pattern SECRET_KEY = Pattern.compile("(?i).*(password|token|salt).*");
     private static final Pattern DURATION = Pattern.compile("^(one|two)_(hour|day|days|week|weeks|month)$");
 
@@ -157,9 +160,16 @@ public class ActivitiesReadService {
                 }
             }
         } else {
-            return users.stream()
-                .filter(candidate -> actor.equals(candidate.getFirstName()) || actor.equals(candidate.getLastName()))
-                .map(User::getId).findFirst().orElse(null);
+            Long firstNameMatch = users.stream()
+                .filter(candidate -> actor.equals(candidate.getFirstName()))
+                .map(User::getId)
+                .findFirst()
+                .orElse(null);
+            return firstNameMatch != null ? firstNameMatch : users.stream()
+                .filter(candidate -> actor.equals(candidate.getLastName()))
+                .map(User::getId)
+                .findFirst()
+                .orElse(null);
         }
         return null;
     }
@@ -231,7 +241,7 @@ public class ActivitiesReadService {
             try {
                 object = RailsYaml.readStringMap(version.getObject());
             } catch (RuntimeException ignored) {
-                return false;
+                object = scanReifiedFields(version.getObject());
             }
             owner = object.get("user_id");
             assigned = object.get("assigned_to");
@@ -245,6 +255,24 @@ public class ActivitiesReadService {
         }
         return !"Shared".equals(access)
             || visibilityRepository.hasDirectPermission(type.railsName(), version.getItemId(), userId);
+    }
+
+    private static Map<String, Object> scanReifiedFields(String yaml) {
+        Map<String, Object> fields = new HashMap<>();
+        for (String line : yaml.split("\\R")) {
+            Matcher matcher = REIFIED_FIELD.matcher(line);
+            if (matcher.matches()) {
+                String value = matcher.group(2).strip();
+                if (value.length() >= 2
+                    && ((value.startsWith("\"") && value.endsWith("\""))
+                        || (value.startsWith("'") && value.endsWith("'")))) {
+                    value = value.substring(1, value.length() - 1);
+                }
+                fields.put(matcher.group(1), value.isEmpty() || value.equals("~")
+                    || value.equalsIgnoreCase("null") ? null : value);
+            }
+        }
+        return fields;
     }
 
     private static boolean sameId(Object value, long userId) {
