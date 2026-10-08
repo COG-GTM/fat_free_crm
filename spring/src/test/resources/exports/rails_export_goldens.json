@@ -1,6 +1,6 @@
 {
   "generated_by": "bundle exec rake ffcrm:migration:export_goldens",
-  "volatile": "versions.created_at is seeded relative to now (created_offset_seconds); home cases normalise 'YYYY-MM-DD HH:MM:SS UTC' timestamps",
+  "volatile": "versions.created_at is seeded relative to a frozen now (created_offset_seconds); home cases normalise 'YYYY-MM-DD HH:MM:SS UTC' timestamps",
   "custom_columns": [
     {
       "table": "accounts",
@@ -185,8 +185,8 @@
         "user_id": 9703,
         "name": "accounts_sort_by",
         "value": "ImFjY291bnRzLm5hbWUgQVNDIg==\n",
-        "created_at": "2026-10-08 01:36:47 UTC",
-        "updated_at": "2026-10-08 01:36:47 UTC"
+        "created_at": "2025-02-01 12:00:00 UTC",
+        "updated_at": "2025-02-01 12:00:00 UTC"
       }
     ],
     "permissions": [
@@ -240,7 +240,7 @@
         "required": null,
         "maxlength": null,
         "created_at": "2025-01-01 09:30:15 UTC",
-        "updated_at": "2026-10-08 01:36:47 UTC",
+        "updated_at": "2025-02-01 12:00:00 UTC",
         "pair_id": null,
         "settings": null,
         "minlength": 0,
@@ -266,7 +266,7 @@
         "required": null,
         "maxlength": null,
         "created_at": "2025-01-01 09:30:15 UTC",
-        "updated_at": "2026-10-08 01:36:47 UTC",
+        "updated_at": "2025-02-01 12:00:00 UTC",
         "pair_id": null,
         "settings": null,
         "minlength": 0,
@@ -292,7 +292,7 @@
         "required": null,
         "maxlength": null,
         "created_at": "2025-01-01 09:30:15 UTC",
-        "updated_at": "2026-10-08 01:36:47 UTC",
+        "updated_at": "2025-02-01 12:00:00 UTC",
         "pair_id": null,
         "settings": null,
         "minlength": 0,
@@ -318,7 +318,7 @@
         "required": null,
         "maxlength": null,
         "created_at": "2025-01-01 09:30:15 UTC",
-        "updated_at": "2026-10-08 01:36:47 UTC",
+        "updated_at": "2025-02-01 12:00:00 UTC",
         "pair_id": null,
         "settings": null,
         "minlength": 0,
@@ -344,7 +344,7 @@
         "required": null,
         "maxlength": null,
         "created_at": "2025-01-01 09:30:15 UTC",
-        "updated_at": "2026-10-08 01:36:47 UTC",
+        "updated_at": "2025-02-01 12:00:00 UTC",
         "pair_id": null,
         "settings": null,
         "minlength": 0,
@@ -370,7 +370,7 @@
         "required": null,
         "maxlength": null,
         "created_at": "2025-01-01 09:30:15 UTC",
-        "updated_at": "2026-10-08 01:36:47 UTC",
+        "updated_at": "2025-02-01 12:00:00 UTC",
         "pair_id": null,
         "settings": null,
         "minlength": 0,

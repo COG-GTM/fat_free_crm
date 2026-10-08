@@ -3,6 +3,7 @@
 require "json"
 require "fileutils"
 require "warden"
+require "active_support/testing/time_helpers"
 
 # AB-273 exports: drives the real Rails index controllers for every CSV/XLS export over a fixed
 # corpus and writes the responses as golden files that the Spring export replay test compares
@@ -27,6 +28,11 @@ namespace :ffcrm do
       bodies = {}
       ActiveRecord::Base.transaction(requires_new: true) do
         include Warden::Test::Helpers
+        extend ActiveSupport::Testing::TimeHelpers
+
+        # Activity rows are seeded relative to now and rendered with absolute timestamps; a frozen clock
+        # keeps the committed goldens stable for the CI drift check.
+        travel_to(export_goldens_now)
 
         Warden.test_mode!
         # The filter case POSTs like the UI's XHR; development env would reject it without a CSRF token.
@@ -60,7 +66,7 @@ namespace :ffcrm do
         end
         manifest = {
           "generated_by" => "bundle exec rake ffcrm:migration:export_goldens",
-          "volatile" => "versions.created_at is seeded relative to now (created_offset_seconds); " \
+          "volatile" => "versions.created_at is seeded relative to a frozen now (created_offset_seconds); " \
                         "home cases normalise 'YYYY-MM-DD HH:MM:SS UTC' timestamps",
           "custom_columns" => custom_columns,
           "corpus" => corpus,
@@ -69,6 +75,7 @@ namespace :ffcrm do
         raise ActiveRecord::Rollback
       end
       Warden.test_reset!
+      travel_back
 
       FileUtils.rm_rf(output)
       FileUtils.mkdir_p(output)
@@ -82,6 +89,10 @@ end
 def export_goldens_tables
   %w[users preferences permissions field_groups fields accounts campaigns leads contacts opportunities
      tasks addresses account_contacts account_opportunities contact_opportunities tags taggings versions]
+end
+
+def export_goldens_now
+  Time.utc(2025, 2, 1, 12, 0, 0)
 end
 
 def export_goldens_time
@@ -125,11 +136,11 @@ def export_goldens_seed
   { "alice" => alice, "bob" => bob, "admin" => admin }
 end
 
-def export_goldens_custom_fields(t)
+def export_goldens_custom_fields(time)
   account_group = FieldGroup.create!(id: 9790, name: "export_fields", label: "Export Fields", klass_name: "Account",
-                                     position: 1, created_at: t, updated_at: t)
+                                     position: 1, created_at: time, updated_at: time)
   contact_group = FieldGroup.create!(id: 9791, name: "export_contact", label: "Export Contact", klass_name: "Contact",
-                                     position: 1, created_at: t, updated_at: t)
+                                     position: 1, created_at: time, updated_at: time)
   [
     [9792, account_group, "cf_region", "Region", "string", 1],
     [9793, account_group, "cf_seats", "Seats", "decimal", 2],
@@ -138,14 +149,15 @@ def export_goldens_custom_fields(t)
     [9796, account_group, "cf_active", "Active", "boolean", 5],
     [9797, account_group, "cf_seen_at", "Seen At", "datetime", 6],
     [9798, contact_group, "cf_nickname", "Nickname", "string", 1]
-  ].each do |id, group, name, label, as, position|
+  ].each do |field|
+    id, group, name, label, as, position = field
     CustomField.create!(id: id, field_group: group, name: name, label: label, as: as, position: position,
-                        collection: %w[alpha beta], created_at: t, updated_at: t)
+                        collection: %w[alpha beta], created_at: time, updated_at: time)
   end
   [Account, Contact].each(&:reset_column_information)
 end
 
-def export_goldens_accounts(alice, bob, t)
+def export_goldens_accounts(alice, bob, time)
   [
     [9711, "Acme, Inc.", alice, bob, "Public", "customer", 3, "acme@example.test", "Says \"hi\"\nTwice",
      { cf_region: "West", cf_seats: BigDecimal("12.5"), cf_renewal: Date.new(2025, 6, 30), cf_flags: %w[alpha beta],
@@ -158,37 +170,36 @@ def export_goldens_accounts(alice, bob, t)
     account = Account.new(
       id: id, name: name, user: owner, assigned_to: assignee&.id, access: access, category: category,
       rating: rating, email: email, background_info: background, phone: "555-01#{index}", website: "http://acme.test",
-      toll_free_phone: index.even? ? "800-555" : nil, created_at: t + index.hours, updated_at: t + index.days
+      toll_free_phone: index.even? ? "800-555" : nil, created_at: time + index.hours, updated_at: time + index.days
     )
     custom.each { |field, value| account[field] = value }
     export_goldens_save(account)
   end
-  Permission.create!(id: 9780, user_id: alice.id, asset: Account.find(9714), created_at: t, updated_at: t)
+  Permission.create!(id: 9780, user_id: alice.id, asset: Account.find(9714), created_at: time, updated_at: time)
   Address.create!(id: 9781, addressable_type: "Account", addressable_id: 9711, address_type: "Billing",
                   street1: "1 Main St", street2: "Suite, 5", city: "Boston", state: "MA", zipcode: "02108",
-                  country: "US", full_address: "1 Main St\nBoston", created_at: t, updated_at: t)
+                  country: "US", full_address: "1 Main St\nBoston", created_at: time, updated_at: time)
   Address.create!(id: 9782, addressable_type: "Account", addressable_id: 9711, address_type: "Shipping",
-                  street1: "Dock 9", created_at: t, updated_at: t)
+                  street1: "Dock 9", created_at: time, updated_at: time)
 end
 
-def export_goldens_campaigns(alice, bob, t)
+def export_goldens_campaigns(alice, bob, time)
   [
     [9721, "Spring Launch", alice, bob, "Public", "planned", BigDecimal("1000.5"), 10, 2.5, BigDecimal("5000"),
      Date.new(2025, 2, 1), nil],
     [9722, "Hidden Campaign", bob, nil, "Private", "started", nil, nil, nil, nil, nil, Date.new(2025, 12, 31)],
     [9723, "Fall, \"Quoted\"", alice, nil, "Public", nil, BigDecimal("0"), 0, 0.0, nil, nil, nil]
-  ].each_with_index do |(id, name, owner, assignee, access, status, budget, target_leads, conversion, revenue,
-                         starts_on, ends_on), index|
+  ].each_with_index do |(id, name, owner, assignee, access, status, budget, target_leads, conversion, revenue, starts_on, ends_on), index|
     export_goldens_save(Campaign.new(
                           id: id, name: name, user: owner, assigned_to: assignee&.id, access: access, status: status,
                           budget: budget, target_leads: target_leads, target_conversion: conversion,
                           target_revenue: revenue, starts_on: starts_on, ends_on: ends_on,
-                          objectives: "Grow\npipeline", created_at: t + index.hours, updated_at: t + index.hours
+                          objectives: "Grow\npipeline", created_at: time + index.hours, updated_at: time + index.hours
                         ))
   end
 end
 
-def export_goldens_leads(alice, bob, t)
+def export_goldens_leads(alice, bob, time)
   [
     [9731, "Peter", "Lead", alice, nil, "Public", "new", 9721, "Example, Inc.", 4, true],
     [9732, "Quinn", "Contacted", alice, bob, "Public", "contacted", nil, nil, 0, false],
@@ -198,14 +209,14 @@ def export_goldens_leads(alice, bob, t)
                           id: id, first_name: first, last_name: last, user: owner, assigned_to: assignee&.id,
                           access: access, status: status, campaign_id: campaign_id, company: company, rating: rating,
                           do_not_call: dnc, email: "#{first.downcase}@lead.test", title: "Buyer", source: "web",
-                          created_at: t + index.hours, updated_at: t + index.hours
+                          created_at: time + index.hours, updated_at: time + index.hours
                         ))
   end
   Address.create!(id: 9783, addressable_type: "Lead", addressable_id: 9731, address_type: "Business",
-                  street1: "9 Lead Rd", city: "Austin", state: "TX", created_at: t, updated_at: t)
+                  street1: "9 Lead Rd", city: "Austin", state: "TX", created_at: time, updated_at: time)
 end
 
-def export_goldens_contacts(alice, bob, t)
+def export_goldens_contacts(alice, bob, time)
   [
     [9741, "Ada", "Lovelace", alice, bob, "Public", 9731, Date.new(1990, 12, 10), false, "Ady"],
     [9742, "Grace", "Hopper", alice, nil, "Private", nil, nil, true, nil],
@@ -214,36 +225,35 @@ def export_goldens_contacts(alice, bob, t)
     contact = Contact.new(
       id: id, first_name: first, last_name: last, user: owner, assigned_to: assignee&.id, access: access,
       lead_id: lead_id, born_on: born_on, do_not_call: dnc, email: "#{first.downcase}@contact.test",
-      title: "Engineer", department: "R&D", source: "referral", created_at: t + index.hours,
-      updated_at: t + index.hours
+      title: "Engineer", department: "R&D", source: "referral", created_at: time + index.hours,
+      updated_at: time + index.hours
     )
     contact[:cf_nickname] = nickname
     export_goldens_save(contact)
   end
-  AccountContact.create!(id: 9784, account_id: 9711, contact_id: 9741, created_at: t, updated_at: t)
+  AccountContact.create!(id: 9784, account_id: 9711, contact_id: 9741, created_at: time, updated_at: time)
   Address.create!(id: 9785, addressable_type: "Contact", addressable_id: 9741, address_type: "Business",
-                  street1: "10 Analytical Way", zipcode: "N1", country: "UK", created_at: t, updated_at: t)
+                  street1: "10 Analytical Way", zipcode: "N1", country: "UK", created_at: time, updated_at: time)
 end
 
-def export_goldens_opportunities(alice, bob, t)
+def export_goldens_opportunities(alice, bob, time)
   [
     [9751, "Big Deal", alice, bob, "Public", "prospecting", 25, BigDecimal("10000"), BigDecimal("500.5"),
      Date.new(2025, 3, 1), 9721],
     [9752, "Small Deal", alice, nil, "Public", "won", nil, nil, nil, nil, nil],
     [9753, "Hidden Deal", bob, nil, "Private", "lost", 10, BigDecimal("1"), nil, nil, nil]
-  ].each_with_index do |(id, name, owner, assignee, access, stage, probability, amount, discount, closes_on,
-                         campaign_id), index|
+  ].each_with_index do |(id, name, owner, assignee, access, stage, probability, amount, discount, closes_on, campaign_id), index|
     export_goldens_save(Opportunity.new(
                           id: id, name: name, user: owner, assigned_to: assignee&.id, access: access, stage: stage,
                           probability: probability, amount: amount, discount: discount, closes_on: closes_on,
-                          campaign_id: campaign_id, source: "campaign", created_at: t + index.hours,
-                          updated_at: t + index.hours
+                          campaign_id: campaign_id, source: "campaign", created_at: time + index.hours,
+                          updated_at: time + index.hours
                         ))
   end
-  AccountOpportunity.create!(id: 9786, account_id: 9711, opportunity_id: 9751, created_at: t, updated_at: t)
+  AccountOpportunity.create!(id: 9786, account_id: 9711, opportunity_id: 9751, created_at: time, updated_at: time)
 end
 
-def export_goldens_tasks(alice, bob, t)
+def export_goldens_tasks(alice, bob, time)
   [
     [9761, "Call Acme, now", alice, nil, "due_asap", nil, nil, "call"],
     [9762, "Overdue \"report\"", alice, nil, "specific_time", Time.utc(2020, 1, 1, 12), nil, "email"],
@@ -255,13 +265,13 @@ def export_goldens_tasks(alice, bob, t)
     task = export_goldens_save(Task.new(
                                  id: id, name: name, user: owner, assigned_to: assignee&.id, bucket: bucket,
                                  category: category, background_info: index.zero? ? "Line1\nLine2" : nil,
-                                 completed_at: completed_at, created_at: t + index.hours, updated_at: t + index.hours
+                                 completed_at: completed_at, created_at: time + index.hours, updated_at: time + index.hours
                                ))
     task.update_columns(due_at: due_at, bucket: bucket)
   end
 end
 
-def export_goldens_tags(t)
+def export_goldens_tags(time)
   [[9771, "vip"], [9772, "west"]].each do |id, name|
     ActsAsTaggableOn::Tag.create!(id: id, name: name)
   end
@@ -270,7 +280,7 @@ def export_goldens_tags(t)
     [9776, 9771, "Lead", 9731], [9777, 9772, "Opportunity", 9751], [9778, 9771, "Campaign", 9721]
   ].each do |id, tag_id, type, taggable_id|
     ActsAsTaggableOn::Tagging.create!(id: id, tag_id: tag_id, taggable_type: type, taggable_id: taggable_id,
-                                      context: "tags", created_at: t)
+                                      context: "tags", created_at: time)
   end
 end
 
@@ -285,7 +295,8 @@ def export_goldens_versions(alice, bob)
     [9804, "Task", 9761, "create", alice, nil, 600, nil, nil],
     [9805, "Contact", 9741, "view", alice, nil, 300, nil, nil],
     [9806, "Lead", 9731, "destroy", bob, "---\nfirst_name: Peter\n", 7 * 86_400, nil, nil]
-  ].each do |id, type, item_id, event, user, object, offset, changes, related_id|
+  ].each do |version|
+    id, type, item_id, event, user, object, offset, changes, related_id = version
     Version.create!(id: id, item_type: type, item_id: item_id, event: event, whodunnit: user.id.to_s,
                     object: object, object_changes: changes, related_id: related_id,
                     related_type: related_id && "Campaign", created_at: now - offset)
