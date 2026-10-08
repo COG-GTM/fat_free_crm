@@ -8,10 +8,15 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
+/**
+ * The 422 payload is built from {@link CustomFieldValidationException#errors()}: the top-level hash is
+ * snapshotted at construction and read-only. Per-field message lists are passed through as given (the
+ * validator already hands over immutable lists), so only the map level is pinned here.
+ */
 class CustomFieldValidationExceptionTest {
 
     @Test
-    void snapshotsTheErrorsHashAndExposesItReadOnly() {
+    void snapshotsTheTopLevelErrorsHashAndExposesItReadOnly() {
         Map<String, List<String>> errors = new LinkedHashMap<>();
         errors.put("cf_required", List.of("can't be blank"));
         CustomFieldValidationException exception = new CustomFieldValidationException(errors);

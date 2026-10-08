@@ -29,7 +29,8 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * A {@link CustomFieldValidationException} escaping a controller must render the Rails
  * {@code respond_with ... status: :unprocessable_entity} shape: HTTP 422, {@code application/json} (not
- * RFC 7807 problem+json) and a body of {@code {"errors": {"cf_x": ["message", ...]}}} in field order.
+ * RFC 7807 problem+json) and a body of {@code {"errors": {"cf_x": ["message", ...]}}} with one entry per
+ * failing field (key order is not part of the contract: the exception snapshots errors with {@code Map.copyOf}).
  */
 @WebMvcTest(controllers = CustomFieldValidationResponseTest.TestController.class)
 @Import({SecurityConfig.class, CustomFieldValidationResponseTest.TestController.class})
