@@ -101,6 +101,33 @@ tasks.register("verifyFrozenOpenApi") {
 tasks.named("check") {
     dependsOn("verifyFrozenOpenApi")
 }
+
+val railsSettingsDefaults = layout.projectDirectory.file("../config/settings.default.yml")
+val packagedSettingsDefaults = layout.projectDirectory.file("src/main/resources/settings/settings.default.yml")
+
+tasks.register("verifySettingsDefaults") {
+    group = "verification"
+    description = "Checks that the packaged settings.default.yml copy matches the Rails defaults file."
+    inputs.files(railsSettingsDefaults, packagedSettingsDefaults)
+    doLast {
+        val source = railsSettingsDefaults.asFile.toPath()
+        val packaged = packagedSettingsDefaults.asFile.toPath()
+        if (!Files.exists(packaged) || Files.mismatch(source, packaged) != -1L) {
+            throw GradleException(
+                "The packaged settings defaults differ from ../config/settings.default.yml; " +
+                    "copy the Rails file to src/main/resources/settings/settings.default.yml."
+            )
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn("verifySettingsDefaults")
+}
+
+dependencies {
+    implementation("com.ibm.icu:icu4j:77.1")
+}
 val contractTest by sourceSets.creating {
     compileClasspath = configurations.getByName("contractTestCompileClasspath")
     runtimeClasspath = output + compileClasspath + configurations.getByName("contractTestRuntimeClasspath")

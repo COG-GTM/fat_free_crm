@@ -1,0 +1,28 @@
+# AB-273 settings-i18n: committed override-tier fixture shared by the Rails
+# settings matrix (lib/tasks/ffcrm/settings_matrix.rake) and the Spring
+# RailsSettingsParityTest. Exercises partial nested deep merge, array
+# replacement, true->false and ""->nil replacement, a new top-level key, and a
+# brand-new nested hash.
+
+:email_dropbox:
+  :server: "override-imap.test"
+  :port: "993"
+
+account_category:
+  - :customer
+  - :partner
+  - "Custom String"
+
+:compound_address: false
+
+:host:
+
+:per_user_locale: true
+
+override_only_key: :symbol_value
+
+:nested_new_hash:
+  :level_one:
+    :level_two:
+      - :alpha
+      - :beta

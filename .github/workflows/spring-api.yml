@@ -39,6 +39,11 @@ on:
       - "lib/fat_free_crm/mail_processor/**"
       - "lib/tasks/ffcrm/migration_mail_golden.rake"
       - "spec/lib/tasks/mail_golden_spec.rb"
+      - "config/**"
+      - "lib/**"
+      - "spec/lib/**"
+      - "docs/migration/settings-cf-coverage.md"
+      - "docs/migration/settings-cf-coverage.rules.yml"
   push:
     paths:
       - "spring/**"
@@ -77,6 +82,11 @@ on:
       - "lib/fat_free_crm/mail_processor/**"
       - "lib/tasks/ffcrm/migration_mail_golden.rake"
       - "spec/lib/tasks/mail_golden_spec.rb"
+      - "config/**"
+      - "lib/**"
+      - "spec/lib/**"
+      - "docs/migration/settings-cf-coverage.md"
+      - "docs/migration/settings-cf-coverage.rules.yml"
 
 permissions:
   contents: read
@@ -482,3 +492,95 @@ jobs:
         run: |
           bundle exec rspec spec/lib/tasks/mail_golden_spec.rb
           bundle exec rubocop lib/tasks/ffcrm/migration_mail_golden.rake spec/lib/tasks/mail_golden_spec.rb
+
+  settings-i18n:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      SECRET_KEY_BASE: settings-i18n-only-secret-key-base-0123456789abcdef
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ruby/setup-ruby@v1
+        env:
+          BUNDLE_FROZEN: "false"
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - name: Use PostgreSQL database.yml
+        run: cp config/database.postgres.yml config/database.yml
+      - name: Verify generated i18n properties files
+        run: |
+          bundle exec rake ffcrm:migration:i18n_properties
+          git diff --exit-code -- spring/src/main/resources/i18n
+          if [[ -n "$(git status --porcelain -- spring/src/main/resources/i18n)" ]]; then
+            echo "untracked files under spring/src/main/resources/i18n"
+            exit 1
+          fi
+      - name: Verify settings/cf_ coverage
+        run: bundle exec rake ffcrm:migration:settings_cf_coverage CHECK=1
+      - name: Verify committed Rails settings and i18n matrices
+        env:
+          RAILS_ENV: development
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ffcrm_settings_i18n
+        # Rails initializers query the database during boot, so db:create cannot create it.
+        run: |
+          createdb -h localhost -U postgres ffcrm_settings_i18n
+          bundle exec rails db:schema:load
+          bundle exec rake ffcrm:migration:settings_matrix
+          bundle exec rake ffcrm:migration:i18n_matrix
+          git diff --exit-code -- spring/src/test/resources/settings spring/src/test/resources/i18n
+      - name: Rails settings-i18n specs
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ffcrm_settings_i18n_test
+        run: |
+          createdb -h localhost -U postgres ffcrm_settings_i18n_test
+          bundle exec rails db:schema:load
+          bundle exec rspec \
+            spec/lib/tasks/settings_matrix_spec.rb \
+            spec/lib/tasks/i18n_matrix_spec.rb \
+            spec/lib/fat_free_crm/migration/settings_cf_coverage_spec.rb \
+            spec/lib/fat_free_crm/migration/i18n_properties_spec.rb
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Settings YAML->JSON conversion runbook (backup, convert, re-run, restore)
+        shell: bash
+        env:
+          RAILS_ENV: development
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ffcrm_settings_convert
+          FFCRM_DB_URL: jdbc:postgresql://localhost:5432/ffcrm_settings_convert
+          FFCRM_DB_USER: postgres
+          FFCRM_DB_PASSWORD: postgres
+          FFCRM_JWT_SECRET: settings-i18n-ci-only-jwt-secret-0123456789abcdef
+        run: |
+          (cd spring && ./gradlew bootJar --no-daemon)
+          createdb -h localhost -U postgres ffcrm_settings_convert
+          bundle exec rails db:schema:load
+          bundle exec rails runner 'Setting[:email_dropbox] = { server: "imap.example.com", port: 993, ssl: true }; Setting[:background_info] = %i[account contact]'
+          sql() { psql -h localhost -U postgres -d ffcrm_settings_convert -v ON_ERROR_STOP=1 -tAc "$1"; }
+          convert() { java -jar spring/build/libs/fat-free-crm-api-0.1.0-SNAPSHOT.jar --spring.profiles.active=convert-settings-json "$@" | tee conversion.log; }
+          sql "CREATE TABLE settings_yaml_backup AS SELECT id, name, value FROM settings"
+          convert
+          test "$(sql "SELECT count(*) FROM settings WHERE value LIKE '---%'")" -gt 0
+          convert --ffcrm.settings.conversion.dry-run=false --ffcrm.settings.conversion.confirm-rails-stopped=true
+          test "$(sql "SELECT count(*) FROM settings WHERE value LIKE '---%'")" = 0
+          convert --ffcrm.settings.conversion.dry-run=false --ffcrm.settings.conversion.confirm-rails-stopped=true
+          grep -q 'converted=0 ' conversion.log
+          # Documented rollback delta: Rails reads converted rows with ":name" strings, not symbols.
+          # Boot fills Setting.cache from YAML; clear it as every request does (application_controller.rb:109-111).
+          bundle exec rails runner 'Setting.clear_cache!; abort "Rails read converted symbols" unless Setting.dig(:email_dropbox, :server).nil? && Setting.background_info == [":account", ":contact"]'
+          sql "UPDATE settings s SET value = b.value FROM settings_yaml_backup b WHERE s.id = b.id"
+          test "$(sql "SELECT count(*) FROM settings s JOIN settings_yaml_backup b USING (id) WHERE s.value IS DISTINCT FROM b.value")" = 0
+          bundle exec rails runner 'Setting.clear_cache!; abort "restore did not bring back symbols" unless Setting.dig(:email_dropbox, :server) == "imap.example.com" && Setting.background_info == %i[account contact]'

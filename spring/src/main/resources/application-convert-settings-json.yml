@@ -1,0 +1,6 @@
+# AB-273 settings-i18n: one-shot settings YAML->JSON conversion (AB-274 cutover).
+# SecurityConfig needs a servlet context (HttpSecurity), so the profile keeps the web
+# application type and binds an ephemeral loopback port; the runner exits when done.
+server:
+  port: 0
+  address: 127.0.0.1
