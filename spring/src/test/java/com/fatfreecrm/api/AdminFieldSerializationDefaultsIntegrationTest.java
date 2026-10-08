@@ -87,12 +87,14 @@ class AdminFieldSerializationDefaultsIntegrationTest extends AbstractPostgresInt
     }
 
     @Test
-    void collectionPreservesOrderAndStringifiesScalarEntries() throws Exception {
-        insertField(4, "---\n- Zeta\n- alpha\n- '42'\n- ''\n", "---\nmultiple: false\nmax: 3\n");
+    void collectionPreservesOrderAndYamlScalarTypes() throws Exception {
+        insertField(4, "---\n- Zeta\n- alpha\n- '42'\n- 42\n- true\n- ~\n- ''\n", "---\nmultiple: false\nmax: 3\n");
 
         JsonNode field = show(4);
 
-        assertThat(field.path("collection")).isEqualTo(JSON.readTree("[\"Zeta\",\"alpha\",\"42\",\"\"]"));
+        assertThat(field.path("collection"))
+            .as("YAML.load keeps quoted scalars as strings and types unquoted ones, as Field#as_json does")
+            .isEqualTo(JSON.readTree("[\"Zeta\",\"alpha\",\"42\",42,true,null,\"\"]"));
         assertThat(field.path("settings")).isEqualTo(JSON.readTree("{\"multiple\":false,\"max\":3}"));
     }
 
