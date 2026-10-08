@@ -50,9 +50,12 @@ class CustomFieldSearchAccessIntegrationTest extends AbstractPostgresIntegration
     private Long bobPrivateId;
     private Long publicId;
     private Long publicWithoutRegionId;
+    private Long sharedWithAliceId;
+    private Long sharedWithCarolId;
 
     @BeforeEach
     void seed() {
+        jdbcTemplate.update("DELETE FROM permissions");
         jdbcTemplate.update("DELETE FROM accounts");
         jdbcTemplate.update("DELETE FROM users");
         jdbcTemplate.update(
@@ -67,6 +70,7 @@ class CustomFieldSearchAccessIntegrationTest extends AbstractPostgresIntegration
         User aliceUser = user("alice", false);
         User bobUser = user("bob", false);
         User adminUser = user("root", true);
+        User carolUser = user("carol", false);
         alice = new AuthenticatedUser(aliceUser.getId(), "alice", false);
         bob = new AuthenticatedUser(bobUser.getId(), "bob", false);
         admin = new AuthenticatedUser(adminUser.getId(), "root", true);
@@ -74,9 +78,16 @@ class CustomFieldSearchAccessIntegrationTest extends AbstractPostgresIntegration
         bobPrivateId = account("Bob Private", "Private", bobUser);
         publicId = account("Shared North", "Public", bobUser);
         publicWithoutRegionId = account("Public South", "Public", bobUser);
+        sharedWithAliceId = account("Shared With Alice", "Shared", bobUser);
+        sharedWithCarolId = account("Shared With Carol", "Shared", bobUser);
         jdbcTemplate.update(
-            "UPDATE accounts SET custom_fields = '{\"cf_access_region\": \"north\"}'::jsonb WHERE id IN (?, ?, ?)",
-            alicePrivateId, bobPrivateId, publicId);
+            "INSERT INTO permissions (user_id, asset_type, asset_id, created_at, updated_at) "
+                + "VALUES (?, 'Account', ?, now(), now()), (?, 'Account', ?, now(), now())",
+            aliceUser.getId(), sharedWithAliceId, carolUser.getId(), sharedWithCarolId);
+        jdbcTemplate.update(
+            "UPDATE accounts SET custom_fields = '{\"cf_access_region\": \"north\"}'::jsonb "
+                + "WHERE id IN (?, ?, ?, ?, ?)",
+            alicePrivateId, bobPrivateId, publicId, sharedWithAliceId, sharedWithCarolId);
     }
 
     @AfterEach
@@ -89,17 +100,28 @@ class CustomFieldSearchAccessIntegrationTest extends AbstractPostgresIntegration
     @Test
     void customFieldMatchesOnOtherUsersPrivateRecordsAreNotReturned() {
         assertThat(ids(alice, "q[cf_access_region_eq]=north"))
-            .containsExactlyInAnyOrder(alicePrivateId, publicId)
-            .doesNotContain(bobPrivateId);
+            .containsExactlyInAnyOrder(alicePrivateId, publicId, sharedWithAliceId)
+            .doesNotContain(bobPrivateId, sharedWithCarolId);
         assertThat(ids(bob, "q[cf_access_region_eq]=north"))
-            .containsExactlyInAnyOrder(bobPrivateId, publicId)
+            .containsExactlyInAnyOrder(bobPrivateId, publicId, sharedWithAliceId, sharedWithCarolId)
             .doesNotContain(alicePrivateId);
+    }
+
+    @Test
+    void sharedRecordsOnlyMatchForUsersNamedInPermissions() {
+        assertThat(ids(alice, "q[cf_access_region_eq]=north&q[access_eq]=Shared"))
+            .containsExactly(sharedWithAliceId);
+        assertThat(ids(alice, "q[cf_access_region_not_eq]=south&q[access_eq]=Shared"))
+            .containsExactly(sharedWithAliceId);
+        assertThat(ids(alice, "q[cf_access_region_present]=1&q[access_eq]=Shared"))
+            .containsExactly(sharedWithAliceId);
     }
 
     @Test
     void adminsSeeEveryMatchingRecord() {
         assertThat(ids(admin, "q[cf_access_region_eq]=north"))
-            .containsExactlyInAnyOrder(alicePrivateId, bobPrivateId, publicId);
+            .containsExactlyInAnyOrder(alicePrivateId, bobPrivateId, publicId, sharedWithAliceId,
+                sharedWithCarolId);
     }
 
     @Test
@@ -107,9 +129,9 @@ class CustomFieldSearchAccessIntegrationTest extends AbstractPostgresIntegration
         assertThat(ids(alice, "q[cf_access_region_blank]=1")).containsExactly(publicWithoutRegionId);
         assertThat(ids(alice, "q[cf_access_region_null]=1")).containsExactly(publicWithoutRegionId);
         assertThat(ids(alice, "q[cf_access_region_not_eq]=south"))
-            .containsExactlyInAnyOrder(alicePrivateId, publicId);
+            .containsExactlyInAnyOrder(alicePrivateId, publicId, sharedWithAliceId);
         assertThat(ids(alice, "q[cf_access_region_present]=1"))
-            .containsExactlyInAnyOrder(alicePrivateId, publicId);
+            .containsExactlyInAnyOrder(alicePrivateId, publicId, sharedWithAliceId);
     }
 
     private List<Long> ids(AuthenticatedUser user, String params) {
