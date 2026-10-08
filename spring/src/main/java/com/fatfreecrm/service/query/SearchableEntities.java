@@ -153,6 +153,25 @@ public class SearchableEntities {
             true,
             null
         ));
+        register(map, new SearchableEntity(
+            com.fatfreecrm.domain.User.class,
+            "User",
+            DEFAULT_PER_PAGE,
+            SortWhitelist.of(com.fatfreecrm.domain.User.class, "id DESC", "id DESC"),
+            Map.of(),
+            (root, cb, query) -> {
+                String sanitized = query.replaceAll("[^\\w\\s\\-.'\\p{L}]", "").strip();
+                String pattern = "%" + sanitized + "%";
+                return cb.or(
+                    cb.like(cb.upper(root.get("username")), pattern.toUpperCase(java.util.Locale.ROOT)),
+                    cb.like(cb.upper(root.get("email")), pattern.toUpperCase(java.util.Locale.ROOT)),
+                    cb.like(cb.upper(root.get("firstName")), pattern.toUpperCase(java.util.Locale.ROOT)),
+                    cb.like(cb.upper(root.get("lastName")), pattern.toUpperCase(java.util.Locale.ROOT))
+                );
+            },
+            false,
+            null
+        ));
         byClass = Map.copyOf(map);
     }
 

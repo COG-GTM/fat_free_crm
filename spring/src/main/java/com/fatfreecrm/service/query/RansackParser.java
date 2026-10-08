@@ -634,10 +634,14 @@ public class RansackParser {
                 return null;
             }
             List<Object> castedValues = new ArrayList<>();
-            for (String value : values) {
-                Object castedValue = cast(attribute.kind(), value);
-                if (castedValue != null) {
-                    castedValues.add(castedValue);
+            if (BOOLEAN_PREDICATES.contains(predicate)) {
+                castedValues.add(Boolean.TRUE);
+            } else {
+                for (String value : values) {
+                    Object castedValue = cast(attribute.kind(), value);
+                    if (castedValue != null) {
+                        castedValues.add(castedValue);
+                    }
                 }
             }
             return new Target(hops, attribute, null, null, castedValues);

@@ -4,8 +4,9 @@ import com.fatfreecrm.domain.Version;
 import com.fatfreecrm.domain.support.RailsModelType;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface VersionRepository extends JpaRepository<Version, Long> {
+public interface VersionRepository extends JpaRepository<Version, Long>, JpaSpecificationExecutor<Version> {
 
     List<Version> findByItemTypeAndItemId(String itemType, Integer itemId);
 
