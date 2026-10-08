@@ -172,3 +172,10 @@ Rails' Devise-filtered 29-key shape. Metadata accepts `accounts`, `campaigns`, `
 
 The `users`, `me`, `home`, and `admin` gateway blocks are disabled by default and can be enabled
 independently with `spring/gateway/routing.sh`.
+
+ARB triage for this family (manual review; the detector's T3/T7 hits were false positives from
+test data and a contract path): **ARB_REQUIRED** under **T4** (new supported sync read contracts
+for users, profile, activities, admin reads and metadata) and **T6** (new authenticated endpoints,
+including the `ROLE_ADMIN` boundary under `/api/v1/admin/**`, plus disabled-by-default gateway
+routing blocks `users`, `me`, `home`, `admin`, `metadata`). Covered by this ADR's ARB submission
+(ARB ticket TO BE CREATED). No new data store, dependency, or infrastructure.
