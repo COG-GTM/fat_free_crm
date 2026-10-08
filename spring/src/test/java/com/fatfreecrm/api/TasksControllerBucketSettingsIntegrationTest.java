@@ -13,6 +13,7 @@ import com.fatfreecrm.support.AbstractPostgresIntegrationTest;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -127,10 +128,10 @@ class TasksControllerBucketSettingsIntegrationTest extends AbstractPostgresInteg
         JsonNode buckets = getJson("/api/v1/tasks", bobBearer, "view", "completed").get("buckets");
         assertThat(fieldNames(buckets)).containsExactly("completed_last_month", "completed_yesterday",
             "completed_today");
-        // completed_at was set to "now" during seeding; include yesterday so a midnight rollover between seeding
-        // and the request cannot move the task out of the asserted window.
-        assertThat(ids(buckets)).containsExactly(aliceAssignedToBobDone);
-        assertThat(ids(buckets.get("completed_last_month"))).isEmpty();
+        // completed_at was set to "now" during seeding. A midnight (or month) rollover between seeding and the
+        // request may move the task into completed_yesterday / completed_last_month, so only assert on the set of
+        // distinct ids across the configured buckets.
+        assertThat(new HashSet<>(ids(buckets))).containsExactly(aliceAssignedToBobDone);
 
         JsonNode pending = getJson("/api/v1/tasks", bobBearer, "view", "pending").get("buckets");
         assertThat(fieldNames(pending)).as("task_completed does not leak into pending").isEqualTo(DEFAULT_PENDING);
