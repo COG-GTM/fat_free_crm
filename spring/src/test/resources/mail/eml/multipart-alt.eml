@@ -1,0 +1,17 @@
+From: sender@example.test
+To: dropbox@example.test
+Subject: Alternative parts
+Message-ID: <alternative@example.test>
+Date: Tue, 03 Mar 2026 12:01:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="alt"
+
+--alt
+Content-Type: text/plain; charset=UTF-8
+
+Plain body.
+--alt
+Content-Type: text/html; charset=UTF-8
+
+<p>HTML body.</p>
+--alt--

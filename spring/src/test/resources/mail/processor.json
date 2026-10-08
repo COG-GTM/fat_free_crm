@@ -1,4 +1,271 @@
 {
-  "html_message_is_valid": true,
-  "plain_text_body": "Top reply"
+  "comment-reply.eml": {
+    "cc": [],
+    "date": "2026-03-03T12:09:00+00:00",
+    "explicit_keyword": null,
+    "forwarded_recipient": null,
+    "from": [
+      "sender@example.test"
+    ],
+    "is_valid": true,
+    "message_id": "reply@example.test",
+    "parsed_reply": "The reply text.\n\nOn Monday, another person wrote:\n> quoted text\n--\nSignature",
+    "plain_text_body": "The reply text.\n\nOn Monday, another person wrote:\n> quoted text\n--\nSignature",
+    "recipients": [
+      "replies@example.test"
+    ],
+    "subject": "Re: [contact:12] Re: [co:12] status",
+    "subject_line": [
+      "contact",
+      "12"
+    ],
+    "to": [
+      "replies@example.test"
+    ]
+  },
+  "forwarded.eml": {
+    "cc": [],
+    "date": "2026-03-03T12:08:00+00:00",
+    "explicit_keyword": null,
+    "forwarded_recipient": [
+      "customer@example.test"
+    ],
+    "from": [
+      "sender@example.test"
+    ],
+    "is_valid": true,
+    "message_id": "forwarded@example.test",
+    "parsed_reply": "Forwarded message:\nOriginal recipient: customer@example.test",
+    "plain_text_body": "Forwarded message:\nOriginal recipient: customer@example.test",
+    "recipients": [],
+    "subject": "Fwd: details",
+    "subject_line": null,
+    "to": [
+      "dropbox@example.test"
+    ]
+  },
+  "html-only-bare.eml": {
+    "cc": [],
+    "date": "2026-03-03T12:05:00+00:00",
+    "explicit_keyword": null,
+    "forwarded_recipient": null,
+    "from": [
+      "sender@example.test"
+    ],
+    "is_valid": false,
+    "message_id": "html-bare@example.test",
+    "parsed_reply": "Bare HTML",
+    "plain_text_body": "Bare HTML",
+    "recipients": [],
+    "subject": "Bare HTML",
+    "subject_line": null,
+    "to": [
+      "dropbox@example.test"
+    ]
+  },
+  "html-only-charset.eml": {
+    "cc": [],
+    "date": "2026-03-03T12:04:00+00:00",
+    "explicit_keyword": null,
+    "forwarded_recipient": null,
+    "from": [
+      "sender@example.test"
+    ],
+    "is_valid": true,
+    "message_id": "html-charset@example.test",
+    "parsed_reply": "Only HTML.",
+    "plain_text_body": "Only HTML.",
+    "recipients": [],
+    "subject": "HTML with charset",
+    "subject_line": null,
+    "to": [
+      "dropbox@example.test"
+    ]
+  },
+  "iso-8859-1.eml": {
+    "cc": [],
+    "date": "2026-03-03T12:06:00+00:00",
+    "explicit_keyword": null,
+    "forwarded_recipient": null,
+    "from": [
+      "sender@example.test"
+    ],
+    "is_valid": true,
+    "message_id": "legacy@example.test",
+    "parsed_reply": "Smart quote: hello",
+    "plain_text_body": "Smart quote: hello",
+    "recipients": [],
+    "subject": "Legacy charset",
+    "subject_line": null,
+    "to": [
+      "dropbox@example.test"
+    ]
+  },
+  "keyword-first-line.eml": {
+    "cc": [],
+    "date": "2026-03-03T12:07:00+00:00",
+    "explicit_keyword": [
+      "Account",
+      "Example & Sons"
+    ],
+    "forwarded_recipient": null,
+    "from": [
+      "sender@example.test"
+    ],
+    "is_valid": true,
+    "message_id": "keyword@example.test",
+    "parsed_reply": "Account: Example & Sons\nCreate this from the first line.",
+    "plain_text_body": "Account: Example & Sons\nCreate this from the first line.",
+    "recipients": [],
+    "subject": "Account keyword",
+    "subject_line": null,
+    "to": [
+      "dropbox@example.test"
+    ]
+  },
+  "multipart-alt.eml": {
+    "cc": [],
+    "date": "2026-03-03T12:01:00+00:00",
+    "explicit_keyword": null,
+    "forwarded_recipient": null,
+    "from": [
+      "sender@example.test"
+    ],
+    "is_valid": true,
+    "message_id": "alternative@example.test",
+    "parsed_reply": "Plain body.",
+    "plain_text_body": "Plain body.",
+    "recipients": [],
+    "subject": "Alternative parts",
+    "subject_line": null,
+    "to": [
+      "dropbox@example.test"
+    ]
+  },
+  "multipart-mixed.eml": {
+    "cc": [],
+    "date": "2026-03-03T12:02:00+00:00",
+    "explicit_keyword": null,
+    "forwarded_recipient": null,
+    "from": [
+      "sender@example.test"
+    ],
+    "is_valid": true,
+    "message_id": "mixed@example.test",
+    "parsed_reply": "Body before attachment.",
+    "plain_text_body": "Body before attachment.",
+    "recipients": [],
+    "subject": "Attachment",
+    "subject_line": null,
+    "to": [
+      "dropbox@example.test"
+    ]
+  },
+  "nested-multipart.eml": {
+    "cc": [],
+    "date": "2026-03-03T12:03:00+00:00",
+    "explicit_keyword": null,
+    "forwarded_recipient": null,
+    "from": [
+      "sender@example.test"
+    ],
+    "is_valid": true,
+    "message_id": "nested@example.test",
+    "parsed_reply": "Nested plain body.",
+    "plain_text_body": "Nested plain body.",
+    "recipients": [],
+    "subject": "Nested",
+    "subject_line": null,
+    "to": [
+      "dropbox@example.test"
+    ]
+  },
+  "plain.eml": {
+    "cc": [],
+    "date": "2026-03-03T12:00:00+00:00",
+    "explicit_keyword": null,
+    "forwarded_recipient": null,
+    "from": [
+      "sender@example.test"
+    ],
+    "is_valid": true,
+    "message_id": "plain@example.test",
+    "parsed_reply": "Hello from a plain message.",
+    "plain_text_body": "Hello from a plain message.",
+    "recipients": [],
+    "subject": "Plain note",
+    "subject_line": null,
+    "to": [
+      "dropbox@example.test"
+    ]
+  },
+  "subject-full-name.eml": {
+    "cc": [],
+    "date": "2026-03-03T12:11:00+00:00",
+    "explicit_keyword": null,
+    "forwarded_recipient": null,
+    "from": [
+      "sender@example.test"
+    ],
+    "is_valid": true,
+    "message_id": "full-name@example.test",
+    "parsed_reply": "Full entity reply.",
+    "plain_text_body": "Full entity reply.",
+    "recipients": [
+      "replies@example.test"
+    ],
+    "subject": "Re: [contact:12] status",
+    "subject_line": [
+      "contact",
+      "12"
+    ],
+    "to": [
+      "replies@example.test"
+    ]
+  },
+  "subject-shortcut.eml": {
+    "cc": [],
+    "date": "2026-03-03T12:10:00+00:00",
+    "explicit_keyword": null,
+    "forwarded_recipient": null,
+    "from": [
+      "sender@example.test"
+    ],
+    "is_valid": true,
+    "message_id": "shortcut@example.test",
+    "parsed_reply": "Shortcut reply.",
+    "plain_text_body": "Shortcut reply.",
+    "recipients": [
+      "replies@example.test"
+    ],
+    "subject": "Re: [co:12] status",
+    "subject_line": [
+      "contact",
+      "12"
+    ],
+    "to": [
+      "replies@example.test"
+    ]
+  },
+  "subject-unknown.eml": {
+    "cc": [],
+    "date": "2026-03-03T12:12:00+00:00",
+    "explicit_keyword": null,
+    "forwarded_recipient": null,
+    "from": [
+      "sender@example.test"
+    ],
+    "is_valid": true,
+    "message_id": "unknown@example.test",
+    "parsed_reply": "Unknown entity.",
+    "plain_text_body": "Unknown entity.",
+    "recipients": [
+      "replies@example.test"
+    ],
+    "subject": "Re: [bogus:1] status",
+    "subject_line": null,
+    "to": [
+      "replies@example.test"
+    ]
+  }
 }

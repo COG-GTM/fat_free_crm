@@ -1,30 +1,265 @@
 {
-  "assigned_entity_notification": {
-    "from": "noreply@fatfreecrm.com",
-    "html": null,
-    "subject": "Fat Free CRM: You have been assigned Example Account Account",
-    "text": "Your colleague Casey has assigned the Example Account Account to you.\nhttp://localhost:3000/accounts\n\n",
-    "to": "taylor@example.test"
+  "assigned_account": {
+    "input": {
+      "assigner_name": "Casey",
+      "entity_name": "Example Account",
+      "entity_type": "Account",
+      "entity_url": "https://crm.example.test/accounts/970003",
+      "kind": "assignment",
+      "to": "taylor@example.test"
+    },
+    "output": {
+      "body": "Your colleague Casey has assigned the Example Account Account to you.\nhttps://crm.example.test/accounts/970003\n\n",
+      "charset": "UTF-8",
+      "content_type": "text/html",
+      "from": [
+        "crm@example.test"
+      ],
+      "raw_from": "crm@example.test",
+      "raw_to": "taylor@example.test",
+      "subject": "Fat Free CRM: You have been assigned Example Account Account",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
+  },
+  "assigned_contact": {
+    "input": {
+      "assigner_name": "Casey",
+      "entity_name": "Ari Contact",
+      "entity_type": "Contact",
+      "entity_url": "https://crm.example.test/contacts/970005",
+      "kind": "assignment",
+      "to": "taylor@example.test"
+    },
+    "output": {
+      "body": "Your colleague Casey has assigned the Ari Contact Contact to you.\nhttps://crm.example.test/contacts/970005\n\n",
+      "charset": "UTF-8",
+      "content_type": "text/html",
+      "from": [
+        "crm@example.test"
+      ],
+      "raw_from": "crm@example.test",
+      "raw_to": "taylor@example.test",
+      "subject": "Fat Free CRM: You have been assigned Ari Contact Contact",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
+  },
+  "assigned_lead": {
+    "input": {
+      "assigner_name": "Casey",
+      "entity_name": "Lee Lead",
+      "entity_type": "Lead",
+      "entity_url": "https://crm.example.test/leads/970006",
+      "kind": "assignment",
+      "to": "taylor@example.test"
+    },
+    "output": {
+      "body": "Your colleague Casey has assigned the Lee Lead Lead to you.\nhttps://crm.example.test/leads/970006\n\n",
+      "charset": "UTF-8",
+      "content_type": "text/html",
+      "from": [
+        "crm@example.test"
+      ],
+      "raw_from": "crm@example.test",
+      "raw_to": "taylor@example.test",
+      "subject": "Fat Free CRM: You have been assigned Lee Lead Lead",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
+  },
+  "assigned_opportunity": {
+    "input": {
+      "assigner_name": "Casey",
+      "entity_name": "Fixed Opportunity",
+      "entity_type": "Opportunity",
+      "entity_url": "https://crm.example.test/opportunities/970007",
+      "kind": "assignment",
+      "to": "taylor@example.test"
+    },
+    "output": {
+      "body": "Your colleague Casey has assigned the Fixed Opportunity Opportunity to you.\nhttps://crm.example.test/opportunities/970007\n\n",
+      "charset": "UTF-8",
+      "content_type": "text/html",
+      "from": [
+        "crm@example.test"
+      ],
+      "raw_from": "crm@example.test",
+      "raw_to": "taylor@example.test",
+      "subject": "Fat Free CRM: You have been assigned Fixed Opportunity Opportunity",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
   },
   "comment_notification": {
-    "from": "noreply@fatfreecrm.com",
-    "html": null,
-    "subject": "RE: [account:9] Example Account",
-    "text": "Casey Sender commented on Account: Example Account\n\nGolden comment\n\n\n--\nReply to this email directly to add a new comment, or view the account online: http://localhost:3000/accounts\n",
-    "to": "taylor@example.test"
+    "input": {
+      "comment": "Golden <b>comment</b> & tea",
+      "entity_id": 970003,
+      "entity_name": "Example Account",
+      "entity_type": "Account",
+      "from_user_name": "Casey Sender",
+      "kind": "comment",
+      "tags": "customer, priority",
+      "to": "taylor@example.test"
+    },
+    "output": {
+      "body": "Casey Sender commented on Account: Example Account\n\nGolden <b>comment</b> &amp; tea\n\n\n--\nReply to this email directly to add a new comment, or view the account online: https://crm.example.test/accounts/970003\n",
+      "charset": "UTF-8",
+      "content_type": "text/plain",
+      "from": [
+        "reply@example.test"
+      ],
+      "raw_from": "Casey Sender <reply@example.test>",
+      "raw_to": "taylor@example.test",
+      "subject": "RE: [account:970003] Example Account (customer, priority)",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
+  },
+  "comment_notification_fallback_from": {
+    "input": {
+      "comment": "Golden <b>comment</b> & tea",
+      "entity_id": 970003,
+      "entity_name": "Example Account",
+      "entity_type": "Account",
+      "from_address": "fallback@example.test",
+      "from_user_name": "Casey Sender",
+      "kind": "comment",
+      "tags": "customer, priority",
+      "to": "taylor@example.test"
+    },
+    "output": {
+      "body": "Casey Sender commented on Account: Example Account\n\nGolden <b>comment</b> &amp; tea\n\n\n--\nReply to this email directly to add a new comment, or view the account online: https://crm.example.test/accounts/970003\n",
+      "charset": "UTF-8",
+      "content_type": "text/plain",
+      "from": [
+        "fallback@example.test"
+      ],
+      "raw_from": "Casey Sender <fallback@example.test>",
+      "raw_to": "taylor@example.test",
+      "subject": "RE: [account:970003] Example Account (customer, priority)",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
+  },
+  "comment_notification_untagged": {
+    "input": {
+      "comment": "Untagged reply",
+      "entity_id": 970005,
+      "entity_name": "Ari Contact",
+      "entity_type": "Contact",
+      "from_user_name": "Taylor Receiver",
+      "kind": "comment",
+      "tags": "",
+      "to": "casey@example.test"
+    },
+    "output": {
+      "body": "Taylor Receiver commented on Contact: Ari Contact\n\nUntagged reply\n\n\n--\nReply to this email directly to add a new comment, or view the contact online: https://crm.example.test/contacts/970005\n",
+      "charset": "UTF-8",
+      "content_type": "text/plain",
+      "from": [
+        "reply@example.test"
+      ],
+      "raw_from": "Taylor Receiver <reply@example.test>",
+      "raw_to": "casey@example.test",
+      "subject": "RE: [contact:970005] Ari Contact",
+      "to": [
+        "casey@example.test"
+      ]
+    }
+  },
+  "devise_confirmation_instructions": {
+    "input": {
+      "kind": "devise_confirmation",
+      "to": "taylor@example.test",
+      "token": "golden-token"
+    },
+    "output": {
+      "body": "<p>Welcome taylor@example.test!</p>\n\n<p>You can confirm your account email through the link below:</p>\n\n<p><a href=\"https://crm.example.test/users/confirmation?confirmation_token=golden-token\">Confirm my account</a></p>\n",
+      "charset": "UTF-8",
+      "content_type": "text/html",
+      "from": [
+        "noreply@fatfreecrm.com"
+      ],
+      "raw_from": "noreply@fatfreecrm.com",
+      "raw_to": "taylor@example.test",
+      "subject": "Confirmation instructions",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
+  },
+  "devise_password_change": {
+    "input": {
+      "kind": "devise_password_change",
+      "to": "taylor@example.test"
+    },
+    "output": {
+      "body": "<p>Hello taylor@example.test!</p>\n\n<p>We're contacting you to notify you that your password has been changed.</p>\n",
+      "charset": "UTF-8",
+      "content_type": "text/html",
+      "from": [
+        "noreply@fatfreecrm.com"
+      ],
+      "raw_from": "noreply@fatfreecrm.com",
+      "raw_to": "taylor@example.test",
+      "subject": "Password Changed",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
   },
   "devise_reset_password": {
-    "from": "noreply@fatfreecrm.com",
-    "html": null,
-    "subject": "Reset password instructions",
-    "text": "<p>Hello taylor@example.test!</p>\n\n<p>Someone has requested a link to change your password. You can do this through the link below.</p>\n\n<p><a href=\"http://localhost:3000/users/password/edit?reset_password_token=golden-reset-token\">Change my password</a></p>\n\n<p>If you didn't request this, please ignore this email.</p>\n<p>Your password won't change until you access the link above and create a new one.</p>\n",
-    "to": "taylor@example.test"
+    "input": {
+      "kind": "devise_reset",
+      "to": "taylor@example.test",
+      "token": "golden-reset-token"
+    },
+    "output": {
+      "body": "<p>Hello taylor@example.test!</p>\n\n<p>Someone has requested a link to change your password. You can do this through the link below.</p>\n\n<p><a href=\"https://crm.example.test/users/password/edit?reset_password_token=golden-reset-token\">Change my password</a></p>\n\n<p>If you didn't request this, please ignore this email.</p>\n<p>Your password won't change until you access the link above and create a new one.</p>\n",
+      "charset": "UTF-8",
+      "content_type": "text/html",
+      "from": [
+        "noreply@fatfreecrm.com"
+      ],
+      "raw_from": "noreply@fatfreecrm.com",
+      "raw_to": "taylor@example.test",
+      "subject": "Reset password instructions",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
   },
   "dropbox_notification": {
-    "from": "casey@example.test",
-    "html": null,
-    "subject": "dropbox - Added email - Golden message",
-    "text": "Succesfully added the email you sent to dropbox:\n\nAdded to:\nAccount #9\n\nSubject: Golden message\nBody:\nA deterministic body\n\n",
-    "to": "taylor@example.test"
+    "input": {
+      "body": "A deterministic body",
+      "from": "casey@example.test",
+      "kind": "dropbox",
+      "mediator_links": [
+        "Account #970003"
+      ],
+      "subject": "Golden message",
+      "to": "taylor@example.test"
+    },
+    "output": {
+      "body": "Succesfully added the email you sent to dropbox:\n\nAdded to:\nAccount #970003\n\nSubject: Golden message\nBody:\nA deterministic body\n\n",
+      "charset": "UTF-8",
+      "content_type": "text/html",
+      "from": [
+        "casey@example.test"
+      ],
+      "raw_from": "casey@example.test",
+      "raw_to": "taylor@example.test",
+      "subject": "dropbox - Added email - Golden message",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
   }
 }
