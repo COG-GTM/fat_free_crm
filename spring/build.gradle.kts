@@ -174,5 +174,6 @@ tasks.register<Test>("dualWriteSoak") {
     systemProperty("contract.dbPassword", contractSetting("CONTRACT_DB_PASSWORD", "contract.dbPassword", "contractDbPassword", "postgres").get())
     systemProperty("soak.minutes", contractSetting("SOAK_MINUTES", "soak.minutes", "soakMinutes", "5").get())
     systemProperty("soak.threads", contractSetting("SOAK_THREADS", "soak.threads", "soakThreads", "4").get())
+    systemProperty("soak.commentSides", contractSetting("SOAK_COMMENT_SIDES", "soak.commentSides", "soakCommentSides", "both").get())
     outputs.upToDateWhen { false }
 }

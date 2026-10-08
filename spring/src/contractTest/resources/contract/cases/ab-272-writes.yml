@@ -183,7 +183,7 @@
   reset: true
   dbAssert:
     - {table: comments, where: "commentable_type = 'Account' AND commentable_id = 101",
-       orderBy: id, exclude: [updated_at]}
+       orderBy: id, exclude: [updated_at], volatile: [created_at]}
     - {table: accounts, where: "id = 101", columns: [id, subscribed_users], volatile: [updated_at]}
     - {table: versions, where: "item_type = 'Comment' AND item_id = 5", exclude: [id],
        volatile: [created_at],

@@ -103,7 +103,8 @@ below was verified against the running app.
   `user_id` (tasks_controller.rb:78-89), comment params permit
   `user_id`/`commentable_*` reassignment (comment.rb `comment_params`,
   comments_controller.rb `comment_params` allow-list), list destroy without
-  authz. Tracked as open questions for the epic.
+  authz, and `is_global=1` with another user's `user_id` lets `ListsController#create`
+  overwrite that user's same-name list (lists_controller.rb:11). Tracked as open questions for the epic.
 - No secrets/tokens in write JSON (`authentication_token` excluded by
   RailsJsonWriter); CSRF remains a Rails-side concern only (Spring API is
   bearer-token, stateless).
