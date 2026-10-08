@@ -105,8 +105,7 @@ class TasksWriteControllerIntegrationTest extends AbstractPostgresIntegrationTes
 
         Map<String, Object> row = jdbcTemplate.queryForMap("SELECT * FROM tasks WHERE id = ?", id);
         ZoneId zone = ZoneId.of(defaultZone);
-        assertThat(((Timestamp) row.get("due_at")).toInstant())
-            .isEqualTo(LocalDate.now(zone).atStartOfDay(zone).toInstant());
+        assertStartOfDay(((Timestamp) row.get("due_at")).toInstant(), zone, 0);
         assertThat(row).containsEntry("user_id", alice.getId().intValue())
             .containsEntry("category", "call")
             .containsEntry("background_info", "ring twice")
@@ -129,12 +128,12 @@ class TasksWriteControllerIntegrationTest extends AbstractPostgresIntegrationTes
     }
 
     @Test
-    void createHonoursRequestTimeZoneForBucketBoundaries() throws Exception {
+    void createHonoursTimeZoneRequestParamForBucketBoundaries() throws Exception {
         ZoneId tokyo = ZoneId.of("Asia/Tokyo");
         long id = create(taskBody("name", "Tokyo", "bucket", "due_tomorrow", "user_id", alice.getId()),
             "timeZone", "Asia/Tokyo");
 
-        assertThat(dueAt(id)).isEqualTo(LocalDate.now(tokyo).plusDays(1).atStartOfDay(tokyo).toInstant());
+        assertStartOfDay(dueAt(id), tokyo, 1);
         mockMvc.perform(json(post("/api/v1/tasks").param("timeZone", "Mars/Olympus"),
                 taskBody("name", "x", "user_id", alice.getId())).header(HttpHeaders.AUTHORIZATION, aliceBearer))
             .andExpect(status().isBadRequest());
@@ -283,7 +282,7 @@ class TasksWriteControllerIntegrationTest extends AbstractPostgresIntegrationTes
                 .header(HttpHeaders.AUTHORIZATION, aliceBearer))
             .andExpect(status().isNoContent());
         ZoneId zone = ZoneId.of(defaultZone);
-        assertThat(dueAt(aliceTask)).isEqualTo(LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toInstant());
+        assertStartOfDay(dueAt(aliceTask), zone, 1);
         assertThat(versionsOf("Task", aliceTask)).extracting(version -> version.get("event"))
             .containsExactly("update", "reschedule");
 
@@ -330,7 +329,7 @@ class TasksWriteControllerIntegrationTest extends AbstractPostgresIntegrationTes
         Map<String, Object> reopened = jdbcTemplate.queryForMap("SELECT * FROM tasks WHERE id = ?", aliceTask);
         assertThat(reopened).containsEntry("completed_at", null).containsEntry("completed_by", null);
         ZoneId zone = ZoneId.of(defaultZone);
-        assertThat(dueAt(aliceTask)).isEqualTo(LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toInstant());
+        assertStartOfDay(dueAt(aliceTask), zone, 1);
         assertThat(versionsOf("Task", aliceTask)).extracting(version -> version.get("event"))
             .containsExactly("update", "complete", "update", "reschedule", "update");
     }
@@ -359,6 +358,14 @@ class TasksWriteControllerIntegrationTest extends AbstractPostgresIntegrationTes
             + alice.getId() + "\nassigned_to:\ncompleted_by:\nname: Alice call\n");
         assertThat((String) versions.get(0).get("object_changes")).contains("name:\n- Alice call\n-\n")
             .doesNotContain("subscribed_users");
+    }
+
+    /** Tolerates a midnight rollover in {@code zone} between the request and the assertion. */
+    private static void assertStartOfDay(Instant actual, ZoneId zone, int plusDays) {
+        LocalDate today = LocalDate.now(zone);
+        assertThat(actual).isIn(
+            today.plusDays(plusDays).atStartOfDay(zone).toInstant(),
+            today.minusDays(1).plusDays(plusDays).atStartOfDay(zone).toInstant());
     }
 
     private long create(String body, String... params) throws Exception {
