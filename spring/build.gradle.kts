@@ -147,3 +147,11 @@ tasks.register<Test>("contractTest") {
     )
     outputs.upToDateWhen { false }
 }
+
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-mail")
+    implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
+    implementation("org.springframework.boot:spring-boot-starter-quartz")
+    implementation("org.jsoup:jsoup:1.21.2")
+    testImplementation("com.icegreen:greenmail-junit5:2.1.3")
+}

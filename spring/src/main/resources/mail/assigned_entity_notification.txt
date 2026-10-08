@@ -1,0 +1,2 @@
+Your colleague [(${assignerName})] has assigned the [(${entityName})] [(${entityType})] to you.
+[(${entityUrl})]

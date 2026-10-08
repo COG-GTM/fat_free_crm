@@ -1,0 +1,5 @@
+The EmailReplyParser implementation and email fixtures are adapted from
+email_reply_parser_ffcrm 0.5.0 by Michael Dvorkin and contributors.
+The upstream MIT license is included in LICENSE. The Java parser is a port
+of the upstream algorithm; the test corpus is copied from its test/emails
+directory.
