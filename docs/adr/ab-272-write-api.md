@@ -214,6 +214,29 @@ AccountContact/AccountOpportunity/Address trails; repositories gained scoped
 finders; nginx gained five append-only `<family>-writes` gateway blocks;
 routing.sh gained the matching block names.
 
+### Phase B entities: callback parity (Rails file:line)
+
+Ported:
+
+| Rails | Spring behaviour |
+|---|---|
+| account.rb:76-83, campaign.rb:64-68, contact.rb:96-100, lead.rb:76-80, opportunity.rb:84-87 | validations in declaration order (Setting reads with YAML fallback, lengths-from-database, `users_for_shared_access` at account.rb:146 / campaign.rb:111 / contact.rb:199 / lead.rb:182 / opportunity.rb:173) |
+| account.rb:85,150 | `nullify_blank_category` before save |
+| account.rb:68, campaign.rb:56, contact.rb:90, lead.rb:68, opportunity.rb:76 | `has_paper_trail ignore: [:subscribed_users]` via VersionRecorder |
+| account.rb:33-41, contact.rb:45-51, lead.rb:44-47, opportunity.rb:34-38 | dependent destroy cascades (`lead.rb:44` nullifies `contacts.lead_id`) |
+| lead.rb:82-83,171-180; opportunity.rb:89-90,178-187 | `leads_count` / `opportunities_count` counters on campaigns |
+| lead.rb:97 / 109 / 125 / 137 / 142 | `save_with_permissions`, `update_with_lead_counters`, `promote`, `convert`, `reject` |
+| contact.rb:124 / 133; opportunity.rb:109 / 123; `Account.create_or_select_for` | nested account create/select + join rows/counter caches |
+| account.rb:106/112, campaign.rb:78/92, contact.rb:143/149, lead.rb:148/154, opportunity.rb:137/143 | `attach!` / `discard!` |
+| lib/fat_free_crm/permissions.rb:61 / 68 / 84 | `access=`, `remove_permissions` (immediate, REQUIRES_NEW), `save_with_model_permissions` |
+| lead_observer.rb:13-21 | `reject` event version row |
+| opportunity_observer.rb:13-40 | campaign revenue on won, probability 100/0 on won/lost, `won` event row |
+| comment.rb:34-35 (`subscribe_mentioned_users`, `subscribe_user_to_entity`) | `comment_body` via Phase A CommentWriteService |
+| entities_controller.rb:23 / 33 / 43 / 54 | attach / discard / subscribe / unsubscribe JSON actions |
+
+Skipped (AB-273 jobs/mail track): account.rb:86-87 (`enqueue_website_job`, `enqueue_wikidata_job`),
+entity_observer.rb:11-16 (`assigned_entity_notification` mail), comment.rb:35 (`notify_subscribers`).
+
 ## Phase B: admin
 
 Scope: every JSON-reachable write in `app/controllers/admin/` — users (create/update/destroy/
