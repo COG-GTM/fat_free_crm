@@ -235,3 +235,34 @@ private to the admin.
 
 The visibility matrix is asserted by `spec/db/contract_fixtures_spec.rb`; it is the fixture contract
 that AB-268 relies on. Entity index fixtures stay below Rails' default 20-record page size.
+
+## Write-side reset and dbAssert (AB-272)
+
+Cases may set `reset: true` to restore the database to the fixture snapshot before
+the request, and `dbAssert:` to capture rows after the response and diff them
+between Rails and Spring.
+
+- Snapshot: `spring/scripts/contract-db.sh` writes
+  `build/contract-db/fixtures.sql` (`pg_dump --data-only --column-inserts`,
+  excluding `schema_migrations`/`ar_internal_metadata`). Override the path with
+  `CONTRACT_FIXTURES_SQL`. `--snapshot` writes the snapshot without touching the DB.
+- Reset: `ContractDbReset` runs `TRUNCATE ... RESTART IDENTITY CASCADE` on the
+  snapshotted tables and replays the INSERTs inside one transaction, then restores
+  sequences via `setval` statements embedded in the snapshot.
+- Connection: `contract.dbUrl` / `contract.dbUser` / `contract.dbPassword`
+  (env `CONTRACT_DB_*`), default `jdbc:postgresql://127.0.0.1:5433/ffcrm_contract`
+  / postgres / postgres.
+- `dbAssert` entries: `{table, where, orderBy, columns, exclude, volatile,
+  yamlVolatile: {column: [keys]}}`. `volatile` columns compare as
+  null/`__volatile__`; `yamlVolatile` masks named top-level keys inside YAML text
+  (scalar, `- seq` entries, and `utc:`/`time:` inside TimeWithZone blocks).
+- DB differences appear as `DB`-kind entries at `/db/<table>/<ordinal>` paths.
+
+## Dual-write soak (AB-272)
+
+`./gradlew dualWriteSoak -Psoak.minutes=5 -Psoak.threads=4` drives concurrent Rails
+and Spring writes against the same task rows (distinct fields per writer, unique
+values, complete/uncomplete cycles, comments). It asserts zero 5xx, zero
+constraint violations, no lost updates, and that every successful notable write
+produced a `versions` row. The `subscribed_users` comment-subscription race is
+reported as an observation only; Spring locks the commentable `FOR UPDATE`.
