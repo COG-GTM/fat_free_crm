@@ -166,7 +166,7 @@ public class VersionRecorder {
     private Version base(AuthenticatedUser user, PaperTrailOptions options, Object entity, String event) {
         Version version = new Version();
         version.setItemType(options.itemType().railsName());
-        version.setItemId(((BaseEntity) entity).getId().intValue());
+        version.setItemId(entityId(entity).intValue());
         version.setEvent(event);
         version.setWhodunnit(whodunnit(user));
         version.setCreatedAt(now());
@@ -214,5 +214,12 @@ public class VersionRecorder {
 
     private Instant now() {
         return clock.instant().truncatedTo(ChronoUnit.MICROS);
+    }
+
+    private static Long entityId(Object entity) {
+        if (entity instanceof com.fatfreecrm.domain.User user) {
+            return user.getId();
+        }
+        return ((BaseEntity) entity).getId();
     }
 }

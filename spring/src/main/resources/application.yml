@@ -5,6 +5,12 @@ spring:
     url: ${FFCRM_DB_URL:jdbc:postgresql://localhost:5432/fat_free_crm_development}
     username: ${FFCRM_DB_USER:postgres}
     password: ${FFCRM_DB_PASSWORD:postgres}
+    hikari:
+      data-source-properties:
+        # AB-272 Phase B: admin custom-field writes (and Rails) run ALTER TABLE on the shared DB at
+        # runtime; RailsRowRepository reads with SELECT *, so server-prepared plans would fail with
+        # "cached plan must not change result type". Disable server-side prepares.
+        prepareThreshold: 0
   jpa:
     open-in-view: false
     hibernate:

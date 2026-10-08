@@ -8,6 +8,7 @@ import com.fatfreecrm.domain.Email;
 import com.fatfreecrm.domain.Lead;
 import com.fatfreecrm.domain.Opportunity;
 import com.fatfreecrm.domain.Task;
+import com.fatfreecrm.domain.User;
 import com.fatfreecrm.domain.support.RailsModelType;
 import java.util.Map;
 import java.util.Optional;
@@ -36,7 +37,9 @@ public record PaperTrailOptions(RailsModelType itemType, Set<String> ignore, Str
         Opportunity.class, new PaperTrailOptions(RailsModelType.OPPORTUNITY,
             Set.of("subscribed_users"), null),
         Campaign.class, new PaperTrailOptions(RailsModelType.CAMPAIGN, Set.of("subscribed_users"),
-            null)
+            null),
+        // app/models/users/user.rb: has_paper_trail ignore: [:last_sign_in_at] (AB-272 Phase B admin).
+        User.class, new PaperTrailOptions(RailsModelType.USER, Set.of("last_sign_in_at"), null)
     );
 
     public static Optional<PaperTrailOptions> forClass(Class<?> entityClass) {

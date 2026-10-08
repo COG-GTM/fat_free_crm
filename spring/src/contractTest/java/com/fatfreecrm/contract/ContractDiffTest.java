@@ -64,13 +64,18 @@ class ContractDiffTest {
             }
             try {
                 List<DbAssert.Assert> dbAsserts = DbAssert.parse(contractCase.dbAssert());
+                java.util.Set<String> customColumns = null;
                 if (contractCase.reset()) {
                     dbReset.reset();
+                    dbReset.runSetup(contractCase.setupStatements());
+                    customColumns = dbReset.customFieldColumns();
                 }
                 ContractClient.RequestResult rails = client.send(contractCase, true);
                 JsonNode railsDb = captureDb(dbAsserts);
                 if (contractCase.reset()) {
                     dbReset.reset();
+                    dbReset.dropCustomFieldColumnsExcept(customColumns);
+                    dbReset.runSetup(contractCase.setupStatements());
                 }
                 ContractClient.RequestResult spring = client.send(contractCase, false);
                 JsonNode springDb = captureDb(dbAsserts);
