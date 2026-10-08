@@ -1,6 +1,11 @@
 # AB-273: peripherals migration tracks
 
-## Context
+Each AB-273 track appends its own `## Track: <name>` section.
+
+## Track: jobs-mail
+
+
+### Context
 
 The Rails application owns asynchronous mail delivery, periodic background
 jobs, account enrichment, and IMAP polling. Moving the API runtime to Spring
@@ -15,7 +20,7 @@ in `app/models/observers/entity_observer.rb:524-549`,
 `app/jobs/account_website_job.rb`,
 `app/services/wikidata_service.rb`, and `db/schema.rb` (Solid Queue tables).
 
-## Decision
+### Decision
 
 Add the Spring jobs/mail/IMAP track behind `FFCRM_JOBS_OWNER`, defaulting to
 `rails`; only `spring` ownership starts Quartz, connects to IMAP, schedules
@@ -36,7 +41,7 @@ reply parser ports `email_reply_parser_ffcrm` 0.5.0; its upstream MIT license
 and fixture emails are shipped with the JUnit goldens. Rails generates the
 sorted JSON parity fixtures through `rake ffcrm:migration:mail_golden`.
 
-## Alternatives
+### Alternatives
 
 - Keep Rails as the sole owner permanently: safest initial deployment, but
   leaves background work outside the Spring migration.
@@ -46,14 +51,14 @@ sorted JSON parity fixtures through `rake ffcrm:migration:mail_golden`.
   single-owner processing; PostgreSQL session locks are used for recurring
   polls.
 
-## Dependencies
+### Dependencies
 
 Spring Boot Mail, Thymeleaf, Quartz, Jsoup 1.21.x, and test-only GreenMail
 2.1.x; PostgreSQL is the shared lock and Solid Queue store. Java `HttpClient`
 and Jackson are already available. Resolved dependency versions are recorded
 with the implementation verification report.
 
-## NFR and security
+### NFR and security
 
 No new endpoint or database is introduced. Jobs use bounded HTTP request sizes
 and timeouts, no redirects, and an opt-in private-address block. SMTP and IMAP
@@ -62,7 +67,7 @@ must be supplied through deployment secrets; never place credentials in
 goldens or logs. The owner switch and advisory locks prevent concurrent
 side-effects. One-off RAMJobStore work is intentionally at-most-process-life.
 
-## Operations and rollback
+### Operations and rollback
 
 1. Deploy with `FFCRM_JOBS_OWNER=rails`; confirm Spring has no Quartz polling
    and Rails remains the only producer/consumer.
@@ -82,9 +87,9 @@ implementation uses the existing permission repository. The en-US Rails mail loc
 `config/locales/fat_free_crm.en-US.yml`; Devise strings come from the Devise
 gem because no `config/locales/devise.en-US.yml` exists.
 
-## Track: jobs-mail operations addendum
+### Operations addendum
 
-### Context and decision
+#### Context and decision
 
 Rails ownership remains the default. Spring can take ownership through
 `FFCRM_JOBS_OWNER=spring` only after the Rails cron and Solid Queue workers are
