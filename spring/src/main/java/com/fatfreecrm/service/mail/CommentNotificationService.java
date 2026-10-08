@@ -52,14 +52,17 @@ public class CommentNotificationService {
             }
             if (subscriber.isSubscribeToCommentReplies() && subscriber.getEmail() != null
                 && !subscriber.getEmail().isBlank()) {
-                deliveryScheduler.deliverLater(renderer.commentNotification(
-                    subscriber.getEmail(),
-                    fromName,
-                    entityName,
-                    entity.getClass().getSimpleName(),
-                    entity.getId(),
-                    "",
-                    comment.getComment()));
+                deliveryScheduler.deliverLater(
+                    "SubscriptionMailer",
+                    "comment_notification",
+                    renderer.commentNotification(
+                        subscriber.getEmail(),
+                        fromName,
+                        entityName,
+                        entity.getClass().getSimpleName(),
+                        entity.getId(),
+                        "",
+                        comment.getComment()));
             }
         }
     }

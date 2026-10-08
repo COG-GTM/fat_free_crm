@@ -214,8 +214,8 @@ public class MailProcessorService {
         return ids.isEmpty() ? null : userRepository.findById(ids.get(0)).orElse(null);
     }
 
-    private static boolean isValid(Message message) throws Exception {
-        return !"text/html".equalsIgnoreCase(message.getContentType().split(";")[0].trim());
+    static boolean isValid(Message message) throws Exception {
+        return !"text/html".equalsIgnoreCase(message.getContentType());
     }
 
     private void discard(Folder folder, Message message, Map<String, Object> config, boolean dryRun) throws Exception {
@@ -284,7 +284,7 @@ public class MailProcessorService {
         version.setRelatedId(comment.getCommentableId());
         version.setEvent("create");
         version.setWhodunnit(sender.getId().toString());
-        version.setObjectChanges("{}");
+        version.setObjectChanges(null);
         version.setCreatedAt(now);
         entityManager.persist(version);
     }

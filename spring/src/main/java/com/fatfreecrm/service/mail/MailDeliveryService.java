@@ -14,7 +14,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,10 +31,13 @@ import org.springframework.transaction.annotation.Transactional;
 )
 public class MailDeliveryService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(MailDeliveryService.class);
+
     private final JavaMailSender mailSender;
     private final ObjectMapper objectMapper;
     private final EntityManager entityManager;
     private final MailRendererService renderer;
+    private final MailSettingsService settings;
     private final JobsOwner jobsOwner;
 
     public MailDeliveryService(
@@ -37,30 +45,65 @@ public class MailDeliveryService {
         ObjectMapper objectMapper,
         EntityManager entityManager,
         MailRendererService renderer,
+        MailSettingsService settings,
         JobsOwner jobsOwner
     ) {
         this.mailSender = mailSender;
         this.objectMapper = objectMapper;
         this.entityManager = entityManager;
         this.renderer = renderer;
+        this.settings = settings;
         this.jobsOwner = jobsOwner;
     }
 
     public void deliver(RenderedMail mail) {
         if (!jobsOwner.isSpring()) {
+            LOGGER.warn("jobs owner is rails; not sending mail to <redacted>");
             return;
         }
         try {
-            MimeMessage message = mailSender.createMimeMessage();
+            JavaMailSender sender = senderForSettings();
+            MimeMessage message = sender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setTo(mail.to());
             helper.setFrom(mail.from());
             helper.setSubject(mail.subject());
             helper.setText(mail.textBody(), mail.htmlBody());
-            mailSender.send(message);
+            sender.send(message);
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to deliver mail", exception);
         }
+    }
+
+    JavaMailSender senderForSettings() {
+        Map<String, Object> smtp = settings.section("smtp");
+        String address = setting(smtp, "address");
+        if (address.isBlank()) {
+            return mailSender;
+        }
+        JavaMailSenderImpl configured = new JavaMailSenderImpl();
+        configured.setHost(address);
+        String port = setting(smtp, "port");
+        if (!port.isBlank()) {
+            configured.setPort(Integer.parseInt(port));
+        }
+        configured.setUsername(setting(smtp, "user_name"));
+        configured.setPassword(setting(smtp, "password"));
+        Properties properties = configured.getJavaMailProperties();
+        String authentication = setting(smtp, "authentication").replaceFirst("^:", "");
+        if (!authentication.isBlank()) {
+            properties.setProperty("mail.smtp.auth", "true");
+            properties.setProperty("mail.smtp.auth.mechanisms", authentication.toUpperCase(Locale.ROOT));
+        }
+        if (Boolean.parseBoolean(setting(smtp, "enable_starttls_auto"))) {
+            properties.setProperty("mail.smtp.starttls.enable", "true");
+        }
+        return configured;
+    }
+
+    private static String setting(Map<String, Object> values, String key) {
+        Object value = values.get(key);
+        return value == null ? "" : value.toString();
     }
 
     @Transactional

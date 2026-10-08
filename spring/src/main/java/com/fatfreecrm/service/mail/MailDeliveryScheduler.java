@@ -9,6 +9,8 @@ import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.SimpleScheduleBuilder;
 import org.quartz.TriggerBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,6 +20,8 @@ import org.springframework.stereotype.Service;
 )
 public class MailDeliveryScheduler {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(MailDeliveryScheduler.class);
+
     private final Scheduler scheduler;
     private final JobsOwner jobsOwner;
 
@@ -26,8 +30,9 @@ public class MailDeliveryScheduler {
         this.jobsOwner = jobsOwner;
     }
 
-    public void deliverLater(RenderedMail mail) {
+    public void deliverLater(String mailer, String action, RenderedMail mail) {
         if (!jobsOwner.isSpring()) {
+            LOGGER.warn("jobs owner is rails; not sending <{}#{}> to <redacted>", mailer, action);
             return;
         }
         JobDataMap data = new JobDataMap();

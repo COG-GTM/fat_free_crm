@@ -1,10 +1,13 @@
 package com.fatfreecrm.service.jobs;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -22,23 +25,26 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class SolidQueueDrainService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SolidQueueDrainService.class);
-    private static final int BATCH_SIZE = 25;
+    private static final int BATCH_SIZE = 50;
     private static final String SUPPORTED_CLASS_FILTER = """
         class_name IN ('ActionMailer::MailDeliveryJob', 'AccountWebsiteJob', 'WikidataJob')
         """;
 
     private final JdbcTemplate jdbcTemplate;
+    private final ObjectMapper objectMapper;
     private final SolidQueueJobExecutor executor;
     private final JobsOwner jobsOwner;
     private final TransactionTemplate transactionTemplate;
 
     public SolidQueueDrainService(
         JdbcTemplate jdbcTemplate,
+        ObjectMapper objectMapper,
         SolidQueueJobExecutor executor,
         JobsOwner jobsOwner,
         PlatformTransactionManager transactionManager
     ) {
         this.jdbcTemplate = jdbcTemplate;
+        this.objectMapper = objectMapper;
         this.executor = executor;
         this.jobsOwner = jobsOwner;
         transactionTemplate = new TransactionTemplate(transactionManager);
@@ -114,7 +120,7 @@ public class SolidQueueDrainService {
 
     private void fail(long id, Exception exception) {
         LOGGER.error("Solid Queue job {} failed", id, exception);
-        String error = exception.getClass().getName() + ": " + exception.getMessage();
+        String error = failureDetails(exception);
         transactionTemplate.executeWithoutResult(status -> {
             jdbcTemplate.update("DELETE FROM solid_queue_claimed_executions WHERE job_id = ?", id);
             jdbcTemplate.update(
@@ -125,6 +131,17 @@ public class SolidQueueDrainService {
             jdbcTemplate.update("UPDATE solid_queue_jobs SET finished_at = ?, updated_at = ? WHERE id = ?",
                 Instant.now(), Instant.now(), id);
         });
+    }
+
+    private String failureDetails(Exception exception) {
+        try {
+            return objectMapper.writeValueAsString(Map.of(
+                "exception_class", exception.getClass().getName(),
+                "message", exception.getMessage() == null ? "" : exception.getMessage(),
+                "backtrace", List.of()));
+        } catch (JsonProcessingException serializationFailure) {
+            throw new IllegalStateException("Unable to serialize Solid Queue failure", serializationFailure);
+        }
     }
 
     private record SolidQueueJob(long id, String className, String arguments) {

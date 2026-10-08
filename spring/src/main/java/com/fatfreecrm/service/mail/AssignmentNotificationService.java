@@ -35,8 +35,10 @@ public class AssignmentNotificationService {
         } else if (entity instanceof com.fatfreecrm.domain.Lead lead) {
             entityName = lead.getFirstName() + " " + lead.getLastName();
         }
-        deliveryScheduler.deliverLater(renderer.assignment(assignee.getEmail(), entityName, entityType, url,
-            currentUserName(currentUser)));
+        deliveryScheduler.deliverLater(
+            "UserMailer",
+            "assigned_entity_notification",
+            renderer.assignment(assignee.getEmail(), entityName, entityType, url, currentUserName(currentUser)));
     }
 
     private boolean eligible(CrmEntity entity, User currentUser) {
