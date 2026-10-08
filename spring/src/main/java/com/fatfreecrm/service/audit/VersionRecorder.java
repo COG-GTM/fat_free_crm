@@ -146,6 +146,8 @@ public class VersionRecorder {
             .filter(name -> changes.containsKey(name) || (leadUnchangedAssigned && before.containsKey(name)))
             .forEach(name -> orderedBefore.put(name, before.get(name)));
         before.forEach(orderedBefore::putIfAbsent);
+        // Rails' acts_as_taggable tag_list attribute serializes nil on object dumps.
+        orderedBefore.replace("tag_list", null);
         version.setObject(PaperTrailYaml.dumpObject(orderedBefore));
         version.setObjectChanges(PaperTrailYaml.dumpChanges(changes));
         return versionRepository.save(version);
@@ -155,6 +157,9 @@ public class VersionRecorder {
     @Transactional
     public Version recordDestroy(AuthenticatedUser user, Object entity, Map<String, Object> attributes) {
         PaperTrailOptions options = options(entity);
+        attributes = new LinkedHashMap<>(attributes);
+        // Rails' acts_as_taggable tag_list attribute serializes nil on destroy dumps.
+        attributes.replace("tag_list", null);
         Map<String, Object[]> changes = new LinkedHashMap<>();
         attributes.forEach((name, value) -> {
             if (!options.ignore().contains(name)) {

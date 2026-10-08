@@ -95,7 +95,9 @@ class DualWriteSoakTest {
         ConcurrentLinkedQueue<String> failures = new ConcurrentLinkedQueue<>();
 
         Instant deadline = Instant.now().plus(Duration.ofMinutes(minutes));
-        ExecutorService pool = Executors.newFixedThreadPool(threads * 4 + 5);
+        // 7 futures per worker + 5 admin futures — undersizing starves the last submissions
+        // until after the deadline, which would silently skip whole soak families.
+        ExecutorService pool = Executors.newFixedThreadPool(threads * 7 + 5);
         List<java.util.concurrent.Future<?>> futures = new ArrayList<>();
         for (int worker = 0; worker < threads; worker++) {
             long taskId = taskIds.get(worker);
@@ -251,7 +253,9 @@ class DualWriteSoakTest {
         org.junit.jupiter.api.Assertions.assertEquals(promotes.get() + rejects.get(),
             leadPromoteVersions,
             "lead update versions vs successful promote+reject writes\n" + report);
-        org.junit.jupiter.api.Assertions.assertEquals(promotes.get(), promoteContactVersions,
+        // startedAt precedes seeding, so the seeded contacts' create versions are included.
+        org.junit.jupiter.api.Assertions.assertEquals(promotes.get(),
+            promoteContactVersions - contactIds.size(),
             "contact create versions vs successful promotes\n" + report);
         org.junit.jupiter.api.Assertions.assertEquals(userWrites.get(), userUpdateVersions,
             "user update versions vs successful admin user updates\n" + report);
@@ -299,9 +303,7 @@ class DualWriteSoakTest {
     ) {
         String base = railsSide ? railsUrl : springUrl;
         try {
-            AuthContext auth = railsSide
-                ? new RailsSessionAuth(railsUrl, users).authenticate(user)
-                : new SpringJwtAuth(springUrl, users).authenticate(user);
+            AuthContext auth = authWithRetry(users, railsSide, user);
             int sequence = 0;
             while (Instant.now().isBefore(deadline)) {
                 String value = (railsSide ? "rails" : "spring") + "-" + sequence++;
@@ -345,8 +347,8 @@ class DualWriteSoakTest {
         ConcurrentLinkedQueue<String> failures
     ) {
         try {
-            AuthContext railsContext = new RailsSessionAuth(railsUrl, users).authenticate(user);
-            AuthContext springContext = new SpringJwtAuth(springUrl, users).authenticate(user);
+            AuthContext railsContext = authWithRetry(users, true, user);
+            AuthContext springContext = authWithRetry(users, false, user);
             int sequence = 0;
             while (Instant.now().isBefore(deadline)) {
                 // Strict complete/uncomplete alternation (each op flips state, so Rails PaperTrail
@@ -400,8 +402,8 @@ class DualWriteSoakTest {
         ConcurrentLinkedQueue<String> failures
     ) {
         try {
-            AuthContext railsContext = new RailsSessionAuth(railsUrl, users).authenticate(user);
-            AuthContext springContext = new SpringJwtAuth(springUrl, users).authenticate(user);
+            AuthContext railsContext = authWithRetry(users, true, user);
+            AuthContext springContext = authWithRetry(users, false, user);
             String key = railsName.toLowerCase(java.util.Locale.ROOT);
             int sequence = 0;
             while (Instant.now().isBefore(deadline)) {
@@ -455,8 +457,8 @@ class DualWriteSoakTest {
         ConcurrentLinkedQueue<String> failures
     ) {
         try {
-            AuthContext railsContext = new RailsSessionAuth(railsUrl, users).authenticate(user);
-            AuthContext springContext = new SpringJwtAuth(springUrl, users).authenticate(user);
+            AuthContext railsContext = authWithRetry(users, true, user);
+            AuthContext springContext = authWithRetry(users, false, user);
             // Reject/promote pairs keep flipping status so every write is notable and produces
             // exactly one Lead update version on either app; promotes add a Contact create.
             int sequence = 0;
@@ -519,9 +521,7 @@ class DualWriteSoakTest {
         ConcurrentLinkedQueue<String> failures
     ) {
         try {
-            AuthContext auth = railsSide
-                ? new RailsSessionAuth(railsUrl, users).authenticate(user)
-                : new SpringJwtAuth(springUrl, users).authenticate(user);
+            AuthContext auth = authWithRetry(users, railsSide, user);
             String base = railsSide ? railsUrl : springUrl;
             String path = railsSide ? "/comments.json" : "/api/v1/comments";
             int sequence = 0;
@@ -577,9 +577,7 @@ class DualWriteSoakTest {
     ) {
         String side = railsSide ? "rails" : "spring";
         try {
-            AuthContext auth = railsSide
-                ? new RailsSessionAuth(railsUrl, users).authenticate("admin")
-                : new SpringJwtAuth(springUrl, users).authenticate("admin");
+            AuthContext auth = authWithRetry(users, railsSide, "admin");
             String url = railsSide ? railsUrl + railsPath : springUrl + springPath;
             int sequence = 0;
             while (Instant.now().isBefore(deadline)) {
@@ -612,8 +610,8 @@ class DualWriteSoakTest {
         ConcurrentLinkedQueue<String> failures
     ) {
         try {
-            AuthContext railsContext = new RailsSessionAuth(railsUrl, users).authenticate("admin");
-            AuthContext springContext = new SpringJwtAuth(springUrl, users).authenticate("admin");
+            AuthContext railsContext = authWithRetry(users, true, "admin");
+            AuthContext springContext = authWithRetry(users, false, "admin");
             int sequence = 0;
             while (Instant.now().isBefore(deadline)) {
                 boolean suspend = sequence % 2 == 0;
@@ -637,6 +635,29 @@ class DualWriteSoakTest {
             failures.add("suspend auth failed: " + exception.getMessage());
             serverErrors.incrementAndGet();
         }
+    }
+
+    /**
+     * Login under soak load can exceed the 10s auth timeout transiently; retry before
+     * declaring an auth failure so a slow login isn't counted as a 5xx.
+     */
+    private AuthContext authWithRetry(
+        Map<String, FixtureUsers.FixtureUser> users,
+        boolean railsSide,
+        String userKey
+    ) throws IOException, InterruptedException {
+        IOException last = null;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            try {
+                return railsSide
+                    ? new RailsSessionAuth(railsUrl, users).authenticate(userKey)
+                    : new SpringJwtAuth(springUrl, users).authenticate(userKey);
+            } catch (IOException exception) {
+                last = exception;
+                Thread.sleep(250L * (attempt + 1));
+            }
+        }
+        throw last;
     }
 
     private static void countFailure(SoakHttpException exception, String label, AtomicInteger errors,

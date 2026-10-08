@@ -48,17 +48,47 @@ public final class PaperTrailYaml {
         return out.toString();
     }
 
-    /** Rails {@code version.object_changes}: "---\n" plus {@code key:\n- before\n- after} entries. */
+    /**
+     * Rails {@code version.object_changes}: "---\n" plus {@code key:\n- before\n- after} entries.
+     * When the new {@code created_at} and {@code updated_at} values are equal the dump treats
+     * them as the single {@code Time} a create assigns — Psych anchors that shared {@code utc};
+     * every other timestamp is a distinct object and never anchors (even when equal).
+     */
     public static String dumpChanges(Map<String, Object[]> changes) {
+        Instant sharedUtc = null;
+        Object[] created = changes.get("created_at");
+        Object[] updated = changes.get("updated_at");
+        if (created != null && updated != null
+            && created[1] instanceof Instant instant && instant.equals(updated[1])) {
+            sharedUtc = instant;
+        }
+        return dumpChanges(changes, sharedUtc);
+    }
+
+    /**
+     * {@code sharedUtc} is the single {@code Time} a Rails create assigns to both
+     * {@code created_at} and {@code updated_at}: Psych anchors that one object; every other
+     * timestamp attribute is a distinct object and never anchors (even when equal).
+     */
+    static String dumpChanges(Map<String, Object[]> changes, Instant sharedUtc) {
         StringBuilder out = new StringBuilder("---\n");
         List<Object> values = new java.util.ArrayList<>();
         changes.values().forEach(pair -> java.util.Collections.addAll(values, pair));
-        AnchorState anchors = preScan(values);
+        AnchorState anchors = preScan(values, sharedUtc);
         for (Map.Entry<String, Object[]> entry : changes.entrySet()) {
             out.append(entry.getKey()).append(":\n");
             for (Object value : entry.getValue()) {
                 if (value == null) {
                     out.append('-');
+                } else if (value instanceof List<?> list) {
+                    if (list.isEmpty()) {
+                        out.append("- []");
+                    } else {
+                        out.append("- - ").append(scalar(list.get(0)));
+                        for (int i = 1; i < list.size(); i++) {
+                            out.append("\n  - ").append(scalar(list.get(i)));
+                        }
+                    }
                 } else {
                     out.append('-');
                     writeValue(out, value, " ", anchors);
@@ -169,6 +199,10 @@ public final class PaperTrailYaml {
 
     /** Psych only anchors objects referenced more than once; scan the document up front. */
     private static AnchorState preScan(List<Object> values) {
+        return preScan(values, null);
+    }
+
+    private static AnchorState preScan(List<Object> values, Instant sharedUtc) {
         Map<Instant, int[]> counts = new IdentityHashMap<>();
         int zones = 0;
         for (Object value : values) {
@@ -177,32 +211,50 @@ public final class PaperTrailYaml {
                 zones++;
             }
         }
-        return new AnchorState(counts, zones);
+        return new AnchorState(counts, zones, sharedUtc);
     }
 
     private static final class AnchorState {
         private final Map<Instant, int[]> occurrences;
         private final Map<Instant, Integer> emitted = new IdentityHashMap<>();
+        private final Instant sharedUtc;
         private final boolean zoneShared;
         private int count;
+        private int utcEmissions;
+        private Integer utcId;
         private Integer zoneId;
 
-        AnchorState(Map<Instant, int[]> occurrences, int zoneOccurrences) {
+        AnchorState(Map<Instant, int[]> occurrences, int zoneOccurrences, Instant sharedUtc) {
             this.occurrences = occurrences;
             this.zoneShared = zoneOccurrences > 1;
+            this.sharedUtc = sharedUtc;
         }
 
         String anchorFor(Instant instant) {
+            // Psych anchors the same object: an Instant instance referenced twice gets &N/*N.
             int[] total = occurrences.get(instant);
-            if (total == null || total[0] < 2) {
+            if (total != null && total[0] > 1) {
+                Integer prior = emitted.get(instant);
+                if (prior != null) {
+                    return "*" + prior;
+                }
+                if (sharedUtc != null && sharedUtc.equals(instant)) {
+                    utcEmissions += total[0];
+                }
+                emitted.put(instant, ++count);
+                return "&" + count;
+            }
+            if (sharedUtc == null || !sharedUtc.equals(instant) || utcEmissions >= 2) {
+                // Only the shared created_at/updated_at Time anchors; a third attribute with the
+                // same value is a distinct object and serializes literally.
                 return null;
             }
-            Integer prior = emitted.get(instant);
-            if (prior != null) {
-                return "*" + prior;
+            utcEmissions++;
+            if (utcId != null) {
+                return "*" + utcId;
             }
-            emitted.put(instant, ++count);
-            return "&" + count;
+            utcId = ++count;
+            return "&" + utcId;
         }
 
         /** Null when the zone object occurs once: Psych emits it literally, unanchored. */
