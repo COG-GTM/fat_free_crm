@@ -2,7 +2,7 @@ package com.fatfreecrm.service.export;
 
 import java.util.List;
 
-/** en-US static XLS headers of app/views/*/index.xls.builder (config/locales/fat_free_crm.en-US.yml). */
+/** en-US static XLS headers of app/views/{entity}/index.xls.builder (config/locales/fat_free_crm.en-US.yml). */
 final class ExportHeaders {
 
     static final List<String> ACCOUNTS = List.of(
