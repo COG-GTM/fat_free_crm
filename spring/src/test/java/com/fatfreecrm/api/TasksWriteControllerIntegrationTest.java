@@ -22,6 +22,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
@@ -97,12 +98,14 @@ class TasksWriteControllerIntegrationTest extends AbstractPostgresIntegrationTes
         String body = "{\"task\":{\"user_id\":" + alice.getId()
             + ",\"name\":\"Call the client\",\"bucket\":\"due_today\",\"priority\":\"high\","
             + "\"category\":\"call\",\"background_info\":\"Follow up\"}}";
+        List<Instant> utcMidnightToday = new ArrayList<>(List.of(utcMidnight(0)));
         String response = mockMvc.perform(authed(post("/api/v1/tasks"), aliceBearer).content(body))
             .andExpect(status().isCreated())
             .andExpect(header().string(HttpHeaders.LOCATION, org.hamcrest.Matchers.startsWith("/api/v1/tasks/")))
             .andExpect(jsonPath("$.name").value("Call the client"))
             .andExpect(jsonPath("$.bucket").value("due_today"))
             .andReturn().getResponse().getContentAsString();
+        utcMidnightToday.add(utcMidnight(0));
         long id = com.fasterxml.jackson.databind.json.JsonMapper.builder().build()
             .readTree(response).path("id").asLong();
 
@@ -110,8 +113,7 @@ class TasksWriteControllerIntegrationTest extends AbstractPostgresIntegrationTes
         assertThat(row.get("name")).isEqualTo("Call the client");
         assertThat(row.get("category")).isEqualTo("call");
         assertThat(row.get("background_info")).isEqualTo("Follow up");
-        assertThat(((Timestamp) row.get("due_at")).toInstant())
-            .isEqualTo(LocalDate.now(ZoneOffset.UTC).atStartOfDay(ZoneOffset.UTC).toInstant());
+        assertThat(((Timestamp) row.get("due_at")).toInstant()).isIn(utcMidnightToday);
         assertThat(row.get("completed_at")).isNull();
 
         List<Map<String, Object>> versions = versions("Task", id);
@@ -152,25 +154,34 @@ class TasksWriteControllerIntegrationTest extends AbstractPostgresIntegrationTes
     @Test
     void createBucketsComputeRailsDueDatesInRequestZone() throws Exception {
         ZoneId tokyo = ZoneId.of("Asia/Tokyo");
-        LocalDate today = LocalDate.now(tokyo);
+        for (String bucket : List.of("due_today", "due_tomorrow", "due_this_week", "due_next_week", "due_later",
+            "overdue")) {
+            LocalDate before = LocalDate.now(tokyo);
+            Instant dueAt = dueAt(createIn(tokyo, bucket));
+            LocalDate after = LocalDate.now(tokyo);
+            assertThat(dueAt).as(bucket)
+                .isIn(expectedDueAt(bucket, before, tokyo), expectedDueAt(bucket, after, tokyo));
+        }
+        assertThat(dueAt(createIn(tokyo, "due_asap"))).isNull();
+    }
+
+    /** Rails {@code Task#set_due_date} per bucket, evaluated for a given "today" in the request zone. */
+    private static Instant expectedDueAt(String bucket, LocalDate today, ZoneId zone) {
         LocalDateTime midnight = today.atStartOfDay();
+        LocalTime endOfDay = LocalTime.of(23, 59, 59, 999_999_000);
         LocalDate endOfWeek = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
         LocalDate endOfNextWeek = today.with(TemporalAdjusters.next(DayOfWeek.MONDAY))
             .with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
-        LocalTime endOfDay = LocalTime.of(23, 59, 59, 999_999_000);
-
-        assertThat(dueAt(createIn(tokyo, "due_today"))).isEqualTo(midnight.atZone(tokyo).toInstant());
-        assertThat(dueAt(createIn(tokyo, "due_tomorrow")))
-            .isEqualTo(midnight.plusDays(1).atZone(tokyo).toInstant());
-        assertThat(dueAt(createIn(tokyo, "due_this_week")))
-            .isEqualTo(LocalDateTime.of(endOfWeek, endOfDay).atZone(tokyo).toInstant());
-        assertThat(dueAt(createIn(tokyo, "due_next_week")))
-            .isEqualTo(LocalDateTime.of(endOfNextWeek, endOfDay).atZone(tokyo).toInstant());
-        assertThat(dueAt(createIn(tokyo, "due_later")))
-            .isEqualTo(midnight.plusYears(100).atZone(tokyo).toInstant());
-        assertThat(dueAt(createIn(tokyo, "overdue")))
-            .isEqualTo(midnight.minusDays(1).atZone(tokyo).toInstant());
-        assertThat(dueAt(createIn(tokyo, "due_asap"))).isNull();
+        LocalDateTime local = switch (bucket) {
+            case "due_today" -> midnight;
+            case "due_tomorrow" -> midnight.plusDays(1);
+            case "due_this_week" -> LocalDateTime.of(endOfWeek, endOfDay);
+            case "due_next_week" -> LocalDateTime.of(endOfNextWeek, endOfDay);
+            case "due_later" -> midnight.plusYears(100);
+            case "overdue" -> midnight.minusDays(1);
+            default -> throw new IllegalArgumentException(bucket);
+        };
+        return local.atZone(zone).toInstant();
     }
 
     @Test
@@ -256,6 +267,7 @@ class TasksWriteControllerIntegrationTest extends AbstractPostgresIntegrationTes
     @Test
     void updateAssignsOnlyProvidedKeysAndRecordsUpdateThenRescheduleVersions() throws Exception {
         long id = task("Alice call", alice, null, "due_asap", null, null, null);
+        Instant tomorrowBefore = utcMidnight(1);
         mockMvc.perform(authed(put("/api/v1/tasks/" + id), aliceBearer)
                 .content("{\"task\":{\"bucket\":\"due_tomorrow\"}}"))
             .andExpect(status().isNoContent());
@@ -264,8 +276,7 @@ class TasksWriteControllerIntegrationTest extends AbstractPostgresIntegrationTes
         assertThat(row.get("name")).isEqualTo("Alice call");
         assertThat(row.get("category")).isEqualTo("call");
         assertThat(row.get("bucket")).isEqualTo("due_tomorrow");
-        assertThat(((Timestamp) row.get("due_at")).toInstant())
-            .isEqualTo(LocalDate.now(ZoneOffset.UTC).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant());
+        assertThat(((Timestamp) row.get("due_at")).toInstant()).isIn(tomorrowBefore, utcMidnight(1));
 
         List<Map<String, Object>> versions = versions("Task", id);
         assertThat(versions).extracting(version -> version.get("event"))
@@ -393,14 +404,14 @@ class TasksWriteControllerIntegrationTest extends AbstractPostgresIntegrationTes
     void uncompleteClearsCompletionAndRecomputesDueAtFromBucket() throws Exception {
         long id = task("Done", alice, null, "due_today", Instant.parse("2020-01-01T00:00:00Z"),
             Instant.parse("2024-01-01T00:00:00Z"), alice);
+        Instant todayBefore = utcMidnight(0);
         mockMvc.perform(authed(put("/api/v1/tasks/" + id + "/uncomplete"), aliceBearer))
             .andExpect(status().isNoContent());
 
         Map<String, Object> row = taskRow(id);
         assertThat(row.get("completed_at")).isNull();
         assertThat(row.get("completed_by")).isNull();
-        assertThat(((Timestamp) row.get("due_at")).toInstant())
-            .isEqualTo(LocalDate.now(ZoneOffset.UTC).atStartOfDay(ZoneOffset.UTC).toInstant());
+        assertThat(((Timestamp) row.get("due_at")).toInstant()).isIn(todayBefore, utcMidnight(0));
         assertThat(versions("Task", id)).extracting(version -> version.get("event")).containsExactly("update");
     }
 
@@ -437,6 +448,10 @@ class TasksWriteControllerIntegrationTest extends AbstractPostgresIntegrationTes
             .andReturn().getResponse().getContentAsString();
         return com.fasterxml.jackson.databind.json.JsonMapper.builder().build()
             .readTree(response).path("id").asLong();
+    }
+
+    private static Instant utcMidnight(int plusDays) {
+        return LocalDate.now(ZoneOffset.UTC).plusDays(plusDays).atStartOfDay(ZoneOffset.UTC).toInstant();
     }
 
     private Instant dueAt(long id) {
