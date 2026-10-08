@@ -698,6 +698,10 @@ AB-271 JSONB reads and `CustomFieldWriteService` see the new metadata.
   `add_column` refreshes its cache, so later reads differ per worker). The
   harness drops the columns Rails added before replaying a case against Spring (case `setup:`
   SQL is re-run after each reset).
+- **Contract runs and the custom-field registry**: start Spring with
+  `FFCRM_CF_REGISTRY_TTL=0s`. Per-case `setup:` SQL inserts field definitions and `cf_*`
+  columns behind the `CustomFieldRegistry` fingerprint cache (default 30s), so a non-zero TTL
+  makes cf cases 422 with "not a defined custom field".
 
 ## Adding a write family
 

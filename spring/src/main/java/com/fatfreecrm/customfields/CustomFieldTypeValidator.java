@@ -154,7 +154,7 @@ public class CustomFieldTypeValidator {
                 Object to = normalizedByName.get(field.name());
                 if (from != null && to != null && from.getClass().equals(to.getClass())
                     && isBefore(to, from)) {
-                    addError(errors, field.name(), start.label() + " cannot end before it begins.");
+                    addError(errors, field.name(), "^" + start.label() + " cannot end before it begins.");
                 }
             }
         }

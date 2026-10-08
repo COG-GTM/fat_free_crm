@@ -237,6 +237,18 @@ Ported:
 Skipped (AB-273 jobs/mail track): account.rb:86-87 (`enqueue_website_job`, `enqueue_wikidata_job`),
 entity_observer.rb:11-16 (`assigned_entity_notification` mail), comment.rb:35 (`notify_subscribers`).
 
+### Phase B entities: custom fields
+
+`CustomFieldWriteService` gained a `write(entity, input, bumpUpdatedAt)` overload: on create the
+cf column write does not bump `updated_at` (Rails assigns `cf_*` on the model inside the same
+INSERT, so `created_at` == `updated_at` and the version timestamps anchor), while updates keep
+the single `updated_at` bump — driven by `accounts-create-custom-field`. `CustomFieldTypeValidator`
+messages now carry the Rails i18n `^%{field}` prefix (`^Contract Budget is too long.`) and emit
+both the maxlength error and the column's numericality error (`must be less than 10000000000000`
+for `numeric(15,2)`), checked against the raw input — driven by
+`accounts-update-custom-field-maxlength-422`. `cf_*` params also lead the dumped version `object`
+in payload order (they are model assignments in Rails) — `accounts-update-custom-field`.
+
 ## Phase B: admin
 
 Scope: every JSON-reachable write in `app/controllers/admin/` — users (create/update/destroy/
