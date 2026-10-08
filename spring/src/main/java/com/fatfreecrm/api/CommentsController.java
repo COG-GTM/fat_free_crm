@@ -32,7 +32,8 @@ public class CommentsController {
     @GetMapping
     @Operation(summary = "List comments",
         description = "Lists a commentable's comments newest first (account_id, campaign_id, contact_id, lead_id, "
-            + "opportunity_id, task_id or user_id), or the user's own comments without a commentable.")
+            + "opportunity_id, task_id, or user_id for comments on a user record, which Rails scopes to the "
+            + "current user unless admin), or the user's own comments without a commentable.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Comments."),
         @ApiResponse(responseCode = "400", description = "Unknown commentable parameter."),

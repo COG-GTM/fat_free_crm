@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.springframework.stereotype.Component;
 
 /**
@@ -420,6 +421,7 @@ public class SearchableEntities {
      */
     static Predicate taskSearch(From<?, ?> root, CriteriaBuilder cb, String rawQuery) {
         String query = rawQuery.replaceAll("[^\\w\\s\\-.'\\p{L}]", "").replaceAll("^\\s+|\\s+$", "");
-        return cb.like(cb.upper(root.get("name")), cb.upper(cb.literal("%" + query + "%")));
+        return cb.like(cb.upper(root.get("name")),
+            cb.upper(((HibernateCriteriaBuilder) cb).value("%" + query + "%")));
     }
 }

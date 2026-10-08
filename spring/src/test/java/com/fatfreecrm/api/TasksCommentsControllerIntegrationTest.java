@@ -7,9 +7,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fatfreecrm.domain.Task;
 import com.fatfreecrm.domain.User;
 import com.fatfreecrm.repository.UserRepository;
+import com.fatfreecrm.security.AuthenticatedUser;
 import com.fatfreecrm.security.JwtTokenService;
+import com.fatfreecrm.service.query.CrmQueryService;
+import com.fatfreecrm.service.query.ListQuery;
+import com.fatfreecrm.service.query.ListResult;
 import com.fatfreecrm.support.AbstractPostgresIntegrationTest;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -24,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.util.LinkedMultiValueMap;
 
 class TasksCommentsControllerIntegrationTest extends AbstractPostgresIntegrationTest {
 
@@ -37,6 +43,9 @@ class TasksCommentsControllerIntegrationTest extends AbstractPostgresIntegration
 
     @Autowired
     private JwtTokenService jwtTokenService;
+
+    @Autowired
+    private CrmQueryService crmQueryService;
 
     private User alice;
     private User bob;
@@ -120,6 +129,26 @@ class TasksCommentsControllerIntegrationTest extends AbstractPostgresIntegration
     }
 
     @Test
+    void taskTextSearchBindsApostrophesInsteadOfInliningThem() throws Exception {
+        long obrien = task("Call O'Brien", alice, null, "due_asap", null, null, null);
+        task("Call Smith", alice, null, "due_asap", null, null, null);
+
+        JsonNode body = getJson("/api/v1/tasks/autocomplete", aliceBearer, "term", "O'Brien");
+        assertThat(body.at("/results").findValuesAsText("text")).containsExactly("Call O'Brien");
+        assertThat(body.at("/results/0/id").asLong()).isEqualTo(obrien);
+
+        JsonNode injection = getJson("/api/v1/tasks/autocomplete", aliceBearer, "term", "x' OR '1'='1");
+        assertThat(injection.at("/results")).isEmpty();
+
+        LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("query", "O'Brien");
+        ListResult<Task> result = crmQueryService.list(
+            new AuthenticatedUser(alice.getId(), alice.getUsername(), false), Task.class,
+            ListQuery.fromParameters(params));
+        assertThat(result.items()).extracting(Task::getId).containsExactly(obrien);
+    }
+
+    @Test
     void listsCommentsOfAVisibleCommentableNewestFirst() throws Exception {
         JsonNode body = getJson("/api/v1/comments", aliceBearer, "task_id", String.valueOf(aliceTask));
         assertThat(body.isArray()).isTrue();
@@ -131,9 +160,21 @@ class TasksCommentsControllerIntegrationTest extends AbstractPostgresIntegration
         mockMvc.perform(get("/api/v1/comments").param("task_id", "abc")
                 .header(HttpHeaders.AUTHORIZATION, aliceBearer))
             .andExpect(status().isNotFound());
-        mockMvc.perform(get("/api/v1/comments").param("user_id", String.valueOf(alice.getId()))
+        mockMvc.perform(get("/api/v1/comments").param("foo_id", "1")
                 .header(HttpHeaders.AUTHORIZATION, aliceBearer))
             .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void listsCommentsOnAUserRecordLikeRailsUserMy() throws Exception {
+        jdbcTemplate.update("INSERT INTO comments (user_id, commentable_id, commentable_type, comment, created_at, "
+            + "updated_at) VALUES (?, ?, 'User', 'about alice', now(), now())", bob.getId(), alice.getId());
+        JsonNode own = getJson("/api/v1/comments", aliceBearer, "user_id", String.valueOf(alice.getId()));
+        assertThat(own.findValuesAsText("comment")).containsExactly("about alice");
+
+        mockMvc.perform(get("/api/v1/comments").param("user_id", String.valueOf(alice.getId()))
+                .header(HttpHeaders.AUTHORIZATION, bobBearer))
+            .andExpect(status().isNotFound());
     }
 
     @Test

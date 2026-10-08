@@ -185,3 +185,27 @@
   params: {account_id: 101}
   auth: anonymous
   description: Compare anonymous comments index authentication behavior.
+- id: comments-index-user-2-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /comments
+  params: {user_id: 2}
+  auth: alice
+  description: Rails extract_commentable_name accepts user_id; User.my(current_user) includes the user themself.
+- id: comments-index-user-3-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /comments
+  params: {user_id: 3}
+  auth: alice
+  description: Another user's record is outside User.my for non-admins - 404.
+- id: comments-index-user-3-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /comments
+  params: {user_id: 3}
+  auth: admin
+  description: Admins can read every user record, so comments on user 3 are listed.

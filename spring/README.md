@@ -471,7 +471,7 @@ the configured TTL to detect metadata or schema changes.
 | `GET /api/v1/tasks?view=pending\|assigned\|completed&timeZone=<IANA>` | `GET /tasks.json` | `{buckets:{...}}`; the Rails body is the bare bucket object (contract cases use `spring: {bodyPointer: /buckets}`) |
 | `GET /api/v1/tasks/{id}` | `GET /tasks/:id.json` | `Task.tracked_by` (owner or assignee) |
 | `GET /api/v1/tasks/autocomplete?term=&related=` | `GET /tasks/auto_complete.json` | `Task.my(user).text_search(term)`, 10 rows, `{results:[{id,text}]}` |
-| `GET /api/v1/comments?<parent>_id=` | `GET /comments.json` | bare JSON array, newest first; parent = `account`, `campaign`, `contact`, `lead`, `opportunity`, `task` |
+| `GET /api/v1/comments?<parent>_id=` | `GET /comments.json` | bare JSON array, newest first; parent = `account`, `campaign`, `contact`, `lead`, `opportunity`, `task`, `user` |
 
 - **Buckets** (`Task.find_all_grouped`): keys and order come from the `task_bucket` / `task_completed` rows in
   `settings` when present, else `config/settings.default.yml`: `overdue, due_asap, due_today, due_tomorrow,
@@ -495,7 +495,8 @@ the configured TTL to detect metadata or schema changes.
 - **Autocomplete**: same sanitisation as Rails `text_search` (`[^\w\s\-.'\p{L}]` stripped). Rails orders only by
   `name`; Spring adds `id` as a tiebreak so equal names are deterministic.
 - **Comments**: the parent must be visible through the AB-268 policy (Rails `<Model>.my(current_user)`; for tasks
-  `Task.my`), else 404 "The notes are not available.". Without a `*_id` parameter Rails lists
+  `Task.my`; for `user_id`, `User.my` = yourself, or anyone for admins, listing comments whose commentable is that
+  user), else 404 "The notes are not available.". Without a `*_id` parameter Rails lists
   `Comment.accessible_by` (own comments, every comment for admins) and so does Spring. An unsupported `*_id`
   parameter is 400 (Rails: 406/500).
 - **Emails and saved lists**: Rails exposes no JSON read (`EmailsController` has only `destroy`, `ListsController`

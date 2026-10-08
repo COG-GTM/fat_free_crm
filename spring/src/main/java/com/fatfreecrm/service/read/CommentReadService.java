@@ -8,6 +8,7 @@ import com.fatfreecrm.domain.Contact;
 import com.fatfreecrm.domain.Lead;
 import com.fatfreecrm.domain.Opportunity;
 import com.fatfreecrm.domain.Task;
+import com.fatfreecrm.domain.User;
 import com.fatfreecrm.repository.CommentRepository;
 import com.fatfreecrm.security.AuthenticatedUser;
 import com.fatfreecrm.security.authz.AccessPolicy;
@@ -31,7 +32,8 @@ import org.springframework.util.MultiValueMap;
 
 /**
  * Rails {@code CommentsController#index}: the first {@code *_id} parameter names the commentable, which must be
- * visible through {@code Klass.my(current_user)}; its comments are then listed newest first. Without a
+ * visible through {@code Klass.my(current_user)} ({@code User.my} = the user themself, or everyone for admins); its
+ * comments are then listed newest first. Without a
  * commentable, Rails lists {@code Comment.accessible_by(ability)} (the AB-268 {@code user_id} rule).
  */
 @Service
@@ -43,7 +45,8 @@ public class CommentReadService {
         "contact", new Commentable("Contact", Contact.class),
         "lead", new Commentable("Lead", Lead.class),
         "opportunity", new Commentable("Opportunity", Opportunity.class),
-        "task", new Commentable("Task", Task.class)
+        "task", new Commentable("Task", Task.class),
+        "user", new Commentable("User", User.class)
     );
 
     private final CommentRepository commentRepository;
