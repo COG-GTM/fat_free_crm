@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,9 +64,8 @@ public class SettingsService {
     private final Clock clock;
     private final Duration cacheTtl;
     private final Map<String, Object> yaml;
-    private final ConcurrentHashMap<String, Object> memo = new ConcurrentHashMap<>();
 
-    private volatile Snapshot snapshot = new Snapshot(Map.of(), Instant.MIN);
+    private volatile Snapshot snapshot = new Snapshot(Map.of(), Instant.MIN, new ConcurrentHashMap<>());
 
     @Autowired
     public SettingsService(SettingsProperties properties, SettingRepository settingRepository,
@@ -88,20 +88,20 @@ public class SettingsService {
     private static final Object NULL = new Object();
 
     public Object get(String key) {
-        Object cached = memo.get(key);
+        Snapshot current = snapshot();
+        Object cached = current.memo.get(key);
         if (cached != null) {
             return cached == NULL ? null : cached;
         }
-        Snapshot current = snapshot();
         if (current.values.containsKey(key)) {
             Object value = current.values.get(key);
             if (isPresent(value)) {
-                memo.put(key, value);
+                current.memo.put(key, value);
                 return value;
             }
         }
         Object value = yaml.containsKey(key) ? yaml.get(key) : null;
-        memo.put(key, value == null ? NULL : value);
+        current.memo.put(key, value == null ? NULL : value);
         return value;
     }
 
@@ -149,19 +149,19 @@ public class SettingsService {
         return current;
     }
 
-    /** Clears the resolved-value memo; the next read re-evaluates the current DB snapshot and YAML tier. */
+    /** Drops the current snapshot; the next read reloads the DB tier and re-memoizes. */
     public void evict() {
-        memo.clear();
+        snapshot = null;
     }
 
     private Snapshot snapshot() {
         Snapshot current = snapshot;
-        if (Duration.between(current.loadedAt, clock.instant()).compareTo(cacheTtl) < 0) {
+        if (current != null && Duration.between(current.loadedAt, clock.instant()).compareTo(cacheTtl) < 0) {
             return current;
         }
         synchronized (this) {
             current = snapshot;
-            if (Duration.between(current.loadedAt, clock.instant()).compareTo(cacheTtl) < 0) {
+            if (current != null && Duration.between(current.loadedAt, clock.instant()).compareTo(cacheTtl) < 0) {
                 return current;
             }
             Map<String, Object> values = new LinkedHashMap<>();
@@ -178,7 +178,7 @@ public class SettingsService {
                 }
                 values.put(row.getName(), normalizeValue(decoded));
             }
-            snapshot = new Snapshot(java.util.Collections.unmodifiableMap(values), clock.instant());
+            snapshot = new Snapshot(Collections.unmodifiableMap(values), clock.instant(), new ConcurrentHashMap<>());
             return snapshot;
         }
     }
@@ -261,7 +261,7 @@ public class SettingsService {
                 merged.put(entry.getKey(), incoming);
             }
         }
-        return merged;
+        return Collections.unmodifiableMap(merged);
     }
 
     /** Strips a leading ':' from string keys at every level (indifferent access); values unchanged. */
@@ -274,7 +274,7 @@ public class SettingsService {
             }
             normalized.put(key, normalizeValue(entry.getValue()));
         }
-        return normalized;
+        return Collections.unmodifiableMap(normalized);
     }
 
     @SuppressWarnings("unchecked")
@@ -287,11 +287,12 @@ public class SettingsService {
             for (Object element : list) {
                 normalized.add(normalizeValue(element));
             }
-            return normalized;
+            return Collections.unmodifiableList(normalized);
         }
         return value;
     }
 
-    private record Snapshot(Map<String, Object> values, Instant loadedAt) {
+    private record Snapshot(Map<String, Object> values, Instant loadedAt,
+        ConcurrentHashMap<String, Object> memo) {
     }
 }

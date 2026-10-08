@@ -24,13 +24,19 @@ import org.junit.jupiter.api.Test;
  * (lib/tasks/ffcrm/i18n_matrix.rake) with exact string equality, plus every recorded fallback
  * chain. Unit test — no database.
  *
- * <p>Known deltas: cases whose Rails result came from gem translations Spring does not ship
- * ({@code simple_form.true}, {@code ransack.*}, {@code errors.*} attribute strings live in
- * rails-i18n/devise-i18n gem files — the gem locales are Rails view concerns: ActiveModel
- * messages are AB-272's, and date/number formats are view-only), or where rails-i18n plural
- * rules differ from ICU/CLDR for a locale+count. Each is listed explicitly.
+ * <p>Known deltas, bucketed by category with pinned counts so a new delta fails the test:
+ * {@code spring-missing} (Rails result came from a gem translation Spring does not ship —
+ * tolerated only when {@code find} is empty in the whole fallback chain; if Spring has the
+ * key, any mismatch is a failure), {@code pt-br-zero-plural} (rails-i18n's OneOther rule vs
+ * ICU/CLDR for pt-BR at count 0), and {@code raw-hash} (plural key invoked without args —
+ * Rails returns the hash itself; Spring has no map-typed return and keeps the ICU pattern).
  */
 class RailsI18nParityTest {
+
+    // Pinned per-category delta counts — a new delta fails this test.
+    private static final int SPRING_MISSING_DELTAS = 46;
+    private static final int PT_BR_ZERO_PLURAL_DELTAS = 6;
+    private static final int RAW_HASH_DELTAS = 7;
 
     private static final ObjectMapper JSON = new ObjectMapper();
 
@@ -70,7 +76,7 @@ class RailsI18nParityTest {
 
     @Test
     void everyRecordedCaseMatchesExactly() {
-        List<String> deltas = new ArrayList<>();
+        Map<String, List<String>> deltas = new LinkedHashMap<>();
         List<String> failures = new ArrayList<>();
         int compared = 0;
         for (JsonNode testCase : matrix.get("cases")) {
@@ -86,10 +92,15 @@ class RailsI18nParityTest {
                 if ("I18n::MissingInterpolationArgument".equals(errorClass)) {
                     assertThat(thrown).as(label).isInstanceOf(MissingInterpolationArgumentException.class);
                     compared++;
-                } else if (thrown == null) {
+                } else if (thrown != null) {
+                    // Spring also errored on a non-MIA Rails error — the case is compared.
+                    compared++;
+                } else {
                     String actual = service.t(key, requested, args);
-                    if (isKnownDelta(key)) {
-                        deltas.add(label + " rails-error=" + errorClass + " spring=" + actual);
+                    String category = deltaCategory(locale, key, args);
+                    if (category != null) {
+                        deltas.computeIfAbsent(category, ignored -> new ArrayList<>())
+                            .add(label + " rails-error=" + errorClass + " spring=" + actual);
                     } else {
                         failures.add(label + " expected error " + errorClass + " but Spring returned " + actual);
                     }
@@ -99,7 +110,8 @@ class RailsI18nParityTest {
             if (testCase.get("result").isObject()) {
                 // Rails returned the raw plural hash (no args passed); Spring has no map-typed
                 // return — it keeps the ICU pattern and raises MIA on interpolation instead.
-                deltas.add(label + " rails=raw-hash spring=icu-pattern");
+                deltas.computeIfAbsent("raw-hash", ignored -> new ArrayList<>())
+                    .add(label + " rails=raw-hash spring=icu-pattern");
                 continue;
             }
             Throwable thrown = catchThrowable(() -> service.t(key, requested, args));
@@ -111,34 +123,51 @@ class RailsI18nParityTest {
             String actual = service.t(key, requested, args);
             if (actual.equals(testCase.get("result").asText())) {
                 compared++;
-            } else if (isKnownDelta(key)) {
-                deltas.add(label + " rails=" + testCase.get("result").asText() + " spring=" + actual);
             } else {
-                failures.add(label + " expected " + testCase.get("result").asText() + " got " + actual);
+                String category = deltaCategory(locale, key, args);
+                if (category != null) {
+                    deltas.computeIfAbsent(category, ignored -> new ArrayList<>())
+                        .add(label + " rails=" + testCase.get("result").asText() + " spring=" + actual);
+                } else {
+                    failures.add(label + " expected " + testCase.get("result").asText() + " got " + actual);
+                }
             }
         }
-        System.out.println("i18n parity deltas (" + deltas.size() + "): " + deltas);
+        deltas.forEach((category, list)
+            -> System.out.println("i18n parity deltas " + category + " (" + list.size() + "): " + list));
+        assertThat(deltas.keySet()).as("delta categories").containsExactlyInAnyOrder(
+            "spring-missing", "pt-br-zero-plural", "raw-hash");
+        assertThat(deltas.getOrDefault("spring-missing", List.of())).hasSize(SPRING_MISSING_DELTAS);
+        assertThat(deltas.getOrDefault("pt-br-zero-plural", List.of())).hasSize(PT_BR_ZERO_PLURAL_DELTAS);
+        assertThat(deltas.getOrDefault("raw-hash", List.of())).hasSize(RAW_HASH_DELTAS);
         assertThat(compared).isPositive();
         assertThat(failures).isEmpty();
     }
 
     /**
-     * Keys whose Rails results may come from gem translations Spring intentionally does not ship
-     * (gem locales are Rails view concerns — ActiveModel messages are AB-272's; date/number
-     * formats are view-only), or rails-i18n plural rules that differ from ICU/CLDR. A mismatch is
-     * only tolerated for these prefixes; equal results still count as compared.
+     * Returns the tolerated delta category for a mismatch, or null when the mismatch is a
+     * genuine failure:
+     * <ul>
+     *   <li>{@code spring-missing} — Spring has no translation for the key anywhere in the
+     *       fallback chain (gem-owned locales Spring intentionally does not ship),</li>
+     *   <li>{@code pt-br-zero-plural} — rails-i18n registers the OneOther rule for pt-BR
+     *       (rails-i18n-8.1.0 rails/pluralization/pt-BR.rb:3, which maps to
+     *       lib/rails_i18n/common_pluralizations/one_other.rb:7 {@code n == 1 ? :one : :other},
+     *       so 0 &rarr; {@code :other}) while ICU/CLDR pt maps 0 &rarr; {@code :one}.</li>
+     * </ul>
      */
-    private static boolean isKnownDelta(String key) {
-        // simple_form/ransack/will_paginate translations come from gems, not config/locales;
-        // pluralize.* exercises rails-i18n plural rules that differ from ICU/CLDR for pt-BR.
-        if (key.startsWith("simple_form.") || key.startsWith("ransack.")
-            || key.startsWith("will_paginate.") || key.startsWith("pluralize.")) {
-            return true;
+    private String deltaCategory(String locale, String key, Map<String, Object> args) {
+        if (service.find(key, Locale.forLanguageTag(locale)).isEmpty()) {
+            return "spring-missing";
         }
-        // Helpers/attribute errors are gem-owned (rails-i18n / ActiveModel).
-        return key.startsWith("errors.") || key.startsWith("activerecord.") || key.startsWith("activemodel.")
-            || key.startsWith("helpers.") || key.startsWith("number.") || key.startsWith("date.")
-            || key.startsWith("datetime.") || key.startsWith("time.") || key.startsWith("support.");
+        if ("pt-BR".equals(locale) && key.startsWith("pluralize.") && isZero(args.get("count"))) {
+            return "pt-br-zero-plural";
+        }
+        return null;
+    }
+
+    private static boolean isZero(Object value) {
+        return value instanceof Number number && number.longValue() == 0;
     }
 
     private static Map<String, Object> args(JsonNode node) {

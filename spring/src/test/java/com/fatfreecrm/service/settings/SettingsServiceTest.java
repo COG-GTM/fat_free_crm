@@ -10,6 +10,7 @@ import com.fatfreecrm.repository.SettingRepository;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
@@ -22,8 +23,7 @@ class SettingsServiceTest {
     private static final Duration TTL = Duration.ofSeconds(30);
 
     private final SettingRepository repository = mock(SettingRepository.class);
-    private Instant now = Instant.parse("2026-03-12T00:00:00Z");
-    private final Clock clock = Clock.fixed(now, ZoneOffset.UTC);
+    private final Clock clock = Clock.fixed(Instant.parse("2026-03-12T00:00:00Z"), ZoneOffset.UTC);
 
     private SettingsService service(Map<String, Object> defaults, Map<String, Object> overrides) {
         return new SettingsService(defaults, overrides, repository, clock, TTL);
@@ -38,6 +38,33 @@ class SettingsServiceTest {
         setting.setName(name);
         setting.setValue(value);
         return setting;
+    }
+
+    private static final class MutableClock extends Clock {
+        private final AtomicReference<Instant> instant;
+
+        MutableClock(Instant start) {
+            this.instant = new AtomicReference<>(start);
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return instant.get();
+        }
+
+        void advance(Duration duration) {
+            instant.updateAndGet(value -> value.plus(duration));
+        }
     }
 
     @Test
@@ -110,23 +137,38 @@ class SettingsServiceTest {
     void databaseSnapshotIsStaleUntilTtlElapses() {
         AtomicReference<List<Setting>> current = new AtomicReference<>(List.of(row("flag", "--- false\n")));
         when(repository.findAll(Sort.by("id"))).thenAnswer(ignored -> current.get());
+        MutableClock mutable = new MutableClock(Instant.parse("2026-03-12T00:00:00Z"));
         // A blank DB value falls through to YAML.
-        SettingsService service = service(Map.of("flag", true), Map.of());
+        SettingsService service = new SettingsService(Map.of("flag", true), Map.of(), repository, mutable, TTL);
         assertThat(service.get("flag")).isEqualTo(true);
 
         current.set(List.of(row("flag", "--- :on\n")));
-        // Still within the TTL: the memo was cleared, but the snapshot is stale.
-        service.evict();
+        // One second before the TTL expires, without evict: still the stale value.
+        mutable.advance(TTL.minusSeconds(1));
         assertThat(service.get("flag")).isEqualTo(true);
+        // One second past the TTL, still without evict: the snapshot reloads and the DB value wins.
+        mutable.advance(Duration.ofSeconds(2));
+        assertThat(service.get("flag")).isEqualTo(":on");
 
-        // Advance past the TTL: the new snapshot is visible.
-        now = now.plus(TTL).plusSeconds(1);
-        SettingsService later = new SettingsService(Map.of("flag", true), Map.of(), repository,
-            Clock.fixed(now, ZoneOffset.UTC), TTL);
+        // evict() forces the next read to reload immediately.
+        current.set(List.of(row("flag", "--- :off\n")));
         service.evict();
-        // Force refresh on the same service by moving the injected clock — the service holds a
-        // fixed clock, so verify via the new instance plus a re-created service on the moved clock.
-        assertThat(later.get("flag")).isEqualTo(":on");
+        assertThat(service.get("flag")).isEqualTo(":off");
+    }
+
+    @Test
+    void resolvedMapsAndListsAreUnmodifiable() {
+        SettingsService service = service(Map.of(
+            "nested", Map.of("inner", Map.of("b", 1), "items", List.of(1, 2))), Map.of());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> nested = (Map<String, Object>) service.get("nested");
+        assertThatThrownBy(() -> nested.put("x", 1)).isInstanceOf(UnsupportedOperationException.class);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> inner = (Map<String, Object>) nested.get("inner");
+        assertThatThrownBy(() -> inner.put("x", 1)).isInstanceOf(UnsupportedOperationException.class);
+        @SuppressWarnings("unchecked")
+        List<Object> items = (List<Object>) nested.get("items");
+        assertThatThrownBy(() -> items.add(3)).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
