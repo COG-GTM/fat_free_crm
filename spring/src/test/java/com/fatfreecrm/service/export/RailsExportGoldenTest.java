@@ -25,10 +25,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 /** Replays the Rails exports recorded by {@code rake ffcrm:migration:export_goldens}. */
+// Runtime cf_* DDL would invalidate pgjdbc server-prepared SELECT * plans in a shared pool.
+@TestPropertySource(properties = "spring.datasource.hikari.data-source-properties.prepareThreshold=0")
 class RailsExportGoldenTest extends AbstractPostgresIntegrationTest {
 
     private static final ObjectMapper JSON = new ObjectMapper();
