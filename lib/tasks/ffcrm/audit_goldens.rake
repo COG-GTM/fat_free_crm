@@ -109,6 +109,9 @@ def audit_goldens_custom_fields
     CustomField.create!(id: id, field_group: group, name: name, label: label, as: type, position: position,
                         collection: %w[yes 123 alpha], created_at: time, updated_at: time)
   end
+  ActiveRecord::Base.connection.change_column :accounts, :cf_audit_decimal, :decimal, precision: 30, scale: 9
+  ActiveRecord::Base.connection.change_column :contacts, :cf_audit_contact_decimal, :decimal,
+                                               precision: 30, scale: 9
   [Account, Contact].each(&:reset_column_information)
 end
 
@@ -194,11 +197,12 @@ def audit_goldens_record(model, id)
            when "Account"
              { name: "yes", user_id: 68_999, access: "Public", rating: 0, category: "customer",
                background_info: "Line one\nLine two", cf_audit_string: "a: b",
-               cf_audit_decimal: BigDecimal("12.50"), cf_audit_date: Date.new(2025, 2, 3),
+               cf_audit_decimal: BigDecimal("12345678901234567890.123456789"),
+               cf_audit_date: Date.new(2025, 2, 3),
                cf_audit_datetime: time, cf_audit_boolean: true, cf_audit_check_boxes: %w[yes alpha] }
            when "Campaign"
              { name: "123", user_id: 68_999, access: "Public", status: "planned",
-               target_conversion: 2.5, budget: BigDecimal("1000.25"), starts_on: Date.new(2025, 2, 3) }
+               target_conversion: 2.5, budget: BigDecimal("0"), starts_on: Date.new(2025, 2, 3) }
            when "Opportunity"
              { name: "a: b", user_id: 68_999, access: "Public", stage: "prospecting",
                amount: BigDecimal("10.25"), probability: 23 }
@@ -208,7 +212,8 @@ def audit_goldens_record(model, id)
            when "Contact"
              { first_name: "Zoë😀", last_name: "Contact", user_id: 68_999, access: "Public",
                born_on: Date.new(1990, 1, 2), do_not_call: true, cf_audit_contact_string: "2025-01-01",
-               cf_audit_contact_decimal: BigDecimal("2.75"), cf_audit_contact_date: Date.new(2024, 12, 31),
+               cf_audit_contact_decimal: BigDecimal("-0.000000001"),
+               cf_audit_contact_date: Date.new(2024, 12, 31),
                cf_audit_contact_datetime: time, cf_audit_contact_boolean: false,
                cf_audit_contact_check_boxes: %w[123 alpha] }
            when "AccountContact"

@@ -390,7 +390,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "12.5"
+          "v": "12345678901234567890.123456789"
         },
         "cf_audit_date": {
           "t": "date",
@@ -422,7 +422,7 @@
           "related_type": null,
           "related_id": null,
           "object": null,
-          "object_changes": "---\nid:\n-\n- 69001\nuser_id:\n-\n- 68999\nname:\n- ''\n- 'yes'\ncreated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\n-\n- |-\n  Line one\n  Line two\ncategory:\n-\n- customer\ncf_audit_string:\n-\n- 'a: b'\ncf_audit_decimal:\n-\n- !ruby/object:BigDecimal 18:0.125e2\ncf_audit_date:\n-\n- 2025-02-03\ncf_audit_datetime:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean:\n-\n- true\ncf_audit_check_boxes:\n-\n- '[\"yes\", \"alpha\"]'\n"
+          "object_changes": "---\nid:\n-\n- 69001\nuser_id:\n-\n- 68999\nname:\n- ''\n- 'yes'\ncreated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\n-\n- |-\n  Line one\n  Line two\ncategory:\n-\n- customer\ncf_audit_string:\n-\n- 'a: b'\ncf_audit_decimal:\n-\n- !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\ncf_audit_date:\n-\n- 2025-02-03\ncf_audit_datetime:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean:\n-\n- true\ncf_audit_check_boxes:\n-\n- '[\"yes\", \"alpha\"]'\n"
         }
       ]
     },
@@ -540,7 +540,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "12.5"
+          "v": "12345678901234567890.123456789"
         },
         "cf_audit_date": {
           "t": "date",
@@ -572,7 +572,7 @@
           "related_type": null,
           "related_id": null,
           "object": null,
-          "object_changes": "---\nid:\n-\n- 69002\nuser_id:\n-\n- 68999\nname:\n- ''\n- 'yes'\ncreated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\n-\n- |-\n  Line one\n  Line two\ncategory:\n-\n- customer\ncf_audit_string:\n-\n- 'a: b'\ncf_audit_decimal:\n-\n- !ruby/object:BigDecimal 18:0.125e2\ncf_audit_date:\n-\n- 2025-02-03\ncf_audit_datetime:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean:\n-\n- true\ncf_audit_check_boxes:\n-\n- '[\"yes\", \"alpha\"]'\n"
+          "object_changes": "---\nid:\n-\n- 69002\nuser_id:\n-\n- 68999\nname:\n- ''\n- 'yes'\ncreated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\n-\n- |-\n  Line one\n  Line two\ncategory:\n-\n- customer\ncf_audit_string:\n-\n- 'a: b'\ncf_audit_decimal:\n-\n- !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\ncf_audit_date:\n-\n- 2025-02-03\ncf_audit_datetime:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean:\n-\n- true\ncf_audit_check_boxes:\n-\n- '[\"yes\", \"alpha\"]'\n"
         }
       ]
     },
@@ -697,7 +697,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "12.5"
+          "v": "12345678901234567890.123456789"
         },
         "cf_audit_date": {
           "t": "date",
@@ -829,7 +829,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "42.13"
+          "v": "42.125"
         },
         "cf_audit_date": {
           "t": "date",
@@ -860,8 +860,8 @@
           "whodunnit": "68999",
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69003\nuser_id: 68999\nassigned_to:\nname: 'yes'\naccess: Public\nwebsite:\ntoll_free_phone:\nphone:\nfax:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nemail:\nbackground_info: |-\n  Line one\n  Line two\nrating: 0\ncategory: customer\nsubscribed_users:\ncontacts_count: 0\nopportunities_count: 0\nwikidata_id:\nlatitude:\nlongitude:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nbluesky:\ninstagram:\nmastodon:\ncf_audit_string: 'a: b'\ncf_audit_decimal: !ruby/object:BigDecimal 18:0.125e2\ncf_audit_date: 2025-02-03\ncf_audit_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean: true\ncf_audit_check_boxes: '[\"yes\", \"alpha\"]'\ntag_list:\n",
-          "object_changes": "---\nname:\n- 'yes'\n- 'a: b'\nphone:\n-\n- ''\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-02 10:00:00.000000000 Z\n  zone: *1\n  time: 2025-01-02 10:00:00.000000000 Z\nrating:\n- 0\n- 123\ncf_audit_string:\n- 'a: b'\n- |-\n  multi\n  line\ncf_audit_decimal:\n- !ruby/object:BigDecimal 18:0.125e2\n- !ruby/object:BigDecimal 18:0.4213e2\n"
+          "object": "---\nid: 69003\nuser_id: 68999\nassigned_to:\nname: 'yes'\naccess: Public\nwebsite:\ntoll_free_phone:\nphone:\nfax:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nemail:\nbackground_info: |-\n  Line one\n  Line two\nrating: 0\ncategory: customer\nsubscribed_users:\ncontacts_count: 0\nopportunities_count: 0\nwikidata_id:\nlatitude:\nlongitude:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nbluesky:\ninstagram:\nmastodon:\ncf_audit_string: 'a: b'\ncf_audit_decimal: !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\ncf_audit_date: 2025-02-03\ncf_audit_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean: true\ncf_audit_check_boxes: '[\"yes\", \"alpha\"]'\ntag_list:\n",
+          "object_changes": "---\nname:\n- 'yes'\n- 'a: b'\nphone:\n-\n- ''\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-02 10:00:00.000000000 Z\n  zone: *1\n  time: 2025-01-02 10:00:00.000000000 Z\nrating:\n- 0\n- 123\ncf_audit_string:\n- 'a: b'\n- |-\n  multi\n  line\ncf_audit_decimal:\n- !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\n- !ruby/object:BigDecimal 18:0.42125e2\n"
         }
       ]
     },
@@ -986,7 +986,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "12.5"
+          "v": "12345678901234567890.123456789"
         },
         "cf_audit_date": {
           "t": "date",
@@ -1118,7 +1118,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "42.13"
+          "v": "42.125"
         },
         "cf_audit_date": {
           "t": "date",
@@ -1149,8 +1149,8 @@
           "whodunnit": null,
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69004\nuser_id: 68999\nassigned_to:\nname: 'yes'\naccess: Public\nwebsite:\ntoll_free_phone:\nphone:\nfax:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nemail:\nbackground_info: |-\n  Line one\n  Line two\nrating: 0\ncategory: customer\nsubscribed_users:\ncontacts_count: 0\nopportunities_count: 0\nwikidata_id:\nlatitude:\nlongitude:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nbluesky:\ninstagram:\nmastodon:\ncf_audit_string: 'a: b'\ncf_audit_decimal: !ruby/object:BigDecimal 18:0.125e2\ncf_audit_date: 2025-02-03\ncf_audit_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean: true\ncf_audit_check_boxes: '[\"yes\", \"alpha\"]'\ntag_list:\n",
-          "object_changes": "---\nname:\n- 'yes'\n- 'a: b'\nphone:\n-\n- ''\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-02 10:00:00.000000000 Z\n  zone: *1\n  time: 2025-01-02 10:00:00.000000000 Z\nrating:\n- 0\n- 123\ncf_audit_string:\n- 'a: b'\n- |-\n  multi\n  line\ncf_audit_decimal:\n- !ruby/object:BigDecimal 18:0.125e2\n- !ruby/object:BigDecimal 18:0.4213e2\n"
+          "object": "---\nid: 69004\nuser_id: 68999\nassigned_to:\nname: 'yes'\naccess: Public\nwebsite:\ntoll_free_phone:\nphone:\nfax:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nemail:\nbackground_info: |-\n  Line one\n  Line two\nrating: 0\ncategory: customer\nsubscribed_users:\ncontacts_count: 0\nopportunities_count: 0\nwikidata_id:\nlatitude:\nlongitude:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nbluesky:\ninstagram:\nmastodon:\ncf_audit_string: 'a: b'\ncf_audit_decimal: !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\ncf_audit_date: 2025-02-03\ncf_audit_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean: true\ncf_audit_check_boxes: '[\"yes\", \"alpha\"]'\ntag_list:\n",
+          "object_changes": "---\nname:\n- 'yes'\n- 'a: b'\nphone:\n-\n- ''\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-02 10:00:00.000000000 Z\n  zone: *1\n  time: 2025-01-02 10:00:00.000000000 Z\nrating:\n- 0\n- 123\ncf_audit_string:\n- 'a: b'\n- |-\n  multi\n  line\ncf_audit_decimal:\n- !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\n- !ruby/object:BigDecimal 18:0.42125e2\n"
         }
       ]
     },
@@ -1269,7 +1269,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "12.5"
+          "v": "12345678901234567890.123456789"
         },
         "cf_audit_date": {
           "t": "date",
@@ -1405,7 +1405,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "12.5"
+          "v": "12345678901234567890.123456789"
         },
         "cf_audit_date": {
           "t": "date",
@@ -1545,7 +1545,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "12.5"
+          "v": "12345678901234567890.123456789"
         },
         "cf_audit_date": {
           "t": "date",
@@ -1681,7 +1681,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "12.5"
+          "v": "12345678901234567890.123456789"
         },
         "cf_audit_date": {
           "t": "date",
@@ -1819,7 +1819,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "12.5"
+          "v": "12345678901234567890.123456789"
         },
         "cf_audit_date": {
           "t": "date",
@@ -1950,7 +1950,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "12.5"
+          "v": "12345678901234567890.123456789"
         },
         "cf_audit_date": {
           "t": "date",
@@ -1981,7 +1981,7 @@
           "whodunnit": "68999",
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69007\nuser_id: 68999\nassigned_to:\nname: 'yes'\naccess: Public\nwebsite:\ntoll_free_phone:\nphone:\nfax:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &2 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-02-01 12:00:00.000000000 Z\n  zone: *1\n  time: 2025-02-01 12:00:00.000000000 Z\nemail:\nbackground_info: |-\n  Line one\n  Line two\nrating: 0\ncategory: customer\nsubscribed_users:\ncontacts_count: 0\nopportunities_count: 0\nwikidata_id:\nlatitude:\nlongitude:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nbluesky:\ninstagram:\nmastodon:\ncf_audit_string: 'a: b'\ncf_audit_decimal: !ruby/object:BigDecimal 18:0.125e2\ncf_audit_date: 2025-02-03\ncf_audit_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *2\n  zone: *1\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean: true\ncf_audit_check_boxes: '[\"yes\", \"alpha\"]'\ntag_list:\n",
+          "object": "---\nid: 69007\nuser_id: 68999\nassigned_to:\nname: 'yes'\naccess: Public\nwebsite:\ntoll_free_phone:\nphone:\nfax:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &2 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-02-01 12:00:00.000000000 Z\n  zone: *1\n  time: 2025-02-01 12:00:00.000000000 Z\nemail:\nbackground_info: |-\n  Line one\n  Line two\nrating: 0\ncategory: customer\nsubscribed_users:\ncontacts_count: 0\nopportunities_count: 0\nwikidata_id:\nlatitude:\nlongitude:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nbluesky:\ninstagram:\nmastodon:\ncf_audit_string: 'a: b'\ncf_audit_decimal: !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\ncf_audit_date: 2025-02-03\ncf_audit_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *2\n  zone: *1\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean: true\ncf_audit_check_boxes: '[\"yes\", \"alpha\"]'\ntag_list:\n",
           "object_changes": null
         }
       ]
@@ -2099,7 +2099,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "12.5"
+          "v": "12345678901234567890.123456789"
         },
         "cf_audit_date": {
           "t": "date",
@@ -2230,7 +2230,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "12.5"
+          "v": "12345678901234567890.123456789"
         },
         "cf_audit_date": {
           "t": "date",
@@ -2261,7 +2261,7 @@
           "whodunnit": null,
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69008\nuser_id: 68999\nassigned_to:\nname: 'yes'\naccess: Public\nwebsite:\ntoll_free_phone:\nphone:\nfax:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &2 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-02-01 12:00:00.000000000 Z\n  zone: *1\n  time: 2025-02-01 12:00:00.000000000 Z\nemail:\nbackground_info: |-\n  Line one\n  Line two\nrating: 0\ncategory: customer\nsubscribed_users:\ncontacts_count: 0\nopportunities_count: 0\nwikidata_id:\nlatitude:\nlongitude:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nbluesky:\ninstagram:\nmastodon:\ncf_audit_string: 'a: b'\ncf_audit_decimal: !ruby/object:BigDecimal 18:0.125e2\ncf_audit_date: 2025-02-03\ncf_audit_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *2\n  zone: *1\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean: true\ncf_audit_check_boxes: '[\"yes\", \"alpha\"]'\ntag_list:\n",
+          "object": "---\nid: 69008\nuser_id: 68999\nassigned_to:\nname: 'yes'\naccess: Public\nwebsite:\ntoll_free_phone:\nphone:\nfax:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &2 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-02-01 12:00:00.000000000 Z\n  zone: *1\n  time: 2025-02-01 12:00:00.000000000 Z\nemail:\nbackground_info: |-\n  Line one\n  Line two\nrating: 0\ncategory: customer\nsubscribed_users:\ncontacts_count: 0\nopportunities_count: 0\nwikidata_id:\nlatitude:\nlongitude:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nbluesky:\ninstagram:\nmastodon:\ncf_audit_string: 'a: b'\ncf_audit_decimal: !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\ncf_audit_date: 2025-02-03\ncf_audit_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *2\n  zone: *1\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean: true\ncf_audit_check_boxes: '[\"yes\", \"alpha\"]'\ntag_list:\n",
           "object_changes": null
         }
       ]
@@ -2379,7 +2379,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "12.5"
+          "v": "12345678901234567890.123456789"
         },
         "cf_audit_date": {
           "t": "date",
@@ -2510,7 +2510,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "12.5"
+          "v": "12345678901234567890.123456789"
         },
         "cf_audit_date": {
           "t": "date",
@@ -2541,8 +2541,8 @@
           "whodunnit": "68999",
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69009\nuser_id: 68999\nassigned_to:\nname: 'yes'\naccess: Public\nwebsite:\ntoll_free_phone:\nphone:\nfax:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nemail:\nbackground_info: |-\n  Line one\n  Line two\nrating: 0\ncategory: customer\nsubscribed_users:\ncontacts_count: 0\nopportunities_count: 0\nwikidata_id:\nlatitude:\nlongitude:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nbluesky:\ninstagram:\nmastodon:\ncf_audit_string: 'a: b'\ncf_audit_decimal: !ruby/object:BigDecimal 18:0.125e2\ncf_audit_date: 2025-02-03\ncf_audit_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean: true\ncf_audit_check_boxes: '[\"yes\", \"alpha\"]'\ntag_list:\n",
-          "object_changes": "---\nid:\n- 69009\n-\nuser_id:\n- 68999\n-\nassigned_to:\n-\n-\nname:\n- 'yes'\n-\naccess:\n- Public\n-\nwebsite:\n-\n-\ntoll_free_phone:\n-\n-\nphone:\n-\n-\nfax:\n-\n-\ndeleted_at:\n-\n-\ncreated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nemail:\n-\n-\nbackground_info:\n- |-\n  Line one\n  Line two\n-\nrating:\n- 0\n-\ncategory:\n- customer\n-\ncontacts_count:\n- 0\n-\nopportunities_count:\n- 0\n-\nwikidata_id:\n-\n-\nlatitude:\n-\n-\nlongitude:\n-\n-\nblog:\n-\n-\nlinkedin:\n-\n-\nfacebook:\n-\n-\ntwitter:\n-\n-\nbluesky:\n-\n-\ninstagram:\n-\n-\nmastodon:\n-\n-\ncf_audit_string:\n- 'a: b'\n-\ncf_audit_decimal:\n- !ruby/object:BigDecimal 18:0.125e2\n-\ncf_audit_date:\n- 2025-02-03\n-\ncf_audit_datetime:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\ncf_audit_boolean:\n- true\n-\ncf_audit_check_boxes:\n- '[\"yes\", \"alpha\"]'\n-\ntag_list:\n-\n-\n"
+          "object": "---\nid: 69009\nuser_id: 68999\nassigned_to:\nname: 'yes'\naccess: Public\nwebsite:\ntoll_free_phone:\nphone:\nfax:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nemail:\nbackground_info: |-\n  Line one\n  Line two\nrating: 0\ncategory: customer\nsubscribed_users:\ncontacts_count: 0\nopportunities_count: 0\nwikidata_id:\nlatitude:\nlongitude:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nbluesky:\ninstagram:\nmastodon:\ncf_audit_string: 'a: b'\ncf_audit_decimal: !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\ncf_audit_date: 2025-02-03\ncf_audit_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean: true\ncf_audit_check_boxes: '[\"yes\", \"alpha\"]'\ntag_list:\n",
+          "object_changes": "---\nid:\n- 69009\n-\nuser_id:\n- 68999\n-\nassigned_to:\n-\n-\nname:\n- 'yes'\n-\naccess:\n- Public\n-\nwebsite:\n-\n-\ntoll_free_phone:\n-\n-\nphone:\n-\n-\nfax:\n-\n-\ndeleted_at:\n-\n-\ncreated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nemail:\n-\n-\nbackground_info:\n- |-\n  Line one\n  Line two\n-\nrating:\n- 0\n-\ncategory:\n- customer\n-\ncontacts_count:\n- 0\n-\nopportunities_count:\n- 0\n-\nwikidata_id:\n-\n-\nlatitude:\n-\n-\nlongitude:\n-\n-\nblog:\n-\n-\nlinkedin:\n-\n-\nfacebook:\n-\n-\ntwitter:\n-\n-\nbluesky:\n-\n-\ninstagram:\n-\n-\nmastodon:\n-\n-\ncf_audit_string:\n- 'a: b'\n-\ncf_audit_decimal:\n- !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\n-\ncf_audit_date:\n- 2025-02-03\n-\ncf_audit_datetime:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\ncf_audit_boolean:\n- true\n-\ncf_audit_check_boxes:\n- '[\"yes\", \"alpha\"]'\n-\ntag_list:\n-\n-\n"
         }
       ]
     },
@@ -2659,7 +2659,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "12.5"
+          "v": "12345678901234567890.123456789"
         },
         "cf_audit_date": {
           "t": "date",
@@ -2790,7 +2790,7 @@
         },
         "cf_audit_decimal": {
           "t": "decimal",
-          "v": "12.5"
+          "v": "12345678901234567890.123456789"
         },
         "cf_audit_date": {
           "t": "date",
@@ -2821,8 +2821,8 @@
           "whodunnit": null,
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69010\nuser_id: 68999\nassigned_to:\nname: 'yes'\naccess: Public\nwebsite:\ntoll_free_phone:\nphone:\nfax:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nemail:\nbackground_info: |-\n  Line one\n  Line two\nrating: 0\ncategory: customer\nsubscribed_users:\ncontacts_count: 0\nopportunities_count: 0\nwikidata_id:\nlatitude:\nlongitude:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nbluesky:\ninstagram:\nmastodon:\ncf_audit_string: 'a: b'\ncf_audit_decimal: !ruby/object:BigDecimal 18:0.125e2\ncf_audit_date: 2025-02-03\ncf_audit_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean: true\ncf_audit_check_boxes: '[\"yes\", \"alpha\"]'\ntag_list:\n",
-          "object_changes": "---\nid:\n- 69010\n-\nuser_id:\n- 68999\n-\nassigned_to:\n-\n-\nname:\n- 'yes'\n-\naccess:\n- Public\n-\nwebsite:\n-\n-\ntoll_free_phone:\n-\n-\nphone:\n-\n-\nfax:\n-\n-\ndeleted_at:\n-\n-\ncreated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nemail:\n-\n-\nbackground_info:\n- |-\n  Line one\n  Line two\n-\nrating:\n- 0\n-\ncategory:\n- customer\n-\ncontacts_count:\n- 0\n-\nopportunities_count:\n- 0\n-\nwikidata_id:\n-\n-\nlatitude:\n-\n-\nlongitude:\n-\n-\nblog:\n-\n-\nlinkedin:\n-\n-\nfacebook:\n-\n-\ntwitter:\n-\n-\nbluesky:\n-\n-\ninstagram:\n-\n-\nmastodon:\n-\n-\ncf_audit_string:\n- 'a: b'\n-\ncf_audit_decimal:\n- !ruby/object:BigDecimal 18:0.125e2\n-\ncf_audit_date:\n- 2025-02-03\n-\ncf_audit_datetime:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\ncf_audit_boolean:\n- true\n-\ncf_audit_check_boxes:\n- '[\"yes\", \"alpha\"]'\n-\ntag_list:\n-\n-\n"
+          "object": "---\nid: 69010\nuser_id: 68999\nassigned_to:\nname: 'yes'\naccess: Public\nwebsite:\ntoll_free_phone:\nphone:\nfax:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nemail:\nbackground_info: |-\n  Line one\n  Line two\nrating: 0\ncategory: customer\nsubscribed_users:\ncontacts_count: 0\nopportunities_count: 0\nwikidata_id:\nlatitude:\nlongitude:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nbluesky:\ninstagram:\nmastodon:\ncf_audit_string: 'a: b'\ncf_audit_decimal: !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\ncf_audit_date: 2025-02-03\ncf_audit_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean: true\ncf_audit_check_boxes: '[\"yes\", \"alpha\"]'\ntag_list:\n",
+          "object_changes": "---\nid:\n- 69010\n-\nuser_id:\n- 68999\n-\nassigned_to:\n-\n-\nname:\n- 'yes'\n-\naccess:\n- Public\n-\nwebsite:\n-\n-\ntoll_free_phone:\n-\n-\nphone:\n-\n-\nfax:\n-\n-\ndeleted_at:\n-\n-\ncreated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nemail:\n-\n-\nbackground_info:\n- |-\n  Line one\n  Line two\n-\nrating:\n- 0\n-\ncategory:\n- customer\n-\ncontacts_count:\n- 0\n-\nopportunities_count:\n- 0\n-\nwikidata_id:\n-\n-\nlatitude:\n-\n-\nlongitude:\n-\n-\nblog:\n-\n-\nlinkedin:\n-\n-\nfacebook:\n-\n-\ntwitter:\n-\n-\nbluesky:\n-\n-\ninstagram:\n-\n-\nmastodon:\n-\n-\ncf_audit_string:\n- 'a: b'\n-\ncf_audit_decimal:\n- !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\n-\ncf_audit_date:\n- 2025-02-03\n-\ncf_audit_datetime:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\ncf_audit_boolean:\n- true\n-\ncf_audit_check_boxes:\n- '[\"yes\", \"alpha\"]'\n-\ntag_list:\n-\n-\n"
         }
       ]
     },
@@ -2858,7 +2858,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -2922,7 +2922,7 @@
           "related_type": null,
           "related_id": null,
           "object": null,
-          "object_changes": "---\nid:\n-\n- 69011\nuser_id:\n-\n- 68999\nname:\n- ''\n- '123'\nstatus:\n-\n- planned\nbudget:\n-\n- !ruby/object:BigDecimal 18:0.100025e4\ntarget_conversion:\n-\n- 2.5\nstarts_on:\n-\n- 2025-02-03\ncreated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n"
+          "object_changes": "---\nid:\n-\n- 69011\nuser_id:\n-\n- 68999\nname:\n- ''\n- '123'\nstatus:\n-\n- planned\nbudget:\n-\n- !ruby/object:BigDecimal 9:0.0\ntarget_conversion:\n-\n- 2.5\nstarts_on:\n-\n- 2025-02-03\ncreated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n"
         }
       ]
     },
@@ -2958,7 +2958,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -3022,7 +3022,7 @@
           "related_type": null,
           "related_id": null,
           "object": null,
-          "object_changes": "---\nid:\n-\n- 69012\nuser_id:\n-\n- 68999\nname:\n- ''\n- '123'\nstatus:\n-\n- planned\nbudget:\n-\n- !ruby/object:BigDecimal 18:0.100025e4\ntarget_conversion:\n-\n- 2.5\nstarts_on:\n-\n- 2025-02-03\ncreated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n"
+          "object_changes": "---\nid:\n-\n- 69012\nuser_id:\n-\n- 68999\nname:\n- ''\n- '123'\nstatus:\n-\n- planned\nbudget:\n-\n- !ruby/object:BigDecimal 9:0.0\ntarget_conversion:\n-\n- 2.5\nstarts_on:\n-\n- 2025-02-03\ncreated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n"
         }
       ]
     },
@@ -3063,7 +3063,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -3144,7 +3144,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -3207,7 +3207,7 @@
           "whodunnit": "68999",
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69013\nuser_id: 68999\nassigned_to:\nname: '123'\naccess: Public\nstatus: planned\nbudget: !ruby/object:BigDecimal 18:0.100025e4\ntarget_leads:\ntarget_conversion: 2.5\ntarget_revenue:\nleads_count:\nopportunities_count:\nrevenue:\nstarts_on: 2025-02-03\nends_on:\nobjectives:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\nsubscribed_users:\ntag_list:\n",
+          "object": "---\nid: 69013\nuser_id: 68999\nassigned_to:\nname: '123'\naccess: Public\nstatus: planned\nbudget: !ruby/object:BigDecimal 9:0.0\ntarget_leads:\ntarget_conversion: 2.5\ntarget_revenue:\nleads_count:\nopportunities_count:\nrevenue:\nstarts_on: 2025-02-03\nends_on:\nobjectives:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\nsubscribed_users:\ntag_list:\n",
           "object_changes": "---\nname:\n- '123'\n- 'a: b'\nstarts_on:\n- 2025-02-03\n- 2025-03-04\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-02 10:00:00.000000000 Z\n  zone: *1\n  time: 2025-01-02 10:00:00.000000000 Z\n"
         }
       ]
@@ -3249,7 +3249,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -3330,7 +3330,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -3393,7 +3393,7 @@
           "whodunnit": null,
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69014\nuser_id: 68999\nassigned_to:\nname: '123'\naccess: Public\nstatus: planned\nbudget: !ruby/object:BigDecimal 18:0.100025e4\ntarget_leads:\ntarget_conversion: 2.5\ntarget_revenue:\nleads_count:\nopportunities_count:\nrevenue:\nstarts_on: 2025-02-03\nends_on:\nobjectives:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\nsubscribed_users:\ntag_list:\n",
+          "object": "---\nid: 69014\nuser_id: 68999\nassigned_to:\nname: '123'\naccess: Public\nstatus: planned\nbudget: !ruby/object:BigDecimal 9:0.0\ntarget_leads:\ntarget_conversion: 2.5\ntarget_revenue:\nleads_count:\nopportunities_count:\nrevenue:\nstarts_on: 2025-02-03\nends_on:\nobjectives:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\nsubscribed_users:\ntag_list:\n",
           "object_changes": "---\nname:\n- '123'\n- 'a: b'\nstarts_on:\n- 2025-02-03\n- 2025-03-04\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-02 10:00:00.000000000 Z\n  zone: *1\n  time: 2025-01-02 10:00:00.000000000 Z\n"
         }
       ]
@@ -3431,7 +3431,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -3512,7 +3512,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -3607,7 +3607,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -3688,7 +3688,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -3781,7 +3781,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -3862,7 +3862,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -3925,7 +3925,7 @@
           "whodunnit": "68999",
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69017\nuser_id: 68999\nassigned_to:\nname: '123'\naccess: Public\nstatus: planned\nbudget: !ruby/object:BigDecimal 18:0.100025e4\ntarget_leads:\ntarget_conversion: 2.5\ntarget_revenue:\nleads_count:\nopportunities_count:\nrevenue:\nstarts_on: 2025-02-03\nends_on:\nobjectives:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-02-01 12:00:00.000000000 Z\n  zone: *1\n  time: 2025-02-01 12:00:00.000000000 Z\nbackground_info:\nsubscribed_users:\ntag_list:\n",
+          "object": "---\nid: 69017\nuser_id: 68999\nassigned_to:\nname: '123'\naccess: Public\nstatus: planned\nbudget: !ruby/object:BigDecimal 9:0.0\ntarget_leads:\ntarget_conversion: 2.5\ntarget_revenue:\nleads_count:\nopportunities_count:\nrevenue:\nstarts_on: 2025-02-03\nends_on:\nobjectives:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-02-01 12:00:00.000000000 Z\n  zone: *1\n  time: 2025-02-01 12:00:00.000000000 Z\nbackground_info:\nsubscribed_users:\ntag_list:\n",
           "object_changes": null
         }
       ]
@@ -3961,7 +3961,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -4042,7 +4042,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -4105,7 +4105,7 @@
           "whodunnit": null,
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69018\nuser_id: 68999\nassigned_to:\nname: '123'\naccess: Public\nstatus: planned\nbudget: !ruby/object:BigDecimal 18:0.100025e4\ntarget_leads:\ntarget_conversion: 2.5\ntarget_revenue:\nleads_count:\nopportunities_count:\nrevenue:\nstarts_on: 2025-02-03\nends_on:\nobjectives:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-02-01 12:00:00.000000000 Z\n  zone: *1\n  time: 2025-02-01 12:00:00.000000000 Z\nbackground_info:\nsubscribed_users:\ntag_list:\n",
+          "object": "---\nid: 69018\nuser_id: 68999\nassigned_to:\nname: '123'\naccess: Public\nstatus: planned\nbudget: !ruby/object:BigDecimal 9:0.0\ntarget_leads:\ntarget_conversion: 2.5\ntarget_revenue:\nleads_count:\nopportunities_count:\nrevenue:\nstarts_on: 2025-02-03\nends_on:\nobjectives:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-02-01 12:00:00.000000000 Z\n  zone: *1\n  time: 2025-02-01 12:00:00.000000000 Z\nbackground_info:\nsubscribed_users:\ntag_list:\n",
           "object_changes": null
         }
       ]
@@ -4141,7 +4141,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -4222,7 +4222,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -4285,8 +4285,8 @@
           "whodunnit": "68999",
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69019\nuser_id: 68999\nassigned_to:\nname: '123'\naccess: Public\nstatus: planned\nbudget: !ruby/object:BigDecimal 18:0.100025e4\ntarget_leads:\ntarget_conversion: 2.5\ntarget_revenue:\nleads_count:\nopportunities_count:\nrevenue:\nstarts_on: 2025-02-03\nends_on:\nobjectives:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\nsubscribed_users:\ntag_list:\n",
-          "object_changes": "---\nid:\n- 69019\n-\nuser_id:\n- 68999\n-\nassigned_to:\n-\n-\nname:\n- '123'\n-\naccess:\n- Public\n-\nstatus:\n- planned\n-\nbudget:\n- !ruby/object:BigDecimal 18:0.100025e4\n-\ntarget_leads:\n-\n-\ntarget_conversion:\n- 2.5\n-\ntarget_revenue:\n-\n-\nleads_count:\n-\n-\nopportunities_count:\n-\n-\nrevenue:\n-\n-\nstarts_on:\n- 2025-02-03\n-\nends_on:\n-\n-\nobjectives:\n-\n-\ndeleted_at:\n-\n-\ncreated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nbackground_info:\n-\n-\ntag_list:\n-\n-\n"
+          "object": "---\nid: 69019\nuser_id: 68999\nassigned_to:\nname: '123'\naccess: Public\nstatus: planned\nbudget: !ruby/object:BigDecimal 9:0.0\ntarget_leads:\ntarget_conversion: 2.5\ntarget_revenue:\nleads_count:\nopportunities_count:\nrevenue:\nstarts_on: 2025-02-03\nends_on:\nobjectives:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\nsubscribed_users:\ntag_list:\n",
+          "object_changes": "---\nid:\n- 69019\n-\nuser_id:\n- 68999\n-\nassigned_to:\n-\n-\nname:\n- '123'\n-\naccess:\n- Public\n-\nstatus:\n- planned\n-\nbudget:\n- !ruby/object:BigDecimal 9:0.0\n-\ntarget_leads:\n-\n-\ntarget_conversion:\n- 2.5\n-\ntarget_revenue:\n-\n-\nleads_count:\n-\n-\nopportunities_count:\n-\n-\nrevenue:\n-\n-\nstarts_on:\n- 2025-02-03\n-\nends_on:\n-\n-\nobjectives:\n-\n-\ndeleted_at:\n-\n-\ncreated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nbackground_info:\n-\n-\ntag_list:\n-\n-\n"
         }
       ]
     },
@@ -4321,7 +4321,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -4402,7 +4402,7 @@
         },
         "budget": {
           "t": "decimal",
-          "v": "1000.25"
+          "v": "0.0"
         },
         "target_leads": {
           "t": "nil"
@@ -4465,8 +4465,8 @@
           "whodunnit": null,
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69020\nuser_id: 68999\nassigned_to:\nname: '123'\naccess: Public\nstatus: planned\nbudget: !ruby/object:BigDecimal 18:0.100025e4\ntarget_leads:\ntarget_conversion: 2.5\ntarget_revenue:\nleads_count:\nopportunities_count:\nrevenue:\nstarts_on: 2025-02-03\nends_on:\nobjectives:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\nsubscribed_users:\ntag_list:\n",
-          "object_changes": "---\nid:\n- 69020\n-\nuser_id:\n- 68999\n-\nassigned_to:\n-\n-\nname:\n- '123'\n-\naccess:\n- Public\n-\nstatus:\n- planned\n-\nbudget:\n- !ruby/object:BigDecimal 18:0.100025e4\n-\ntarget_leads:\n-\n-\ntarget_conversion:\n- 2.5\n-\ntarget_revenue:\n-\n-\nleads_count:\n-\n-\nopportunities_count:\n-\n-\nrevenue:\n-\n-\nstarts_on:\n- 2025-02-03\n-\nends_on:\n-\n-\nobjectives:\n-\n-\ndeleted_at:\n-\n-\ncreated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nbackground_info:\n-\n-\ntag_list:\n-\n-\n"
+          "object": "---\nid: 69020\nuser_id: 68999\nassigned_to:\nname: '123'\naccess: Public\nstatus: planned\nbudget: !ruby/object:BigDecimal 9:0.0\ntarget_leads:\ntarget_conversion: 2.5\ntarget_revenue:\nleads_count:\nopportunities_count:\nrevenue:\nstarts_on: 2025-02-03\nends_on:\nobjectives:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\nsubscribed_users:\ntag_list:\n",
+          "object_changes": "---\nid:\n- 69020\n-\nuser_id:\n- 68999\n-\nassigned_to:\n-\n-\nname:\n- '123'\n-\naccess:\n- Public\n-\nstatus:\n- planned\n-\nbudget:\n- !ruby/object:BigDecimal 9:0.0\n-\ntarget_leads:\n-\n-\ntarget_conversion:\n- 2.5\n-\ntarget_revenue:\n-\n-\nleads_count:\n-\n-\nopportunities_count:\n-\n-\nrevenue:\n-\n-\nstarts_on:\n- 2025-02-03\n-\nends_on:\n-\n-\nobjectives:\n-\n-\ndeleted_at:\n-\n-\ncreated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nbackground_info:\n-\n-\ntag_list:\n-\n-\n"
         }
       ]
     },
@@ -8294,7 +8294,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -8326,7 +8326,7 @@
           "related_type": null,
           "related_id": null,
           "object": null,
-          "object_changes": "---\nid:\n-\n- 69041\nuser_id:\n-\n- 68999\nfirst_name:\n- ''\n- \"Zoë\\U0001F600\"\nlast_name:\n- ''\n- Contact\nborn_on:\n-\n- 1990-01-02\ndo_not_call:\n- false\n- true\ncreated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_string:\n-\n- '2025-01-01'\ncf_audit_contact_decimal:\n-\n- !ruby/object:BigDecimal 18:0.275e1\ncf_audit_contact_date:\n-\n- 2024-12-31\ncf_audit_contact_datetime:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_boolean:\n-\n- false\ncf_audit_contact_check_boxes:\n-\n- '[\"123\", \"alpha\"]'\n"
+          "object_changes": "---\nid:\n-\n- 69041\nuser_id:\n-\n- 68999\nfirst_name:\n- ''\n- \"Zoë\\U0001F600\"\nlast_name:\n- ''\n- Contact\nborn_on:\n-\n- 1990-01-02\ndo_not_call:\n- false\n- true\ncreated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_string:\n-\n- '2025-01-01'\ncf_audit_contact_decimal:\n-\n- !ruby/object:BigDecimal 9:-0.1e-8\ncf_audit_contact_date:\n-\n- 2024-12-31\ncf_audit_contact_datetime:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_boolean:\n-\n- false\ncf_audit_contact_check_boxes:\n-\n- '[\"123\", \"alpha\"]'\n"
         }
       ]
     },
@@ -8454,7 +8454,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -8486,7 +8486,7 @@
           "related_type": null,
           "related_id": null,
           "object": null,
-          "object_changes": "---\nid:\n-\n- 69042\nuser_id:\n-\n- 68999\nfirst_name:\n- ''\n- \"Zoë\\U0001F600\"\nlast_name:\n- ''\n- Contact\nborn_on:\n-\n- 1990-01-02\ndo_not_call:\n- false\n- true\ncreated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_string:\n-\n- '2025-01-01'\ncf_audit_contact_decimal:\n-\n- !ruby/object:BigDecimal 18:0.275e1\ncf_audit_contact_date:\n-\n- 2024-12-31\ncf_audit_contact_datetime:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_boolean:\n-\n- false\ncf_audit_contact_check_boxes:\n-\n- '[\"123\", \"alpha\"]'\n"
+          "object_changes": "---\nid:\n-\n- 69042\nuser_id:\n-\n- 68999\nfirst_name:\n- ''\n- \"Zoë\\U0001F600\"\nlast_name:\n- ''\n- Contact\nborn_on:\n-\n- 1990-01-02\ndo_not_call:\n- false\n- true\ncreated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_string:\n-\n- '2025-01-01'\ncf_audit_contact_decimal:\n-\n- !ruby/object:BigDecimal 9:-0.1e-8\ncf_audit_contact_date:\n-\n- 2024-12-31\ncf_audit_contact_datetime:\n-\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_boolean:\n-\n- false\ncf_audit_contact_check_boxes:\n-\n- '[\"123\", \"alpha\"]'\n"
         }
       ]
     },
@@ -8618,7 +8618,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -8760,7 +8760,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -8791,7 +8791,7 @@
           "whodunnit": "68999",
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69043\nuser_id: 68999\nlead_id:\nassigned_to:\nreports_to:\nfirst_name: \"Zoë\\U0001F600\"\nlast_name: Contact\naccess: Public\ntitle:\ndepartment:\nsource:\nemail:\nalt_email:\nphone:\nmobile:\nfax:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nborn_on: 1990-01-02\ndo_not_call: true\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\nsubscribed_users:\nzoom:\nteams:\nsignal:\ninstagram:\nmastodon:\nbluesky:\ncf_audit_contact_string: '2025-01-01'\ncf_audit_contact_decimal: !ruby/object:BigDecimal 18:0.275e1\ncf_audit_contact_date: 2024-12-31\ncf_audit_contact_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_boolean: false\ncf_audit_contact_check_boxes: '[\"123\", \"alpha\"]'\ntag_list:\n",
+          "object": "---\nid: 69043\nuser_id: 68999\nlead_id:\nassigned_to:\nreports_to:\nfirst_name: \"Zoë\\U0001F600\"\nlast_name: Contact\naccess: Public\ntitle:\ndepartment:\nsource:\nemail:\nalt_email:\nphone:\nmobile:\nfax:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nborn_on: 1990-01-02\ndo_not_call: true\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\nsubscribed_users:\nzoom:\nteams:\nsignal:\ninstagram:\nmastodon:\nbluesky:\ncf_audit_contact_string: '2025-01-01'\ncf_audit_contact_decimal: !ruby/object:BigDecimal 9:-0.1e-8\ncf_audit_contact_date: 2024-12-31\ncf_audit_contact_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_boolean: false\ncf_audit_contact_check_boxes: '[\"123\", \"alpha\"]'\ntag_list:\n",
           "object_changes": "---\nfirst_name:\n- \"Zoë\\U0001F600\"\n- 'leading '\nphone:\n-\n- ''\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-02 10:00:00.000000000 Z\n  zone: *1\n  time: 2025-01-02 10:00:00.000000000 Z\n"
         }
       ]
@@ -8924,7 +8924,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -9066,7 +9066,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -9097,7 +9097,7 @@
           "whodunnit": null,
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69044\nuser_id: 68999\nlead_id:\nassigned_to:\nreports_to:\nfirst_name: \"Zoë\\U0001F600\"\nlast_name: Contact\naccess: Public\ntitle:\ndepartment:\nsource:\nemail:\nalt_email:\nphone:\nmobile:\nfax:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nborn_on: 1990-01-02\ndo_not_call: true\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\nsubscribed_users:\nzoom:\nteams:\nsignal:\ninstagram:\nmastodon:\nbluesky:\ncf_audit_contact_string: '2025-01-01'\ncf_audit_contact_decimal: !ruby/object:BigDecimal 18:0.275e1\ncf_audit_contact_date: 2024-12-31\ncf_audit_contact_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_boolean: false\ncf_audit_contact_check_boxes: '[\"123\", \"alpha\"]'\ntag_list:\n",
+          "object": "---\nid: 69044\nuser_id: 68999\nlead_id:\nassigned_to:\nreports_to:\nfirst_name: \"Zoë\\U0001F600\"\nlast_name: Contact\naccess: Public\ntitle:\ndepartment:\nsource:\nemail:\nalt_email:\nphone:\nmobile:\nfax:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nborn_on: 1990-01-02\ndo_not_call: true\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\nsubscribed_users:\nzoom:\nteams:\nsignal:\ninstagram:\nmastodon:\nbluesky:\ncf_audit_contact_string: '2025-01-01'\ncf_audit_contact_decimal: !ruby/object:BigDecimal 9:-0.1e-8\ncf_audit_contact_date: 2024-12-31\ncf_audit_contact_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_boolean: false\ncf_audit_contact_check_boxes: '[\"123\", \"alpha\"]'\ntag_list:\n",
           "object_changes": "---\nfirst_name:\n- \"Zoë\\U0001F600\"\n- 'leading '\nphone:\n-\n- ''\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-02 10:00:00.000000000 Z\n  zone: *1\n  time: 2025-01-02 10:00:00.000000000 Z\n"
         }
       ]
@@ -9227,7 +9227,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -9373,7 +9373,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -9523,7 +9523,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -9669,7 +9669,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -9817,7 +9817,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -9958,7 +9958,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -9989,7 +9989,7 @@
           "whodunnit": "68999",
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69047\nuser_id: 68999\nlead_id:\nassigned_to:\nreports_to:\nfirst_name: \"Zoë\\U0001F600\"\nlast_name: Contact\naccess: Public\ntitle:\ndepartment:\nsource:\nemail:\nalt_email:\nphone:\nmobile:\nfax:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nborn_on: 1990-01-02\ndo_not_call: true\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &2 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-02-01 12:00:00.000000000 Z\n  zone: *1\n  time: 2025-02-01 12:00:00.000000000 Z\nbackground_info:\nsubscribed_users:\nzoom:\nteams:\nsignal:\ninstagram:\nmastodon:\nbluesky:\ncf_audit_contact_string: '2025-01-01'\ncf_audit_contact_decimal: !ruby/object:BigDecimal 18:0.275e1\ncf_audit_contact_date: 2024-12-31\ncf_audit_contact_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *2\n  zone: *1\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_boolean: false\ncf_audit_contact_check_boxes: '[\"123\", \"alpha\"]'\ntag_list:\n",
+          "object": "---\nid: 69047\nuser_id: 68999\nlead_id:\nassigned_to:\nreports_to:\nfirst_name: \"Zoë\\U0001F600\"\nlast_name: Contact\naccess: Public\ntitle:\ndepartment:\nsource:\nemail:\nalt_email:\nphone:\nmobile:\nfax:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nborn_on: 1990-01-02\ndo_not_call: true\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &2 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-02-01 12:00:00.000000000 Z\n  zone: *1\n  time: 2025-02-01 12:00:00.000000000 Z\nbackground_info:\nsubscribed_users:\nzoom:\nteams:\nsignal:\ninstagram:\nmastodon:\nbluesky:\ncf_audit_contact_string: '2025-01-01'\ncf_audit_contact_decimal: !ruby/object:BigDecimal 9:-0.1e-8\ncf_audit_contact_date: 2024-12-31\ncf_audit_contact_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *2\n  zone: *1\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_boolean: false\ncf_audit_contact_check_boxes: '[\"123\", \"alpha\"]'\ntag_list:\n",
           "object_changes": null
         }
       ]
@@ -10117,7 +10117,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -10258,7 +10258,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -10289,7 +10289,7 @@
           "whodunnit": null,
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69048\nuser_id: 68999\nlead_id:\nassigned_to:\nreports_to:\nfirst_name: \"Zoë\\U0001F600\"\nlast_name: Contact\naccess: Public\ntitle:\ndepartment:\nsource:\nemail:\nalt_email:\nphone:\nmobile:\nfax:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nborn_on: 1990-01-02\ndo_not_call: true\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &2 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-02-01 12:00:00.000000000 Z\n  zone: *1\n  time: 2025-02-01 12:00:00.000000000 Z\nbackground_info:\nsubscribed_users:\nzoom:\nteams:\nsignal:\ninstagram:\nmastodon:\nbluesky:\ncf_audit_contact_string: '2025-01-01'\ncf_audit_contact_decimal: !ruby/object:BigDecimal 18:0.275e1\ncf_audit_contact_date: 2024-12-31\ncf_audit_contact_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *2\n  zone: *1\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_boolean: false\ncf_audit_contact_check_boxes: '[\"123\", \"alpha\"]'\ntag_list:\n",
+          "object": "---\nid: 69048\nuser_id: 68999\nlead_id:\nassigned_to:\nreports_to:\nfirst_name: \"Zoë\\U0001F600\"\nlast_name: Contact\naccess: Public\ntitle:\ndepartment:\nsource:\nemail:\nalt_email:\nphone:\nmobile:\nfax:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nborn_on: 1990-01-02\ndo_not_call: true\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &2 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-02-01 12:00:00.000000000 Z\n  zone: *1\n  time: 2025-02-01 12:00:00.000000000 Z\nbackground_info:\nsubscribed_users:\nzoom:\nteams:\nsignal:\ninstagram:\nmastodon:\nbluesky:\ncf_audit_contact_string: '2025-01-01'\ncf_audit_contact_decimal: !ruby/object:BigDecimal 9:-0.1e-8\ncf_audit_contact_date: 2024-12-31\ncf_audit_contact_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *2\n  zone: *1\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_boolean: false\ncf_audit_contact_check_boxes: '[\"123\", \"alpha\"]'\ntag_list:\n",
           "object_changes": null
         }
       ]
@@ -10417,7 +10417,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -10558,7 +10558,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -10589,8 +10589,8 @@
           "whodunnit": "68999",
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69049\nuser_id: 68999\nlead_id:\nassigned_to:\nreports_to:\nfirst_name: \"Zoë\\U0001F600\"\nlast_name: Contact\naccess: Public\ntitle:\ndepartment:\nsource:\nemail:\nalt_email:\nphone:\nmobile:\nfax:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nborn_on: 1990-01-02\ndo_not_call: true\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\nsubscribed_users:\nzoom:\nteams:\nsignal:\ninstagram:\nmastodon:\nbluesky:\ncf_audit_contact_string: '2025-01-01'\ncf_audit_contact_decimal: !ruby/object:BigDecimal 18:0.275e1\ncf_audit_contact_date: 2024-12-31\ncf_audit_contact_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_boolean: false\ncf_audit_contact_check_boxes: '[\"123\", \"alpha\"]'\ntag_list:\n",
-          "object_changes": "---\nid:\n- 69049\n-\nuser_id:\n- 68999\n-\nlead_id:\n-\n-\nassigned_to:\n-\n-\nreports_to:\n-\n-\nfirst_name:\n- \"Zoë\\U0001F600\"\n-\nlast_name:\n- Contact\n-\naccess:\n- Public\n-\ntitle:\n-\n-\ndepartment:\n-\n-\nsource:\n-\n-\nemail:\n-\n-\nalt_email:\n-\n-\nphone:\n-\n-\nmobile:\n-\n-\nfax:\n-\n-\nblog:\n-\n-\nlinkedin:\n-\n-\nfacebook:\n-\n-\ntwitter:\n-\n-\nborn_on:\n- 1990-01-02\n-\ndo_not_call:\n- true\n-\ndeleted_at:\n-\n-\ncreated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nbackground_info:\n-\n-\nzoom:\n-\n-\nteams:\n-\n-\nsignal:\n-\n-\ninstagram:\n-\n-\nmastodon:\n-\n-\nbluesky:\n-\n-\ncf_audit_contact_string:\n- '2025-01-01'\n-\ncf_audit_contact_decimal:\n- !ruby/object:BigDecimal 18:0.275e1\n-\ncf_audit_contact_date:\n- 2024-12-31\n-\ncf_audit_contact_datetime:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\ncf_audit_contact_boolean:\n- false\n-\ncf_audit_contact_check_boxes:\n- '[\"123\", \"alpha\"]'\n-\ntag_list:\n-\n-\n"
+          "object": "---\nid: 69049\nuser_id: 68999\nlead_id:\nassigned_to:\nreports_to:\nfirst_name: \"Zoë\\U0001F600\"\nlast_name: Contact\naccess: Public\ntitle:\ndepartment:\nsource:\nemail:\nalt_email:\nphone:\nmobile:\nfax:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nborn_on: 1990-01-02\ndo_not_call: true\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\nsubscribed_users:\nzoom:\nteams:\nsignal:\ninstagram:\nmastodon:\nbluesky:\ncf_audit_contact_string: '2025-01-01'\ncf_audit_contact_decimal: !ruby/object:BigDecimal 9:-0.1e-8\ncf_audit_contact_date: 2024-12-31\ncf_audit_contact_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_boolean: false\ncf_audit_contact_check_boxes: '[\"123\", \"alpha\"]'\ntag_list:\n",
+          "object_changes": "---\nid:\n- 69049\n-\nuser_id:\n- 68999\n-\nlead_id:\n-\n-\nassigned_to:\n-\n-\nreports_to:\n-\n-\nfirst_name:\n- \"Zoë\\U0001F600\"\n-\nlast_name:\n- Contact\n-\naccess:\n- Public\n-\ntitle:\n-\n-\ndepartment:\n-\n-\nsource:\n-\n-\nemail:\n-\n-\nalt_email:\n-\n-\nphone:\n-\n-\nmobile:\n-\n-\nfax:\n-\n-\nblog:\n-\n-\nlinkedin:\n-\n-\nfacebook:\n-\n-\ntwitter:\n-\n-\nborn_on:\n- 1990-01-02\n-\ndo_not_call:\n- true\n-\ndeleted_at:\n-\n-\ncreated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nbackground_info:\n-\n-\nzoom:\n-\n-\nteams:\n-\n-\nsignal:\n-\n-\ninstagram:\n-\n-\nmastodon:\n-\n-\nbluesky:\n-\n-\ncf_audit_contact_string:\n- '2025-01-01'\n-\ncf_audit_contact_decimal:\n- !ruby/object:BigDecimal 9:-0.1e-8\n-\ncf_audit_contact_date:\n- 2024-12-31\n-\ncf_audit_contact_datetime:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\ncf_audit_contact_boolean:\n- false\n-\ncf_audit_contact_check_boxes:\n- '[\"123\", \"alpha\"]'\n-\ntag_list:\n-\n-\n"
         }
       ]
     },
@@ -10717,7 +10717,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -10858,7 +10858,7 @@
         },
         "cf_audit_contact_decimal": {
           "t": "decimal",
-          "v": "2.75"
+          "v": "-0.000000001"
         },
         "cf_audit_contact_date": {
           "t": "date",
@@ -10889,8 +10889,8 @@
           "whodunnit": null,
           "related_type": null,
           "related_id": null,
-          "object": "---\nid: 69050\nuser_id: 68999\nlead_id:\nassigned_to:\nreports_to:\nfirst_name: \"Zoë\\U0001F600\"\nlast_name: Contact\naccess: Public\ntitle:\ndepartment:\nsource:\nemail:\nalt_email:\nphone:\nmobile:\nfax:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nborn_on: 1990-01-02\ndo_not_call: true\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\nsubscribed_users:\nzoom:\nteams:\nsignal:\ninstagram:\nmastodon:\nbluesky:\ncf_audit_contact_string: '2025-01-01'\ncf_audit_contact_decimal: !ruby/object:BigDecimal 18:0.275e1\ncf_audit_contact_date: 2024-12-31\ncf_audit_contact_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_boolean: false\ncf_audit_contact_check_boxes: '[\"123\", \"alpha\"]'\ntag_list:\n",
-          "object_changes": "---\nid:\n- 69050\n-\nuser_id:\n- 68999\n-\nlead_id:\n-\n-\nassigned_to:\n-\n-\nreports_to:\n-\n-\nfirst_name:\n- \"Zoë\\U0001F600\"\n-\nlast_name:\n- Contact\n-\naccess:\n- Public\n-\ntitle:\n-\n-\ndepartment:\n-\n-\nsource:\n-\n-\nemail:\n-\n-\nalt_email:\n-\n-\nphone:\n-\n-\nmobile:\n-\n-\nfax:\n-\n-\nblog:\n-\n-\nlinkedin:\n-\n-\nfacebook:\n-\n-\ntwitter:\n-\n-\nborn_on:\n- 1990-01-02\n-\ndo_not_call:\n- true\n-\ndeleted_at:\n-\n-\ncreated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nbackground_info:\n-\n-\nzoom:\n-\n-\nteams:\n-\n-\nsignal:\n-\n-\ninstagram:\n-\n-\nmastodon:\n-\n-\nbluesky:\n-\n-\ncf_audit_contact_string:\n- '2025-01-01'\n-\ncf_audit_contact_decimal:\n- !ruby/object:BigDecimal 18:0.275e1\n-\ncf_audit_contact_date:\n- 2024-12-31\n-\ncf_audit_contact_datetime:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\ncf_audit_contact_boolean:\n- false\n-\ncf_audit_contact_check_boxes:\n- '[\"123\", \"alpha\"]'\n-\ntag_list:\n-\n-\n"
+          "object": "---\nid: 69050\nuser_id: 68999\nlead_id:\nassigned_to:\nreports_to:\nfirst_name: \"Zoë\\U0001F600\"\nlast_name: Contact\naccess: Public\ntitle:\ndepartment:\nsource:\nemail:\nalt_email:\nphone:\nmobile:\nfax:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nborn_on: 1990-01-02\ndo_not_call: true\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\nsubscribed_users:\nzoom:\nteams:\nsignal:\ninstagram:\nmastodon:\nbluesky:\ncf_audit_contact_string: '2025-01-01'\ncf_audit_contact_decimal: !ruby/object:BigDecimal 9:-0.1e-8\ncf_audit_contact_date: 2024-12-31\ncf_audit_contact_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_boolean: false\ncf_audit_contact_check_boxes: '[\"123\", \"alpha\"]'\ntag_list:\n",
+          "object_changes": "---\nid:\n- 69050\n-\nuser_id:\n- 68999\n-\nlead_id:\n-\n-\nassigned_to:\n-\n-\nreports_to:\n-\n-\nfirst_name:\n- \"Zoë\\U0001F600\"\n-\nlast_name:\n- Contact\n-\naccess:\n- Public\n-\ntitle:\n-\n-\ndepartment:\n-\n-\nsource:\n-\n-\nemail:\n-\n-\nalt_email:\n-\n-\nphone:\n-\n-\nmobile:\n-\n-\nfax:\n-\n-\nblog:\n-\n-\nlinkedin:\n-\n-\nfacebook:\n-\n-\ntwitter:\n-\n-\nborn_on:\n- 1990-01-02\n-\ndo_not_call:\n- true\n-\ndeleted_at:\n-\n-\ncreated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nbackground_info:\n-\n-\nzoom:\n-\n-\nteams:\n-\n-\nsignal:\n-\n-\ninstagram:\n-\n-\nmastodon:\n-\n-\nbluesky:\n-\n-\ncf_audit_contact_string:\n- '2025-01-01'\n-\ncf_audit_contact_decimal:\n- !ruby/object:BigDecimal 9:-0.1e-8\n-\ncf_audit_contact_date:\n- 2024-12-31\n-\ncf_audit_contact_datetime:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\ncf_audit_contact_boolean:\n- false\n-\ncf_audit_contact_check_boxes:\n- '[\"123\", \"alpha\"]'\n-\ntag_list:\n-\n-\n"
         }
       ]
     },
