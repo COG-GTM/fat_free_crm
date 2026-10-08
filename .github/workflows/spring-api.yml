@@ -392,3 +392,38 @@ jobs:
           bundle exec rails db:schema:load
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f spring/src/main/resources/db/migration/V2__custom_fields_jsonb.sql
           bundle exec rspec spec/lib/tasks/custom_fields_matrix_spec.rb spec/models/fields/ignored_custom_fields_spec.rb
+
+  export-goldens:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      FFCRM_ENTITY_FIXTURE: "1"
+      SECRET_KEY_BASE: entity-fixture-only-secret-key-base-0123456789abcdef
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ruby/setup-ruby@v1
+        env:
+          BUNDLE_FROZEN: "false"
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - name: Use PostgreSQL database.yml
+        run: cp config/database.postgres.yml config/database.yml
+      - name: Verify committed Rails CSV / XLS export goldens
+        env:
+          RAILS_ENV: development
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ffcrm_export
+        # Rails initializers query the database during boot, so db:create cannot create it.
+        run: |
+          PGPASSWORD=postgres createdb -h localhost -U postgres ffcrm_export
+          bundle exec rails db:schema:load
+          bundle exec rake ffcrm:migration:export_goldens
+          git diff --exit-code -- spring/src/test/resources/exports
