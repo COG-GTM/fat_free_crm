@@ -64,11 +64,11 @@ public class MailDeliveryService {
         try {
             JavaMailSender sender = senderForSettings();
             MimeMessage message = sender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
             helper.setTo(mail.to());
             helper.setFrom(mail.from());
             helper.setSubject(mail.subject());
-            helper.setText(mail.textBody(), mail.htmlBody());
+            helper.setText(mail.body(), "text/html".equals(mail.contentType()));
             sender.send(message);
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to deliver mail", exception);
@@ -129,6 +129,11 @@ public class MailDeliveryService {
             case "UserMailer#assigned_entity_notification" -> renderAssignment(ids);
             case "SubscriptionMailer#comment_notification" -> renderComment(ids);
             case "DropboxMailer#dropbox_notification" -> renderDropbox(arguments, mailerArguments, ids);
+            case "DeviseMailer#confirmation_instructions" -> renderer.deviseConfirmation(user(ids, 0).getEmail(),
+                stringArgument(mailerArguments, 1));
+            case "DeviseMailer#reset_password_instructions" -> renderer.deviseResetPassword(user(ids, 0).getEmail(),
+                stringArgument(mailerArguments, 1));
+            case "DeviseMailer#password_change" -> renderer.devisePasswordChange(user(ids, 0).getEmail());
             default -> throw new IllegalArgumentException("Unsupported Active Job mailer " + mailer + "#" + action);
         };
         deliver(rendered);
@@ -165,8 +170,7 @@ public class MailDeliveryService {
         String from = mailerArguments.size() > 1 ? mailerArguments.get(1).asText() : "";
         String links = mailerArguments.size() > 3 ? mailerArguments.get(3).toString() : "";
         String subject = email.getSubject() == null ? "" : email.getSubject();
-        return renderer.dropboxNotification(recipient.getEmail(), from, subject, email.getBody(), links,
-            "dropbox - Added email - " + subject);
+        return renderer.dropboxNotification(recipient.getEmail(), from, subject, email.getBody(), links);
     }
 
     private CrmEntity entity(List<GlobalId> ids, int index) {
@@ -188,6 +192,10 @@ public class MailDeliveryService {
             throw new IllegalArgumentException("Active Job is missing a GlobalID argument");
         }
         return ids.get(index);
+    }
+
+    private static String stringArgument(JsonNode arguments, int index) {
+        return arguments.size() > index ? arguments.get(index).asText() : "";
     }
 
     private static GlobalId parseGlobalId(String value) {

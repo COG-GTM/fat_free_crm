@@ -13,10 +13,10 @@ public class MailDeliveryQuartzJob implements Job {
     public void execute(JobExecutionContext context) {
         var data = context.getMergedJobDataMap();
         mailDeliveryService.deliver(new RenderedMail(
-            data.getString("to"),
-            data.getString("from"),
             data.getString("subject"),
-            data.getString("textBody"),
-            data.getString("htmlBody")));
+            data.getString("from"),
+            data.getString("to"),
+            data.getString("contentType"),
+            data.getString("body")));
     }
 }

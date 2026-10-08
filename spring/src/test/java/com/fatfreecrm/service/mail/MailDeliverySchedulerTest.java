@@ -20,7 +20,7 @@ class MailDeliverySchedulerTest {
         deliveryScheduler.deliverLater(
             "UserMailer",
             "assigned_entity_notification",
-            new RenderedMail("to@example.test", "from@example.test", "subject", "text", "html"));
+            new RenderedMail("subject", "from@example.test", "to@example.test", "text/html", "html"));
 
         verifyNoInteractions(scheduler);
     }

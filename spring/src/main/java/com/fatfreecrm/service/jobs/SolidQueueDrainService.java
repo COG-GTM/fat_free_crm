@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -106,7 +107,7 @@ public class SolidQueueDrainService {
         jdbcTemplate.update(
             "INSERT INTO solid_queue_claimed_executions(job_id, process_id, created_at) VALUES (?, NULL, ?)",
             id,
-            Instant.now());
+            timestamp());
         return job;
     }
 
@@ -114,7 +115,7 @@ public class SolidQueueDrainService {
         transactionTemplate.executeWithoutResult(status -> {
             jdbcTemplate.update("DELETE FROM solid_queue_claimed_executions WHERE job_id = ?", id);
             jdbcTemplate.update("UPDATE solid_queue_jobs SET finished_at = ?, updated_at = ? WHERE id = ?",
-                Instant.now(), Instant.now(), id);
+                timestamp(), timestamp(), id);
         });
     }
 
@@ -127,10 +128,14 @@ public class SolidQueueDrainService {
                 "INSERT INTO solid_queue_failed_executions(job_id, error, created_at) VALUES (?, ?, ?)",
                 id,
                 error,
-                Instant.now());
+                timestamp());
             jdbcTemplate.update("UPDATE solid_queue_jobs SET finished_at = ?, updated_at = ? WHERE id = ?",
-                Instant.now(), Instant.now(), id);
+                timestamp(), timestamp(), id);
         });
+    }
+
+    private static Timestamp timestamp() {
+        return Timestamp.from(Instant.now());
     }
 
     private String failureDetails(Exception exception) {

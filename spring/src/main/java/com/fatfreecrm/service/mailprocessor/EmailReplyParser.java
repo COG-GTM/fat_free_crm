@@ -1,5 +1,9 @@
 package com.fatfreecrm.service.mailprocessor;
 
+/*
+ * Port of email_reply_parser_ffcrm 0.5.0, copyright GitHub.
+ * MIT licensed; source: https://github.com/github/email_reply_parser
+ */
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

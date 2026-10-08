@@ -23,6 +23,9 @@ public class ActiveJobArgumentParser {
         try {
             JsonNode args = objectMapper.readTree(arguments);
             JsonNode candidate = args.isArray() ? args.path(0) : args;
+            if (candidate.isObject() && candidate.path("arguments").isArray()) {
+                candidate = candidate.path("arguments").path(0);
+            }
             if (candidate.isObject()) {
                 for (String key : new String[] {"account_id", "id"}) {
                     if (candidate.hasNonNull(key) && candidate.path(key).canConvertToLong()) {

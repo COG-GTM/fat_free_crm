@@ -12,7 +12,7 @@ public class MailTemplateConfiguration {
     @Bean("mailHtmlTemplateEngine")
     public TemplateEngine mailHtmlTemplateEngine() {
         ClassLoaderTemplateResolver resolver = new ClassLoaderTemplateResolver();
-        resolver.setPrefix("mail/");
+        resolver.setPrefix("templates/mail/");
         resolver.setSuffix(".html");
         resolver.setTemplateMode("HTML");
         resolver.setCharacterEncoding("UTF-8");
@@ -25,7 +25,7 @@ public class MailTemplateConfiguration {
     @Bean("mailTextTemplateEngine")
     public TemplateEngine mailTextTemplateEngine() {
         ClassLoaderTemplateResolver resolver = new ClassLoaderTemplateResolver();
-        resolver.setPrefix("mail/");
+        resolver.setPrefix("templates/mail/");
         resolver.setSuffix(".txt");
         resolver.setTemplateMode("TEXT");
         resolver.setCharacterEncoding("UTF-8");

@@ -638,3 +638,93 @@ tests replay all generated list and vCard cases.
   `/tasks/auto_complete.json` on a frozen clock (`2026-03-12T02:30:00Z`) with session offsets for UTC-10, UTC-3,
   UTC+1 and UTC+13 and writes `spring/src/test/resources/search/tasks_search_matrix.json` (27 cases, 32 tasks);
   `RailsTaskBucketsParityTest` replays it. Gateway blocks: `tasks`, `comments` (disabled).
+
+## Jobs and mail (AB-273 jobs-mail)
+
+| Rails behavior | Rails source | Spring port |
+|---|---|---|
+| Assignment mail and observer trigger | `app/mailers/user_mailer.rb:9-23`, `app/models/observers/entity_observer.rb:9-28` | `MailRendererService` and owner-gated Active Job bridge |
+| Comment reply mail and callbacks | `app/mailers/subscription_mailer.rb:9-35`, `app/models/polymorphic/comment.rb:34-71` | `CommentNotificationService`, `CommentRepliesProcessor` |
+| Dropbox renderer; its caller is dead Rails code | `app/mailers/dropbox_mailer.rb:9-19`, `lib/fat_free_crm/mail_processor/dropbox.rb:258-262` | renderer only; the processor does not send it |
+| Website/Wikidata enrichment | `app/jobs/account_website_job.rb:1-73`, `app/jobs/wikidata_job.rb`, `app/services/wikidata_service.rb` | `AccountWebsiteJob`, `WikidataJob`, Solid Queue drain |
+| IMAP processing | `lib/fat_free_crm/mail_processor/{base,dropbox,comment_replies}.rb` | `MailProcessorBase`, `DropboxProcessor`, `CommentRepliesProcessor` |
+
+`FFCRM_JOBS_OWNER` defaults to `rails`. With `spring`, Quartz registers the
+Dropbox, comment-reply and Solid Queue drain schedules. PostgreSQL session
+advisory locks use class ID `1179009869` and object IDs 1, 2 and 3 respectively.
+Quartz uses RAMJobStore; scheduled one-off work is not durable across restarts.
+The bridge claims supported mail-delivery, website and Wikidata jobs; unknown
+Solid Queue rows remain ready.
+
+Configure Rails-backed `smtp`, `email_dropbox`, `email_comment_replies`, `host`,
+`locale`, and `default_access` values (database settings override YAML). IMAP
+settings include server, port, ssl, user, password, scan folder, archive folder
+and invalid folder. Never put credentials in goldens or logs. Attachments are
+ignored and are not persisted.
+
+### Cutover and rollback
+
+1. Keep owner `rails` until Spring mail, IMAP and enrichment configuration is verified.
+2. Stop Rails cron entries for `ffcrm:dropbox:run` and `ffcrm:comment_replies:run`.
+3. Stop Solid Queue workers/dispatcher (`bin/jobs` or `SOLID_QUEUE_IN_PUMA`) and confirm no claimed executions remain.
+4. Set `FFCRM_JOBS_OWNER=spring`, rolling-restart Spring, then verify scheduler, lock acquisition and queue-drain logs.
+5. Roll back by setting owner to `rails`, restarting Spring and confirming the scheduler is disabled. Allow in-memory one-off jobs to drain before stopping Spring; restart Rails queue workers and re-enable cron.
+
+Rails defects observed in this track include the unsupported positional
+net-imap constructor and invalid `Permission.exists` call. The Dropbox
+notification caller is unreachable; Spring renders the template but does not
+send it. Shared-asset failures follow the observed discard behavior. Create
+versions are recorded for new rows, but update/touch versions await the audit
+track. Devise token generation remains Rails-owned. MailText is en-US only
+pending settings-i18n, and private-address blocking is off by default for
+parity.
+
+#### Net::IMAP constructor clarification
+
+The checked `net-imap` 0.6.3 implementation retains
+`Net::IMAP.new(host, port, usessl)` as a deprecated positional form and
+translates it to keyword options. The focused local probe reached the
+connection attempt and failed with `ECONNREFUSED` because no IMAP server was
+listening on localhost:143; it did not raise the `ArgumentError` described in
+the original brief. The Rails call still uses the deprecated API, but the
+constructor-error claim is not reproduced in this installed version.
+
+## Jobs and mail (AB-273 jobs-mail)
+
+| Rails behavior | Rails source | Spring port |
+|---|---|---|
+| Assignment mail and observer trigger | `app/mailers/user_mailer.rb:9-23`, `app/models/observers/entity_observer.rb:9-28` | `MailRendererService` and owner-gated Active Job bridge |
+| Comment reply mail and callbacks | `app/mailers/subscription_mailer.rb:9-35`, `app/models/polymorphic/comment.rb:34-71` | `CommentNotificationService`, `CommentRepliesProcessor` |
+| Dropbox renderer; its caller is dead Rails code | `app/mailers/dropbox_mailer.rb:9-19`, `lib/fat_free_crm/mail_processor/dropbox.rb:258-262` | renderer only; the processor does not send it |
+| Website/Wikidata enrichment | `app/jobs/account_website_job.rb:1-73`, `app/jobs/wikidata_job.rb`, `app/services/wikidata_service.rb` | `AccountWebsiteJob`, `WikidataJob`, Solid Queue drain |
+| IMAP processing | `lib/fat_free_crm/mail_processor/{base,dropbox,comment_replies}.rb` | `MailProcessorBase`, `DropboxProcessor`, `CommentRepliesProcessor` |
+
+`FFCRM_JOBS_OWNER` defaults to `rails`. With `spring`, Quartz registers the
+Dropbox, comment-reply and Solid Queue drain schedules. PostgreSQL session
+advisory locks use class ID `1179009869` and object IDs 1, 2 and 3 respectively.
+Quartz uses RAMJobStore; scheduled one-off work is not durable across restarts.
+The bridge claims supported mail-delivery, website and Wikidata jobs; unknown
+Solid Queue rows remain ready.
+
+Configure Rails-backed `smtp`, `email_dropbox`, `email_comment_replies`, `host`,
+`locale`, and `default_access` values (database settings override YAML). IMAP
+settings include server, port, ssl, user, password, scan folder, archive folder
+and invalid folder. Never put credentials in goldens or logs. Attachments are
+ignored and are not persisted.
+
+### Cutover and rollback
+
+1. Keep owner `rails` until Spring mail, IMAP and enrichment configuration is verified.
+2. Stop Rails cron entries for `ffcrm:dropbox:run` and `ffcrm:comment_replies:run`.
+3. Stop Solid Queue workers/dispatcher (`bin/jobs` or `SOLID_QUEUE_IN_PUMA`) and confirm no claimed executions remain.
+4. Set `FFCRM_JOBS_OWNER=spring`, rolling-restart Spring, then verify scheduler, lock acquisition and queue-drain logs.
+5. Roll back by setting owner to `rails`, restarting Spring and confirming the scheduler is disabled. Allow in-memory one-off jobs to drain before stopping Spring; restart Rails queue workers and re-enable cron.
+
+Rails defects observed in this track include the unsupported positional
+net-imap constructor and invalid `Permission.exists` call. The Dropbox
+notification caller is unreachable; Spring renders the template but does not
+send it. Shared-asset failures follow the observed discard behavior. Create
+versions are recorded for new rows, but update/touch versions await the audit
+track. Devise token generation remains Rails-owned. MailText is en-US only
+pending settings-i18n, and private-address blocking is off by default for
+parity.

@@ -81,7 +81,11 @@ public class MailSettingsService {
     }
 
     public String defaultAccess() {
-        return defaultAccess;
+        return scalarSetting("default_access", defaultAccess);
+    }
+
+    public String opportunityDefaultStage() {
+        return scalarSetting("opportunity_default_stage", "prospecting");
     }
 
     public String host() {

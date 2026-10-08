@@ -86,3 +86,53 @@ gem because no `config/locales/devise.en-US.yml` exists.
 ARB ticket: **ARB-xxxx (placeholder; assign before merge)**. Review is required
 for adding Quartz/mail infrastructure, external dependencies, and IMAP/SMTP
 integrations. This decision record is not approval to merge.
+
+## Track: jobs-mail operations addendum
+
+### Context and decision
+
+Rails ownership remains the default. Spring can take ownership through
+`FFCRM_JOBS_OWNER=spring` only after the Rails cron and Solid Queue workers are
+stopped. The inventory is `UserMailer`
+(`app/mailers/user_mailer.rb:9-23`, trigger `app/models/observers/entity_observer.rb:9-28`),
+subscription mail (`app/mailers/subscription_mailer.rb:9-35`,
+`app/models/polymorphic/comment.rb:34-71`), Dropbox rendering
+(`app/mailers/dropbox_mailer.rb:9-19`), the website/Wikidata jobs and the three
+IMAP processor files under `lib/fat_free_crm/mail_processor/`.
+
+Quartz is used for scheduling rather than JobRunr to keep the already selected
+Spring scheduler integration small. Quartz RAMJobStore is selected over JDBC
+JobStore because this bridge's scheduled work is restart-loss tolerant and
+should not introduce another durable scheduler schema. A single owner gate is
+preferred to dual-running Rails and Spring, which could duplicate mail, IMAP
+processing and enrichment. Spring drains supported Solid Queue rows rather
+than leaving the Rails worker active in parallel; unsupported classes remain
+ready for Rails.
+
+Quartz, Spring Mail, Thymeleaf, Angus Jakarta Mail, Jsoup, GreenMail and the
+vendored reply parser are the selected components. Gradle resolves Spring Boot
+3.5.16, Thymeleaf 3.1.5.RELEASE, Angus Jakarta Mail 2.0.5, Jsoup 1.21.2 and
+GreenMail 2.1.3; `email_reply_parser_ffcrm` is vendored at 0.5.0 (MIT).
+
+Cutover: stop Rails Dropbox/comment-reply cron; stop Solid Queue workers and
+dispatcher and verify no claimed executions remain; set `FFCRM_JOBS_OWNER=spring`;
+restart Spring; verify scheduler startup, advisory-lock acquisition and
+queue-drain logs. Rollback sets the owner to `rails`, restarts Spring with
+scheduling disabled, drains pending RAMJobStore one-offs, restarts Rails queue
+workers and re-enables cron.
+
+Deviations: MailText is en-US only pending settings-i18n; Devise token
+generation remains Rails-owned; update/touch versions await the audit track;
+attachments are ignored; and SSRF private-address blocking is disabled by
+default for parity. Dropbox notification rendering remains available, but its
+Rails caller is dead and Spring does not send it. SMTP/IMAP credentials remain
+in existing Rails settings and are never emitted in logs or goldens; response
+bodies are bounded and redirects are not followed. ARB ticket: **TO BE CREATED**.
+
+### Net::IMAP constructor clarification
+
+The locally installed `net-imap` 0.6.3 source retains the deprecated
+`Net::IMAP.new(host, port, usessl)` positional form and converts it to keyword
+options. The focused call reached a connection attempt and failed only because
+localhost:143 had no server; it did not reproduce the `ArgumentError` stated
+in the original brief.

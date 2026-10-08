@@ -979,3 +979,12 @@ en-US:
     from_to: From %{from} to %{to}
     from_only: From %{from}
     to_only: Until %{to}
+
+  user_mailer:
+    assigned_entity_notification:
+      subject: 'Fat Free CRM: You have been assigned %{entity_name} %{entity_type}'
+      body: "Your colleague %{assigner_name} has assigned the %{entity_name} %{entity_type} to you.\n%{entity_url}"
+  subscription_mailer:
+    comment_notification:
+      subject: 'RE: [%{entity_type}:%{entity_id}] %{entity_name}'
+      tagged_subject_suffix: '(%{tags})'

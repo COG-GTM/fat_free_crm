@@ -38,6 +38,13 @@ on:
       - "lib/fat_free_crm/mail_processor/**"
       - "lib/tasks/ffcrm/migration_mail_golden.rake"
       - "spec/lib/tasks/mail_golden_spec.rb"
+      - "app/mailers/**"
+      - "app/views/**/*mailer*/**"
+      - "app/views/devise/mailer/**"
+      - "lib/tasks/ffcrm/migration_mail_golden.rake"
+      - "spec/lib/tasks/mail_golden_spec.rb"
+      - "config/locales/**"
+      - "lib/fat_free_crm/mail_processor/**"
   push:
     paths:
       - "spring/**"
@@ -75,6 +82,13 @@ on:
       - "lib/fat_free_crm/mail_processor/**"
       - "lib/tasks/ffcrm/migration_mail_golden.rake"
       - "spec/lib/tasks/mail_golden_spec.rb"
+      - "app/mailers/**"
+      - "app/views/**/*mailer*/**"
+      - "app/views/devise/mailer/**"
+      - "lib/tasks/ffcrm/migration_mail_golden.rake"
+      - "spec/lib/tasks/mail_golden_spec.rb"
+      - "config/locales/**"
+      - "lib/fat_free_crm/mail_processor/**"
 
 permissions:
   contents: read

@@ -39,8 +39,8 @@ public class MailDeliveryScheduler {
         data.put("to", mail.to());
         data.put("from", mail.from());
         data.put("subject", mail.subject());
-        data.put("textBody", mail.textBody());
-        data.put("htmlBody", mail.htmlBody());
+        data.put("contentType", mail.contentType());
+        data.put("body", mail.body());
         String key = "mail-" + UUID.randomUUID();
         var detail = JobBuilder.newJob(MailDeliveryQuartzJob.class)
             .withIdentity(key, "ffcrm-one-off")

@@ -18,9 +18,10 @@ RSpec.describe Rake::Task, type: :task do
       processor.json
       email_reply_parser_golden.json
       active_job_arguments.json
+      mail_text.json
     ]
     parsed = expected.map { |name| JSON.parse(root.join(name).read) }
-    expect(parsed.first(3)).to all(be_a(Hash))
-    expect(parsed.last).to be_a(Array)
+    expect(parsed).to all(be_a(Hash))
+    expect(Dir[root.join("eml/*.eml")]).not_to be_empty
   end
 end

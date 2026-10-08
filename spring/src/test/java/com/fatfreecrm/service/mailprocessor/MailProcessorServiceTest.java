@@ -16,8 +16,11 @@ class MailProcessorServiceTest {
         when(bareHtml.getContentType()).thenReturn("text/html");
         Message htmlWithCharset = mock(Message.class);
         when(htmlWithCharset.getContentType()).thenReturn("text/html; charset=UTF-8");
+        Message upperCaseHtml = mock(Message.class);
+        when(upperCaseHtml.getContentType()).thenReturn("TEXT/HTML");
 
         assertFalse(MailProcessorService.isValid(bareHtml));
         assertTrue(MailProcessorService.isValid(htmlWithCharset));
+        assertTrue(MailProcessorService.isValid(upperCaseHtml));
     }
 }

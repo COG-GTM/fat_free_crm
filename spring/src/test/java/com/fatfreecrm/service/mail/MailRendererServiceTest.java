@@ -3,6 +3,7 @@ package com.fatfreecrm.service.mail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.fatfreecrm.repository.SettingRepository;
 import org.junit.jupiter.api.Test;
@@ -18,20 +19,44 @@ class MailRendererServiceTest {
             templateEngine(".html", "HTML"),
             templateEngine(".txt", "TEXT"),
             new MailSettingsService(mock(SettingRepository.class), "", "en-US", "Public",
-                "Fat Free CRM <noreply@fatfreecrm.com>", "noreply@fatfreecrm.com", ""));
+                "Fat Free CRM <noreply@fatfreecrm.com>", "noreply@fatfreecrm.com", ""),
+            new EnUsMailText());
 
         RenderedMail mail = renderer.assignment("taylor@example.test", "Example Account", "Account",
             "https://crm.example.test/accounts/9", "Casey Sender");
 
         assertEquals("Fat Free CRM: You have been assigned Example Account Account", mail.subject());
-        assertTrue(mail.textBody().contains(
+        assertEquals("text/html", mail.contentType());
+        assertTrue(mail.body().contains(
             "Your colleague Casey Sender has assigned the Example Account Account to you."));
-        assertTrue(mail.textBody().contains("https://crm.example.test/accounts/9"));
+        assertTrue(mail.body().contains("https://crm.example.test/accounts/9"));
+    }
+
+    @Test
+    void resolvesCurrentHostForEachCommentRender() {
+        MailSettingsService settings = mock(MailSettingsService.class);
+        when(settings.locale()).thenReturn("en-US");
+        when(settings.smtpFrom()).thenReturn("noreply@example.test");
+        when(settings.commentReplyFrom("Casey Sender")).thenReturn("Casey Sender <noreply@example.test>");
+        when(settings.host()).thenReturn("https://first.example.test", "https://second.example.test");
+        MailRendererService renderer = new MailRendererService(
+            templateEngine(".html", "HTML"),
+            templateEngine(".txt", "TEXT"),
+            settings,
+            new EnUsMailText());
+
+        String first = renderer.commentNotification(
+            "taylor@example.test", "Casey Sender", "Example Account", "Account", 9, "", "Hello").body();
+        String second = renderer.commentNotification(
+            "taylor@example.test", "Casey Sender", "Example Account", "Account", 9, "", "Hello").body();
+
+        assertTrue(first.contains("https://first.example.test/accounts/9"));
+        assertTrue(second.contains("https://second.example.test/accounts/9"));
     }
 
     private static TemplateEngine templateEngine(String suffix, String mode) {
         ClassLoaderTemplateResolver resolver = new ClassLoaderTemplateResolver();
-        resolver.setPrefix("mail/");
+        resolver.setPrefix("templates/mail/");
         resolver.setSuffix(suffix);
         resolver.setTemplateMode(mode);
         resolver.setCharacterEncoding("UTF-8");
