@@ -56,6 +56,19 @@ ffcrm:
     registry-ttl: 30s
     backfill:
       batch-size: 10000
+  settings:
+    defaults: classpath:settings/settings.default.yml
+    overrides: ${FFCRM_SETTINGS_FILE:}
+    cache-ttl: 30s
+    conversion:
+      dry-run: true
+      confirm-rails-stopped: false
+  i18n:
+    fallback-defaults:
+      - en
+    fallback-overrides:
+      en:
+        - en-US
 
 management:
   endpoints:

@@ -1,0 +1,201 @@
+# AB-273 settings-i18n: ordered classification rules for
+# `rake ffcrm:migration:settings_cf_coverage`. First match wins; a call site matching no
+# rule is "unclassified" and fails CHECK=1.
+#
+# Fields: id, kind (setting|cf), path (glob, matched with FNM_PATHNAME|FNM_EXTGLOB),
+# optional member (regex matched against the recorded member/key, e.g. `unroll(:task_bucket)`
+# or `[key]`), status (ported|partial|not_ported|n/a), and either component (a real Spring
+# class#method) or reason.
+- id: setting-clear-cache
+  kind: setting
+  path: app/controllers/application_controller.rb
+  member: clear_cache!
+  status: ported
+  component: SettingsService (TTL snapshot replaces the per-request clear)
+
+- id: setting-request-locale
+  kind: setting
+  path: app/controllers/application_controller.rb
+  member: locale
+  status: ported
+  component: FfcrmLocaleResolver/SettingsService
+
+- id: setting-admin-writes
+  kind: setting
+  path: app/controllers/admin/settings_controller.rb
+  status: not_ported
+  reason: admin settings write UI — Rails remains the settings writer in this track
+
+- id: setting-task-buckets-controller
+  kind: setting
+  path: app/controllers/tasks_controller.rb
+  member: unroll\(:?(task_bucket|task_completed)\)
+  status: partial
+  component: TaskReadService#bucketNames
+
+- id: setting-facets
+  kind: setting
+  path: app/controllers/**
+  member: account_category|campaign_status|lead_status|opportunity_stage
+  status: partial
+  component: SearchableEntities (DB tier only, hard-coded defaults; switching to SettingsService is a follow-up)
+
+- id: setting-controller-default-access
+  kind: setting
+  path: app/controllers/**
+  member: default_access
+  status: not_ported
+  reason: write-side record default — AB-272 (values readable via SettingsService)
+
+- id: setting-controllers-other
+  kind: setting
+  path: app/controllers/**
+  status: not_ported
+  reason: controller UI/admin paths — view layer AB-275 or write-side AB-272
+
+- id: setting-helpers-mail
+  kind: setting
+  path: app/helpers/**
+  member: email_comment_replies|email_dropbox|smtp
+  status: not_ported
+  reason: outbound mail plumbing — jobs-mail track (AB-273)
+
+- id: setting-helpers-ui
+  kind: setting
+  path: app/helpers/**
+  status: not_ported
+  reason: UI view layer — AB-275
+
+- id: setting-mailers
+  kind: setting
+  path: app/mailers/**
+  status: not_ported
+  reason: outbound mail — jobs-mail track (AB-273)
+
+- id: setting-user-signup
+  kind: setting
+  path: app/models/users/user.rb
+  member: user_signup
+  status: not_ported
+  reason: Rails keeps the Devise sign-up UI
+
+- id: setting-entity-observer
+  kind: setting
+  path: app/models/observers/entity_observer.rb
+  status: not_ported
+  reason: URL generation for outbound mail — jobs-mail track (AB-273)
+
+- id: setting-task-buckets-model
+  kind: setting
+  path: app/models/polymorphic/task.rb
+  member: task_bucket|task_completed
+  status: partial
+  component: TaskReadService#bucketNames
+
+- id: setting-model-validations
+  kind: setting
+  path: app/models/**
+  status: not_ported
+  reason: write-side validations/defaults — AB-272 (values readable via SettingsService)
+
+- id: setting-views
+  kind: setting
+  path: app/views/**
+  status: not_ported
+  reason: UI view layer — AB-275
+
+- id: setting-locale-initializer
+  kind: setting
+  path: config/initializers/locale.rb
+  status: ported
+  component: I18nService/FfcrmLocaleResolver/SettingsService
+
+- id: setting-action-mailer
+  kind: setting
+  path: config/initializers/action_mailer.rb
+  status: not_ported
+  reason: outbound mail configuration — jobs-mail track (AB-273)
+
+- id: setting-ransack-translations
+  kind: setting
+  path: config/initializers/custom_field_ransack_translations.rb
+  status: not_ported
+  reason: Ransack UI labels
+
+- id: setting-load-yaml
+  kind: setting
+  path: lib/fat_free_crm/load_settings.rb
+  status: ported
+  component: SettingsService (YAML tiers)
+
+- id: setting-mail-processor
+  kind: setting
+  path: lib/fat_free_crm/mail_processor/**
+  status: not_ported
+  reason: inbound mail processing — jobs-mail track (AB-273)
+
+- id: setting-secret-token
+  kind: setting
+  path: lib/fat_free_crm/secret_token_generator.rb
+  status: not_ported
+  reason: Spring signs JWTs with FFCRM_JWT_SECRET (AB-264)
+
+- id: setting-migration-libs
+  kind: setting
+  path: lib/fat_free_crm/migration/**
+  status: n/a
+  reason: migration tooling
+
+- id: setting-tabs
+  kind: setting
+  path: lib/fat_free_crm/tabs.rb
+  status: not_ported
+  reason: UI navigation tabs — AB-275
+
+- id: setting-relative-url-root
+  kind: setting
+  path: config/initializers/relative_url_root.rb
+  status: not_ported
+  reason: Rails request-path plumbing — Spring uses its own server config
+
+- id: setting-lib-tasks
+  kind: setting
+  path: lib/tasks/**
+  status: not_ported
+  reason: Rails-only ops/migration tooling
+
+- id: cf-fields-model
+  kind: cf
+  path: lib/fat_free_crm/fields.rb
+  status: ported
+  component: CustomFieldReadService (AB-271)
+
+- id: cf-column-writer
+  kind: cf
+  path: app/models/fields/custom_field.rb
+  status: not_ported
+  reason: Rails stays the cf_* column writer (AB-271 ADR)
+
+- id: cf-versions-helper
+  kind: cf
+  path: app/helpers/versions_helper.rb
+  status: not_ported
+  reason: UI view layer — AB-275
+
+- id: cf-census-tooling
+  kind: cf
+  path: lib/fat_free_crm/migration/column_census.rb
+  status: n/a
+  reason: migration tooling
+
+- id: cf-lib-tasks
+  kind: cf
+  path: lib/tasks/**
+  status: n/a
+  reason: Rails-only ops/migration tooling
+
+- id: cf-locale-text
+  kind: cf
+  path: config/locales/**
+  status: n/a
+  reason: locale strings/comments
