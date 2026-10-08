@@ -44,21 +44,3 @@ allowlist:
     rule: ignore
     reason: Spring removes secret top-level YAML entries from version change objects.
     reference: AB-270 Phase B ActivitiesControllerIntegrationTest
-  - id: ab-271-accounts-custom-fields-index
-    match:
-      method: GET
-      path: /accounts
-    kind: pointer
-    pointer: /*/custom_fields
-    rule: ignore
-    reason: Spring excludes the Rails-ignored custom_fields JSONB column while Rails emits null values.
-    reference: AB-271
-  - id: ab-271-accounts-custom-fields-show
-    match:
-      method: GET
-      path: /accounts/*
-    kind: pointer
-    pointer: /custom_fields
-    rule: ignore
-    reason: Spring excludes the Rails-ignored custom_fields JSONB column while Rails emits null values.
-    reference: AB-271
