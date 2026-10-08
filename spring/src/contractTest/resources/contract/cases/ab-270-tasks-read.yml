@@ -1,0 +1,211 @@
+- id: tasks-index-default-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /tasks
+  spring: {bodyPointer: /buckets}
+  auth: alice
+  description: Compare Rails Task.find_all_grouped pending buckets (default view) with the Spring buckets object.
+- id: tasks-index-pending-bob
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /tasks
+  params: {view: pending}
+  spring: {bodyPointer: /buckets}
+  auth: bob
+  description: Compare pending buckets for an assignee (Task.my includes tasks assigned to Bob).
+- id: tasks-index-assigned-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /tasks
+  params: {view: assigned}
+  spring: {bodyPointer: /buckets}
+  auth: alice
+  description: Compare the assigned view (Task.assigned_by(user).pending) bucket set and rows.
+- id: tasks-index-completed-carol
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /tasks
+  params: {view: completed}
+  spring: {bodyPointer: /buckets}
+  auth: carol
+  description: Compare the completed view bucket set (Setting.task_completed order).
+- id: tasks-index-completed-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /tasks
+  params: {view: completed}
+  spring: {bodyPointer: /buckets}
+  auth: admin
+  description: Compare the completed view for an admin (Task.my is not widened for admins).
+- id: tasks-index-bogus-view-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /tasks
+  params: {view: bogus}
+  spring: {bodyPointer: /buckets}
+  auth: alice
+  description: Unknown views fall back to pending (TasksController#view).
+- id: tasks-index-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /tasks
+  auth: anonymous
+  description: Compare anonymous task index authentication behavior.
+- id: tasks-show-601-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /tasks/601
+  auth: alice
+  description: Compare a task show for its owner (Task.tracked_by).
+- id: tasks-show-602-bob
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /tasks/602
+  auth: bob
+  description: Compare a task show for its assignee (Task.tracked_by).
+- id: tasks-show-999999-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /tasks/999999
+  auth: alice
+  description: Compare not-found task show behavior.
+- id: tasks-show-601-bob
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /tasks/601
+  auth: bob
+  description: Compare out-of-scope task show behavior (Rails 404 from tracked_by, Spring 403 from the AB-268 policy).
+- id: tasks-show-601-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /tasks/601
+  auth: anonymous
+  description: Compare anonymous task show authentication behavior.
+- id: tasks-autocomplete-term-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /tasks/auto_complete
+  rails: {path: /tasks/auto_complete.json}
+  spring: {path: /api/v1/tasks/autocomplete}
+  params: {term: task}
+  auth: alice
+  description: Compare Task.my(user).text_search autocomplete results.
+- id: tasks-autocomplete-related-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /tasks/auto_complete
+  rails: {path: /tasks/auto_complete.json}
+  spring: {path: /api/v1/tasks/autocomplete}
+  params: {term: task, related: accounts/101}
+  auth: alice
+  description: Compare autocomplete excluding the related account's tasks.
+- id: tasks-autocomplete-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /tasks/auto_complete
+  rails: {path: /tasks/auto_complete.json}
+  spring: {path: /api/v1/tasks/autocomplete}
+  params: {term: task}
+  auth: anonymous
+  description: Compare anonymous task autocomplete authentication behavior.
+- id: comments-index-account-101-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /comments
+  params: {account_id: 101}
+  auth: alice
+  description: Compare comments for a visible account, newest first.
+- id: comments-index-account-101-bob
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /comments
+  params: {account_id: 101}
+  auth: bob
+  description: Comments of a visible commentable are listed regardless of comment author.
+- id: comments-index-task-601-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /comments
+  params: {task_id: 601}
+  auth: alice
+  description: Compare comments for a task commentable (Task.my scope).
+- id: comments-index-no-commentable-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /comments
+  auth: alice
+  description: Without a *_id parameter Rails lists Comment.accessible_by (own comments).
+- id: comments-index-no-commentable-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /comments
+  auth: admin
+  description: Without a *_id parameter admins list every comment.
+- id: comments-index-contact-301-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /comments
+  params: {contact_id: 301}
+  auth: admin
+  description: Compare a commentable hidden by Contact.my (admins are not widened) - 404.
+- id: comments-index-account-999999-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /comments
+  params: {account_id: 999999}
+  auth: alice
+  description: Compare a missing commentable - 404.
+- id: comments-index-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /comments
+  params: {account_id: 101}
+  auth: anonymous
+  description: Compare anonymous comments index authentication behavior.
+- id: comments-index-user-2-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /comments
+  params: {user_id: 2}
+  auth: alice
+  description: Rails extract_commentable_name accepts user_id; User.my(current_user) includes the user themself.
+- id: comments-index-user-3-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /comments
+  params: {user_id: 3}
+  auth: alice
+  description: Another user's record is outside User.my for non-admins - 404.
+- id: comments-index-user-3-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /comments
+  params: {user_id: 3}
+  auth: admin
+  description: Admins can read every user record, so comments on user 3 are listed.

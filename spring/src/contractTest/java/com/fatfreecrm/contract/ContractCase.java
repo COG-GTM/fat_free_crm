@@ -34,7 +34,10 @@ public record ContractCase(
         this(id, ticket, status, method, path, rails, spring, params, body, auth, normalize, description, null);
     }
 
-    public record SideRequest(String path, Target target) {
+    public record SideRequest(String path, Target target, String bodyPointer) {
+        public SideRequest(String path, Target target) {
+            this(path, target, null);
+        }
     }
 
     public enum Target {

@@ -1,0 +1,206 @@
+- id: accounts-index-default-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts
+  params: {page: 1, query: ""}
+  spring: {bodyPointer: /items}
+  auth: alice
+  description: Compare the default Rails account rows with the Spring list envelope.
+- id: accounts-index-page2-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts
+  params: {page: 2, per_page: 1, query: ""}
+  spring: {bodyPointer: /items}
+  auth: alice
+  description: Compare Rails and Spring account pagination.
+- id: accounts-show-101-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts/101
+  auth: alice
+  description: Compare the public account show response (view-version parity is covered by AccountsControllerIntegrationTest).
+- id: accounts-show-999999-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts/999999
+  auth: alice
+  description: Compare not-found account show behavior.
+- id: accounts-show-106-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts/106
+  auth: alice
+  description: Compare access-denied account show behavior.
+- id: accounts-show-101-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts/101
+  auth: anonymous
+  description: Compare anonymous account show authentication behavior.
+- id: accounts-autocomplete-term-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts/auto_complete
+  rails: {path: /accounts/auto_complete.json}
+  spring: {path: /api/v1/accounts/autocomplete}
+  params: {term: a}
+  auth: alice
+  description: Compare term-filtered autocomplete results for Alice.
+- id: accounts-autocomplete-term-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts/auto_complete
+  rails: {path: /accounts/auto_complete.json}
+  spring: {path: /api/v1/accounts/autocomplete}
+  params: {term: a}
+  auth: admin
+  description: Compare term-filtered autocomplete results for admin.
+- id: accounts-autocomplete-related-id-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts/auto_complete
+  rails: {path: /accounts/auto_complete.json}
+  spring: {path: /api/v1/accounts/autocomplete}
+  params: {term: a, related: "101"}
+  auth: alice
+  description: Exclude one account using a bare related ID.
+- id: accounts-autocomplete-related-user-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts/auto_complete
+  rails: {path: /accounts/auto_complete.json}
+  spring: {path: /api/v1/accounts/autocomplete}
+  params: {term: a, related: users/2}
+  auth: alice
+  description: Exclude accounts associated with a related user.
+- id: accounts-autocomplete-related-contact-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts/auto_complete
+  rails: {path: /accounts/auto_complete.json}
+  spring: {path: /api/v1/accounts/autocomplete}
+  params: {term: a, related: contacts/201}
+  auth: alice
+  description: Contact does not define an account collection exclusion.
+- id: accounts-autocomplete-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts/auto_complete
+  rails: {path: /accounts/auto_complete.json}
+  spring: {path: /api/v1/accounts/autocomplete}
+  params: {term: a}
+  auth: anonymous
+  description: Compare anonymous autocomplete authentication behavior.
+- id: accounts-envelope-default-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts
+  rails: {path: /api/v1/accounts, target: spring}
+  spring: {path: /api/v1/accounts, target: spring}
+  auth: alice
+  expect:
+    status: 200
+    json:
+      /page: 1
+      /perPage: 20
+      /totalCount: 5
+      /totalPages: 1
+      /facets/category/all: 5
+      /facets/category/affiliate: 0
+      /facets/category/competitor: 0
+      /facets/category/customer: 0
+      /facets/category/partner: 0
+      /facets/category/reseller: 0
+      /facets/category/vendor: 0
+      /facets/category/other: 5
+  description: Pin Alice's list envelope and category facets to the captured Rails corpus.
+- id: accounts-envelope-default-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts
+  rails: {path: /api/v1/accounts, target: spring}
+  spring: {path: /api/v1/accounts, target: spring}
+  auth: admin
+  expect:
+    status: 200
+    json:
+      /page: 1
+      /perPage: 20
+      /totalCount: 7
+      /totalPages: 1
+      /facets/category/all: 7
+      /facets/category/affiliate: 0
+      /facets/category/competitor: 0
+      /facets/category/customer: 0
+      /facets/category/partner: 0
+      /facets/category/reseller: 0
+      /facets/category/vendor: 0
+      /facets/category/other: 7
+  description: Pin the administrator list envelope and facets to the captured Rails corpus.
+- id: accounts-envelope-page2-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts
+  rails: {path: /api/v1/accounts, target: spring}
+  spring: {path: /api/v1/accounts, target: spring}
+  params: {page: 2, per_page: 1}
+  auth: alice
+  expect:
+    status: 200
+    json: {/page: 2, /perPage: 1, /totalCount: 5, /totalPages: 5}
+  description: Pin the paginated list envelope to the captured Rails account count.
+- id: accounts-envelope-query-acme-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts
+  rails: {path: /api/v1/accounts, target: spring}
+  spring: {path: /api/v1/accounts, target: spring}
+  params: {query: acme}
+  auth: alice
+  expect:
+    status: 200
+    json: {/totalCount: 0, /totalPages: 0}
+  description: Pin Alice's text-query result count to the captured Rails corpus.
+- id: accounts-envelope-category-other-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts
+  rails: {path: /api/v1/accounts, target: spring}
+  spring: {path: /api/v1/accounts, target: spring}
+  params: {category: other}
+  auth: alice
+  expect:
+    status: 200
+    json: {/totalCount: 5}
+  description: Pin the NULL-category selection to the captured Rails corpus.
+- id: accounts-envelope-category-customer-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /accounts
+  rails: {path: /api/v1/accounts, target: spring}
+  spring: {path: /api/v1/accounts, target: spring}
+  params: {category: customer}
+  auth: alice
+  expect:
+    status: 200
+    json: {/items: [], /totalCount: 0, /totalPages: 0}
+  description: Pin a category with no visible Rails rows to an empty envelope.

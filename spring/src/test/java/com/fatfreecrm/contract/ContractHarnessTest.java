@@ -52,7 +52,12 @@ class ContractHarnessTest {
     @Test
     void loadsInitialCasesFromClasspath() throws Exception {
         List<ContractCase> cases = CaseLoader.load();
-        assertEquals(14, cases.size());
+        assertEquals(187, cases.size());
+        ContractCase accountsIndex = cases.stream()
+            .filter(contractCase -> contractCase.id().equals("accounts-index-admin"))
+            .findFirst()
+            .orElseThrow();
+        assertEquals("/items", accountsIndex.spring().bodyPointer());
         ContractCase authSelfCheck = cases.stream()
             .filter(contractCase -> contractCase.id().equals("auth-login-spring-self-check"))
             .findFirst()
@@ -389,7 +394,7 @@ class ContractHarnessTest {
             assertEquals(200, report.path("cases").get(0).path("rails").path("status").asInt());
             assertTrue(report.path("cases").get(0).path("rails").path("url").asText().endsWith("/accounts.json"));
             assertTrue(java.nio.file.Files.readString(directory.resolve("report.md"))
-                .contains("| end-to-end | pending | 200 application/json |"));
+                .contains("| end-to-end |  | pending | 200 application/json |"));
             assertEquals(1, report.path("allowlist").get(0).path("hits").asInt());
             assertFalse(report.path("allowlist").get(0).path("stale").asBoolean());
             assertTrue(report.path("allowlist").get(1).path("stale").asBoolean());

@@ -22,11 +22,12 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.springframework.stereotype.Component;
 
 /**
  * Registry of the five CRM entities that support list search.
- * Task and User lists are intentionally out of scope for AB-269 (handled by AB-270).
+ * AB-270 adds Task (Rails {@code Task.text_search}); User lists remain with their own family.
  */
 @Component
 public class SearchableEntities {
@@ -35,6 +36,13 @@ public class SearchableEntities {
 
     private static final List<String> DEFAULT_ACCOUNT_CATEGORIES = List.of(
         "affiliate", "competitor", "customer", "partner", "reseller", "vendor");
+    private static final List<String> DEFAULT_LEAD_STATUSES = List.of("new", "contacted", "converted", "rejected");
+
+    private static final List<String> DEFAULT_CAMPAIGN_STATUSES = List.of(
+        "planned", "started", "completed", "on_hold", "called_off");
+
+    private static final List<String> DEFAULT_OPPORTUNITY_STAGES = List.of(
+        "prospecting", "analysis", "presentation", "proposal", "negotiation", "final_review", "won", "lost");
 
     private final Map<Class<?>, SearchableEntity> byClass;
 
@@ -64,7 +72,8 @@ public class SearchableEntities {
                 likeEscaped(root, cb, "email", query)
             ),
             true,
-            user -> Map.of("category", accountCategoryFacets(user, entityManager, settingRepository, accessPolicy))
+            user -> Map.of("category", accountCategoryFacets(user, entityManager, settingRepository, accessPolicy)),
+            accountStateFilter()
         ));
         register(map, new SearchableEntity(
             Contact.class,
@@ -109,7 +118,8 @@ public class SearchableEntities {
                 likeEscaped(root, cb, "email", query)
             ),
             true,
-            null
+            user -> Map.of("status", leadStatusFacets(user, entityManager, settingRepository, accessPolicy)),
+            leadStateFilter()
         ));
         register(map, new SearchableEntity(
             Opportunity.class,
@@ -129,7 +139,9 @@ public class SearchableEntities {
             ),
             SearchableEntities::opportunitySearch,
             true,
-            null
+            user -> Map.of(
+                "stage", opportunityStageFacets(user, entityManager, settingRepository, accessPolicy)),
+            opportunityStateFilter()
         ));
         register(map, new SearchableEntity(
             Campaign.class,
@@ -150,6 +162,39 @@ public class SearchableEntities {
             ),
             (root, cb, query) -> likeEscaped(root, cb, "name", query),
             true,
+            user -> Map.of("status",
+                campaignStatusFacets(user, entityManager, settingRepository, accessPolicy)),
+            campaignStateFilter()
+        ));
+        register(map, new SearchableEntity(
+            com.fatfreecrm.domain.Task.class,
+            "Task",
+            DEFAULT_PER_PAGE,
+            SortWhitelist.of(com.fatfreecrm.domain.Task.class, "name ASC", "name ASC"),
+            Map.of(),
+            SearchableEntities::taskSearch,
+            false,
+            null
+        ));
+        register(map, new SearchableEntity(
+            com.fatfreecrm.domain.User.class,
+            "User",
+            DEFAULT_PER_PAGE,
+            SortWhitelist.of(com.fatfreecrm.domain.User.class, "id DESC", "id DESC"),
+            Map.of(),
+            (root, cb, query) -> {
+                String sanitized = query.replaceAll("[^\\w\\s\\-.'\\p{L}]", "").strip();
+                String pattern = "%" + sanitized + "%";
+                Expression<String> upperPattern =
+                    cb.upper(((org.hibernate.query.criteria.HibernateCriteriaBuilder) cb).value(pattern));
+                return cb.or(
+                    cb.like(cb.upper(root.get("username")), upperPattern),
+                    cb.like(cb.upper(root.get("email")), upperPattern),
+                    cb.like(cb.upper(root.get("firstName")), upperPattern),
+                    cb.like(cb.upper(root.get("lastName")), upperPattern)
+                );
+            },
+            false,
             null
         ));
         byClass = Map.copyOf(map);
@@ -161,6 +206,57 @@ public class SearchableEntities {
 
     private static SearchableEntity.AssociationDef def(AssociationJoin join, Class<?> target) {
         return new SearchableEntity.AssociationDef(join, target);
+    }
+
+    private static StateFilter accountStateFilter() {
+        return new StateFilter("category", (root, builder, values) -> {
+            List<String> categories = new ArrayList<>(values);
+            boolean other = categories.removeIf("other"::equals);
+            List<Predicate> predicates = new ArrayList<>();
+            if (!categories.isEmpty()) {
+                predicates.add(root.get("category").in(categories));
+            } else if (!other) {
+                predicates.add(builder.disjunction());
+            }
+            if (other) {
+                predicates.add(builder.isNull(root.get("category")));
+            }
+            return builder.or(predicates.toArray(Predicate[]::new));
+        });
+    }
+
+    private static StateFilter campaignStateFilter() {
+        return new StateFilter("status", (root, builder, values) -> {
+            List<String> statuses = new ArrayList<>(values);
+            boolean other = statuses.removeIf("other"::equals);
+            List<Predicate> predicates = new ArrayList<>();
+            if (!statuses.isEmpty()) {
+                predicates.add(root.get("status").in(statuses));
+            } else if (!other) {
+                predicates.add(builder.disjunction());
+            }
+            if (other) {
+                predicates.add(builder.isNull(root.get("status")));
+            }
+            return builder.or(predicates.toArray(Predicate[]::new));
+        });
+    }
+
+    private static StateFilter leadStateFilter() {
+        return new StateFilter("status", (root, builder, values) -> {
+            List<String> statuses = new ArrayList<>(values);
+            boolean other = statuses.removeIf("other"::equals);
+            List<Predicate> predicates = new ArrayList<>();
+            if (!statuses.isEmpty()) {
+                predicates.add(root.get("status").in(statuses));
+            } else if (!other) {
+                predicates.add(builder.disjunction());
+            }
+            if (other) {
+                predicates.add(builder.isNull(root.get("status")));
+            }
+            return builder.or(predicates.toArray(Predicate[]::new));
+        });
     }
 
     public SearchableEntity find(Class<?> entityClass) {
@@ -233,6 +329,193 @@ public class SearchableEntities {
             .orElse(DEFAULT_ACCOUNT_CATEGORIES);
     }
 
+    /**
+     * Rails {@code CampaignsController#get_data_for_sidebar}: {@code all} and {@code other} first,
+     * then one count per configured status, over the accessible scope only. {@code other} covers
+     * NULL and unconfigured statuses (unlike the {@code other} filter, which matches NULL only).
+     */
+    private static Map<String, Long> campaignStatusFacets(
+        AuthenticatedUser user,
+        EntityManager entityManager,
+        SettingRepository settingRepository,
+        AccessPolicy accessPolicy
+    ) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> query = cb.createQuery(Object[].class);
+        Root<Campaign> root = query.from(Campaign.class);
+        Expression<String> status = root.get("status");
+        query.multiselect(List.of(status, cb.count(root.get("id"))).toArray(Selection[]::new));
+        query.groupBy(status);
+        Predicate accessible = accessPolicy.accessibleBy(user, Campaign.class).toPredicate(root, query, cb);
+        if (accessible != null) {
+            query.where(accessible);
+        }
+        Map<String, Long> counts = new LinkedHashMap<>();
+        long total = 0;
+        for (Object[] row : entityManager.createQuery(query).getResultList()) {
+            Long count = (Long) row[1];
+            if (row[0] != null) {
+                counts.merge((String) row[0], count, Long::sum);
+            }
+            total += count;
+        }
+
+        Map<String, Long> facets = new LinkedHashMap<>();
+        facets.put("all", total);
+        long known = 0;
+        Map<String, Long> perStatus = new LinkedHashMap<>();
+        for (String key : campaignStatuses(settingRepository)) {
+            long count = counts.getOrDefault(key, 0L);
+            perStatus.put(key, count);
+            known += count;
+        }
+        facets.put("other", total - known);
+        facets.putAll(perStatus);
+        return facets;
+    }
+
+    private static List<String> campaignStatuses(SettingRepository settingRepository) {
+        return settingRepository.findByName("campaign_status")
+            .map(Setting::getValue)
+            .map(value -> {
+                try {
+                    List<String> statuses = RailsYaml.readStringList(value).stream()
+                        .map(status -> status.startsWith(":") ? status.substring(1) : status)
+                        .toList();
+                    return statuses.isEmpty() ? DEFAULT_CAMPAIGN_STATUSES : statuses;
+                } catch (IllegalArgumentException exception) {
+                    return DEFAULT_CAMPAIGN_STATUSES;
+                }
+            })
+            .orElse(DEFAULT_CAMPAIGN_STATUSES);
+    }
+
+    private static Map<String, Long> leadStatusFacets(
+        AuthenticatedUser user,
+        EntityManager entityManager,
+        SettingRepository settingRepository,
+        AccessPolicy accessPolicy
+    ) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> query = cb.createQuery(Object[].class);
+        Root<Lead> root = query.from(Lead.class);
+        Expression<String> status = root.get("status");
+        query.multiselect(List.of(status, cb.count(root.get("id"))).toArray(Selection[]::new));
+        query.groupBy(status);
+        Predicate accessible = accessPolicy.accessibleBy(user, Lead.class).toPredicate(root, query, cb);
+        if (accessible != null) {
+            query.where(accessible);
+        }
+        Map<String, Long> counts = new LinkedHashMap<>();
+        long total = 0;
+        for (Object[] row : entityManager.createQuery(query).getResultList()) {
+            Long count = (Long) row[1];
+            if (row[0] != null) {
+                counts.merge((String) row[0], count, Long::sum);
+            }
+            total += count;
+        }
+
+        Map<String, Long> facets = new LinkedHashMap<>();
+        long categorized = 0;
+        for (String key : leadStatuses(settingRepository)) {
+            long count = counts.getOrDefault(key, 0L);
+            facets.put(key, count);
+            categorized += count;
+        }
+        facets.put("all", total);
+        facets.put("other", total - categorized);
+        return facets;
+    }
+
+    private static List<String> leadStatuses(SettingRepository settingRepository) {
+        return settingRepository.findByName("lead_status")
+            .map(Setting::getValue)
+            .map(value -> {
+                try {
+                    List<String> statuses = RailsYaml.readStringList(value).stream()
+                        .map(status -> status.startsWith(":") ? status.substring(1) : status)
+                        .toList();
+                    return statuses.isEmpty() ? DEFAULT_LEAD_STATUSES : statuses;
+                } catch (IllegalArgumentException exception) {
+                    return DEFAULT_LEAD_STATUSES;
+                }
+            })
+            .orElse(DEFAULT_LEAD_STATUSES);
+    }
+
+    private static StateFilter opportunityStateFilter() {
+        return new StateFilter("stage", (root, builder, values) -> {
+            List<String> stages = new ArrayList<>(values);
+            boolean other = stages.removeIf("other"::equals);
+            List<Predicate> predicates = new ArrayList<>();
+            if (!stages.isEmpty()) {
+                predicates.add(root.get("stage").in(stages));
+            } else if (!other) {
+                predicates.add(builder.disjunction());
+            }
+            if (other) {
+                predicates.add(builder.isNull(root.get("stage")));
+            }
+            return builder.or(predicates.toArray(Predicate[]::new));
+        });
+    }
+
+    private static Map<String, Long> opportunityStageFacets(
+        AuthenticatedUser user,
+        EntityManager entityManager,
+        SettingRepository settingRepository,
+        AccessPolicy accessPolicy
+    ) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> query = cb.createQuery(Object[].class);
+        Root<Opportunity> root = query.from(Opportunity.class);
+        Expression<String> stage = root.get("stage");
+        query.multiselect(List.of(stage, cb.count(root.get("id"))).toArray(Selection[]::new));
+        query.groupBy(stage);
+        Predicate accessible = accessPolicy.accessibleBy(user, Opportunity.class).toPredicate(root, query, cb);
+        if (accessible != null) {
+            query.where(accessible);
+        }
+        Map<String, Long> counts = new LinkedHashMap<>();
+        long total = 0;
+        for (Object[] row : entityManager.createQuery(query).getResultList()) {
+            Long count = (Long) row[1];
+            if (row[0] != null) {
+                counts.merge((String) row[0], count, Long::sum);
+            }
+            total += count;
+        }
+
+        Map<String, Long> facets = new LinkedHashMap<>();
+        facets.put("all", total);
+        facets.put("other", 0L);
+        long configured = 0;
+        for (String key : opportunityStages(settingRepository)) {
+            long count = counts.getOrDefault(key, 0L);
+            facets.put(key, count);
+            configured += count;
+        }
+        facets.put("other", total - configured);
+        return facets;
+    }
+
+    private static List<String> opportunityStages(SettingRepository settingRepository) {
+        return settingRepository.findByName("opportunity_stage")
+            .map(Setting::getValue)
+            .map(value -> {
+                try {
+                    List<String> stages = RailsYaml.readStringList(value).stream()
+                        .map(stage -> stage.startsWith(":") ? stage.substring(1) : stage)
+                        .toList();
+                    return stages.isEmpty() ? DEFAULT_OPPORTUNITY_STAGES : stages;
+                } catch (IllegalArgumentException exception) {
+                    return DEFAULT_OPPORTUNITY_STAGES;
+                }
+            })
+            .orElse(DEFAULT_OPPORTUNITY_STAGES);
+    }
+
     /** {@code lower(path) LIKE '%q%' ESCAPE '\\'} with %, _, \ escaped — the Ransack {@code cont} semantics. */
     static Predicate likeEscaped(From<?, ?> root, CriteriaBuilder cb, String attribute, String rawValue) {
         String pattern = "%" + escapeLike(rawValue) + "%";
@@ -301,5 +584,15 @@ public class SearchableEntities {
             }
         }
         return likeEscaped(root, cb, "name", query);
+    }
+
+    /**
+     * Rails {@code Task.text_search}: strip characters outside {@code [\w\s\-.'\p{L}]}, trim, then
+     * {@code upper(name) LIKE upper('%q%')} without escaping (PostgreSQL's default backslash escape applies).
+     */
+    static Predicate taskSearch(From<?, ?> root, CriteriaBuilder cb, String rawQuery) {
+        String query = rawQuery.replaceAll("[^\\w\\s\\-.'\\p{L}]", "").replaceAll("^\\s+|\\s+$", "");
+        return cb.like(cb.upper(root.get("name")),
+            cb.upper(((HibernateCriteriaBuilder) cb).value("%" + query + "%")));
     }
 }

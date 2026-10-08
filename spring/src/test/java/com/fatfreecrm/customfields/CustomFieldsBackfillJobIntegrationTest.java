@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fatfreecrm.config.CustomFieldsProperties;
 import com.fatfreecrm.support.AbstractPostgresIntegrationTest;
+import java.util.Map;
+import java.util.TreeMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,9 +86,25 @@ class CustomFieldsBackfillJobIntegrationTest extends AbstractPostgresIntegration
             .isInstanceOf(IllegalStateException.class)
             .hasMessage("simulated backfill interruption");
 
+        String expression = CustomFieldsBackfill.setBasedExpression(new TreeMap<>(Map.of(
+            "cf_backfill_check_boxes", "check_boxes", "cf_backfill_text", "string")));
+        Long expectedRemaining = jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM accounts WHERE custom_fields IS DISTINCT FROM " + expression,
+            Long.class);
+        Long seededRemaining = jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM accounts WHERE name LIKE 'ab271-backfill-%' "
+                + "AND custom_fields IS DISTINCT FROM " + expression,
+            Long.class);
+        assertThat(expectedRemaining).isNotNull();
+        assertThat(seededRemaining).isNotNull().isPositive().isLessThan(25_000);
+
         CustomFieldsBackfillReport report = backfillJob.run();
         assertThat(report.ok()).isTrue();
-        assertThat(report.tables().get("accounts").rowsBackfilled()).isEqualTo(5_000);
+        assertThat(report.tables().get("accounts").rowsBackfilled()).isEqualTo(expectedRemaining);
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM accounts WHERE name LIKE 'ab271-backfill-%' "
+                + "AND custom_fields ->> 'cf_backfill_text' = 'value-' || substring(name from 16)",
+            Long.class)).isEqualTo(25_000);
         assertThat(jdbcTemplate.queryForObject(
             "SELECT count(*) FROM accounts WHERE custom_fields ->> 'cf_backfill_text' = 'value-25000'",
             Long.class)).isEqualTo(1);

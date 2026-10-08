@@ -1,0 +1,1935 @@
+{
+  "generated_by": "bundle exec rake ffcrm:migration:search_matrix OPPORTUNITIES_OUTPUT=spring/src/test/resources/search/opportunities_search_matrix.json",
+  "corpus": {
+    "users": [
+      {
+        "id": 9001,
+        "username": "alice",
+        "email": "alice@opportunities-search-matrix.test",
+        "first_name": "Alice",
+        "last_name": "Matrix",
+        "title": null,
+        "company": null,
+        "alt_email": null,
+        "phone": null,
+        "mobile": null,
+        "google": null,
+        "encrypted_password": "fixed-encrypted-alice",
+        "password_salt": "fixed-salt-alice",
+        "last_sign_in_at": null,
+        "current_sign_in_at": null,
+        "last_sign_in_ip": null,
+        "current_sign_in_ip": null,
+        "sign_in_count": 0,
+        "deleted_at": null,
+        "created_at": "2025-01-01 00:00:00 UTC",
+        "updated_at": "2025-01-01 00:00:00 UTC",
+        "admin": false,
+        "suspended_at": null,
+        "unconfirmed_email": null,
+        "reset_password_token": "fixed-reset-alice",
+        "reset_password_sent_at": null,
+        "remember_token": "fixed-remember-alice",
+        "remember_created_at": null,
+        "authentication_token": "fixed-auth-alice",
+        "confirmation_token": "fixed-confirm-alice",
+        "confirmed_at": "2025-01-01 00:00:00 UTC",
+        "confirmation_sent_at": null,
+        "subscribe_to_comment_replies": true,
+        "receive_assigned_notifications": true,
+        "zoom": null,
+        "teams": null,
+        "signal": null,
+        "instagram": null,
+        "facebook": null,
+        "mastodon": null,
+        "bluesky": null,
+        "twitter": null,
+        "linkedin": null,
+        "blog": null
+      },
+      {
+        "id": 9002,
+        "username": "bob",
+        "email": "bob@opportunities-search-matrix.test",
+        "first_name": "Bob",
+        "last_name": "Matrix",
+        "title": null,
+        "company": null,
+        "alt_email": null,
+        "phone": null,
+        "mobile": null,
+        "google": null,
+        "encrypted_password": "fixed-encrypted-bob",
+        "password_salt": "fixed-salt-bob",
+        "last_sign_in_at": null,
+        "current_sign_in_at": null,
+        "last_sign_in_ip": null,
+        "current_sign_in_ip": null,
+        "sign_in_count": 0,
+        "deleted_at": null,
+        "created_at": "2025-01-01 00:00:00 UTC",
+        "updated_at": "2025-01-01 00:00:00 UTC",
+        "admin": false,
+        "suspended_at": null,
+        "unconfirmed_email": null,
+        "reset_password_token": "fixed-reset-bob",
+        "reset_password_sent_at": null,
+        "remember_token": "fixed-remember-bob",
+        "remember_created_at": null,
+        "authentication_token": "fixed-auth-bob",
+        "confirmation_token": "fixed-confirm-bob",
+        "confirmed_at": "2025-01-01 00:00:00 UTC",
+        "confirmation_sent_at": null,
+        "subscribe_to_comment_replies": true,
+        "receive_assigned_notifications": true,
+        "zoom": null,
+        "teams": null,
+        "signal": null,
+        "instagram": null,
+        "facebook": null,
+        "mastodon": null,
+        "bluesky": null,
+        "twitter": null,
+        "linkedin": null,
+        "blog": null
+      }
+    ],
+    "accounts": [
+      {
+        "id": 9611,
+        "user_id": 9001,
+        "assigned_to": null,
+        "name": "Opportunity Matrix Account",
+        "access": "Public",
+        "website": null,
+        "toll_free_phone": null,
+        "phone": null,
+        "fax": null,
+        "deleted_at": null,
+        "created_at": "2025-01-01 08:00:00 UTC",
+        "updated_at": "2025-01-01 08:00:00 UTC",
+        "email": "matrix-account@example.test",
+        "background_info": null,
+        "rating": 0,
+        "category": null,
+        "subscribed_users": null,
+        "contacts_count": 0,
+        "opportunities_count": 1,
+        "wikidata_id": null,
+        "latitude": null,
+        "longitude": null,
+        "blog": null,
+        "linkedin": null,
+        "facebook": null,
+        "twitter": null,
+        "bluesky": null,
+        "instagram": null,
+        "mastodon": null
+      }
+    ],
+    "contacts": [
+      {
+        "id": 9621,
+        "user_id": 9001,
+        "lead_id": null,
+        "assigned_to": null,
+        "reports_to": null,
+        "first_name": "Matrix",
+        "last_name": "Contact",
+        "access": "Public",
+        "title": null,
+        "department": null,
+        "source": null,
+        "email": null,
+        "alt_email": null,
+        "phone": null,
+        "mobile": null,
+        "fax": null,
+        "blog": null,
+        "linkedin": null,
+        "facebook": null,
+        "twitter": null,
+        "born_on": null,
+        "do_not_call": false,
+        "deleted_at": null,
+        "created_at": "2025-01-01 08:00:00 UTC",
+        "updated_at": "2025-01-01 08:00:00 UTC",
+        "background_info": null,
+        "subscribed_users": null,
+        "zoom": null,
+        "teams": null,
+        "signal": null,
+        "instagram": null,
+        "mastodon": null,
+        "bluesky": null
+      }
+    ],
+    "campaigns": [
+      {
+        "id": 9631,
+        "user_id": 9001,
+        "assigned_to": null,
+        "name": "Opportunity Matrix Campaign",
+        "access": "Public",
+        "status": null,
+        "budget": null,
+        "target_leads": null,
+        "target_conversion": null,
+        "target_revenue": null,
+        "leads_count": null,
+        "opportunities_count": null,
+        "revenue": null,
+        "starts_on": null,
+        "ends_on": null,
+        "objectives": null,
+        "deleted_at": null,
+        "created_at": "2025-01-01 08:00:00 UTC",
+        "updated_at": "2025-01-01 08:00:00 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      }
+    ],
+    "opportunities": [
+      {
+        "id": 9661,
+        "user_id": 9001,
+        "campaign_id": 9631,
+        "assigned_to": null,
+        "name": "Amber Portfolio 100%",
+        "access": "Public",
+        "source": null,
+        "stage": "prospecting",
+        "probability": 50,
+        "amount": "1500.0",
+        "discount": "25.0",
+        "closes_on": "2025-04-01",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:01 UTC",
+        "updated_at": "2025-01-01 02:41:01 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9662,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Blue Zero Deal",
+        "access": "Private",
+        "source": null,
+        "stage": "analysis",
+        "probability": 0,
+        "amount": "0.0",
+        "discount": "0.0",
+        "closes_on": "2025-04-02",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:02 UTC",
+        "updated_at": "2025-01-01 02:41:02 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9663,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Cobalt Contact Deal",
+        "access": "Shared",
+        "source": null,
+        "stage": "presentation",
+        "probability": 100,
+        "amount": "1234.5",
+        "discount": "12.5",
+        "closes_on": "2025-04-03",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:03 UTC",
+        "updated_at": "2025-01-01 02:41:03 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9664,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Delta Null Amount",
+        "access": "Public",
+        "source": null,
+        "stage": "proposal",
+        "probability": 50,
+        "amount": null,
+        "discount": null,
+        "closes_on": null,
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:04 UTC",
+        "updated_at": "2025-01-01 02:41:04 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9665,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Emerald Maximum Deal",
+        "access": "Shared",
+        "source": null,
+        "stage": "negotiation",
+        "probability": 1,
+        "amount": "9999999999.99",
+        "discount": "1.25",
+        "closes_on": "2025-04-05",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:05 UTC",
+        "updated_at": "2025-01-01 02:41:05 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9666,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Fuchsia Negative Deal",
+        "access": "Public",
+        "source": null,
+        "stage": "final_review",
+        "probability": 50,
+        "amount": "-250.0",
+        "discount": "2.5",
+        "closes_on": "2025-04-06",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:06 UTC",
+        "updated_at": "2025-01-01 02:41:06 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9667,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Golden Won Deal",
+        "access": "Public",
+        "source": null,
+        "stage": "won",
+        "probability": 40,
+        "amount": "3200.0",
+        "discount": "0.0",
+        "closes_on": "2025-04-07",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:07 UTC",
+        "updated_at": "2025-01-01 02:41:07 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9668,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Indigo Lost Deal",
+        "access": "Public",
+        "source": null,
+        "stage": "lost",
+        "probability": 10,
+        "amount": "450.0",
+        "discount": null,
+        "closes_on": "2025-04-08",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:08 UTC",
+        "updated_at": "2025-01-01 02:41:08 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9669,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Jade Null Stage",
+        "access": "Public",
+        "source": null,
+        "stage": null,
+        "probability": 25,
+        "amount": "725.0",
+        "discount": "25.0",
+        "closes_on": null,
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:09 UTC",
+        "updated_at": "2025-01-01 02:41:09 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9670,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Khaki Custom Stage",
+        "access": "Public",
+        "source": null,
+        "stage": "custom_stage",
+        "probability": null,
+        "amount": "100.0",
+        "discount": "0.0",
+        "closes_on": "2025-04-10",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:10 UTC",
+        "updated_at": "2025-01-01 02:41:10 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9671,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Weighted Product A",
+        "access": "Public",
+        "source": null,
+        "stage": "prospecting",
+        "probability": 60,
+        "amount": "10.0",
+        "discount": "0.0",
+        "closes_on": "2025-04-11",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:11 UTC",
+        "updated_at": "2025-01-01 02:41:11 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9672,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Weighted Product B",
+        "access": "Public",
+        "source": null,
+        "stage": "analysis",
+        "probability": 50,
+        "amount": "20.0",
+        "discount": "0.0",
+        "closes_on": "2025-04-12",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:12 UTC",
+        "updated_at": "2025-01-01 02:41:12 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9673,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Weighted Product C",
+        "access": "Public",
+        "source": null,
+        "stage": "presentation",
+        "probability": 100,
+        "amount": "5.0",
+        "discount": "0.0",
+        "closes_on": "2025-04-13",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:13 UTC",
+        "updated_at": "2025-01-01 02:41:13 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9674,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Weighted Null Product",
+        "access": "Public",
+        "source": null,
+        "stage": "proposal",
+        "probability": 90,
+        "amount": null,
+        "discount": "0.0",
+        "closes_on": "2025-04-14",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:14 UTC",
+        "updated_at": "2025-01-01 02:41:14 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9675,
+        "user_id": 9002,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Private Bob Opportunity",
+        "access": "Private",
+        "source": null,
+        "stage": "won",
+        "probability": 50,
+        "amount": "80.0",
+        "discount": "0.0",
+        "closes_on": "2025-04-15",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:15 UTC",
+        "updated_at": "2025-01-01 02:41:15 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9676,
+        "user_id": 9002,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Public Bob Opportunity",
+        "access": "Public",
+        "source": null,
+        "stage": "won",
+        "probability": 50,
+        "amount": "90.0",
+        "discount": "0.0",
+        "closes_on": "2025-04-16",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:16 UTC",
+        "updated_at": "2025-01-01 02:41:16 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9677,
+        "user_id": 9002,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Shared Bob Opportunity",
+        "access": "Shared",
+        "source": null,
+        "stage": "lost",
+        "probability": 50,
+        "amount": "70.0",
+        "discount": "0.0",
+        "closes_on": "2025-04-17",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:17 UTC",
+        "updated_at": "2025-01-01 02:41:17 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9678,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Matrix_Paging Deal 01",
+        "access": "Public",
+        "source": null,
+        "stage": "prospecting",
+        "probability": 6,
+        "amount": "10.0",
+        "discount": "0.0",
+        "closes_on": "2025-05-02",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:18 UTC",
+        "updated_at": "2025-01-01 02:41:18 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9679,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Matrix Paging Deal 02",
+        "access": "Public",
+        "source": null,
+        "stage": "prospecting",
+        "probability": 7,
+        "amount": "13.0",
+        "discount": "0.0",
+        "closes_on": "2025-05-03",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:19 UTC",
+        "updated_at": "2025-01-01 02:41:19 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9680,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Matrix Paging Deal 03",
+        "access": "Public",
+        "source": null,
+        "stage": "prospecting",
+        "probability": 8,
+        "amount": "16.0",
+        "discount": "0.0",
+        "closes_on": "2025-05-04",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:20 UTC",
+        "updated_at": "2025-01-01 02:41:20 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9681,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Matrix Paging Deal 04",
+        "access": "Public",
+        "source": null,
+        "stage": "prospecting",
+        "probability": 9,
+        "amount": "19.0",
+        "discount": "0.0",
+        "closes_on": "2025-05-05",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:21 UTC",
+        "updated_at": "2025-01-01 02:41:21 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9682,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Matrix Paging Deal 05",
+        "access": "Public",
+        "source": null,
+        "stage": "prospecting",
+        "probability": 10,
+        "amount": "22.0",
+        "discount": "0.0",
+        "closes_on": "2025-05-06",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:22 UTC",
+        "updated_at": "2025-01-01 02:41:22 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9683,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Matrix Paging Deal 06",
+        "access": "Public",
+        "source": null,
+        "stage": "prospecting",
+        "probability": 11,
+        "amount": "25.0",
+        "discount": "0.0",
+        "closes_on": "2025-05-07",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:23 UTC",
+        "updated_at": "2025-01-01 02:41:23 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9684,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Matrix Paging Deal 07",
+        "access": "Public",
+        "source": null,
+        "stage": "prospecting",
+        "probability": 12,
+        "amount": "28.0",
+        "discount": "0.0",
+        "closes_on": "2025-05-08",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:24 UTC",
+        "updated_at": "2025-01-01 02:41:24 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9685,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Matrix Paging Deal 08",
+        "access": "Public",
+        "source": null,
+        "stage": "prospecting",
+        "probability": 13,
+        "amount": "31.0",
+        "discount": "0.0",
+        "closes_on": "2025-05-09",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:25 UTC",
+        "updated_at": "2025-01-01 02:41:25 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9686,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Matrix Paging Deal 09",
+        "access": "Public",
+        "source": null,
+        "stage": "prospecting",
+        "probability": 14,
+        "amount": "34.0",
+        "discount": "0.0",
+        "closes_on": "2025-05-10",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:26 UTC",
+        "updated_at": "2025-01-01 02:41:26 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9687,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Matrix Paging Deal 10",
+        "access": "Public",
+        "source": null,
+        "stage": "prospecting",
+        "probability": 15,
+        "amount": "37.0",
+        "discount": "0.0",
+        "closes_on": "2025-05-11",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:27 UTC",
+        "updated_at": "2025-01-01 02:41:27 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9688,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Matrix Paging Deal 11",
+        "access": "Public",
+        "source": null,
+        "stage": "prospecting",
+        "probability": 16,
+        "amount": "40.0",
+        "discount": "0.0",
+        "closes_on": "2025-05-12",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:28 UTC",
+        "updated_at": "2025-01-01 02:41:28 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9689,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Matrix Paging Deal 12",
+        "access": "Public",
+        "source": null,
+        "stage": "prospecting",
+        "probability": 17,
+        "amount": "43.0",
+        "discount": "0.0",
+        "closes_on": "2025-05-13",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:29 UTC",
+        "updated_at": "2025-01-01 02:41:29 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9690,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Matrix Paging Deal 13",
+        "access": "Public",
+        "source": null,
+        "stage": "prospecting",
+        "probability": 18,
+        "amount": "46.0",
+        "discount": "0.0",
+        "closes_on": "2025-05-14",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:30 UTC",
+        "updated_at": "2025-01-01 02:41:30 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      },
+      {
+        "id": 9691,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Matrix Paging Deal 14",
+        "access": "Public",
+        "source": null,
+        "stage": "prospecting",
+        "probability": 19,
+        "amount": "49.0",
+        "discount": "0.0",
+        "closes_on": "2025-05-15",
+        "deleted_at": null,
+        "created_at": "2025-01-01 02:41:31 UTC",
+        "updated_at": "2025-01-01 02:41:31 UTC",
+        "background_info": null,
+        "subscribed_users": null
+      }
+    ],
+    "account_opportunities": [
+      {
+        "id": 9701,
+        "account_id": 9611,
+        "opportunity_id": 9661,
+        "deleted_at": null,
+        "created_at": "2025-01-01 09:00:00 UTC",
+        "updated_at": "2025-01-01 09:00:00 UTC"
+      }
+    ],
+    "contact_opportunities": [
+      {
+        "id": 9711,
+        "contact_id": 9621,
+        "opportunity_id": 9663,
+        "role": "Decision maker",
+        "deleted_at": null,
+        "created_at": "2025-01-01 09:00:00 UTC",
+        "updated_at": "2025-01-01 09:00:00 UTC"
+      }
+    ],
+    "tags": [
+      {
+        "id": 9681,
+        "name": "priority",
+        "taggings_count": 1
+      },
+      {
+        "id": 9682,
+        "name": "focus",
+        "taggings_count": 1
+      }
+    ],
+    "taggings": [
+      {
+        "id": 9731,
+        "tag_id": 9681,
+        "taggable_id": 9661,
+        "tagger_id": null,
+        "tagger_type": null,
+        "taggable_type": "Opportunity",
+        "context": "tags",
+        "created_at": "2025-01-01 09:00:00 UTC"
+      },
+      {
+        "id": 9732,
+        "tag_id": 9682,
+        "taggable_id": 9663,
+        "tagger_id": null,
+        "tagger_type": null,
+        "taggable_type": "Opportunity",
+        "context": "tags",
+        "created_at": "2025-01-01 09:00:00 UTC"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "default",
+      "params": {},
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9691,
+        9690,
+        9689,
+        9688,
+        9687,
+        9686,
+        9685,
+        9684,
+        9683,
+        9682,
+        9681,
+        9680,
+        9679,
+        9678,
+        9676,
+        9674,
+        9673,
+        9672,
+        9671,
+        9670
+      ],
+      "total": 29,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "page2",
+      "params": {
+        "page": "2"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9669,
+        9668,
+        9667,
+        9666,
+        9665,
+        9664,
+        9663,
+        9662,
+        9661
+      ],
+      "total": 29,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "per5",
+      "params": {
+        "per_page": "5"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9691,
+        9690,
+        9689,
+        9688,
+        9687
+      ],
+      "total": 29,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "per0",
+      "params": {
+        "per_page": "0"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9691
+      ],
+      "total": 29,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "per201",
+      "params": {
+        "per_page": "201"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9691,
+        9690,
+        9689,
+        9688,
+        9687,
+        9686,
+        9685,
+        9684,
+        9683,
+        9682,
+        9681,
+        9680,
+        9679,
+        9678,
+        9676,
+        9674,
+        9673,
+        9672,
+        9671,
+        9670,
+        9669,
+        9668,
+        9667,
+        9666,
+        9665,
+        9664,
+        9663,
+        9662,
+        9661
+      ],
+      "total": 29,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "perabc",
+      "params": {
+        "per_page": "abc"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9691
+      ],
+      "total": 29,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "page99",
+      "params": {
+        "page": "99"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [],
+      "total": 29,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "query_text",
+      "params": {
+        "query": "Portfolio"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9661
+      ],
+      "total": 1,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "query_numeric_id",
+      "params": {
+        "query": "9661"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9661
+      ],
+      "total": 1,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "query_percent",
+      "params": {
+        "query": "100%"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9661
+      ],
+      "total": 1,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "query_underscore",
+      "params": {
+        "query": "Matrix_Paging"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9678
+      ],
+      "total": 1,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "query_tag",
+      "params": {
+        "query": "#missing"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [],
+      "total": 0,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "query_tag_positive",
+      "params": {
+        "query": "#priority"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9661
+      ],
+      "total": 1,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "q_amount_gteq",
+      "params": {
+        "q[amount_gteq]": "1000"
+      },
+      "ordered": false,
+      "status": 200,
+      "ids": [
+        9661,
+        9663,
+        9665,
+        9667
+      ],
+      "total": 4,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "q_probability_eq",
+      "params": {
+        "q[probability_eq]": "50"
+      },
+      "ordered": false,
+      "status": 200,
+      "ids": [
+        9661,
+        9664,
+        9666,
+        9672,
+        9676
+      ],
+      "total": 5,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "q_stage_eq",
+      "params": {
+        "q[stage_eq]": "won"
+      },
+      "ordered": false,
+      "status": 200,
+      "ids": [
+        9667,
+        9676
+      ],
+      "total": 2,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "q_name_cont",
+      "params": {
+        "q[name_cont]": "Contact"
+      },
+      "ordered": false,
+      "status": 200,
+      "ids": [
+        9663
+      ],
+      "total": 1,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "q_closes_on_lteq",
+      "params": {
+        "q[closes_on_lteq]": "2025-04-05"
+      },
+      "ordered": false,
+      "status": 200,
+      "ids": [
+        9661,
+        9662,
+        9663,
+        9665
+      ],
+      "total": 4,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "q_contact_association",
+      "params": {
+        "q[contacts_first_name_eq]": "Matrix"
+      },
+      "ordered": false,
+      "status": 200,
+      "ids": [
+        9663
+      ],
+      "total": 1,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "q_account_association",
+      "params": {
+        "q[account_name_cont]": "Matrix"
+      },
+      "ordered": false,
+      "status": 200,
+      "ids": [
+        9661
+      ],
+      "total": 1,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "q_tags_name_eq",
+      "params": {
+        "q[tags_name_eq]": "priority"
+      },
+      "ordered": false,
+      "status": 200,
+      "ids": [
+        9661
+      ],
+      "total": 1,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "q_amount_sort",
+      "params": {
+        "q[name_cont]": "Weighted",
+        "q[s]": "amount desc"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9674,
+        9672,
+        9671,
+        9673
+      ],
+      "total": 4,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "q_name_sort",
+      "params": {
+        "q[name_cont]": "Weighted",
+        "q[s]": "name asc"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9674,
+        9671,
+        9672,
+        9673
+      ],
+      "total": 4,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "stage_won",
+      "params": {
+        "stage": "won"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9676,
+        9667
+      ],
+      "total": 2,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "stage_other",
+      "params": {
+        "stage": "other"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9669
+      ],
+      "total": 1,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "stage_won_other",
+      "params": {
+        "stage": "won,other"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9676,
+        9669,
+        9667
+      ],
+      "total": 3,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "stage_custom",
+      "params": {
+        "stage": "custom_stage"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9670
+      ],
+      "total": 1,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "stage_bogus",
+      "params": {
+        "stage": "bogus"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [],
+      "total": 0,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "stage_empty",
+      "params": {
+        "stage": ""
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9691,
+        9690,
+        9689,
+        9688,
+        9687,
+        9686,
+        9685,
+        9684,
+        9683,
+        9682,
+        9681,
+        9680,
+        9679,
+        9678,
+        9676,
+        9674,
+        9673,
+        9672,
+        9671,
+        9670
+      ],
+      "total": 29,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "stage_ignored_with_q",
+      "params": {
+        "stage": "won",
+        "q[name_cont]": "Null"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9664,
+        9669,
+        9674
+      ],
+      "total": 3,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      }
+    },
+    {
+      "name": "session_filter_stage",
+      "params": {},
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9676,
+        9667
+      ],
+      "total": 2,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      },
+      "session_filter": "won"
+    },
+    {
+      "name": "preference_per_page",
+      "params": {
+        "query": "Weighted"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9674,
+        9673
+      ],
+      "total": 4,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      },
+      "preferences": {
+        "opportunities_per_page": 2
+      }
+    },
+    {
+      "name": "preference_weighted_sort",
+      "params": {
+        "query": "Weighted"
+      },
+      "ordered": true,
+      "status": 500,
+      "ids": null,
+      "total": null,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      },
+      "preferences": {
+        "opportunities_sort_by": "opportunities.amount*probability DESC"
+      }
+    },
+    {
+      "name": "preference_name_sort",
+      "params": {
+        "query": "Weighted"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9674,
+        9671,
+        9672,
+        9673
+      ],
+      "total": 4,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      },
+      "preferences": {
+        "opportunities_sort_by": "opportunities.name ASC"
+      }
+    },
+    {
+      "name": "preference_per_page_explicit",
+      "params": {
+        "query": "Weighted",
+        "per_page": "3"
+      },
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9674,
+        9673,
+        9672
+      ],
+      "total": 4,
+      "facets": {
+        "all": 29,
+        "other": 2,
+        "prospecting": 16,
+        "analysis": 2,
+        "presentation": 2,
+        "proposal": 2,
+        "negotiation": 1,
+        "final_review": 1,
+        "won": 2,
+        "lost": 1
+      },
+      "preferences": {
+        "opportunities_per_page": 2
+      }
+    },
+    {
+      "name": "settings_stage_symbols",
+      "params": {},
+      "ordered": true,
+      "status": 200,
+      "ids": [
+        9691,
+        9690,
+        9689,
+        9688,
+        9687,
+        9686,
+        9685,
+        9684,
+        9683,
+        9682,
+        9681,
+        9680,
+        9679,
+        9678,
+        9676,
+        9674,
+        9673,
+        9672,
+        9671,
+        9670
+      ],
+      "total": 29,
+      "facets": {
+        "all": 29,
+        "other": 10,
+        "won": 2,
+        "custom_stage": 1,
+        "prospecting": 16
+      },
+      "settings": {
+        "opportunity_stage": "---\n- :won\n- :custom_stage\n- :prospecting\n"
+      }
+    }
+  ],
+  "shows": [
+    {
+      "id": 9661,
+      "status": 200,
+      "body": {
+        "id": 9661,
+        "user_id": 9001,
+        "campaign_id": 9631,
+        "assigned_to": null,
+        "name": "Amber Portfolio 100%",
+        "access": "Public",
+        "source": null,
+        "stage": "prospecting",
+        "probability": 50,
+        "amount": "1500.0",
+        "discount": "25.0",
+        "closes_on": "2025-04-01",
+        "deleted_at": null,
+        "created_at": "2025-01-01T02:41:01.000Z",
+        "updated_at": "2025-01-01T02:41:01.000Z",
+        "background_info": null,
+        "subscribed_users": [],
+        "tag_list": [
+          "priority"
+        ]
+      }
+    },
+    {
+      "id": 9662,
+      "status": 200,
+      "body": {
+        "id": 9662,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Blue Zero Deal",
+        "access": "Private",
+        "source": null,
+        "stage": "analysis",
+        "probability": 0,
+        "amount": "0.0",
+        "discount": "0.0",
+        "closes_on": "2025-04-02",
+        "deleted_at": null,
+        "created_at": "2025-01-01T02:41:02.000Z",
+        "updated_at": "2025-01-01T02:41:02.000Z",
+        "background_info": null,
+        "subscribed_users": [],
+        "tag_list": []
+      }
+    },
+    {
+      "id": 9663,
+      "status": 200,
+      "body": {
+        "id": 9663,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Cobalt Contact Deal",
+        "access": "Shared",
+        "source": null,
+        "stage": "presentation",
+        "probability": 100,
+        "amount": "1234.5",
+        "discount": "12.5",
+        "closes_on": "2025-04-03",
+        "deleted_at": null,
+        "created_at": "2025-01-01T02:41:03.000Z",
+        "updated_at": "2025-01-01T02:41:03.000Z",
+        "background_info": null,
+        "subscribed_users": [],
+        "tag_list": [
+          "focus"
+        ]
+      }
+    },
+    {
+      "id": 9664,
+      "status": 200,
+      "body": {
+        "id": 9664,
+        "user_id": 9001,
+        "campaign_id": null,
+        "assigned_to": null,
+        "name": "Delta Null Amount",
+        "access": "Public",
+        "source": null,
+        "stage": "proposal",
+        "probability": 50,
+        "amount": null,
+        "discount": null,
+        "closes_on": null,
+        "deleted_at": null,
+        "created_at": "2025-01-01T02:41:04.000Z",
+        "updated_at": "2025-01-01T02:41:04.000Z",
+        "background_info": null,
+        "subscribed_users": [],
+        "tag_list": []
+      }
+    }
+  ]
+}

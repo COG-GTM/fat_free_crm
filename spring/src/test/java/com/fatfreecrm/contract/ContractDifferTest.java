@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
@@ -79,6 +81,104 @@ class ContractDifferTest {
             response(200, "application/json", ""), new Allowlist(List.of()), JSON.createObjectNode(), "/accounts/1");
         assertEquals(Difference.Kind.INVALID_JSON, oneSidedJson.differences().getFirst().kind());
         assertEquals("", oneSidedJson.differences().getFirst().pointer());
+    }
+
+    @Test
+    void bodyPointerComparesArrayAgainstEnvelopeAndReportsThePointer() throws Exception {
+        ContractCase base = contractCase("body-pointer-match", "/accounts");
+        ContractCase contractCase = withSpringBodyPointer(base, "/items");
+
+        CaseResult result = diff(contractCase, response(200, "application/json", """
+            [{"id":101},{"id":102}]
+            """), response(200, "application/json", """
+            {"items":[{"id":101},{"id":102}],"page":1}
+            """), new Allowlist(List.of()), JSON.createObjectNode(), "/accounts", List.of(), false);
+
+        assertEquals(CaseResult.Outcome.CLEAN, result.outcome());
+        assertTrue(result.notes().contains("spring bodyPointer /items applied"));
+    }
+
+    @Test
+    void reportIncludesBodyPointerInMarkdownAndJson(@TempDir Path directory) throws Exception {
+        ContractCase contractCase = withSpringBodyPointer(contractCase("body-pointer-report", "/accounts"), "/items");
+        CaseResult result = diff(contractCase, response(200, "application/json", """
+            [{"id":101}]
+            """), response(200, "application/json", """
+            {"items":[{"id":101}]}
+            """), new Allowlist(List.of()), JSON.createObjectNode(), "/accounts", List.of(), false);
+
+        ReportWriter.write(directory, "http://rails", "http://spring", List.of(result), new Allowlist(List.of()));
+
+        JsonNode report = JSON.readTree(Files.readString(directory.resolve("report.json")));
+        assertEquals("/items", report.path("cases").get(0).path("spring").path("bodyPointer").asText());
+        assertTrue(Files.readString(directory.resolve("report.md")).contains("Spring: `/items`"));
+    }
+
+    @Test
+    void bodyPointerMismatchIsDetectedWithinTheSelectedValue() throws Exception {
+        ContractCase contractCase = withSpringBodyPointer(contractCase("body-pointer-diff", "/accounts"), "/items");
+
+        CaseResult result = diff(contractCase, response(200, "application/json", """
+            [{"id":101}]
+            """), response(200, "application/json", """
+            {"items":[{"id":102}]}
+            """), new Allowlist(List.of()), JSON.createObjectNode(), "/accounts", List.of(), false);
+
+        assertEquals(CaseResult.Outcome.DIFF, result.outcome());
+        assertEquals("/0/id", result.differences().getFirst().pointer());
+        assertEquals(Difference.Kind.VALUE, result.differences().getFirst().kind());
+    }
+
+    @Test
+    void missingBodyPointerIsOpenInvalidJsonAtThePointer() throws Exception {
+        ContractCase contractCase = withSpringBodyPointer(contractCase("body-pointer-missing", "/accounts"), "/items");
+        Allowlist allowlist = new Allowlist(List.of(entry("ignore-items", "pointer", "**", JSON.readTree("""
+            {"pointer":"/items","rule":"ignore"}
+            """))));
+
+        CaseResult result = diff(contractCase, response(200, "application/json", "[]"),
+            response(200, "application/json", """
+                {"results":[]}
+                """), allowlist, JSON.createObjectNode(), "/accounts", List.of(), false);
+
+        Difference difference = result.differences().getFirst();
+        assertEquals(Difference.Kind.INVALID_JSON, difference.kind());
+        assertEquals("/items", difference.pointer());
+        assertFalse(difference.allowed());
+        assertTrue(result.notes().contains("spring bodyPointer /items missing from 2xx JSON response"));
+        assertEquals(0, allowlist.hits("ignore-items"));
+    }
+
+    @Test
+    void bodyPointerIsIgnoredForNonSuccessResponses() throws Exception {
+        ContractCase contractCase = withSpringBodyPointer(contractCase("body-pointer-error", "/accounts"), "/items");
+
+        CaseResult result = diff(contractCase, response(404, "application/json", """
+            {"error":"missing"}
+            """), response(404, "application/json", """
+            {"error":"denied"}
+            """), new Allowlist(List.of()), JSON.createObjectNode(), "/accounts", List.of(), false);
+
+        assertEquals(Difference.Kind.VALUE, result.differences().getFirst().kind());
+        assertEquals("/error", result.differences().getFirst().pointer());
+        assertTrue(result.notes().contains("spring bodyPointer /items ignored for HTTP 404"));
+    }
+
+    @Test
+    void bodyPointerDoesNotChangeFullBodyExpectationEvaluation() throws Exception {
+        ContractCase base = contractCase("body-pointer-expectation", "/accounts", "alice", JSON.readTree("""
+            {"status":200,"json":{"/meta":"complete"}}
+            """));
+        ContractCase contractCase = withBodyPointers(base, "/items", "/items");
+        String body = """
+            {"meta":"complete","items":[{"id":101}]}
+            """;
+
+        CaseResult result = diff(contractCase, response(200, "application/json", body),
+            response(200, "application/json", body), new Allowlist(List.of()), JSON.createObjectNode(), "/accounts",
+            List.of(), false);
+
+        assertEquals(CaseResult.Outcome.CLEAN, result.outcome());
     }
 
     @Test
@@ -367,6 +467,95 @@ class ContractDifferTest {
             .findFirst().orElseThrow().allowed());
     }
 
+    @Test
+    void removesMatchingRailsYamlKeysAndMultilineObjectChanges() throws Exception {
+        Allowlist allowlist = yamlKeysRemovedAllowlist();
+        String object = "---\nname: Account\npassword_salt: hidden\n  nested: hidden\n";
+        String changes = "---\nname:\n- Before\n- After\nencrypted_password:\n- old\n- new\n";
+        String springObject = "---\nname: Account\n";
+        String springChanges = "---\nname:\n- Before\n- After\n";
+
+        CaseResult result = diff(response(200, "application/json",
+                json(versions(version(object, changes)))),
+            response(200, "application/json", json(versions(version(springObject, springChanges)))),
+            allowlist, JSON.createObjectNode(), "/activities");
+
+        assertEquals(CaseResult.Outcome.CLEAN, result.outcome());
+        assertEquals(1, allowlist.hits("object-secret-yaml"));
+        assertEquals(1, allowlist.hits("object-changes-secret-yaml"));
+    }
+
+    @Test
+    void reportsDifferencesInYamlKeysThatDoNotMatchThePattern() throws Exception {
+        Allowlist allowlist = yamlKeysRemovedAllowlist();
+        String railsObject = "---\nname: Rails Account\npassword: hidden\n";
+        String springObject = "---\nname: Spring Account\n";
+
+        CaseResult result = diff(response(200, "application/json", json(versions(version(railsObject, null)))),
+            response(200, "application/json", json(versions(version(springObject, null)))),
+            allowlist, JSON.createObjectNode(), "/activities");
+
+        assertEquals(CaseResult.Outcome.DIFF, result.outcome());
+        assertEquals(Difference.Kind.VALUE, result.differences().getFirst().kind());
+        assertEquals("/0/object", result.differences().getFirst().pointer());
+    }
+
+    @Test
+    void reportsSpringChangesOutsideSecretYamlKeys() throws Exception {
+        Allowlist allowlist = yamlKeysRemovedAllowlist();
+        String railsObject = "---\nemail: rails@example.test\npassword: hidden\n";
+        String springObject = "---\nemail: spring@example.test\n";
+
+        CaseResult result = diff(response(200, "application/json", json(versions(version(railsObject, null)))),
+            response(200, "application/json", json(versions(version(springObject, null)))),
+            allowlist, JSON.createObjectNode(), "/activities");
+
+        assertEquals(CaseResult.Outcome.DIFF, result.outcome());
+        assertEquals(Difference.Kind.VALUE, result.differences().getFirst().kind());
+        assertEquals("/0/object", result.differences().getFirst().pointer());
+    }
+
+    @Test
+    void removesYamlKeysAtWildcardPointersAcrossVersionArrays() throws Exception {
+        Allowlist allowlist = new Allowlist(List.of(entry("version-secret-yaml", "yamlKeysRemoved", "/activities",
+            JSON.readTree("""
+                {"pointer":"/*/object","keyPattern":"(?i).*(password|token|salt).*"}
+                """))));
+        ArrayNode rails = JSON.createArrayNode()
+            .add(version("---\nname: First\npassword: hidden\n", null))
+            .add(version("---\nname: Second\nauthentication_token: hidden\n", null));
+        ArrayNode spring = JSON.createArrayNode()
+            .add(version("---\nname: First\n", null))
+            .add(version("---\nname: Second\n", null));
+
+        CaseResult result = diff(response(200, "application/json", json(rails)),
+            response(200, "application/json", json(spring)),
+            allowlist, JSON.createObjectNode(), "/activities");
+
+        assertEquals(CaseResult.Outcome.CLEAN, result.outcome());
+        assertEquals(1, allowlist.hits("version-secret-yaml"));
+    }
+
+    @Test
+    void leavesNonStringYamlValuesUntouched() throws Exception {
+        Allowlist allowlist = yamlKeysRemovedAllowlist();
+        JsonNode rails = JSON.readTree("""
+            [{"object":{"password":"rails"}}]
+            """);
+        JsonNode spring = JSON.readTree("""
+            [{"object":{"password":"spring"}}]
+            """);
+
+        CaseResult result = diff(response(200, "application/json", json(rails)),
+            response(200, "application/json", json(spring)),
+            allowlist, JSON.createObjectNode(), "/activities");
+
+        assertEquals(CaseResult.Outcome.DIFF, result.outcome());
+        assertEquals(0, allowlist.hits("object-secret-yaml"));
+        assertEquals(Difference.Kind.VALUE, result.differences().getFirst().kind());
+        assertEquals("/0/object/password", result.differences().getFirst().pointer());
+    }
+
     private CaseResult diff(
         CapturedResponse rails,
         CapturedResponse spring,
@@ -410,6 +599,34 @@ class ContractDifferTest {
             JSON.createObjectNode(), null, auth, JSON.createObjectNode(), "", expect);
     }
 
+    private static ContractCase withSpringBodyPointer(ContractCase contractCase, String bodyPointer) {
+        return withBodyPointers(contractCase, null, bodyPointer);
+    }
+
+    private static ContractCase withBodyPointers(
+        ContractCase contractCase,
+        String railsPointer,
+        String springPointer
+    ) {
+        return new ContractCase(
+            contractCase.id(),
+            contractCase.ticket(),
+            contractCase.status(),
+            contractCase.method(),
+            contractCase.path(),
+            new ContractCase.SideRequest(
+                contractCase.rails().path(), contractCase.rails().target(), railsPointer),
+            new ContractCase.SideRequest(
+                contractCase.spring().path(), contractCase.spring().target(), springPointer),
+            contractCase.params(),
+            contractCase.body(),
+            contractCase.auth(),
+            contractCase.normalize(),
+            contractCase.description(),
+            contractCase.expect()
+        );
+    }
+
     private static CapturedResponse response(int status, String contentType, String body) throws Exception {
         String cleanMediaType = contentType.split(";", 2)[0].trim();
         JsonNode json = null;
@@ -421,6 +638,40 @@ class ContractDifferTest {
             }
         }
         return new CapturedResponse(status, cleanMediaType, body, json);
+    }
+
+    private static String json(JsonNode value) throws Exception {
+        return JSON.writeValueAsString(value);
+    }
+
+    private static ObjectNode version(String object, String objectChanges) {
+        ObjectNode version = JSON.createObjectNode();
+        if (object != null) {
+            version.put("object", object);
+        }
+        if (objectChanges != null) {
+            version.put("object_changes", objectChanges);
+        }
+        return version;
+    }
+
+    private static ArrayNode versions(ObjectNode... versions) {
+        ArrayNode array = JSON.createArrayNode();
+        for (ObjectNode version : versions) {
+            array.add(version);
+        }
+        return array;
+    }
+
+    private static Allowlist yamlKeysRemovedAllowlist() throws Exception {
+        return new Allowlist(List.of(
+            entry("object-secret-yaml", "yamlKeysRemoved", "/activities", JSON.readTree("""
+                {"pointer":"/*/object","keyPattern":"(?i).*(password|token|salt).*"}
+                """)),
+            entry("object-changes-secret-yaml", "yamlKeysRemoved", "/activities", JSON.readTree("""
+                {"pointer":"/*/object_changes","keyPattern":"(?i).*(password|token|salt).*"}
+                """))
+        ));
     }
 
     private static AllowlistEntry entry(String id, String kind, String path, JsonNode definition) {

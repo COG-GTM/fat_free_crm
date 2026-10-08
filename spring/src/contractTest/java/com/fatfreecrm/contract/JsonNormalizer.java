@@ -9,9 +9,12 @@ import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class JsonNormalizer {
     private static final ObjectMapper JSON = new ObjectMapper();
+    private static final Pattern TOP_LEVEL_YAML_KEY = Pattern.compile("^([A-Za-z_]\\w*):");
 
     private JsonNormalizer() {
     }
@@ -45,6 +48,74 @@ public final class JsonNormalizer {
 
     public static boolean ignored(String pointer, JsonNode options) {
         return matchesAny(options.path("ignore"), pointer);
+    }
+
+    public static int removeYamlKeys(JsonNode input, String pointerPattern, Pattern keyPattern) {
+        return removeYamlKeys(input, "", pointerPattern, keyPattern);
+    }
+
+    private static int removeYamlKeys(JsonNode node, String pointer, String pointerPattern, Pattern keyPattern) {
+        int removed = 0;
+        if (node instanceof ObjectNode object) {
+            List<String> names = new ArrayList<>();
+            object.fieldNames().forEachRemaining(names::add);
+            for (String name : names) {
+                String childPointer = pointer + "/" + escape(name);
+                JsonNode child = object.get(name);
+                if (matches(pointerPattern, childPointer)) {
+                    if (child.isTextual()) {
+                        YamlRemoval result = removeYamlKeys(child.asText(), keyPattern);
+                        if (result.count() > 0) {
+                            object.put(name, result.value());
+                            removed += result.count();
+                        }
+                    }
+                } else {
+                    removed += removeYamlKeys(child, childPointer, pointerPattern, keyPattern);
+                }
+            }
+        } else if (node instanceof ArrayNode array) {
+            for (int index = 0; index < array.size(); index++) {
+                String childPointer = pointer + "/" + index;
+                JsonNode child = array.get(index);
+                if (matches(pointerPattern, childPointer)) {
+                    if (child.isTextual()) {
+                        YamlRemoval result = removeYamlKeys(child.asText(), keyPattern);
+                        if (result.count() > 0) {
+                            array.set(index, JSON.getNodeFactory().textNode(result.value()));
+                            removed += result.count();
+                        }
+                    }
+                } else {
+                    removed += removeYamlKeys(child, childPointer, pointerPattern, keyPattern);
+                }
+            }
+        }
+        return removed;
+    }
+
+    // Keep the line-scanning behavior in sync with ActivitiesReadService.removeSecretEntries.
+    private static YamlRemoval removeYamlKeys(String yaml, Pattern keyPattern) {
+        String[] lines = yaml.split("(?<=\\n)", -1);
+        StringBuilder result = new StringBuilder(yaml.length());
+        boolean removing = false;
+        int removed = 0;
+        for (String line : lines) {
+            String content = line.endsWith("\n") ? line.substring(0, line.length() - 1) : line;
+            Matcher matcher = TOP_LEVEL_YAML_KEY.matcher(content);
+            if (matcher.find()) {
+                removing = keyPattern.matcher(matcher.group(1)).matches();
+                if (removing) {
+                    removed++;
+                }
+            } else if (!(content.startsWith(" ") || content.startsWith("- "))) {
+                removing = false;
+            }
+            if (!removing) {
+                result.append(line);
+            }
+        }
+        return new YamlRemoval(result.toString(), removed);
     }
 
     private static boolean matchesAny(JsonNode patterns, String pointer) {
@@ -372,6 +443,9 @@ public final class JsonNormalizer {
     }
 
     private record Rename(String from, String to) {
+    }
+
+    private record YamlRemoval(String value, int count) {
     }
 
     public record MissingKey(String side, String pointer, JsonNode value) {

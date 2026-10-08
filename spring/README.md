@@ -44,9 +44,154 @@ once V1 ships.
 
 Start the Rails app and gateway with `docker compose -f spring/docker-compose.yml up`.
 The gateway listens on port 8000 and sends all traffic to Rails by default. To migrate
-a resource, enable the commented Spring upstream, request-method map, and accounts
-location in `gateway/nginx.conf`; only GET requests then go to Spring. Roll back by
-commenting those directives again and reloading nginx.
+a resource, enable the named blocks with `gateway/routing.sh enable upstream accounts`;
+only GET and HEAD account requests then go to Spring. Roll back with
+`gateway/routing.sh disable accounts upstream` and reload nginx. Blocks are disabled
+by default, and the script accepts `--file <path>` to prepare a candidate config.
+
+## Accounts read API (AB-270)
+
+Authenticated Accounts reads are available at:
+
+| Endpoint | Behavior |
+| --- | --- |
+| `GET /api/v1/accounts` | Rails-compatible rows in a `ListResult` envelope with paging and category facets. |
+| `GET /api/v1/accounts/{numericId}` | Read one accessible account and record a Rails-compatible `view` row in `versions`. |
+| `GET /api/v1/accounts/autocomplete` | Return `{results: [{id, text}]}` with a ten-row limit. |
+
+List parameters include `page`, `per_page`, `query`, `sort_by`, Rails-style `q[...]`, and
+`category` (comma-separated category values; `other` selects a NULL category). `category`
+is ignored when an advanced `q[...]` query is present. The preferences
+`accounts_per_page` and `accounts_sort_by` are decoded from the user's Rails Base64-JSON
+preferences and provide defaults only when their corresponding request parameters are absent.
+Explicit request values take precedence.
+
+| Rails preference | Default for | Behavior |
+| --- | --- | --- |
+| `accounts_per_page` | `per_page` | Positive JSON integer or numeric string; invalid values are ignored. |
+| `accounts_sort_by` | `sort_by` | Rails sort selector used only when `sort_by` is absent. |
+
+Autocomplete accepts `term` and either `excludeRelated` or Rails' `related`; when both are
+provided, `excludeRelated` wins. Related values support a bare account ID and `users/<id>`
+(exclude accounts owned by that user). Other plural types have no account-collection exclusion.
+Blank terms do not add a text predicate. Results are scoped to accounts the caller can read,
+ordered by ID, and limited to ten.
+
+Showing an account writes a `versions` row with `item_type: Account`, `event: view`, and the
+viewer's ID in `whodunnit`; other version-change fields remain null.
+
+The serializer derives field order and PostgreSQL types from database metadata, appends
+`tag_list` last in tagging-ID order, parses the Rails `subscribed_users` YAML array, and
+serializes runtime checkbox custom fields. PostgreSQL numeric values use Rails decimal
+strings; timestamps are UTC ISO-8601 strings truncated to milliseconds. Sensitive columns
+whose names contain `password`, `token`, or `salt` are never emitted.
+
+## Campaigns read API (AB-270)
+
+Authenticated Campaigns reads are available at:
+
+| Endpoint | Behavior |
+| --- | --- |
+| `GET /api/v1/campaigns` | Rails-compatible rows in a `ListResult` envelope with paging and status facets. |
+| `GET /api/v1/campaigns/{numericId}` | Read one accessible campaign and record a Rails-compatible `view` row in `versions`. |
+| `GET /api/v1/campaigns/autocomplete` | Return `{results: [{id, text}]}` with a ten-row limit. |
+
+List parameters include `page`, `per_page`, `query`, `sort_by`, Rails-style `q[...]`, and
+`status` (comma-separated status values, mirroring `session[:campaigns_filter]`; `other`
+selects a NULL status). `status` is ignored when an advanced `q[...]` query is present.
+The preferences `campaigns_per_page` and `campaigns_sort_by` are decoded from the user's
+Rails Base64-JSON preferences and provide defaults only when their corresponding request
+parameters are absent.
+
+| Rails preference | Default for | Behavior |
+| --- | --- | --- |
+| `campaigns_per_page` | `per_page` | Positive JSON integer or numeric string; invalid values are ignored. |
+| `campaigns_sort_by` | `sort_by` | Rails sort selector used only when `sort_by` is absent. |
+
+Status facets follow `CampaignsController#get_data_for_sidebar`: `all` first, then `other`,
+then every configured `campaign_status` value. `all` counts every accessible campaign and
+each status key counts accessible rows with that status; `other` is `all` minus the
+configured-status counts, so NULL *and* unconfigured statuses (e.g. `active`) count as
+`other` — while the `other` *filter* matches NULL statuses only. Note that Rails'
+`POST /campaigns/filter` itself renders `campaigns/_status.html.haml` and 500s whenever the
+filtered result includes a NULL-status campaign, so in real Rails usage an `other`-containing
+filter never persists (the campaigns search matrix records this `post_status`).
+
+Autocomplete accepts `term` and either `excludeRelated` or Rails' `related`; when both are
+provided, `excludeRelated` wins. Related values support a bare campaign ID and `users/<id>`
+(exclude campaigns owned by that user). Other plural types have no campaign-collection
+exclusion. Results are scoped to campaigns the caller can read, ordered by ID, and limited
+to ten.
+
+The Rails parity corpus lives in
+`src/test/resources/search/campaigns_search_matrix.json` and is regenerated by
+`bundle exec rake ffcrm:migration:search_matrix`
+(`lib/tasks/ffcrm/search_matrix_campaigns.rake`).
+
+## Opportunities read API (AB-270)
+
+Authenticated opportunity reads are available at:
+
+| Endpoint | Behavior |
+| --- | --- |
+| `GET /api/v1/opportunities` | Rails-compatible rows in a paginated `ListResult` envelope with stage facets. |
+| `GET /api/v1/opportunities/{numericId}` | Read one accessible opportunity and record a Rails-compatible `view` row in `versions`. |
+| `GET /api/v1/opportunities/autocomplete` | Return `{results: [{id, text}]}` with a ten-row limit. |
+
+List parameters include `page`, `per_page`, `query`, `sort_by`, Rails-style `q[...]`, and
+`stage` (comma-separated configured stages; `other` filters only rows with a NULL stage).
+The stage facets are access-scoped, independent of search/filter parameters, and their `other`
+count includes both NULL and unconfigured stage values. The explicit stage filter is ignored
+when an advanced `q[...]` search is present.
+
+| Rails preference | Default for | Behavior |
+| --- | --- | --- |
+| `opportunities_per_page` | `per_page` | Positive JSON integer or numeric string; invalid values are ignored. |
+| `opportunities_sort_by` | `sort_by` | Rails sort selector, including `amount*probability DESC`, used only when `sort_by` is absent. |
+
+Deviation: Rails 8 500s on the weighted-sort preference; Spring sorts by the weighted product.
+The Rails 500 is `ActiveRecord::UnknownAttributeReference` for
+`opportunities.amount*probability DESC`; Spring resolves the preference through its sort
+whitelist. `Opportunity.weighted_sort` projects qualified table columns instead of `*`, so
+tagged-list selects keep the opportunity ID rather than the tagging ID, and AB-271's
+guarantee that Rails JSON never exposes `custom_fields` holds on the index.
+The live contract run also confirmed Rails list rows expose a PostgreSQL-generated `?column?`
+alias; the contract allow-list ignores only `/*/?column?` on GET `/opportunities`. Show and
+autocomplete responses are unaffected.
+
+Autocomplete accepts `term` and either `excludeRelated` or Rails' `related`; when both are
+provided, `excludeRelated` wins. Related values support a bare opportunity ID and
+`users/<id>`, `accounts/<id>`, `contacts/<id>`, or `campaigns/<id>`; related Leads do not
+exclude opportunities. Results are scoped to opportunities the caller can read, ordered by ID,
+and limited to ten.
+
+Showing an opportunity writes a `versions` row with `item_type: Opportunity`, `event: view`,
+and the viewer's ID in `whodunnit`; other version-change fields remain null.
+
+## Adding a read family
+
+Phase B should reuse the Accounts read foundation rather than add family-specific serialization
+or list plumbing:
+
+1. Register a `RailsResource` descriptor and `SearchableEntity` metadata. Define the table/model,
+   dynamic text column, sort whitelist, association search whitelist, tag/facet behavior, and any
+   state filter. Keep `SearchableEntities` limited to families in the active phase.
+   - CRM entity resources must pass `RailsResources.CRM_EXCLUDED_COLUMNS` as `excludedColumns`;
+     it excludes AB-271's Rails-ignored `custom_fields` JSONB column.
+2. Add a controller that extracts the authenticated user and query parameters, applies user
+   preference defaults, and delegates list/show/autocomplete to `CrmReadService`. Protect show
+   with `hasPermission(#id, '<RailsModel>', 'read')`; declare only the family's supported related
+   autocomplete exclusions.
+3. Add Rails-generated search-matrix cases and replay them in Spring parity tests. Use a safe
+   throwaway PostgreSQL corpus, and clean up any preference rows written by each case.
+4. Add enforced contract cases based on captured Rails responses. Use `bodyPointer` when the
+   Spring list envelope must be compared with Rails' bare array, plus Spring-vs-Spring
+   `expect` cases for envelope metadata Rails does not return. Allow-list only demonstrated,
+   narrowly scoped differences.
+5. Add a disabled-by-default gateway block and validate the default and enabled nginx configs.
+   Use `gateway/routing.sh enable|disable <block>...` for cutover and rollback.
+6. Run the family's integration tests, `./gradlew build`, its live contract cases, the relevant
+   Rails RuboCop/RSpec checks, the nginx checks, and `spring/scripts/generate-baseline.sh --check`.
 
 ## Operations and CI
 
@@ -284,9 +429,8 @@ carol on the AB-266 contract-diff corpus (`db/contract_fixtures.rb`, also rolled
 `contract_corpus_matrix.json` and `contract_corpus.sql`. `ContractCorpusAuthorizationTest` asserts
 identical list ids, page totals and evaluator decisions on that corpus, so the Specifications are
 checked on the data the harness runs against. The matrix matches the visibility table in
-[contract-diff.md](contract-diff.md). The harness case `accounts-show-private-denied-bob` stays
-`pending`: this ticket adds no account-show route, and it is enforced once AB-270 adds one (bob
-reading account 102 is then a 403, which the `authz-denied-401-vs-403` entry allow-lists).
+[contract-diff.md](contract-diff.md). The enforced account-show case for Bob exercises the
+documented Rails 401 versus Spring 403 authorization difference.
 
 The `authz-matrix` job in `spring-api.yml` regenerates both matrices on a PostgreSQL service,
 fails if the committed files drift, and runs `spec/lib/tasks/authz_matrix_spec.rb`.
@@ -296,7 +440,8 @@ fails if the committed files drift, and runs `spec/lib/tasks/authz_matrix_spec.r
 `CrmQueryService.list(AuthenticatedUser, Class<T>, ListQuery)` is the only list path. It composes
 `accessPolicy.accessibleBy(user, type)` — the `CrmAccessPolicy` from AB-268 — with the parsed search
 specification (`accessibleBy(...).and(searchSpec)`). `CrmAccessPolicy.supports(Class)` must cover the
-listed type (Account, Contact, Lead, Opportunity, Campaign are registered; Task/User lists are AB-270's);
+listed type (Account, Contact, Lead, Opportunity, Campaign are registered; other families are
+added only in their own phase);
 unsupported types propagate the policy's `IllegalArgumentException`.
 
 Parameters mirror Rails `EntitiesController#get_list_of_records`: `page` (Ruby `to_i`; `<1` -> 404
@@ -305,14 +450,12 @@ record's `preferredPerPage`), `query` (text + `#tag` syntax per `parse_query_and
 (Spring-only replacement for the Rails session sort preference, additive) and `q[...]` Ransack trees
 (predicates `eq not_eq cont not_cont i_cont start not_start end not_end matches does_not_match lt lteq
 gt gteq in not_in null not_null present blank true false`, `_any`/`_all` compounds, `_or_`/`_and_`
-attribute splits, `m`/`g`/`c`/`s` combinator form). `ListQuery.withPreferences(perPage, sortBy)` exists
-for AB-270's preference handling; preferences are not part of the OpenAPI contract.
+attribute splits, `m`/`g`/`c`/`s` combinator form). `ListQuery.withPreferences(perPage, sortBy)` applies
+decoded preferences as list defaults; preferences are not part of the OpenAPI contract.
 
 The response envelope is `ListResult` (`{items, page, perPage, totalCount, totalPages, facets}`), which
-intentionally differs from Rails' bare JSON array — the AB-266 contract-diff harness must unwrap `items`
-to compare row lists. The pending cases in
-`spring/src/contractTest/resources/contract/cases/ab-269-accounts-search.yml` pin this down and flip to
-`enforced` once AB-270 settles the unwrap.
+intentionally differs from Rails' bare JSON array. Enforced contract cases use `bodyPointer: /items`
+to compare row lists, while Spring-vs-Spring envelope expectations pin paging and facet metadata.
 
 Unknown attributes/predicates are dropped like Rails (`ignore_unknown_conditions`); set
 `ffcrm.search.ignore-unknown-conditions=false` to get a 400 with an `invalidParameters` problem property
@@ -322,7 +465,8 @@ Intentional deviations: no Chronic natural-language dates (ISO only; ISO dates b
 Rails' cast); association traversal stops at the CRM whitelists — Task/Address/Email/Comment/Tag columns
 are searchable but expose no further hops (Rails could reach `users` through `comments`, a security
 deviation); association sorts inside `q[s]` are ignored as Rails ignores invalid sorts; `id ASC` is
-appended as a deterministic tiebreaker; the session category filter and preference reads are AB-270.
+appended as a deterministic tiebreaker. Accounts category filters are explicit `category` parameters;
+preferences supply defaults only when explicit list parameters are absent.
 
 `DynamicAttributePredicates` is an extension point for non-static attributes (Rails custom fields,
 `cf_*`): the Ransack parser consults registered beans — in order — for root-level attributes after the
@@ -359,3 +503,89 @@ read/write precedence and cutover sequence are documented in
 
 The registry caches field definitions and physical `cf_*` columns, and re-hashes their contents after
 the configured TTL to detect metadata or schema changes.
+
+## Contacts and leads read API (AB-270)
+
+Contacts and leads are available through the same authenticated read surface:
+
+| Endpoint | Behavior |
+| --- | --- |
+| `GET /api/v1/contacts` | Access-scoped contact list; no sidebar facets or state filter, matching Rails. |
+| `GET /api/v1/contacts/{numericId}` | Read one contact and record a Rails-compatible `view` event. |
+| `GET /api/v1/contacts/{numericId}.vcf` | Authorized vCard attachment with Rails response headers and vcardigan-compatible bytes. |
+| `GET /api/v1/contacts/autocomplete` | Search accessible contacts by full name, limited to ten. |
+| `GET /api/v1/leads` | Access-scoped lead list and configured status facets. |
+| `GET /api/v1/leads/{numericId}` | Read one lead and record a Rails-compatible `view` event. |
+| `GET /api/v1/leads/{numericId}.vcf` | Authorized vCard attachment with Rails response headers and vcardigan-compatible bytes. |
+| `GET /api/v1/leads/autocomplete` | Search accessible leads by full name, limited to ten. |
+
+List queries support `page`, `per_page`, `query`, `sort_by`, and Rails-style `q[...]`. Contacts have
+no `status` filter. Leads accept comma-separated `status` values; `other` selects NULL status and
+advanced `q[...]` search takes precedence over the status filter. Lead facets count the accessible
+scope in configured `lead_status` order, then `all`, then `other` (NULL and unconfigured statuses).
+Rails `LeadsController#index` does not pass the explicit `per_page` request parameter to its list
+query, so Spring removes it too; `leads_per_page` and `leads_sort_by` preferences still supply defaults.
+Contacts honor `per_page` and `contacts_per_page` / `contacts_sort_by` preferences normally.
+
+Autocomplete accepts `term` and either `excludeRelated` or Rails' `related` (the former wins). Contacts
+support a bare contact ID and `accounts/<id>`, `opportunities/<id>`, or `users/<id>` exclusions; leads
+support a bare lead ID and `campaigns/<id>` or `users/<id>`. Related records are existence-checked;
+missing related IDs add no exclusions.
+
+The `.vcf` endpoints authorize the same way as show, write a `view` version, and reproduce the Rails
+vcardigan output, including raw values, property order, type formatting, LF endings, and 75/74-codepoint
+folding. A handwritten `VCardWriter` is used instead of adding ez-vcard so the legacy byte-level behavior
+remains compatible. Search and vCard matrices are generated on PostgreSQL in rollback-only transactions:
+
+```sh
+bundle exec rake ffcrm:migration:search_matrix
+bundle exec rake ffcrm:migration:vcard_matrix
+```
+
+The search task writes `contacts_search_matrix.json` and `leads_search_matrix.json` alongside the
+Accounts matrix; `CONTACTS_OUTPUT` and `LEADS_OUTPUT` override those paths. The vCard task writes
+`spring/src/test/resources/vcard/rails_vcard_matrix.json` and accepts `VCARD_OUTPUT`. Spring parity
+tests replay all generated list and vCard cases.
+
+## Tasks and comments read API (AB-270, family `tasks`)
+
+| Spring | Rails | Notes |
+|---|---|---|
+| `GET /api/v1/tasks?view=pending\|assigned\|completed&timeZone=<IANA>` | `GET /tasks.json` | `{buckets:{...}}`; the Rails body is the bare bucket object (contract cases use `spring: {bodyPointer: /buckets}`) |
+| `GET /api/v1/tasks/{id}` | `GET /tasks/:id.json` | `Task.tracked_by` (owner or assignee) |
+| `GET /api/v1/tasks/autocomplete?term=&related=` | `GET /tasks/auto_complete.json` | `Task.my(user).text_search(term)`, 10 rows, `{results:[{id,text}]}` |
+| `GET /api/v1/comments?<parent>_id=` | `GET /comments.json` | bare JSON array, newest first; parent = `account`, `campaign`, `contact`, `lead`, `opportunity`, `task`, `user` |
+
+- **Buckets** (`Task.find_all_grouped`): keys and order come from the `task_bucket` / `task_completed` rows in
+  `settings` when present, else `config/settings.default.yml`: `overdue, due_asap, due_today, due_tomorrow,
+  due_this_week, due_next_week, due_later` and `completed_today, completed_yesterday, completed_last_week,
+  completed_this_month, completed_last_month` (`completed_this_week` is a Rails scope but not in the default
+  setting). Views: `pending` = `Task.my(user).<bucket>.pending`, `assigned` = `Task.assigned_by(user).<bucket>.pending`,
+  `completed` = `Task.my(user).<bucket>.completed`; unknown/missing views fall back to `pending`. Row order is the
+  Rails `ORDER BY` chain (`name ASC` from `my`, then the bucket scope's order, then the view's order). Admins are
+  not widened: like Rails, buckets only use `my`/`assigned_by`, which are narrower than the AB-268 Task policy
+  (owner, assignee, completed_by), so the policy is not composed into the bucket queries.
+- **Time zone**: Rails takes bucket boundaries from `Time.zone`, which `ApplicationController#set_context` sets from
+  `session[:timezone_offset]` (written by `GET /home/timezone?offset=<JS getTimezoneOffset>`), else the app default
+  (UTC). The stateless API has no session, so the zone is the explicit `timeZone` query parameter (IANA id; unknown
+  ids are 400), defaulting to `ffcrm.time-zone` (UTC). Boundaries are computed in that zone with Rails semantics
+  (`midnight`, `tomorrow`, `next_week` = next Monday 00:00, `end_of_week` = Sunday 23:59:59.999999 then `+ 1.day`,
+  month starts). Spring always renders timestamps in UTC (`Z`); Rails renders them in the session zone (same instant).
+- **Show**: Rails 404s anything outside `tracked_by`. Spring evaluates `hasPermission(#id,'Task','read')` first
+  (AB-268: 401 / 404 missing / 403 out of policy), then applies `tracked_by`, so a completed_by-only task is 404 like
+  Rails and a fully out-of-scope task is 403 (allow-listed for `tasks-show-601-bob`). Rails `TasksController#show`
+  records no PaperTrail `view` row, so Spring does not either.
+- **Autocomplete**: same sanitisation as Rails `text_search` (`[^\w\s\-.'\p{L}]` stripped). Rails orders only by
+  `name`; Spring adds `id` as a tiebreak so equal names are deterministic.
+- **Comments**: the parent must be visible through the AB-268 policy (Rails `<Model>.my(current_user)`; for tasks
+  `Task.my`; for `user_id`, `User.my` = yourself, or anyone for admins, listing comments whose commentable is that
+  user), else 404 "The notes are not available.". Without a `*_id` parameter Rails lists
+  `Comment.accessible_by` (own comments, every comment for admins) and so does Spring. An unsupported `*_id`
+  parameter is 400 (Rails: 406/500).
+- **Emails and saved lists**: Rails exposes no JSON read (`EmailsController` has only `destroy`, `ListsController`
+  only `create`/`destroy`; `openapi.yaml` has no GET), so nothing is ported and there are no `emails`/`lists`
+  gateway blocks.
+- **Parity**: `rake ffcrm:migration:task_buckets_matrix` drives the real Rails `/tasks.json`, `/tasks/:id.json` and
+  `/tasks/auto_complete.json` on a frozen clock (`2026-03-12T02:30:00Z`) with session offsets for UTC-10, UTC-3,
+  UTC+1 and UTC+13 and writes `spring/src/test/resources/search/tasks_search_matrix.json` (27 cases, 32 tasks);
+  `RailsTaskBucketsParityTest` replays it. Gateway blocks: `tasks`, `comments` (disabled).

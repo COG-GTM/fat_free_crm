@@ -20,11 +20,24 @@ public record ListQuery(
     String sortBy,
     Map<String, Object> q,
     Integer preferredPerPage,
-    String preferredSortBy
+    String preferredSortBy,
+    String filter
 ) {
 
     public ListQuery {
         q = q == null ? Map.of() : java.util.Collections.unmodifiableMap(new LinkedHashMap<>(q));
+    }
+
+    public ListQuery(
+        String page,
+        String perPage,
+        String query,
+        String sortBy,
+        Map<String, Object> q,
+        Integer preferredPerPage,
+        String preferredSortBy
+    ) {
+        this(page, perPage, query, sortBy, q, preferredPerPage, preferredSortBy, null);
     }
 
     @Override
@@ -60,7 +73,11 @@ public record ListQuery(
     /** Copies this query with per-user preferences supplied by a caller (AB-270). */
     public ListQuery withPreferences(Integer preferredPerPageValue, String preferredSortByValue) {
         return new ListQuery(
-            page, perPage, query, sortBy, q, preferredPerPageValue, preferredSortByValue);
+            page, perPage, query, sortBy, q, preferredPerPageValue, preferredSortByValue, filter);
+    }
+
+    public ListQuery withFilter(String filterValue) {
+        return new ListQuery(page, perPage, query, sortBy, q, preferredPerPage, preferredSortBy, filterValue);
     }
 
     private static List<String> bracketSegments(String key) {

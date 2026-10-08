@@ -17,3 +17,96 @@ allowlist:
     kind: errorBody
     reason: Spring errors use RFC 9457 problem+json while Rails errors use Rails response formats.
     reference: docs/migration/target-architecture.md §2.6
+  - id: rails-vcard-contact-missing-406
+    match:
+      method: GET
+      path: /contacts/999999.vcf
+      case: contacts-vcard-missing
+    kind: status
+    status:
+      rails: 406
+      spring: 404
+    reason: Rails respond_to_not_found omits vcf and returns 406; Spring preserves the read API's 404.
+    reference: app/controllers/application_controller.rb#respond_to_not_found
+  - id: rails-vcard-contact-denied-406
+    match:
+      method: GET
+      path: /contacts/206.vcf
+      case: contacts-vcard-denied
+    kind: status
+    status:
+      rails: 406
+      spring: 403
+    reason: Rails respond_to_access_denied omits vcf and returns 406; Spring preserves the read API's 403.
+    reference: app/controllers/application_controller.rb#respond_to_access_denied
+  - id: rails-vcard-lead-missing-406
+    match:
+      method: GET
+      path: /leads/999999.vcf
+      case: leads-vcard-missing
+    kind: status
+    status:
+      rails: 406
+      spring: 404
+    reason: Rails respond_to_not_found omits vcf and returns 406; Spring preserves the read API's 404.
+    reference: app/controllers/application_controller.rb#respond_to_not_found
+  - id: rails-vcard-lead-denied-406
+    match:
+      method: GET
+      path: /leads/306.vcf
+      case: leads-vcard-denied
+    kind: status
+    status:
+      rails: 406
+      spring: 403
+    reason: Rails respond_to_access_denied omits vcf and returns 406; Spring preserves the read API's 403.
+    reference: app/controllers/application_controller.rb#respond_to_access_denied
+  - id: tasks-show-tracked-by-404-vs-403
+    match:
+      case: tasks-show-601-bob
+      method: GET
+      path: /tasks/601
+    kind: status
+    status:
+      rails: 404
+      spring: 403
+    reason: >-
+      Rails scopes show to Task.tracked_by(current_user) and answers 404 for an existing out-of-scope task; Spring
+      applies CrmPermissionEvaluator semantics (403 out of scope, AB-268 Task policy) before the tracked_by scope.
+    reference: "docs/adr/ab-270-read-api-accounts.md (Family: tasks); AB-270 settled decision 2"
+  - id: opportunity-list-weighted-column-alias
+    match:
+      method: GET
+      path: /opportunities
+    kind: pointer
+    pointer: "/*/?column?"
+    rule: ignore
+    reason: Rails' weighted-sort projection exposes a PostgreSQL-generated SQL column alias that is not a persisted resource field.
+    reference: app/controllers/entities/opportunities_controller.rb#order_by_attributes
+  - id: users-admin-authentication-token-omitted
+    match:
+      method: GET
+      path: /admin/users
+    kind: pointer
+    pointer: /*/authentication_token
+    rule: ignore
+    reason: The Spring RailsJsonWriter never emits token columns.
+    reference: AB-270 Phase B captured Rails user-list key set
+  - id: activities-object-secrets-scrubbed
+    match:
+      method: GET
+      path: /activities
+    kind: yamlKeysRemoved
+    pointer: /*/object
+    keyPattern: "(?i).*(password|token|salt).*"
+    reason: Rails version objects are compared after removing secret YAML entries emitted only by Rails.
+    reference: AB-270 Phase B ActivitiesControllerIntegrationTest
+  - id: activities-object-changes-secrets-scrubbed
+    match:
+      method: GET
+      path: /activities
+    kind: yamlKeysRemoved
+    pointer: /*/object_changes
+    keyPattern: "(?i).*(password|token|salt).*"
+    reason: Rails version changes are compared after removing secret YAML entries emitted only by Rails.
+    reference: AB-270 Phase B ActivitiesControllerIntegrationTest

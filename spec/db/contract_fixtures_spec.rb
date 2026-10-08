@@ -28,6 +28,9 @@ RSpec.describe ContractFixtures, :truncate do
     carol = User.find(5)
     expect(carol.groups).to be_empty
     expect(carol.permissions).to be_empty
+    bob = User.find(3)
+    expect(bob.pref[:activity_user]).to eq("admin@contract.example")
+    expect(bob.pref[:activity_event]).to eq("all_events")
   end
 
   it "loads the entity corpus" do
@@ -48,6 +51,26 @@ RSpec.describe ContractFixtures, :truncate do
     expect(Address.count).to eq(1)
     expect(Tag.count).to eq(2)
     expect(Tagging.count).to eq(2)
+  end
+
+  it "loads recent PaperTrail versions for activity contract cases" do
+    expect(Version.count).to eq(5)
+    expect(Version.distinct.pluck(:created_at).size).to eq(5)
+    expect(Version.where(created_at: 2.days.ago..).count).to eq(5)
+
+    user_version = Version.find_by!(item_type: "User", item_id: 2)
+    expect(user_version.event).to eq("update")
+    expect(user_version.whodunnit).to eq("1")
+    expect(user_version.object).to include(
+      "encrypted_password: fixture-encrypted-password",
+      "password_salt: fixture-password-salt",
+      "authentication_token: fixture-authentication-token"
+    )
+    expect(user_version.object_changes).to include("email:", "encrypted_password:")
+
+    account_ids = Version.where(item_type: "Account").pluck(:item_id)
+    expect(account_ids).to contain_exactly(101, 102, 103, 104)
+    expect(Version.where(item_type: "Account", item_id: 101).first.object_changes).to include("name:")
   end
 
   it "connects fixture relationships" do

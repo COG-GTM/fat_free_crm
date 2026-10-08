@@ -62,6 +62,13 @@ public class CrmQueryService {
         SearchText searchText = SearchText.parse(query.query(), entity.taggable());
 
         Specification<T> search = searchSpec(entity, plan, searchText, sortPlanFor(type, entity, query, plan));
+        if (!plan.advanced() && entity.stateFilter() != null && query.filter() != null) {
+            List<String> values = entity.stateFilter().values(query.filter());
+            if (!values.isEmpty()) {
+                search = search.and((root, criteria, builder) ->
+                    entity.stateFilter().predicate().create(root, builder, values));
+            }
+        }
         Specification<T> spec = accessPolicy.accessibleBy(user, type).and(search);
 
         long offset = (long) (page - 1) * perPage;

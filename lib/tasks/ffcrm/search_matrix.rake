@@ -17,9 +17,7 @@ namespace :ffcrm do
           "SELECT COUNT(*) FROM #{ActiveRecord::Base.connection.quote_table_name(table)}"
         ).to_i.positive?
       end
-      unless non_empty.empty?
-        abort "ffcrm:migration:search_matrix requires empty corpus tables; found rows in: #{non_empty.join(", ")}"
-      end
+      abort "ffcrm:migration:search_matrix requires empty corpus tables; found rows in: #{non_empty.join(', ')}" unless non_empty.empty?
 
       result = nil
       ActiveRecord::Base.transaction(requires_new: true) do
@@ -33,8 +31,9 @@ namespace :ffcrm do
         search_matrix_seed(alice, bob)
 
         corpus = search_matrix_corpus
-        cases = search_matrix_cases.map do |name, params, ordered|
-          search_matrix_run_case(alice, name, params, ordered)
+        cases = search_matrix_cases.map do |name, params, ordered, session_filter, preferences|
+          case_options = { session_filter: session_filter, preferences: preferences || {} }
+          search_matrix_run_case(alice, name, params, ordered, case_options)
         end
         result = {
           "generated_by" => "bundle exec rake ffcrm:migration:search_matrix " \
@@ -50,6 +49,18 @@ namespace :ffcrm do
 
       File.write(output, JSON.pretty_generate(result) + "\n")
       puts "wrote #{output}"
+      search_matrix_contacts
+      search_matrix_leads
+      search_matrix_opportunities
+
+      campaigns_output = if ENV["CAMPAIGNS_OUTPUT"]
+                           Rails.root.join(ENV["CAMPAIGNS_OUTPUT"])
+                         elsif ENV["OUTPUT"]
+                           output.sub_ext(".campaigns.json")
+                         else
+                           Rails.root.join("spring/src/test/resources/search/campaigns_search_matrix.json")
+                         end
+      search_matrix_campaigns(campaigns_output)
     end
   end
 end
@@ -198,19 +209,43 @@ def search_matrix_cases
                "q[s]" => "name asc" }, true],
     ["m_or", { "q[m]" => "or", "q[category_eq]" => "vendor", "q[rating_eq]" => "5" }, false],
     ["group", { "q[g][0][m]" => "or", "q[g][0][name_cont]" => "delta", "q[g][0][email_cont]" => "beta",
-               "q[access_eq]" => "Private" }, false]
+               "q[access_eq]" => "Private" }, false],
+    ["filter_customer", {}, true, "customer"],
+    ["filter_customer_other", {}, true, "customer,other"],
+    ["filter_other", {}, true, "other"],
+    ["filter_ignored_with_q", { "q[name_cont]" => "delta" }, true, "customer"],
+    ["preference_per_page", {}, true, nil, { "accounts_per_page" => 2 }],
+    ["preference_sort", {}, true, nil, { "accounts_sort_by" => "accounts.name ASC" }],
+    ["preference_per_page_explicit", { "per_page" => "5" }, true, nil,
+     { "accounts_per_page" => 2 }],
+    ["preference_sort_explicit_per_page", { "per_page" => "5" }, true, nil,
+     { "accounts_sort_by" => "accounts.name ASC" }]
   ]
 end
 
-def search_matrix_run_case(alice, name, params, ordered)
+def search_matrix_run_case(alice, name, params, ordered, options = {})
+  session_filter = options.fetch(:session_filter, nil)
+  preferences = options.fetch(:preferences, {})
+  preference_names = preferences.keys.map(&:to_s)
+  preferences.each { |preference, value| alice.pref[preference.to_sym] = value }
   session = ActionDispatch::Integration::Session.new(Rails.application)
   session.host! "localhost"
   login_as(alice, scope: :user)
+  unless session_filter.nil?
+    allow_forgery_protection = AccountsController.allow_forgery_protection
+    AccountsController.allow_forgery_protection = false
+    begin
+      session.post "/accounts/filter", params: { category: session_filter },
+        headers: { "HTTP_ACCEPT" => "text/javascript" }
+    ensure
+      AccountsController.allow_forgery_protection = allow_forgery_protection
+    end
+  end
   session.get "/accounts.json", params: params
   status = session.response.status
   body = status == 200 ? JSON.parse(session.response.body) : nil
   controller = session.request.env["action_controller.instance"]
-  {
+  result = {
     "name" => name,
     "params" => params,
     "ordered" => ordered,
@@ -218,5 +253,640 @@ def search_matrix_run_case(alice, name, params, ordered)
     "ids" => body&.pluck("id"),
     "total" => controller&.instance_variable_get(:@search_results_count),
     "facets" => controller&.instance_variable_get(:@account_category_total)
+  }
+  result["session_filter"] = session_filter unless session_filter.nil?
+  result["preferences"] = preferences unless preferences.empty?
+  result
+ensure
+  Preference.where(user_id: alice.id, name: preference_names).delete_all if preference_names&.any?
+  preference_names&.each { |name| alice.pref.cached_prefs.delete(name) }
+end
+
+def search_matrix_contacts
+  output = Rails.root.join(ENV.fetch(
+                             "CONTACTS_OUTPUT", "spring/src/test/resources/search/contacts_search_matrix.json"
+                           ))
+  search_matrix_assert_empty!(
+    %w[users accounts account_contacts contacts opportunities contact_opportunities tags taggings preferences],
+    "contacts"
+  )
+  result = nil
+  ActiveRecord::Base.transaction(requires_new: true) do
+    include Warden::Test::Helpers
+
+    Warden.test_mode!
+    alice = search_matrix_user(9001, "alice", "alice@search-matrix.test", admin: false)
+    bob = search_matrix_user(9002, "bob", "bob@search-matrix.test", admin: false)
+    account = Account.create!(
+      id: 9101, name: "Acme Matrix", user: alice, access: "Public",
+      created_at: Time.utc(2025, 1, 1), updated_at: Time.utc(2025, 1, 1)
+    )
+    search_matrix_contact_seed(alice, bob, account)
+    corpus = search_matrix_corpus_for(%w[
+                                        users accounts account_contacts contacts opportunities contact_opportunities
+                                        tags taggings preferences
+                                      ])
+    cases = search_matrix_contacts_cases.map do |name, params, ordered, filter, preferences|
+      search_matrix_entity_case(
+        alice, "/contacts.json",
+        {
+          name: name, params: params, ordered: ordered, filter: filter, preferences: preferences
+        },
+        { filter_path: "/contacts/filter", filter_param: :status, facets_iv: :@lead_status_total }
+      )
+    end
+    result = {
+      "generated_by" => "bundle exec rake ffcrm:migration:search_matrix " \
+                        "CONTACTS_OUTPUT=spring/src/test/resources/search/contacts_search_matrix.json",
+      "corpus" => corpus,
+      "cases" => cases
+    }
+    raise ActiveRecord::Rollback
+  end
+  Warden.test_reset!
+  File.write(output, JSON.pretty_generate(result) + "\n")
+  puts "wrote #{output}"
+end
+
+def search_matrix_contact_seed(alice, bob, account)
+  tags = { "vip" => 9301, "west" => 9302, "east" => 9303 }
+  tags.each do |name, id|
+    ActsAsTaggableOn::Tag.find_or_create_by!(name: name).tap { |tag| tag.update_column(:id, id) if tag.id != id }
+  end
+  rows = [
+    [9201, "John", "Smith", "john@example.test", "555-1001", "555-2001", account.id, "Public", alice],
+    [9202, "Jane", "Doe", "jane@example.test", "555-1002", "555-2002", account.id, "Private", alice],
+    [9203, "Smith", "John", "smith@example.test", "555-1003", "555-2003", account.id, "Public", bob],
+    [9204, "Ava", "West", "ava@example.test", "555-1004", "555-2004", nil, "Public", bob],
+    [9205, "Percent", "100% Person", "percent@example.test", "555-1005", nil, nil, "Public", alice],
+    [9206, "Under", "Score_person", "under@example.test", "555-1006", nil, nil, "Public", alice]
+  ]
+  14.times do |index|
+    rows << [9210 + index, format("Filler%02d", index), "Matrix", format("filler%02d@example.test", index),
+             format("555-20%02d", index), nil, nil, "Public", alice]
+  end
+  rows.each do |row|
+    id, first_name, last_name, email, phone, mobile, account_id, access, owner = row
+    at = Time.utc(2025, 1, 1) + id.seconds
+    contact = Contact.create!(
+      id: id, first_name: first_name, last_name: last_name, email: email, phone: phone, mobile: mobile,
+      access: access, user: owner, created_at: at, updated_at: at
+    )
+    next unless account_id
+
+    AccountContact.create!(
+      id: id + 1000, account_id: account_id, contact_id: contact.id,
+      created_at: at, updated_at: at
+    )
+  end
+  %w[vip west].each_with_index do |name, index|
+    ActsAsTaggableOn::Tagging.create!(
+      id: 9401 + index, tag_id: tags.fetch(name), taggable_type: "Contact", taggable_id: 9201,
+      context: "tags", created_at: Time.utc(2025, 1, 1)
+    )
+  end
+  ActsAsTaggableOn::Tagging.create!(
+    id: 9403, tag_id: tags.fetch("east"), taggable_type: "Contact", taggable_id: 9202,
+    context: "tags", created_at: Time.utc(2025, 1, 1)
+  )
+end
+
+def search_matrix_contacts_cases
+  [
+    ["default", {}, true], ["page2", { "page" => "2" }, true], ["per5", { "per_page" => "5" }, true],
+    ["per0", { "per_page" => "0" }, true], ["perneg", { "per_page" => "-1" }, true],
+    ["per201", { "per_page" => "201" }, true], ["perabc", { "per_page" => "abc" }, true],
+    ["page0", { "page" => "0" }, true], ["pageabc", { "page" => "abc" }, true],
+    ["page99", { "page" => "99" }, true], ["q_john_smith", { "query" => "john smith" }, true],
+    ["q_smith_john", { "query" => "smith john" }, true], ["q_email", { "query" => "jane@example" }, true],
+    ["q_phone", { "query" => "555-1001" }, true], ["q_mobile", { "query" => "555-2001" }, true],
+    ["q_pct", { "query" => "100%" }, true], ["q_under", { "query" => "Score_" }, true],
+    ["tag_vip", { "query" => "#vip" }, true], ["tag_mixed", { "query" => "John #west" }, true],
+    ["q_first_name", { "q[first_name_cont]" => "Jane" }, false],
+    ["q_account_name", { "q[account_name_cont]" => "Acme" }, false],
+    ["q_tags", { "q[tags_name_eq]" => "vip" }, false],
+    ["sort_desc", { "q[s]" => "last_name desc", "per_page" => "200" }, true],
+    ["preference_per_page", {}, true, nil, { "contacts_per_page" => 2 }],
+    ["preference_sort", {}, true, nil, { "contacts_sort_by" => "contacts.first_name ASC" }],
+    ["preference_explicit_per_page", { "per_page" => "5" }, true, nil, { "contacts_per_page" => 2 }],
+    ["preference_sort_explicit_per_page", { "per_page" => "5" }, true, nil,
+     { "contacts_sort_by" => "contacts.first_name ASC" }]
+  ]
+end
+
+def search_matrix_leads
+  output = Rails.root.join(ENV.fetch(
+                             "LEADS_OUTPUT", "spring/src/test/resources/search/leads_search_matrix.json"
+                           ))
+  search_matrix_assert_empty!(%w[users campaigns leads tags taggings preferences], "leads")
+  result = nil
+  ActiveRecord::Base.transaction(requires_new: true) do
+    include Warden::Test::Helpers
+
+    Warden.test_mode!
+    alice = search_matrix_user(9001, "alice", "alice@search-matrix.test", admin: false)
+    bob = search_matrix_user(9002, "bob", "bob@search-matrix.test", admin: false)
+    campaign = Campaign.create!(
+      id: 9501, name: "Matrix Campaign", user: alice, access: "Public",
+      created_at: Time.utc(2025, 1, 1), updated_at: Time.utc(2025, 1, 1)
+    )
+    search_matrix_lead_seed(alice, bob, campaign)
+    corpus = search_matrix_corpus_for(%w[users campaigns leads tags taggings preferences])
+    cases = search_matrix_leads_cases.map do |name, params, ordered, filter, preferences|
+      search_matrix_entity_case(
+        alice, "/leads.json",
+        {
+          name: name, params: params, ordered: ordered, filter: filter, preferences: preferences
+        },
+        { filter_path: "/leads/filter", filter_param: :status, facets_iv: :@lead_status_total }
+      )
+    end
+    result = {
+      "generated_by" => "bundle exec rake ffcrm:migration:search_matrix " \
+                        "LEADS_OUTPUT=spring/src/test/resources/search/leads_search_matrix.json",
+      "corpus" => corpus,
+      "cases" => cases
+    }
+    raise ActiveRecord::Rollback
+  end
+  Warden.test_reset!
+  File.write(output, JSON.pretty_generate(result) + "\n")
+  puts "wrote #{output}"
+end
+
+def search_matrix_lead_seed(alice, bob, campaign)
+  { "vip" => 9601, "east" => 9602 }.each do |name, id|
+    ActsAsTaggableOn::Tag.find_or_create_by!(name: name).tap { |tag| tag.update_column(:id, id) if tag.id != id }
+  end
+  rows = [
+    [9701, "Alice", "Lead", "alpha@example.test", "Acme Matrix", "new", "Public", alice, campaign.id],
+    [9702, "Bob", "Contacted", "bob@example.test", "Beta Co", "contacted", "Public", alice, campaign.id],
+    [9703, "Cara", "Converted", "cara@example.test", "Gamma LLC", "converted", "Public", alice, nil],
+    [9704, "Dan", "Rejected", "dan@example.test", "Delta Co", "rejected", "Public", bob, nil],
+    [9705, "Eve", "Unknown", "eve@example.test", "Unknown Inc", "unconfigured", "Public", alice, nil],
+    [9706, "Null", "Status", "null@example.test", "Null Corp", nil, "Public", alice, nil],
+    [9707, "Percent", "100% Name", "percent@example.test", "Percent 100%", "new", "Public", alice, nil],
+    [9708, "Under", "Score_name", "under@example.test", "Under_score", "new", "Public", alice, nil]
+  ]
+  12.times do |index|
+    rows << [9710 + index, format("Filler%02d", index), "Lead", format("lead%02d@example.test", index),
+             "Filler Company", "new", "Public", alice, nil]
+  end
+  rows.each do |row|
+    id, first_name, last_name, email, company, status, access, owner, campaign_id = row
+    at = Time.utc(2025, 1, 1) + id.seconds
+    lead = Lead.new(
+      id: id, first_name: first_name, last_name: last_name, email: email, company: company, status: status,
+      campaign_id: campaign_id, access: access, user: owner,
+      created_at: at, updated_at: at
+    )
+    lead.save!(validate: false)
+  end
+  ActsAsTaggableOn::Tagging.create!(
+    id: 9801, tag_id: 9601, taggable_type: "Lead", taggable_id: 9701,
+    context: "tags", created_at: Time.utc(2025, 1, 1)
+  )
+  ActsAsTaggableOn::Tagging.create!(
+    id: 9802, tag_id: 9602, taggable_type: "Lead", taggable_id: 9702,
+    context: "tags", created_at: Time.utc(2025, 1, 1)
+  )
+end
+
+def search_matrix_leads_cases
+  [
+    ["default", {}, true], ["page2", { "page" => "2" }, true],
+    ["explicit_per_page_ignored", { "per_page" => "5" }, true],
+    ["per0", { "per_page" => "0" }, true], ["per201", { "per_page" => "201" }, true],
+    ["perneg", { "per_page" => "-1" }, true], ["perabc", { "per_page" => "abc" }, true],
+    ["page0", { "page" => "0" }, true],
+    ["pageabc", { "page" => "abc" }, true], ["page99", { "page" => "99" }, true],
+    ["q_company", { "query" => "Acme Matrix" }, true], ["q_email", { "query" => "cara@example" }, true],
+    ["q_name", { "query" => "Alice Lead" }, true], ["q_pct", { "query" => "100%" }, true],
+    ["q_under", { "query" => "Under_" }, true], ["tag_vip", { "query" => "#vip" }, true],
+    ["q_status", { "q[status_eq]" => "new" }, false],
+    ["q_campaign", { "q[campaign_name_cont]" => "Matrix" }, false],
+    ["sort_company", { "q[s]" => "company asc", "per_page" => "200" }, true],
+    ["filter_new", {}, true, "new"], ["filter_new_other", {}, true, "new,other"],
+    ["filter_other", {}, true, "other"],
+    ["filter_ignored_with_q", { "q[status_eq]" => "new" }, true, "other"],
+    ["preference_per_page", {}, true, nil, { "leads_per_page" => 2 }],
+    ["preference_explicit_per_page_ignored", { "per_page" => "5" }, true, nil, { "leads_per_page" => 2 }],
+    ["preference_sort", {}, true, nil, { "leads_sort_by" => "leads.company ASC" }],
+    ["preference_sort_explicit_per_page", { "per_page" => "5" }, true, nil,
+     { "leads_sort_by" => "leads.company ASC" }]
+  ]
+end
+
+def search_matrix_assert_empty!(tables, family)
+  non_empty = tables.select do |table|
+    ActiveRecord::Base.connection.select_value(
+      "SELECT COUNT(*) FROM #{ActiveRecord::Base.connection.quote_table_name(table)}"
+    ).to_i.positive?
+  end
+  return if non_empty.empty?
+
+  abort "ffcrm:migration:search_matrix requires empty #{family} corpus tables; found rows in: " \
+        "#{non_empty.join(', ')}"
+end
+
+def search_matrix_corpus_for(tables)
+  connection = ActiveRecord::Base.connection
+  tables.index_with do |table|
+    connection.select_all("SELECT * FROM #{connection.quote_table_name(table)} ORDER BY id").to_a
+  end
+end
+
+def search_matrix_entity_case(alice, path, test_case, route)
+  name = test_case.fetch(:name)
+  params = test_case.fetch(:params)
+  ordered = test_case.fetch(:ordered)
+  filter = test_case.fetch(:filter)
+  preferences = test_case.fetch(:preferences) || {}
+  filter_path = route.fetch(:filter_path)
+  filter_param = route.fetch(:filter_param)
+  facets_iv = route.fetch(:facets_iv)
+  preference_names = preferences.keys.map(&:to_s)
+  preferences.each { |preference, value| alice.pref[preference.to_sym] = value }
+  session = ActionDispatch::Integration::Session.new(Rails.application)
+  session.host! "localhost"
+  login_as(alice, scope: :user)
+  unless filter.nil?
+    controller_class = path.include?("leads") ? LeadsController : ContactsController
+    allow_forgery_protection = controller_class.allow_forgery_protection
+    controller_class.allow_forgery_protection = false
+    begin
+      session.post filter_path, params: { filter_param => filter },
+        headers: { "HTTP_ACCEPT" => "text/javascript" }
+    ensure
+      controller_class.allow_forgery_protection = allow_forgery_protection
+    end
+  end
+  session.get path, params: params
+  response = session.response
+  controller = session.request.env["action_controller.instance"]
+  {
+    "name" => name,
+    "params" => params,
+    "ordered" => ordered,
+    "status" => response.status,
+    "ids" => response.status == 200 ? JSON.parse(response.body).pluck("id") : nil,
+    "total" => controller&.instance_variable_get(:@search_results_count),
+    "facets" => controller&.instance_variable_get(facets_iv),
+    "session_filter" => filter,
+    "preferences" => preferences.presence
+  }.compact
+ensure
+  Preference.where(user_id: alice.id, name: preference_names).delete_all if preference_names&.any?
+  preference_names&.each { |preference| alice.pref.cached_prefs.delete(preference) }
+end
+
+def search_matrix_opportunities
+  output = Rails.root.join(
+    ENV.fetch("OPPORTUNITIES_OUTPUT", "spring/src/test/resources/search/opportunities_search_matrix.json")
+  )
+  connection = ActiveRecord::Base.connection
+  corpus_tables = %w[
+    users accounts contacts campaigns opportunities account_opportunities contact_opportunities tags taggings
+  ]
+  non_empty = corpus_tables.select do |table|
+    connection.select_value(
+      "SELECT COUNT(*) FROM #{connection.quote_table_name(table)}"
+    ).to_i.positive?
+  end
+  setting_exists = Setting.exists?(name: "opportunity_stage")
+  abort "opportunities search matrix requires empty corpus tables; found rows in: #{non_empty.join(', ')}" unless
+    non_empty.empty? && !setting_exists
+
+  result = nil
+  ActiveRecord::Base.transaction(requires_new: true) do
+    Warden.test_mode!
+
+    alice = search_matrix_user(9001, "alice", "alice@opportunities-search-matrix.test", admin: false)
+    bob = search_matrix_user(9002, "bob", "bob@opportunities-search-matrix.test", admin: false)
+    search_matrix_opportunities_seed(alice, bob)
+
+    corpus = search_matrix_opportunities_corpus
+    cases = search_matrix_opportunities_cases.map do |opportunity_case|
+      name, params, ordered, session_filter, preferences, settings = opportunity_case
+      search_matrix_opportunities_run_case(
+        alice,
+        name,
+        params,
+        ordered,
+        session_filter: session_filter,
+        preferences: preferences || {},
+        settings: settings
+      )
+    end
+    result = {
+      "generated_by" => "bundle exec rake ffcrm:migration:search_matrix " \
+                        "OPPORTUNITIES_OUTPUT=spring/src/test/resources/search/opportunities_search_matrix.json",
+      "corpus" => corpus,
+      "cases" => cases,
+      "shows" => search_matrix_opportunities_shows(alice)
+    }
+    raise ActiveRecord::Rollback
+  end
+  Warden.test_reset!
+  Setting.clear_cache!
+
+  File.write(output, JSON.pretty_generate(result) + "\n")
+  puts "wrote #{output}"
+ensure
+  Warden.test_reset!
+  Setting.clear_cache!
+end
+
+def search_matrix_opportunities_seed(alice, bob)
+  account = Account.new(
+    id: 9611, name: "Opportunity Matrix Account", email: "matrix-account@example.test",
+    access: "Public", user: alice, created_at: "2025-01-01 08:00", updated_at: "2025-01-01 08:00"
+  )
+  account.save!(validate: false)
+  contact = Contact.new(
+    id: 9621, first_name: "Matrix", last_name: "Contact", access: "Public", user: alice,
+    created_at: "2025-01-01 08:00", updated_at: "2025-01-01 08:00"
+  )
+  contact.save!(validate: false)
+  campaign = Campaign.new(
+    id: 9631, name: "Opportunity Matrix Campaign", access: "Public", user: alice,
+    created_at: "2025-01-01 08:00", updated_at: "2025-01-01 08:00"
+  )
+  campaign.save!(validate: false)
+
+  rows = [
+    [9661, "Amber Portfolio 100%", "prospecting", "Public", alice, "1500.00", "25.00", 50, "2025-04-01", nil],
+    [9662, "Blue Zero Deal", "analysis", "Private", alice, "0.00", "0.00", 0, "2025-04-02", nil],
+    [9663, "Cobalt Contact Deal", "presentation", "Shared", alice, "1234.50", "12.50", 100, "2025-04-03", nil],
+    [9664, "Delta Null Amount", "proposal", "Public", alice, nil, nil, 50, nil, nil],
+    [9665, "Emerald Maximum Deal", "negotiation", "Shared", alice, "9999999999.99", "1.25", 1, "2025-04-05", nil],
+    [9666, "Fuchsia Negative Deal", "final_review", "Public", alice, "-250.00", "2.50", 50, "2025-04-06", nil],
+    [9667, "Golden Won Deal", "won", "Public", alice, "3200.00", "0.00", 40, "2025-04-07", nil],
+    [9668, "Indigo Lost Deal", "lost", "Public", alice, "450.00", nil, 10, "2025-04-08", nil],
+    [9669, "Jade Null Stage", nil, "Public", alice, "725.00", "25.00", 25, nil, nil],
+    [9670, "Khaki Custom Stage", "custom_stage", "Public", alice, "100.00", "0.00", nil, "2025-04-10", nil],
+    [9671, "Weighted Product A", "prospecting", "Public", alice, "10.00", "0.00", 60, "2025-04-11", nil],
+    [9672, "Weighted Product B", "analysis", "Public", alice, "20.00", "0.00", 50, "2025-04-12", nil],
+    [9673, "Weighted Product C", "presentation", "Public", alice, "5.00", "0.00", 100, "2025-04-13", nil],
+    [9674, "Weighted Null Product", "proposal", "Public", alice, nil, "0.00", 90, "2025-04-14", nil],
+    [9675, "Private Bob Opportunity", "won", "Private", bob, "80.00", "0.00", 50, "2025-04-15", nil],
+    [9676, "Public Bob Opportunity", "won", "Public", bob, "90.00", "0.00", 50, "2025-04-16", nil],
+    [9677, "Shared Bob Opportunity", "lost", "Shared", bob, "70.00", "0.00", 50, "2025-04-17", nil]
+  ]
+  14.times do |index|
+    number = index + 1
+    rows << [
+      9677 + number,
+      (number == 1 ? "Matrix_Paging Deal 01" : format("Matrix Paging Deal %02d", number)),
+      "prospecting", "Public", alice,
+      format("%d.00", (number * 3) + 7), "0.00", number + 5,
+      (Time.utc(2025, 5, 1) + number.days).strftime("%Y-%m-%d"), nil
+    ]
+  end
+  rows.each do |row|
+    id, name, stage, access, owner, amount, discount, probability, closes_on, campaign_id = row
+    opportunity = Opportunity.new(
+      id: id, name: name, stage: stage, access: access, user: owner, amount: amount, discount: discount,
+      probability: probability, closes_on: closes_on, campaign_id: campaign_id,
+      created_at: Time.utc(2025, 1, 1) + id.seconds, updated_at: Time.utc(2025, 1, 1) + id.seconds,
+      subscribed_users: []
+    )
+    opportunity.save!(validate: false)
+  end
+
+  Opportunity.find(9661).update_columns(campaign_id: campaign.id)
+  ActsAsTaggableOn::Tag.create!(id: 9681, name: "priority")
+  ActsAsTaggableOn::Tag.create!(id: 9682, name: "focus")
+  ActsAsTaggableOn::Tagging.create!(
+    id: 9731, tag_id: 9681, taggable_type: "Opportunity", taggable_id: 9661, context: "tags",
+    created_at: "2025-01-01 09:00"
+  )
+  ActsAsTaggableOn::Tagging.create!(
+    id: 9732, tag_id: 9682, taggable_type: "Opportunity", taggable_id: 9663, context: "tags",
+    created_at: "2025-01-01 09:00"
+  )
+  AccountOpportunity.create!(
+    id: 9701, account_id: account.id, opportunity_id: 9661,
+    created_at: "2025-01-01 09:00", updated_at: "2025-01-01 09:00"
+  )
+  ContactOpportunity.create!(
+    id: 9711, contact_id: contact.id, opportunity_id: 9663, role: "Decision maker",
+    created_at: "2025-01-01 09:00", updated_at: "2025-01-01 09:00"
+  )
+end
+
+def search_matrix_opportunities_corpus
+  connection = ActiveRecord::Base.connection
+  %w[users accounts contacts campaigns opportunities account_opportunities contact_opportunities tags taggings]
+    .index_with do |table|
+      connection.select_all("SELECT * FROM #{connection.quote_table_name(table)} ORDER BY id").to_a
+    end
+end
+
+def search_matrix_opportunities_cases
+  [
+    ["default", {}, true],
+    ["page2", { "page" => "2" }, true],
+    ["per5", { "per_page" => "5" }, true],
+    ["per0", { "per_page" => "0" }, true],
+    ["per201", { "per_page" => "201" }, true],
+    ["perabc", { "per_page" => "abc" }, true],
+    ["page99", { "page" => "99" }, true],
+    ["query_text", { "query" => "Portfolio" }, true],
+    ["query_numeric_id", { "query" => "9661" }, true],
+    ["query_percent", { "query" => "100%" }, true],
+    ["query_underscore", { "query" => "Matrix_Paging" }, true],
+    ["query_tag", { "query" => "#missing" }, true],
+    ["query_tag_positive", { "query" => "#priority" }, true],
+    ["q_amount_gteq", { "q[amount_gteq]" => "1000" }, false],
+    ["q_probability_eq", { "q[probability_eq]" => "50" }, false],
+    ["q_stage_eq", { "q[stage_eq]" => "won" }, false],
+    ["q_name_cont", { "q[name_cont]" => "Contact" }, false],
+    ["q_closes_on_lteq", { "q[closes_on_lteq]" => "2025-04-05" }, false],
+    ["q_contact_association", { "q[contacts_first_name_eq]" => "Matrix" }, false],
+    ["q_account_association", { "q[account_name_cont]" => "Matrix" }, false],
+    ["q_tags_name_eq", { "q[tags_name_eq]" => "priority" }, false],
+    ["q_amount_sort", { "q[name_cont]" => "Weighted", "q[s]" => "amount desc" }, true],
+    ["q_name_sort", { "q[name_cont]" => "Weighted", "q[s]" => "name asc" }, true],
+    ["stage_won", { "stage" => "won" }, true],
+    ["stage_other", { "stage" => "other" }, true],
+    ["stage_won_other", { "stage" => "won,other" }, true],
+    ["stage_custom", { "stage" => "custom_stage" }, true],
+    ["stage_bogus", { "stage" => "bogus" }, true],
+    ["stage_empty", { "stage" => "" }, true],
+    ["stage_ignored_with_q", { "stage" => "won", "q[name_cont]" => "Null" }, true],
+    ["session_filter_stage", {}, true, "won"],
+    ["preference_per_page", { "query" => "Weighted" }, true, nil, { "opportunities_per_page" => 2 }],
+    ["preference_weighted_sort", { "query" => "Weighted" }, true, nil,
+     { "opportunities_sort_by" => "opportunities.amount*probability DESC" }],
+    ["preference_name_sort", { "query" => "Weighted" }, true, nil,
+     { "opportunities_sort_by" => "opportunities.name ASC" }],
+    ["preference_per_page_explicit", { "query" => "Weighted", "per_page" => "3" }, true, nil,
+     { "opportunities_per_page" => 2 }],
+    ["settings_stage_symbols", {}, true, nil, {}, "---\n- :won\n- :custom_stage\n- :prospecting\n"]
+  ]
+end
+
+def search_matrix_opportunities_run_case(alice, name, params, ordered, options = {})
+  session_filter = options.fetch(:session_filter, nil)
+  preferences = options.fetch(:preferences, {})
+  settings = options.fetch(:settings, nil)
+  preference_names = preferences.keys.map(&:to_s)
+  preferences.each { |preference, value| alice.pref[preference.to_sym] = value }
+  if settings
+    Setting.create!(name: "opportunity_stage", value: YAML.safe_load(settings, permitted_classes: [Symbol]))
+    Setting.clear_cache!
+  end
+
+  session = ActionDispatch::Integration::Session.new(Rails.application)
+  session.host! "localhost"
+  login_as(alice, scope: :user)
+  unless session_filter.nil?
+    allow_forgery_protection = OpportunitiesController.allow_forgery_protection
+    OpportunitiesController.allow_forgery_protection = false
+    begin
+      session.post "/opportunities/filter", params: { stage: session_filter },
+        headers: { "HTTP_ACCEPT" => "text/javascript" }
+    ensure
+      OpportunitiesController.allow_forgery_protection = allow_forgery_protection
+    end
+  end
+  session.get "/opportunities.json", params: params
+  status = session.response.status
+  body = status == 200 ? JSON.parse(session.response.body) : nil
+  controller = session.request.env["action_controller.instance"]
+  result = {
+    "name" => name,
+    "params" => params,
+    "ordered" => ordered,
+    "status" => status,
+    "ids" => body&.pluck("id"),
+    "total" => controller&.instance_variable_get(:@search_results_count),
+    "facets" => controller&.instance_variable_get(:@opportunity_stage_total)
+  }
+  result["session_filter"] = session_filter unless session_filter.nil?
+  result["preferences"] = preferences unless preferences.empty?
+  result["settings"] = { "opportunity_stage" => settings } if settings
+  result
+ensure
+  Setting.where(name: "opportunity_stage").delete_all if settings
+  Setting.clear_cache! if settings
+  Preference.where(user_id: alice.id, name: preference_names).delete_all if preference_names&.any?
+  preference_names&.each { |preference| alice.pref.cached_prefs.delete(preference) }
+  Preference.where(user_id: alice.id, name: %w[opportunities_per_page opportunities_sort_by]).delete_all
+  %w[opportunities_per_page opportunities_sort_by].each { |preference| alice.pref.cached_prefs.delete(preference) }
+end
+
+def search_matrix_opportunities_shows(alice)
+  session = ActionDispatch::Integration::Session.new(Rails.application)
+  session.host! "localhost"
+  login_as(alice, scope: :user)
+  [9661, 9662, 9663, 9664].map do |id|
+    session.get "/opportunities/#{id}.json"
+    {
+      "id" => id,
+      "status" => session.response.status,
+      "body" => session.response.status == 200 ? JSON.parse(session.response.body) : nil
+    }
+  end
+end
+
+namespace :ffcrm do
+  namespace :migration do
+    task search_matrix: :environment do
+      output = Rails.root.join(
+        ENV.fetch(
+          "USERS_OUTPUT", "spring/src/test/resources/search/users_search_matrix.json"
+        )
+      )
+      result = nil
+      ActiveRecord::Base.transaction(requires_new: true) do
+        include Warden::Test::Helpers
+
+        Warden.test_mode!
+
+        admin = search_matrix_users_seed
+        corpus = search_matrix_users_corpus
+        cases = search_matrix_users_cases.map do |name, params|
+          search_matrix_run_users_case(admin, name, params)
+        end
+        result = {
+          "generated_by" => "bundle exec rake ffcrm:migration:search_matrix " \
+                            "USERS_OUTPUT=spring/src/test/resources/search/users_search_matrix.json",
+          "corpus" => corpus,
+          "cases" => cases
+        }
+        raise ActiveRecord::Rollback
+      end
+      Warden.test_reset!
+      File.write(output, JSON.pretty_generate(result) + "\n")
+      puts "wrote #{output}"
+    end
+  end
+end
+
+def search_matrix_users_seed
+  rows = [
+    [9600, "search_admin", "admin@search-matrix.test", "Search", "Admin", true, nil],
+    [9601, "alice_matrix", "alice@search-matrix.test", "Alice", "Matrix", false, nil],
+    [9602, "paused", "paused@search-matrix.test", "Paused", "User", false, Time.utc(2025, 1, 1)],
+    [9603, "blank_first", "blank@search-matrix.test", "", "", false, nil],
+    [9604, "uni_ñ", "unicode@search-matrix.test", "Zoë", "O'Neil", false, nil],
+    [9605, "under_score", "under@search-matrix.test", "User_Name", "O'Neil", false, nil]
+  ]
+  rows.each do |row|
+    id, username, email, first_name, last_name, admin, suspended_at = row
+    user = User.new(
+      id: id, username: username, email: email, first_name: first_name, last_name: last_name,
+      admin: admin, suspended_at: suspended_at, encrypted_password: "fixed-encrypted-#{username}",
+      password_salt: "fixed-salt-#{username}", confirmed_at: Time.utc(2025, 1, 1),
+      created_at: Time.utc(2025, 1, 1), updated_at: Time.utc(2025, 1, 1)
+    )
+    user.skip_confirmation! if user.respond_to?(:skip_confirmation!)
+    user.confirmed_at = Time.utc(2025, 1, 1) if user.respond_to?(:confirmed_at=)
+    user.save!(validate: false)
+  end
+  User.find(9600)
+end
+
+def search_matrix_users_corpus
+  ActiveRecord::Base.connection.select_all(
+    "SELECT id, username, email, first_name, last_name, admin, suspended_at FROM users ORDER BY id"
+  ).to_a
+end
+
+def search_matrix_users_cases
+  [
+    ["empty", {}],
+    ["query_case_insensitive", { "query" => "ALICE" }],
+    ["query_email_fragment", { "query" => "search-matrix.test" }],
+    ["query_punctuation_stripped", { "query" => "!!!" }],
+    ["query_apostrophe", { "query" => "o'" }],
+    ["query_underscore", { "query" => "_" }],
+    ["query_unicode", { "query" => "Zoë" }],
+    ["username_cont", { "q[username_cont]" => "alice" }],
+    ["email_end", { "q[email_end]" => "search-matrix.test" }],
+    ["first_name_eq", { "q[first_name_eq]" => "Zoë" }],
+    ["admin_eq", { "q[admin_eq]" => "1" }],
+    ["suspended_at_null", { "q[suspended_at_null]" => "1" }],
+    ["username_or_email_cont", { "q[username_or_email_cont]" => "matrix" }],
+    ["query_and_ransack", { "query" => "Zoë", "q[username_cont]" => "uni" }],
+    ["suspended_at_null_zero", { "q[suspended_at_null]" => "0" }],
+    ["suspended_at_null_false", { "q[suspended_at_null]" => "false" }]
+  ]
+end
+
+def search_matrix_run_users_case(admin, name, params)
+  session = ActionDispatch::Integration::Session.new(Rails.application)
+  session.host! "localhost"
+  login_as(admin, scope: :user)
+  session.get "/admin/users.json", params: params
+  body = session.response.status == 200 ? JSON.parse(session.response.body) : nil
+  {
+    "name" => name,
+    "params" => params,
+    "status" => session.response.status,
+    "ids" => body&.pluck("id"),
+    "total" => body&.size
   }
 end
