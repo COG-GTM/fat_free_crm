@@ -7,11 +7,11 @@
 
 | kind | status | count |
 | --- | --- | --- |
-| cf | n/a | 19 |
+| cf | n/a | 32 |
 | cf | not_ported | 3 |
 | cf | ported | 1 |
 | setting | n/a | 1 |
-| setting | not_ported | 181 |
+| setting | not_ported | 199 |
 | setting | partial | 19 |
 | setting | ported | 5 |
 
@@ -41,6 +41,19 @@
 | cf | lib/tasks/ffcrm/custom_fields_matrix.rake:258 |  | `"1" => { "id" => ids[4], "name" => "cf_ab271_range_end", "position" => 94, "pair_id" => ids[3] }` | n/a | Rails-only ops/migration tooling |
 | cf | lib/tasks/ffcrm/entity_fixture.rake:230 |  | `cf_columns = connection.select_values(<<~SQL.squish)` | n/a | Rails-only ops/migration tooling |
 | cf | lib/tasks/ffcrm/entity_fixture.rake:234 |  | `raise "Unexpected custom field columns: #{cf_columns.join(', ')}" if cf_columns.any?` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/export_goldens.rake:145 |  | `[9792, account_group, "cf_region", "Region", "string", 1],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/export_goldens.rake:146 |  | `[9793, account_group, "cf_seats", "Seats", "decimal", 2],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/export_goldens.rake:147 |  | `[9794, account_group, "cf_renewal", "Renewal", "date", 3],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/export_goldens.rake:148 |  | `[9795, account_group, "cf_flags", "Flags", "check_boxes", 4],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/export_goldens.rake:149 |  | `[9796, account_group, "cf_active", "Active", "boolean", 5],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/export_goldens.rake:150 |  | `[9797, account_group, "cf_seen_at", "Seen At", "datetime", 6],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/export_goldens.rake:151 |  | `[9798, contact_group, "cf_nickname", "Nickname", "string", 1]` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/export_goldens.rake:163 |  | `{ cf_region: "West", cf_seats: BigDecimal("12.5"), cf_renewal: Date.new(2025, 6, 30), cf_flags: %w[alpha beta],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/export_goldens.rake:164 |  | `cf_active: true, cf_seen_at: Time.utc(2025, 2, 3, 4, 5, 6) }],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/export_goldens.rake:165 |  | `[9712, "Beta & <Labs>", alice, nil, "Private", "vendor", 0, nil, "", { cf_active: false }],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/export_goldens.rake:167 |  | `[9714, "Delta Shared", bob, nil, "Shared", "partner", 5, "delta@example.test", nil, { cf_region: "" }],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/export_goldens.rake:168 |  | `[9715, "Zoë😀 Unicode", bob, alice, "Private", nil, 0, nil, nil, { cf_seats: BigDecimal("1000") }]` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/export_goldens.rake:231 |  | `contact[:cf_nickname] = nickname` | n/a | Rails-only ops/migration tooling |
 | cf | lib/tasks/ffcrm/migration.rake:14 |  | `desc "Census of dynamic cf_* custom field columns (FORMAT=markdown\|json OUTPUT=path COUNT_ROWS=true)"` | n/a | Rails-only ops/migration tooling |
 | setting | app/controllers/admin/leads_controller.rb:41 | default_access | `lead.access = Setting.default_access` | not_ported | write-side record default — AB-272 (values readable via SettingsService) |
 | setting | app/controllers/admin/settings_controller.rb:44 | [key] | `Setting[key] = value` | not_ported | admin settings write UI — Rails remains the settings writer in this track |
@@ -206,6 +219,24 @@
 | setting | lib/tasks/ffcrm/entity_fixture.rake:177 | create!(name: "fixture_string", value: "string value") | `Setting.create!(name: "fixture_string", value: "string value")` | not_ported | Rails-only ops/migration tooling |
 | setting | lib/tasks/ffcrm/entity_fixture.rake:178 | create!(name: "fixture_symbols", value: %i[one two]) | `Setting.create!(name: "fixture_symbols", value: %i[one two])` | not_ported | Rails-only ops/migration tooling |
 | setting | lib/tasks/ffcrm/entity_fixture.rake:179 | create!(name: "fixture_hash", value: { "nested" => ["value", 2] }) | `Setting.create!(name: "fixture_hash", value: { "nested" => ["value", 2] })` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:47 | where(name: %w[smtp email_comment_replies]) | `Setting.where(name: %w[smtp email_comment_replies]).delete_all` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:48 | email_dropbox | `Setting.email_dropbox = {` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:52 | clear_cache! | `Setting.clear_cache!` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:102 | find_by_name(name) | `setting = Setting.find_by_name(name)` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:142 | smtp | `Setting.smtp = { from: "crm@example.test" }` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:143 | email_comment_replies | `Setting.email_comment_replies = { address: "reply@example.test" }` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:144 | clear_cache! | `Setting.clear_cache!` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:202 | email_comment_replies | `Setting.email_comment_replies = { address: "" }` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:203 | smtp | `Setting.smtp = { from: "fallback@example.test" }` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:204 | clear_cache! | `Setting.clear_cache!` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:209 | email_comment_replies | `Setting.email_comment_replies = { address: "Support Team <named-reply@example.test>" }` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:210 | smtp | `Setting.smtp = { from: "crm@example.test" }` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:211 | clear_cache! | `Setting.clear_cache!` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:216 | email_comment_replies | `Setting.email_comment_replies = { address: "reply@example.test" }` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:217 | smtp | `Setting.smtp = { from: "crm@example.test" }` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:218 | email_dropbox | `Setting.email_dropbox = {` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:222 | clear_cache! | `Setting.clear_cache!` | not_ported | Rails-only ops/migration tooling |
+| setting | lib/tasks/ffcrm/migration_mail_golden.rake:360 | clear_cache! | `Setting.clear_cache!` | not_ported | Rails-only ops/migration tooling |
 | setting | lib/tasks/ffcrm/search_matrix.rake:556 | exists?(name: "opportunity_stage") | `setting_exists = Setting.exists?(name: "opportunity_stage")` | not_ported | Rails-only ops/migration tooling |
 | setting | lib/tasks/ffcrm/search_matrix.rake:591 | clear_cache! | `Setting.clear_cache!` | not_ported | Rails-only ops/migration tooling |
 | setting | lib/tasks/ffcrm/search_matrix.rake:597 | clear_cache! | `Setting.clear_cache!` | not_ported | Rails-only ops/migration tooling |
