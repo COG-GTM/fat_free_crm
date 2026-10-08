@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 
 import com.fatfreecrm.domain.AccountContact;
+import com.fatfreecrm.domain.Account;
 import com.fatfreecrm.domain.Address;
 import com.fatfreecrm.domain.Contact;
 import com.fatfreecrm.domain.Version;
@@ -16,6 +17,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -60,5 +62,20 @@ class VersionRecorderTest {
         assertThat(version.getItemType()).isEqualTo("AccountContact");
         assertThat(version.getRelatedType()).isEqualTo("Contact");
         assertThat(version.getRelatedId()).isEqualTo(23);
+    }
+
+    @Test
+    void recordsATouchAsAnUpdateWithThePreTouchObjectAndNoChanges() {
+        Account account = mock(Account.class);
+        when(account.getId()).thenReturn(31L);
+        Map<String, Object> before = new LinkedHashMap<>();
+        before.put("name", "before");
+        Map<String, Object> after = new LinkedHashMap<>(before);
+
+        Version version = versionRecorder.recordTouch(null, account, before, after);
+
+        assertThat(version.getEvent()).isEqualTo("update");
+        assertThat(version.getObject()).isEqualTo("---\nname: before\n");
+        assertThat(version.getObjectChanges()).isNull();
     }
 }

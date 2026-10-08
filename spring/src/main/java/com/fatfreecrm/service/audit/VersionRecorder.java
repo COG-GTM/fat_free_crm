@@ -134,6 +134,21 @@ public class VersionRecorder {
         return versionRepository.save(version);
     }
 
+    /** PaperTrail {@code touch} is a forced update with the pre-touch object and no changes YAML. */
+    @Transactional
+    public Version recordTouch(
+        AuthenticatedUser user,
+        Object entity,
+        Map<String, Object> before,
+        Map<String, Object> after
+    ) {
+        Objects.requireNonNull(after, "after");
+        PaperTrailOptions options = options(entity);
+        Version version = base(user, options, entity, "update");
+        version.setObject(PaperTrailYaml.dumpObject(before));
+        return versionRepository.save(version);
+    }
+
     /** PaperTrail {@code destroy} version; {@code attributes} is the final attribute dump. */
     @Transactional
     public Version recordDestroy(AuthenticatedUser user, Object entity, Map<String, Object> attributes) {
