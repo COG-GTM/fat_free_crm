@@ -11,6 +11,7 @@ import com.fatfreecrm.domain.Email;
 import com.fatfreecrm.domain.Lead;
 import com.fatfreecrm.domain.Opportunity;
 import com.fatfreecrm.domain.Task;
+import com.fatfreecrm.domain.User;
 import com.fatfreecrm.domain.support.RailsModelType;
 import java.util.Map;
 import java.util.Optional;
@@ -46,6 +47,9 @@ public record PaperTrailOptions(RailsModelType itemType, Set<String> ignore, Str
             new PaperTrailOptions(RailsModelType.OPPORTUNITY, Set.of("subscribed_users"), null)),
         Map.entry(Campaign.class,
             new PaperTrailOptions(RailsModelType.CAMPAIGN, Set.of("subscribed_users"), null)),
+        // app/models/users/user.rb: has_paper_trail ignore: [:last_sign_in_at] (AB-272 Phase B admin).
+        Map.entry(User.class,
+            new PaperTrailOptions(RailsModelType.USER, Set.of("last_sign_in_at"), null)),
         // Join/address trails (app/models/entities/account_contact.rb,
         // account_opportunity.rb, polymorphic/address.rb): ContactOpportunity has no trail
         // (commented out); AccountContact ignores its own id/timestamps/contact_id and points

@@ -28,7 +28,7 @@ then start Rails and Spring in separate terminals:
 
 ```sh
 export DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5433/ffcrm_contract
-bin/rails server -p 3000 -b 127.0.0.1
+WEB_CONCURRENCY=0 bin/rails server -p 3000 -b 127.0.0.1
 ```
 
 ```sh

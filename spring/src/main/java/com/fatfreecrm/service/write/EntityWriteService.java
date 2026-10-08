@@ -676,11 +676,16 @@ public class EntityWriteService {
         accountRepository.saveAndFlush(account);
         flushPendingPermissions("Account", account.getId(), pending);
         applyTagListIfProvided(account, "Account", params);
-        // Rails' post-save attributes order materializes written keys first: the changed param
-        // assigns, then save-time writes — deleted_at/id sync and the nullify_blank_category
-        // before_save — verified live against PUT /accounts/:id.
+        // Rails' post-save attributes order materializes written keys first: the param assigns,
+        // then save-time writes — deleted_at/id sync and the nullify_blank_category before_save
+        // — verified live against PUT /accounts/:id.
+        for (String saveWrite : List.of("deleted_at", "id", "category")) {
+            if (!order.contains(saveWrite)) {
+                order.add(saveWrite);
+            }
+        }
         versionRecorder.recordUpdate(user, account, before,
-            rowAttributes(Account.class, id), order, List.of("deleted_at", "id", "category"));
+            rowAttributes(Account.class, id), order, true);
     }
 
     private void cancanDefaults(CrmEntity entity, AuthenticatedUser user,
@@ -1709,7 +1714,7 @@ public class EntityWriteService {
                 opportunityRepository.saveAndFlush(opportunity);
                 // The version object's attribute order carries the earlier save's write order.
                 versionRecorder.recordUpdate(user, opportunity, mid,
-                    rowAttributes(Opportunity.class, id), List.of(), order);
+                    rowAttributes(Opportunity.class, id), order, true);
             }
             return;
         }
@@ -1720,7 +1725,7 @@ public class EntityWriteService {
             opportunity.setProbability(100);
             opportunityRepository.saveAndFlush(opportunity);
             versionRecorder.recordUpdate(user, opportunity, mid,
-                rowAttributes(Opportunity.class, id), List.of(), order);
+                rowAttributes(Opportunity.class, id), order, true);
             versionRecorder.recordEvent(user, RailsModelType.OPPORTUNITY, id, "won");
         } else {
             // Unwin: revenue -= (original amount − original discount) on the original campaign.

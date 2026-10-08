@@ -150,7 +150,7 @@ public final class PaperTrailYaml {
         return IMPLICIT.matcher(text).matches();
     }
 
-    static String quote(String text) {
+    public static String quote(String text) {
         if (text.isEmpty()) {
             return "''"; // Psych emits an empty string as ''
         }

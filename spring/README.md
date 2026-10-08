@@ -633,6 +633,72 @@ reproduces mention subscription (`@username` → `subscribed_users <<` on the
 commentable, which itself writes a commentable version), commentable-visibility
 404s, and the FOR UPDATE lock on the commentable row.
 
+## Admin write API (AB-272 Phase B)
+
+`AdminWriteController` (`/api/v1/admin/**`, `@AdminOnly` — the AB-270 admin gate) ports every
+JSON-reachable write in `app/controllers/admin/`. Services live in `service/write/admin/`.
+
+| Rails | Spring | Status / body |
+| --- | --- | --- |
+| `POST /admin/users` | `POST /api/v1/admin/users` | 201 + `["<name>"]` (Rails user JSON quirk) / 422 |
+| `PUT /admin/users/:id` | `PUT /api/v1/admin/users/:id` | 204 / 422 |
+| `DELETE /admin/users/:id` | `DELETE /api/v1/admin/users/:id` | 204 — also when the guard blocks it |
+| `PUT /admin/users/:id/suspend`, `/reactivate` | same under `/api/v1` | 204 (self-suspend: no-op) |
+| `POST/PUT/DELETE /admin/groups[/:id]` | same under `/api/v1` | create commits then 500 (`group_url` missing); 422; 204 |
+| `POST/PUT/DELETE /admin/tags[/:id]` | same under `/api/v1` | create commits then 500; 422; 204 |
+| `POST/PUT/DELETE /admin/research_tools[/:id]` | same under `/api/v1` | 201 + JSON (no validations); 204 |
+| `POST/PUT/DELETE /admin/field_groups[/:id]`, `POST .../sort` | same under `/api/v1` | create/sort commit then 500 (missing template/helper); 422; 204 |
+| `POST/PUT/DELETE /admin/fields[/:id]`, `POST .../sort` | same under `/api/v1` | create/sort commit then 500; 422; 204 |
+| `PUT /admin/settings` | `PUT /api/v1/admin/settings` | 302 → `/admin/settings` (empty `text/html`) |
+
+- **Rails quirks mirrored**: a missing/empty param root (`params.require`) → 400; non-admins get
+  302 → `/` in Rails and 403 in Spring (allow-listed `admin-non-admin-302-vs-403`); writes that
+  Rails commits before failing on a missing URL helper/template commit in Spring too and then
+  answer 500; destroying a core (non-custom) field is a 500 (`errors.add_to_base` no longer
+  exists); destroying a field group with no `custom_fields` default group is a rollback + 500.
+- **Users**: Devise/Authlogic-compatible digest via the AB-264 legacy-hash encoder (new 20-char
+  friendly-token salt per password change), email strip+downcase, reconfirmable email changes
+  (`unconfirmed_email` + new `confirmation_token`), `suspend_if_needs_approval`, habtm
+  `group_ids=` written immediately (persists even when validation then fails), destroy guard
+  `destroyable?` (self, or `has_related_assets?`), PaperTrail with `ignore: [:last_sign_in_at]`.
+  Confirmation mail is not sent (no mailer in Spring; see ADR open questions).
+- **Settings**: `AdminSettingsWriteService` reproduces the controller permit list and casts and
+  writes `settings.value` with `RubyYaml` (Psych byte-compatible: `HashWithIndifferentAccess`
+  tag, `:symbol` scalars, `|-` block strings, `key:` nil). Settings are not versioned. **AB-273
+  integration point**: after commit, `AdminSettingsWriteService.update` must evict the
+  `SettingsService` 30 s TTL cache for the written keys (marked in the code).
+- **Not ported (HTML/JS/multipart only)**: `Admin::LeadsController#import` (multipart CSV +
+  redirect/flash), `Admin::PluginsController` (read-only), `users#confirm`,
+  `users#auto_complete`, `field_groups#confirm`, `fields#auto_complete/options/redraw/subform`,
+  and all `new`/`edit` forms.
+
+### Runtime DDL for custom fields
+
+Rails `CustomField` runs `add_column`/`change_column` on the entity table when a field is
+created/retyped, and never drops the column on destroy. `AdminFieldWriteService` does the same
+through `JdbcTemplate` inside the write transaction (PostgreSQL DDL is transactional, so a
+failed validation rolls the column back): quoted identifiers, Rails type map (`string/email/
+url/tel/select/radio_buttons`→`varchar`, `text/check_boxes`→`text`, `decimal`→`numeric(15,2)`,
+`datetime`→`timestamp`, …), the same `cf_<label>[_n]` name generation against the live
+`information_schema`, safe-transition `ALTER COLUMN TYPE` and metadata-only unsafe
+transitions. `CustomFieldRegistry` is invalidated immediately and after commit/rollback so
+AB-271 JSONB reads and `CustomFieldWriteService` see the new metadata.
+
+- **Flyway** stays additive-only: runtime `cf_*` columns are data-plane objects owned by the
+  `fields` table, never written to `db/migration`, and never touched by Flyway (which only
+  tracks versioned migrations).
+- **`ddl-auto: validate`** only checks that *mapped* columns exist; entities never map `cf_*`
+  columns (AB-271 reads them through the registry/JDBC), so extra runtime columns validate.
+- **pgjdbc**: `prepareThreshold: 0` (Hikari data-source property) disables server-side prepared
+  statements, so an `ALTER TABLE` from either stack cannot surface `cached plan must not change
+  result type` on a pooled Spring connection.
+- **Contract runs**: Rails caches column names per process, so admin DDL cases need a fresh
+  contract DB (`CONTRACT_FIXTURES_RESET=1 scripts/contract-db.sh`) and a restarted, single-process
+  Rails (`WEB_CONCURRENCY=0 bin/rails server -p 3000`; with Puma workers only the worker that ran
+  `add_column` refreshes its cache, so later reads differ per worker). The
+  harness drops the columns Rails added before replaying a case against Spring (case `setup:`
+  SQL is re-run after each reset).
+
 ## Adding a write family
 
 1. Register the resource in `RailsResources` (model name, table, entity class,

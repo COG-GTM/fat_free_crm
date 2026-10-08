@@ -103,14 +103,15 @@ public class VersionRecorder {
         Map<String, Object> after,
         java.util.List<String> assignedOrder
     ) {
-        return recordUpdate(user, entity, before, after, assignedOrder, java.util.List.of());
+        return recordUpdate(user, entity, before, after, assignedOrder, false);
     }
 
     /**
-     * Like {@link #recordUpdate(AuthenticatedUser, Object, Map, Map, java.util.List)} but
-     * {@code materializedEarly} additionally leads the dumped {@code object}: keys Rails wrote
-     * without changing (e.g. the {@code deleted_at}/{@code id}/{@code category} sync writes an
-     * Account save performs) materialize ahead of the remaining column-order attributes.
+     * As above; with {@code leadUnchangedAssigned} the {@code object} also leads with assigned
+     * attributes whose value did not change (User: Devise's before_validation re-assigns
+     * {@code email}, and reconfirmable restores it, yet PaperTrail still dumps it first). Entity
+     * write paths pass the keys Rails wrote during save (e.g. the deleted_at/id/category sync an
+     * Account save performs) so they too lead the dump.
      */
     @Transactional
     public Version recordUpdate(
@@ -119,7 +120,7 @@ public class VersionRecorder {
         Map<String, Object> before,
         Map<String, Object> after,
         java.util.List<String> assignedOrder,
-        java.util.List<String> materializedEarly
+        boolean leadUnchangedAssigned
     ) {
         PaperTrailOptions options = options(entity);
         Map<String, Object[]> changes = new LinkedHashMap<>();
@@ -142,10 +143,7 @@ public class VersionRecorder {
         Version version = base(user, options, entity, "update");
         Map<String, Object> orderedBefore = new LinkedHashMap<>();
         assignedOrder.stream()
-            .filter(changes::containsKey)
-            .forEach(name -> orderedBefore.put(name, before.get(name)));
-        materializedEarly.stream()
-            .filter(name -> before.containsKey(name) && !orderedBefore.containsKey(name))
+            .filter(name -> changes.containsKey(name) || (leadUnchangedAssigned && before.containsKey(name)))
             .forEach(name -> orderedBefore.put(name, before.get(name)));
         before.forEach(orderedBefore::putIfAbsent);
         version.setObject(PaperTrailYaml.dumpObject(orderedBefore));
@@ -187,7 +185,7 @@ public class VersionRecorder {
     private Version base(AuthenticatedUser user, PaperTrailOptions options, Object entity, String event) {
         Version version = new Version();
         version.setItemType(options.itemType().railsName());
-        version.setItemId(((BaseEntity) entity).getId().intValue());
+        version.setItemId(entityId(entity).intValue());
         version.setEvent(event);
         version.setWhodunnit(whodunnit(user));
         version.setCreatedAt(now());
@@ -239,5 +237,12 @@ public class VersionRecorder {
 
     private Instant now() {
         return clock.instant().truncatedTo(ChronoUnit.MICROS);
+    }
+
+    private static Long entityId(Object entity) {
+        if (entity instanceof com.fatfreecrm.domain.User user) {
+            return user.getId();
+        }
+        return ((BaseEntity) entity).getId();
     }
 }

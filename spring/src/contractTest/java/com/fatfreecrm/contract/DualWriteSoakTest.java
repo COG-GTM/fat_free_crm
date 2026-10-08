@@ -75,6 +75,12 @@ class DualWriteSoakTest {
             leadIds.add(seedEntity(alice, "leads", "lead",
                 Map.of("first_name", "soak", "last_name", "lead-" + index)));
         }
+        // Admin family (AB-272 Phase B): seed the settings rows via Rails so concurrent writers
+        // only update (Setting[]= is find_by_name || new — racing creates would duplicate).
+        AuthContext railsAdmin = railsAuth.authenticate("admin");
+        ObjectNode seedSettings = JSON.createObjectNode();
+        seedSettings.putObject("settings").put("host", "seed").put("base_url", "seed");
+        sendJson(railsAdmin.client(), railsAdmin, "PUT", railsUrl + "/admin/settings", seedSettings);
 
         AtomicInteger taskWrites = new AtomicInteger();
         AtomicInteger completes = new AtomicInteger();
@@ -89,7 +95,7 @@ class DualWriteSoakTest {
         ConcurrentLinkedQueue<String> failures = new ConcurrentLinkedQueue<>();
 
         Instant deadline = Instant.now().plus(Duration.ofMinutes(minutes));
-        ExecutorService pool = Executors.newFixedThreadPool(threads * 4);
+        ExecutorService pool = Executors.newFixedThreadPool(threads * 4 + 5);
         List<java.util.concurrent.Future<?>> futures = new ArrayList<>();
         for (int worker = 0; worker < threads; worker++) {
             long taskId = taskIds.get(worker);
@@ -122,6 +128,26 @@ class DualWriteSoakTest {
             futures.add(pool.submit(() -> runPromoter(users, "alice", leadId,
                 deadline, promotes, rejects, errors, serverErrors, violations, failures)));
         }
+        AtomicInteger userWrites = new AtomicInteger();
+        AtomicInteger suspends = new AtomicInteger();
+        AtomicInteger reactivates = new AtomicInteger();
+        AtomicInteger settingsWrites = new AtomicInteger();
+        // Concurrent admin updates of different columns on carol (5) from both apps, a
+        // suspend/reactivate toggler on bob (3) alternating apps, and settings writers.
+        futures.add(pool.submit(() -> runAdminWriter(users, true, "/admin/users/" + SOAK_USER + ".json",
+            "/api/v1/admin/users/" + SOAK_USER, "user", "title", "user:title", deadline, userWrites,
+            errors, serverErrors, violations, failures)));
+        futures.add(pool.submit(() -> runAdminWriter(users, false, "/admin/users/" + SOAK_USER + ".json",
+            "/api/v1/admin/users/" + SOAK_USER, "user", "company", "user:company", deadline, userWrites,
+            errors, serverErrors, violations, failures)));
+        futures.add(pool.submit(() -> runSuspender(users, deadline, suspends, reactivates, errors,
+            serverErrors, violations, failures)));
+        futures.add(pool.submit(() -> runAdminWriter(users, true, "/admin/settings",
+            "/api/v1/admin/settings", "settings", "host", "setting:host", deadline, settingsWrites,
+            errors, serverErrors, violations, failures)));
+        futures.add(pool.submit(() -> runAdminWriter(users, false, "/admin/settings",
+            "/api/v1/admin/settings", "settings", "base_url", "setting:base_url", deadline,
+            settingsWrites, errors, serverErrors, violations, failures)));
         pool.shutdown();
         for (java.util.concurrent.Future<?> future : futures) {
             future.get();
@@ -141,6 +167,9 @@ class DualWriteSoakTest {
         long leadPromoteVersions = versionCount("Lead", leadIds, "update", null);
         long promoteContactVersions = versionCount("Contact", null, "create", startedAt);
         long commentVersions = versionCount("Comment", null, "create", startedAt);
+        long userUpdateVersions = versionCount("User", List.of((long) SOAK_USER), "update", startedAt);
+        long suspendVersions = versionCount("User", List.of((long) SUSPEND_USER), "update", startedAt);
+        long settingVersions = queryLong("SELECT count(*) FROM versions WHERE item_type = 'Setting'");
         int subscribed = subscribedCount("accounts", 101);
         int expectedSubscriptions = commentCreates.get();
         StringBuilder report = new StringBuilder();
@@ -161,6 +190,11 @@ class DualWriteSoakTest {
             entityWrites.get(), accountVersions, contactVersions, promotes.get(), rejects.get(),
             leadPromoteVersions, promoteContactVersions));
         report.append(String.format(
+            "userWrites=%d userUpdateVersions=%d suspends=%d reactivates=%d suspendVersions=%d "
+                + "settingsWrites=%d settingVersions=%d%n",
+            userWrites.get(), userUpdateVersions, suspends.get(), reactivates.get(), suspendVersions,
+            settingsWrites.get(), settingVersions));
+        report.append(String.format(
             "OBSERVATION account-101 subscribed_users entries for user 2: %d of %d expected "
                 + "comment-subscription appends persisted (lost=%d; Rails read-modify-write race,"
                 + " Spring locks FOR UPDATE)%n",
@@ -176,6 +210,24 @@ class DualWriteSoakTest {
                         .append(" expected=").append(expected).append(" actual=").append(actual)
                         .append('\n');
                 }
+            }
+        }
+        for (String field : List.of("title", "company")) {
+            String expected = LastWrites.LAST.get("user:" + field);
+            String actual = column("users", SOAK_USER, field);
+            if (expected != null && !expected.equals(actual)) {
+                lost++;
+                report.append("LOST users/").append(SOAK_USER).append('/').append(field)
+                    .append(" expected=").append(expected).append(" actual=").append(actual).append('\n');
+            }
+        }
+        for (String name : List.of("host", "base_url")) {
+            String expected = LastWrites.LAST.get("setting:" + name);
+            String actual = settingValue(name);
+            if (expected != null && !("--- " + expected + "\n").equals(actual)) {
+                lost++;
+                report.append("LOST settings/").append(name).append(" expected=").append(expected)
+                    .append(" actual=").append(actual).append('\n');
             }
         }
         System.out.print(report);
@@ -201,6 +253,12 @@ class DualWriteSoakTest {
             "lead update versions vs successful promote+reject writes\n" + report);
         org.junit.jupiter.api.Assertions.assertEquals(promotes.get(), promoteContactVersions,
             "contact create versions vs successful promotes\n" + report);
+        org.junit.jupiter.api.Assertions.assertEquals(userWrites.get(), userUpdateVersions,
+            "user update versions vs successful admin user updates\n" + report);
+        org.junit.jupiter.api.Assertions.assertEquals(suspends.get() + reactivates.get(), suspendVersions,
+            "user update versions vs successful suspends+reactivates\n" + report);
+        org.junit.jupiter.api.Assertions.assertEquals(0, settingVersions,
+            "Setting has no has_paper_trail\n" + report);
         // Leave the contract database on the fixture snapshot so subsequent read cases
         // (e.g. activities) do not see soak rows.
         ContractDbReset.fromProperties().reset();
@@ -495,6 +553,121 @@ class DualWriteSoakTest {
         }
     }
 
+    private static final int SOAK_USER = 5;
+    private static final int SUSPEND_USER = 3;
+
+    /**
+     * Admin PUTs of {@code {root: {field: value}}} from one app as the fixture admin. Each value
+     * is unique so every success changes the row (users: one PaperTrail update; settings: none).
+     */
+    private void runAdminWriter(
+        Map<String, FixtureUsers.FixtureUser> users,
+        boolean railsSide,
+        String railsPath,
+        String springPath,
+        String root,
+        String field,
+        String lastKey,
+        Instant deadline,
+        AtomicInteger writes,
+        AtomicInteger errors,
+        AtomicInteger serverErrors,
+        AtomicInteger violations,
+        ConcurrentLinkedQueue<String> failures
+    ) {
+        String side = railsSide ? "rails" : "spring";
+        try {
+            AuthContext auth = railsSide
+                ? new RailsSessionAuth(railsUrl, users).authenticate("admin")
+                : new SpringJwtAuth(springUrl, users).authenticate("admin");
+            String url = railsSide ? railsUrl + railsPath : springUrl + springPath;
+            int sequence = 0;
+            while (Instant.now().isBefore(deadline)) {
+                String value = side + "-" + field + "-" + sequence++;
+                ObjectNode body = JSON.createObjectNode();
+                body.putObject(root).put(field, value);
+                try {
+                    sendJson(auth.client(), auth, "PUT", url, body);
+                    writes.incrementAndGet();
+                    LastWrites.LAST.put(lastKey, value);
+                } catch (SoakHttpException exception) {
+                    countFailure(exception, side + " " + root, errors, serverErrors, violations, failures);
+                }
+            }
+        } catch (IOException | InterruptedException exception) {
+            failures.add(root + " auth failed: " + exception.getMessage());
+            serverErrors.incrementAndGet();
+        }
+    }
+
+    /** Strict suspend/reactivate alternation on bob; apps alternate in pairs of two. */
+    private void runSuspender(
+        Map<String, FixtureUsers.FixtureUser> users,
+        Instant deadline,
+        AtomicInteger suspends,
+        AtomicInteger reactivates,
+        AtomicInteger errors,
+        AtomicInteger serverErrors,
+        AtomicInteger violations,
+        ConcurrentLinkedQueue<String> failures
+    ) {
+        try {
+            AuthContext railsContext = new RailsSessionAuth(railsUrl, users).authenticate("admin");
+            AuthContext springContext = new SpringJwtAuth(springUrl, users).authenticate("admin");
+            int sequence = 0;
+            while (Instant.now().isBefore(deadline)) {
+                boolean suspend = sequence % 2 == 0;
+                boolean railsSide = (sequence / 2) % 2 == 0;
+                sequence++;
+                String path = "/admin/users/" + SUSPEND_USER + (suspend ? "/suspend" : "/reactivate");
+                try {
+                    if (railsSide) {
+                        sendJson(railsContext.client(), railsContext, "PUT", railsUrl + path + ".json",
+                            JSON.createObjectNode());
+                    } else {
+                        sendJson(springContext.client(), springContext, "PUT", springUrl + "/api/v1" + path,
+                            JSON.createObjectNode());
+                    }
+                    (suspend ? suspends : reactivates).incrementAndGet();
+                } catch (SoakHttpException exception) {
+                    countFailure(exception, "suspend", errors, serverErrors, violations, failures);
+                }
+            }
+        } catch (IOException | InterruptedException exception) {
+            failures.add("suspend auth failed: " + exception.getMessage());
+            serverErrors.incrementAndGet();
+        }
+    }
+
+    private static void countFailure(SoakHttpException exception, String label, AtomicInteger errors,
+        AtomicInteger serverErrors, AtomicInteger violations, ConcurrentLinkedQueue<String> failures) {
+        if (isConstraintViolation(exception)) {
+            violations.incrementAndGet();
+        }
+        if (exception.status >= 500) {
+            serverErrors.incrementAndGet();
+            failures.add(label + " " + exception.getMessage());
+        } else {
+            errors.incrementAndGet();
+        }
+    }
+
+    private String settingValue(String name) {
+        try (Connection connection = DriverManager.getConnection(
+                System.getProperty("contract.dbUrl", "jdbc:postgresql://127.0.0.1:5433/ffcrm_contract"),
+                System.getProperty("contract.dbUser", "postgres"),
+                System.getProperty("contract.dbPassword", "postgres"));
+             java.sql.PreparedStatement statement = connection.prepareStatement(
+                 "SELECT value FROM settings WHERE name = ?")) {
+            statement.setString(1, name);
+            try (ResultSet rows = statement.executeQuery()) {
+                return rows.next() ? rows.getString(1) : null;
+            }
+        } catch (java.sql.SQLException exception) {
+            return null;
+        }
+    }
+
     private JsonNode sendJson(HttpClient client, AuthContext auth, String method, String url,
         ObjectNode body) throws SoakHttpException {
         HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(url))
@@ -635,6 +808,12 @@ class DualWriteSoakTest {
         orphans += queryLong(
             "SELECT count(*) FROM (SELECT user_id, name FROM tasks WHERE deleted_at IS NULL"
                 + " GROUP BY user_id, name HAVING count(*) > 1) dup");
+        orphans += queryLong(
+            "SELECT count(*) FROM versions v WHERE v.event IN ('create', 'update')"
+                + " AND v.item_type = 'User'"
+                + " AND NOT EXISTS (SELECT 1 FROM users u WHERE u.id = v.item_id)");
+        orphans += queryLong(
+            "SELECT count(*) FROM (SELECT name FROM settings GROUP BY name HAVING count(*) > 1) dup");
         return orphans;
     }
 
