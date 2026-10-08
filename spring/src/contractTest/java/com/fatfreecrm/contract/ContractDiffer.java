@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 public final class ContractDiffer {
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -81,6 +82,13 @@ public final class ContractDiffer {
                 railsBody.json(), options, "rails");
             JsonNormalizer.NormalizationResult right = JsonNormalizer.normalizeWithDiagnostics(
                 springBody.json(), options, "spring");
+            matching.stream().filter(entry -> entry.kind().equals("yamlKeysRemoved")).forEach(entry -> {
+                int removed = JsonNormalizer.removeYamlKeys(left.json(), entry.pointer(),
+                    Pattern.compile(entry.keyPattern()));
+                if (removed > 0) {
+                    allowlist.hit(entry);
+                }
+            });
             left.missingKeys().forEach(missing ->
                 add(differences, Difference.Kind.MISSING_KEY, missing.pointer(), missing.value(), null, matching,
                     allowlist, rails, spring, contractCase, problemBodyAllowed));
@@ -237,8 +245,7 @@ public final class ContractDiffer {
                     .asInt(Integer.MIN_VALUE)
                     && springValue.asInt(-1) == entry.definition().path("status").path("spring")
                     .asInt(Integer.MIN_VALUE);
-            } else if (entry.kind().equals("pointer") && pointerMatches(entry.definition().path("pointer").asText(),
-                pointer)) {
+            } else if (entry.kind().equals("pointer") && pointerMatches(entry.pointer(), pointer)) {
                 String rule = entry.definition().path("rule").asText();
                 allowed = rule.equals("ignore") || equalsAfter(entry, railsValue, springValue);
             } else if (entry.kind().equals("errorBody") && problemBodyAllowed

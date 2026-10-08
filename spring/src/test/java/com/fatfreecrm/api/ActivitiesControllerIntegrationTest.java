@@ -175,7 +175,7 @@ class ActivitiesControllerIntegrationTest extends AbstractPostgresIntegrationTes
         JsonNode visible = feed(aliceBearer, new String[][] {{"event", "all_events"}});
         List<Integer> itemIds = new ArrayList<>();
         visible.forEach(version -> itemIds.add(version.path("item_id").asInt()));
-        assertThat(itemIds).contains(802, 804, 899).doesNotContain(801, 803, 900, 901, 902);
+        assertThat(itemIds).containsExactlyInAnyOrder(802, 804, 899);
         JsonNode adminVisible = feed(adminBearer, new String[][] {{"asset", "accounts"}, {"event", "all_events"}});
         assertThat(adminVisible).isEmpty();
     }

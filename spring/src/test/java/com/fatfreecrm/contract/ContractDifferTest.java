@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
@@ -465,6 +467,95 @@ class ContractDifferTest {
             .findFirst().orElseThrow().allowed());
     }
 
+    @Test
+    void removesMatchingRailsYamlKeysAndMultilineObjectChanges() throws Exception {
+        Allowlist allowlist = yamlKeysRemovedAllowlist();
+        String object = "---\nname: Account\npassword_salt: hidden\n  nested: hidden\n";
+        String changes = "---\nname:\n- Before\n- After\nencrypted_password:\n- old\n- new\n";
+        String springObject = "---\nname: Account\n";
+        String springChanges = "---\nname:\n- Before\n- After\n";
+
+        CaseResult result = diff(response(200, "application/json",
+                json(versions(version(object, changes)))),
+            response(200, "application/json", json(versions(version(springObject, springChanges)))),
+            allowlist, JSON.createObjectNode(), "/activities");
+
+        assertEquals(CaseResult.Outcome.CLEAN, result.outcome());
+        assertEquals(1, allowlist.hits("object-secret-yaml"));
+        assertEquals(1, allowlist.hits("object-changes-secret-yaml"));
+    }
+
+    @Test
+    void reportsDifferencesInYamlKeysThatDoNotMatchThePattern() throws Exception {
+        Allowlist allowlist = yamlKeysRemovedAllowlist();
+        String railsObject = "---\nname: Rails Account\npassword: hidden\n";
+        String springObject = "---\nname: Spring Account\n";
+
+        CaseResult result = diff(response(200, "application/json", json(versions(version(railsObject, null)))),
+            response(200, "application/json", json(versions(version(springObject, null)))),
+            allowlist, JSON.createObjectNode(), "/activities");
+
+        assertEquals(CaseResult.Outcome.DIFF, result.outcome());
+        assertEquals(Difference.Kind.VALUE, result.differences().getFirst().kind());
+        assertEquals("/0/object", result.differences().getFirst().pointer());
+    }
+
+    @Test
+    void reportsSpringChangesOutsideSecretYamlKeys() throws Exception {
+        Allowlist allowlist = yamlKeysRemovedAllowlist();
+        String railsObject = "---\nemail: rails@example.test\npassword: hidden\n";
+        String springObject = "---\nemail: spring@example.test\n";
+
+        CaseResult result = diff(response(200, "application/json", json(versions(version(railsObject, null)))),
+            response(200, "application/json", json(versions(version(springObject, null)))),
+            allowlist, JSON.createObjectNode(), "/activities");
+
+        assertEquals(CaseResult.Outcome.DIFF, result.outcome());
+        assertEquals(Difference.Kind.VALUE, result.differences().getFirst().kind());
+        assertEquals("/0/object", result.differences().getFirst().pointer());
+    }
+
+    @Test
+    void removesYamlKeysAtWildcardPointersAcrossVersionArrays() throws Exception {
+        Allowlist allowlist = new Allowlist(List.of(entry("version-secret-yaml", "yamlKeysRemoved", "/activities",
+            JSON.readTree("""
+                {"pointer":"/*/object","keyPattern":"(?i).*(password|token|salt).*"}
+                """))));
+        ArrayNode rails = JSON.createArrayNode()
+            .add(version("---\nname: First\npassword: hidden\n", null))
+            .add(version("---\nname: Second\nauthentication_token: hidden\n", null));
+        ArrayNode spring = JSON.createArrayNode()
+            .add(version("---\nname: First\n", null))
+            .add(version("---\nname: Second\n", null));
+
+        CaseResult result = diff(response(200, "application/json", json(rails)),
+            response(200, "application/json", json(spring)),
+            allowlist, JSON.createObjectNode(), "/activities");
+
+        assertEquals(CaseResult.Outcome.CLEAN, result.outcome());
+        assertEquals(1, allowlist.hits("version-secret-yaml"));
+    }
+
+    @Test
+    void leavesNonStringYamlValuesUntouched() throws Exception {
+        Allowlist allowlist = yamlKeysRemovedAllowlist();
+        JsonNode rails = JSON.readTree("""
+            [{"object":{"password":"rails"}}]
+            """);
+        JsonNode spring = JSON.readTree("""
+            [{"object":{"password":"spring"}}]
+            """);
+
+        CaseResult result = diff(response(200, "application/json", json(rails)),
+            response(200, "application/json", json(spring)),
+            allowlist, JSON.createObjectNode(), "/activities");
+
+        assertEquals(CaseResult.Outcome.DIFF, result.outcome());
+        assertEquals(0, allowlist.hits("object-secret-yaml"));
+        assertEquals(Difference.Kind.VALUE, result.differences().getFirst().kind());
+        assertEquals("/0/object/password", result.differences().getFirst().pointer());
+    }
+
     private CaseResult diff(
         CapturedResponse rails,
         CapturedResponse spring,
@@ -547,6 +638,40 @@ class ContractDifferTest {
             }
         }
         return new CapturedResponse(status, cleanMediaType, body, json);
+    }
+
+    private static String json(JsonNode value) throws Exception {
+        return JSON.writeValueAsString(value);
+    }
+
+    private static ObjectNode version(String object, String objectChanges) {
+        ObjectNode version = JSON.createObjectNode();
+        if (object != null) {
+            version.put("object", object);
+        }
+        if (objectChanges != null) {
+            version.put("object_changes", objectChanges);
+        }
+        return version;
+    }
+
+    private static ArrayNode versions(ObjectNode... versions) {
+        ArrayNode array = JSON.createArrayNode();
+        for (ObjectNode version : versions) {
+            array.add(version);
+        }
+        return array;
+    }
+
+    private static Allowlist yamlKeysRemovedAllowlist() throws Exception {
+        return new Allowlist(List.of(
+            entry("object-secret-yaml", "yamlKeysRemoved", "/activities", JSON.readTree("""
+                {"pointer":"/*/object","keyPattern":"(?i).*(password|token|salt).*"}
+                """)),
+            entry("object-changes-secret-yaml", "yamlKeysRemoved", "/activities", JSON.readTree("""
+                {"pointer":"/*/object_changes","keyPattern":"(?i).*(password|token|salt).*"}
+                """))
+        ));
     }
 
     private static AllowlistEntry entry(String id, String kind, String path, JsonNode definition) {

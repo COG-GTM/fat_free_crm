@@ -13,4 +13,11 @@ public record AllowlistEntry(
     String reference,
     JsonNode definition
 ) {
+    public String pointer() {
+        return definition.path("pointer").asText();
+    }
+
+    public String keyPattern() {
+        return definition.path("keyPattern").asText(null);
+    }
 }
