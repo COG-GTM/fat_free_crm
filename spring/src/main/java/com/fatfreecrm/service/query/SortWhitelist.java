@@ -103,7 +103,7 @@ public final class SortWhitelist {
             String[] parts = path.split("\\*");
             List<Expression<Number>> factors = new ArrayList<>();
             for (String part : parts) {
-                factors.add(root.get(part.trim()).as(Number.class));
+                factors.add(root.<Number>get(part.trim()));
             }
             Expression<Number> product = factors.get(0);
             for (int index = 1; index < factors.size(); index++) {

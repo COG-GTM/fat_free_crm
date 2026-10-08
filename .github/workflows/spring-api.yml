@@ -274,4 +274,4 @@ jobs:
         run: |
           PGPASSWORD=postgres createdb -h localhost -U postgres ffcrm_search_test
           bundle exec rails db:schema:load
-          bundle exec rspec spec/lib/tasks/search_matrix_spec.rb
+          bundle exec rspec spec/lib/tasks/search_matrix_spec.rb spec/lib/tasks/search_matrix_opportunities_spec.rb

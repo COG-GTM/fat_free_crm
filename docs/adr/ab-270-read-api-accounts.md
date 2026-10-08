@@ -134,3 +134,31 @@ C4Container
 
 - Ownership, SLO and latency targets (TBD above).
 - Whether API clients need persisted list preferences writes (Rails `redraw` writes them; Spring only reads them).
+
+## Family: opportunities
+
+AB-270 Phase B adds `/api/v1/opportunities` list, numeric show, and autocomplete reads through
+the existing `CrmReadService`, `RailsResources`, and `SearchableEntities` registrations. The
+disabled-by-default nginx opportunities blocks route only GET/HEAD list, numeric show, and
+autocomplete paths; `gateway/routing.sh enable upstream opportunities` enables the upstream
+and family blocks.
+
+Opportunity stage facets remain access-scoped and independent of list filtering, ordered as
+`all`, `other`, then configured stages. Facet `other` includes NULL and unconfigured stage
+values; the explicit `stage=other` filter matches only NULL, matching Rails' `Opportunity.state`
+behavior. Explicit stage filtering is bypassed for advanced `q[...]` searches. User preference
+defaults are `opportunities_per_page` and `opportunities_sort_by`, including Rails' weighted
+`amount*probability DESC` selector.
+
+Autocomplete related exclusions support bare opportunity IDs and existing users, accounts,
+contacts, and campaigns; Leads intentionally do not exclude opportunities. The live contract
+run observed Rails' PostgreSQL-generated `?column?` alias on list rows; the contract allow-list
+ignores only `/*/?column?` on GET `/opportunities`. Show and autocomplete responses are unaffected.
+
+Deviation: Rails 8 500s on the weighted-sort preference; Spring sorts by the weighted product.
+The Rails 500 is `ActiveRecord::UnknownAttributeReference` for
+`opportunities.amount*probability DESC`; Spring safely resolves it through the sort whitelist.
+Rails' tagged-list `SELECT DISTINCT *, amount*probability` joins taggings and overwrites the
+opportunity `id` with the tagging `id`; Spring returns the matching opportunity ID. The parity
+replay names these two Rails defects explicitly and asserts Spring's correct behavior, while
+keeping strict parity for all other cases.

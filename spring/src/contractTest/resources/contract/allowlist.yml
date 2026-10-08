@@ -17,3 +17,12 @@ allowlist:
     kind: errorBody
     reason: Spring errors use RFC 9457 problem+json while Rails errors use Rails response formats.
     reference: docs/migration/target-architecture.md §2.6
+  - id: opportunity-list-weighted-column-alias
+    match:
+      method: GET
+      path: /opportunities
+    kind: pointer
+    pointer: "/*/?column?"
+    rule: ignore
+    reason: Rails' weighted-sort projection exposes a PostgreSQL-generated SQL column alias that is not a persisted resource field.
+    reference: app/controllers/entities/opportunities_controller.rb#order_by_attributes
