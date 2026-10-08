@@ -6,7 +6,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fatfreecrm.domain.Account;
 import com.fatfreecrm.domain.User;
+import com.fatfreecrm.repository.AccountRepository;
 import com.fatfreecrm.repository.UserRepository;
 import com.fatfreecrm.security.JwtTokenService;
 import com.fatfreecrm.support.AbstractPostgresIntegrationTest;
@@ -29,14 +31,15 @@ import org.springframework.jdbc.core.JdbcTemplate;
 class TasksAutocompleteAndBucketSettingsIntegrationTest extends AbstractPostgresIntegrationTest {
 
     private static final ObjectMapper JSON = new ObjectMapper();
-    private static final int ACCOUNT_ID = 77;
-    private static final int OTHER_ACCOUNT_ID = 78;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private AccountRepository accountRepository;
 
     @Autowired
     private JwtTokenService jwtTokenService;
@@ -48,6 +51,8 @@ class TasksAutocompleteAndBucketSettingsIntegrationTest extends AbstractPostgres
     private long aliceToBob;
     private long bobToAlice;
     private long bobOwn;
+    private long account;
+    private long otherAccount;
     private long accountTask;
     private long otherAccountTask;
 
@@ -61,8 +66,10 @@ class TasksAutocompleteAndBucketSettingsIntegrationTest extends AbstractPostgres
         aliceToBob = task("Alice to Bob", alice, bob, null, null, null, null);
         bobToAlice = task("Bob to Alice", bob, alice, null, null, null, null);
         bobOwn = task("Bob own", bob, null, null, null, null, null);
-        accountTask = task("Account task", alice, null, null, null, "Account", ACCOUNT_ID);
-        otherAccountTask = task("Other account task", alice, null, null, null, "Account", OTHER_ACCOUNT_ID);
+        account = account(alice, "Acme");
+        otherAccount = account(alice, "Other Corp");
+        accountTask = task("Account task", alice, null, null, null, "Account", account);
+        otherAccountTask = task("Other account task", alice, null, null, null, "Account", otherAccount);
     }
 
     @AfterEach
@@ -80,11 +87,11 @@ class TasksAutocompleteAndBucketSettingsIntegrationTest extends AbstractPostgres
 
     @Test
     void relatedAssetExcludesTasksOfThatAssetForSingularAndPluralNames() throws Exception {
-        assertThat(ids(autocomplete(aliceBearer, "related", "account/" + ACCOUNT_ID)))
+        assertThat(ids(autocomplete(aliceBearer, "related", "account/" + account)))
             .contains(otherAccountTask, aliceOwn).doesNotContain(accountTask);
-        assertThat(ids(autocomplete(aliceBearer, "related", "accounts/" + ACCOUNT_ID)))
+        assertThat(ids(autocomplete(aliceBearer, "related", "accounts/" + account)))
             .contains(otherAccountTask, aliceOwn).doesNotContain(accountTask);
-        assertThat(ids(autocomplete(aliceBearer, "excludeRelated", "account/" + ACCOUNT_ID)))
+        assertThat(ids(autocomplete(aliceBearer, "excludeRelated", "account/" + account)))
             .doesNotContain(accountTask);
     }
 
@@ -92,8 +99,8 @@ class TasksAutocompleteAndBucketSettingsIntegrationTest extends AbstractPostgres
     void relatedWithoutMatchingAssetExcludesNothing() throws Exception {
         List<Long> all = List.of(accountTask, aliceOwn, bobToAlice, otherAccountTask);
 
-        assertThat(ids(autocomplete(aliceBearer, "related", "campaigns/" + ACCOUNT_ID))).containsExactlyElementsOf(all);
-        assertThat(ids(autocomplete(aliceBearer, "related", "unknown/" + ACCOUNT_ID))).containsExactlyElementsOf(all);
+        assertThat(ids(autocomplete(aliceBearer, "related", "campaigns/" + account))).containsExactlyElementsOf(all);
+        assertThat(ids(autocomplete(aliceBearer, "related", "unknown/" + account))).containsExactlyElementsOf(all);
         assertThat(ids(autocomplete(aliceBearer, "related", "account/not-a-number")))
             .containsExactlyElementsOf(all);
         assertThat(ids(autocomplete(aliceBearer, "related", "account/99999999999"))).containsExactlyElementsOf(all);
@@ -196,14 +203,27 @@ class TasksAutocompleteAndBucketSettingsIntegrationTest extends AbstractPostgres
         return userRepository.saveAndFlush(user);
     }
 
+    private long account(User owner, String name) {
+        Account account = new Account();
+        account.setName(name);
+        account.setEmail(name.toLowerCase().replace(' ', '.') + "@example.test");
+        account.setAccess("Public");
+        account.setUser(owner);
+        Instant at = Instant.now();
+        account.setCreatedAt(at);
+        account.setUpdatedAt(at);
+        return accountRepository.saveAndFlush(account).getId();
+    }
+
     private long task(String name, User owner, User assignee, Instant completedAt, User completedBy,
-                      String assetType, Integer assetId) {
+                      String assetType, Long assetId) {
         return jdbcTemplate.queryForObject("INSERT INTO tasks (name, user_id, assigned_to, bucket, due_at, "
                 + "completed_at, completed_by, category, asset_type, asset_id, created_at, updated_at) "
                 + "VALUES (?, ?, ?, 'due_asap', NULL, ?, ?, 'call', ?, ?, now(), now()) RETURNING id", Long.class,
             name, owner.getId(), assignee == null ? null : assignee.getId(),
             completedAt == null ? null : Timestamp.from(completedAt),
-            completedBy == null ? null : completedBy.getId(), assetType, assetId);
+            completedBy == null ? null : completedBy.getId(), assetType,
+            assetId == null ? null : assetId.intValue());
     }
 
     private void setting(String name, String yaml) {
@@ -216,6 +236,7 @@ class TasksAutocompleteAndBucketSettingsIntegrationTest extends AbstractPostgres
         jdbcTemplate.update("DELETE FROM versions");
         jdbcTemplate.update("DELETE FROM comments");
         jdbcTemplate.update("DELETE FROM tasks");
+        jdbcTemplate.update("DELETE FROM accounts");
         jdbcTemplate.update("DELETE FROM users");
     }
 }

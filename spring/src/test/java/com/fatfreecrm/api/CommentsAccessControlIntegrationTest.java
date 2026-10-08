@@ -58,6 +58,8 @@ class CommentsAccessControlIntegrationTest extends AbstractPostgresIntegrationTe
     private long publicComment;
     private long aliceUserComment;
     private long bobUserComment;
+    private long sharedWithAliceComment;
+    private long sharedWithGroupComment;
 
     @BeforeEach
     void seed() {
@@ -84,6 +86,8 @@ class CommentsAccessControlIntegrationTest extends AbstractPostgresIntegrationTe
         publicComment = comment(alice, "Account", bobPublic.getId(), "public note");
         aliceUserComment = comment(alice, "User", alice.getId(), "about alice");
         bobUserComment = comment(bob, "User", bob.getId(), "about bob");
+        sharedWithAliceComment = comment(bob, "Account", bobSharedWithAlice.getId(), "shared with alice");
+        sharedWithGroupComment = comment(bob, "Account", bobSharedWithGroup.getId(), "shared with group");
     }
 
     @AfterEach
@@ -106,8 +110,12 @@ class CommentsAccessControlIntegrationTest extends AbstractPostgresIntegrationTe
 
     @Test
     void sharedCommentableRequiresAUserOrGroupPermission() throws Exception {
-        comments(aliceBearer, "account_id", id(bobSharedWithAlice)).andExpect(status().isOk());
-        comments(aliceBearer, "account_id", id(bobSharedWithGroup)).andExpect(status().isOk());
+        assertThat(ids(comments(aliceBearer, "account_id", id(bobSharedWithAlice))))
+            .containsExactly(sharedWithAliceComment);
+        assertThat(ids(comments(aliceBearer, "account_id", id(bobSharedWithGroup))))
+            .containsExactly(sharedWithGroupComment);
+        assertThat(ids(comments(adminBearer, "account_id", id(bobSharedWithGroup))))
+            .containsExactly(sharedWithGroupComment);
 
         User carol = user("carol", false);
         comments(bearer(carol), "account_id", id(bobSharedWithAlice)).andExpect(status().isNotFound());
@@ -139,13 +147,15 @@ class CommentsAccessControlIntegrationTest extends AbstractPostgresIntegrationTe
     @Test
     void withoutACommentableRegularUsersSeeOnlyTheirOwnComments() throws Exception {
         assertThat(ids(comments(aliceBearer))).containsExactly(publicComment, aliceUserComment);
-        assertThat(ids(comments(bobBearer))).containsExactly(privateComment, bobUserComment);
+        assertThat(ids(comments(bobBearer)))
+            .containsExactly(privateComment, bobUserComment, sharedWithAliceComment, sharedWithGroupComment);
     }
 
     @Test
     void withoutACommentableAdminsSeeEveryComment() throws Exception {
         assertThat(ids(comments(adminBearer)))
-            .containsExactly(privateComment, publicComment, aliceUserComment, bobUserComment);
+            .containsExactly(privateComment, publicComment, aliceUserComment, bobUserComment,
+                sharedWithAliceComment, sharedWithGroupComment);
     }
 
     @Test
