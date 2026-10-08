@@ -44,8 +44,7 @@ namespace :ffcrm do
 
           Rails.application.routes.default_url_options[:host] = "crm.example.test"
           ActionMailer::Base.default_url_options.merge!(host: "crm.example.test", protocol: "https")
-          Setting.smtp = { from: "crm@example.test" }
-          Setting.email_comment_replies = { address: "reply@example.test" }
+          Setting.where(name: %w[smtp email_comment_replies]).delete_all
           Setting.email_dropbox = {
             address: "dropbox@example.test",
             address_aliases: ["alias@example.test"]
@@ -98,16 +97,51 @@ namespace :ffcrm do
           comment.save!(validate: false)
           dropbox_email = Struct.new(:subject, :body_plain).new("Golden message", "A deterministic body")
 
+          mail_settings_input = lambda do
+            %w[smtp email_comment_replies].filter_map do |name|
+              setting = Setting.find_by_name(name)
+              [name, setting.value] if setting
+            end.to_h
+          end
           assignment_input = lambda do |entity, route|
             {
               "to" => recipient.email,
               "entity_name" => entity.name,
               "entity_type" => entity.class.name,
               "entity_url" => "https://crm.example.test/#{route}/#{entity.id}",
-              "assigner_name" => assigner.name
+              "assigner_name" => assigner.name,
+              "settings" => mail_settings_input.call
+            }
+          end
+          comment_input_for = lambda do |to_user, comment|
+            entity = comment.commentable
+            {
+              "kind" => "comment",
+              "to" => to_user.email,
+              "from_user_name" => comment.user.full_name,
+              "entity_name" => entity.respond_to?(:full_name) ? entity.full_name : entity.name,
+              "entity_type" => entity.class.name,
+              "entity_id" => entity.id,
+              "tags" => entity.tags.join(", "),
+              "comment" => comment.comment,
+              "settings" => mail_settings_input.call
             }
           end
           mailers = {}
+          no_settings_assignment = assignment_input.call(account, "accounts")
+          mailers["assigned_account_no_mail_settings"] = {
+            "input" => { "kind" => "assignment" }.merge(no_settings_assignment),
+            "output" => mail_payload.call(UserMailer.assigned_entity_notification(account, assigner))
+          }
+          no_settings_comment_input = comment_input_for.call(recipient, comment)
+          mailers["comment_notification_no_mail_settings"] = {
+            "input" => no_settings_comment_input,
+            "output" => mail_payload.call(SubscriptionMailer.comment_notification(recipient, comment))
+          }
+
+          Setting.smtp = { from: "crm@example.test" }
+          Setting.email_comment_replies = { address: "reply@example.test" }
+          Setting.clear_cache!
           {
             "account" => [account, "accounts"],
             "contact" => [contact, "contacts"],
@@ -120,17 +154,19 @@ namespace :ffcrm do
               "output" => mail_payload.call(UserMailer.assigned_entity_notification(entity, assigner))
             }
           end
-
-          comment_input = {
-            "kind" => "comment",
-            "to" => recipient.email,
-            "from_user_name" => assigner.full_name,
-            "entity_name" => account.name,
-            "entity_type" => account.class.name,
-            "entity_id" => account.id,
-            "tags" => account.tags.join(", "),
-            "comment" => comment.comment
+          special_account = Account.new(
+            id: 970_009, user: assigner, access: "Public", name: %(R&D <"Special"> 'Account'),
+            created_at: timestamp, updated_at: timestamp
+          )
+          special_account.assignee = recipient
+          special_account.save!(validate: false)
+          special_assignment_input = assignment_input.call(special_account, "accounts")
+          mailers["assigned_account_special_entity_name"] = {
+            "input" => { "kind" => "assignment" }.merge(special_assignment_input),
+            "output" => mail_payload.call(UserMailer.assigned_entity_notification(special_account, assigner))
           }
+
+          comment_input = comment_input_for.call(recipient, comment)
           mailers["comment_notification"] = {
             "input" => comment_input,
             "output" => mail_payload.call(SubscriptionMailer.comment_notification(recipient, comment))
@@ -141,23 +177,40 @@ namespace :ffcrm do
           )
           untagged_comment.save!(validate: false)
           mailers["comment_notification_untagged"] = {
-            "input" => {
-              "kind" => "comment",
-              "to" => assigner.email,
-              "from_user_name" => recipient.full_name,
-              "entity_name" => contact.full_name,
-              "entity_type" => contact.class.name,
-              "entity_id" => contact.id,
-              "tags" => "",
-              "comment" => untagged_comment.comment
-            },
+            "input" => comment_input_for.call(assigner, untagged_comment),
             "output" => mail_payload.call(SubscriptionMailer.comment_notification(assigner, untagged_comment))
+          }
+          lead_comment = Comment.new(
+            id: 970_010, user: assigner, commentable: lead, comment: "Lead full name",
+            created_at: timestamp, updated_at: timestamp
+          )
+          lead_comment.save!(validate: false)
+          mailers["comment_notification_lead_full_name"] = {
+            "input" => comment_input_for.call(recipient, lead_comment),
+            "output" => mail_payload.call(SubscriptionMailer.comment_notification(recipient, lead_comment))
+          }
+          sanitized_comment = Comment.new(
+            id: 970_011, user: assigner, commentable: account,
+            comment: "<script>alert(1)</script>\nA newline &amp",
+            created_at: timestamp, updated_at: timestamp
+          )
+          sanitized_comment.save!(validate: false)
+          mailers["comment_notification_sanitized_script"] = {
+            "input" => comment_input_for.call(recipient, sanitized_comment),
+            "output" => mail_payload.call(SubscriptionMailer.comment_notification(recipient, sanitized_comment))
           }
           Setting.email_comment_replies = { address: "" }
           Setting.smtp = { from: "fallback@example.test" }
           Setting.clear_cache!
-          mailers["comment_notification_fallback_from"] = {
-            "input" => comment_input.merge("from_address" => "fallback@example.test"),
+          mailers["comment_notification_smtp_fallback"] = {
+            "input" => comment_input_for.call(recipient, comment),
+            "output" => mail_payload.call(SubscriptionMailer.comment_notification(recipient, comment))
+          }
+          Setting.email_comment_replies = { address: "Support Team <named-reply@example.test>" }
+          Setting.smtp = { from: "crm@example.test" }
+          Setting.clear_cache!
+          mailers["comment_notification_named_reply_address"] = {
+            "input" => comment_input_for.call(recipient, comment),
             "output" => mail_payload.call(SubscriptionMailer.comment_notification(recipient, comment))
           }
           Setting.email_comment_replies = { address: "reply@example.test" }
@@ -245,8 +298,17 @@ namespace :ffcrm do
           write_golden.call(destination.join("email_reply_parser_golden.json"), parser_cases)
 
           mail_text_path = Rails.root.join("spring/src/main/resources/mail/mail_text_en_US.properties")
-          mail_text_keys = File.readlines(mail_text_path, encoding: "UTF-8").filter_map do |line|
-            line.split("=", 2).first if line.match?(/\A[^#!\s][^=]*=/)
+          mail_text_keys = []
+          rails_literal = false
+          File.foreach(mail_text_path, encoding: "UTF-8") do |line|
+            if line.start_with?("# Rails literal ")
+              rails_literal = true
+            elsif line.match?(/\A[^#!\s][^=]*=/)
+              mail_text_keys << line.split("=", 2).first unless rails_literal
+              rails_literal = false
+            elsif !line.start_with?("#") && !line.strip.empty?
+              rails_literal = false
+            end
           end
           mail_text = mail_text_keys.index_with do |key|
             I18n.t(key, locale: :"en-US")

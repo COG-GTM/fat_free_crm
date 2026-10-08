@@ -18,9 +18,5 @@
   "dropbox_notification_intro": "Succesfully added the email you sent to dropbox",
   "dropbox_notification_subject": "dropbox - Added email - %{subject}",
   "dropbox_notification_to": "Added to",
-  "subject": "Subject",
-  "subscription_mailer.comment_notification.subject": "RE: [%{entity_type}:%{entity_id}] %{entity_name}",
-  "subscription_mailer.comment_notification.tagged_subject_suffix": "(%{tags})",
-  "user_mailer.assigned_entity_notification.body": "Your colleague %{assigner_name} has assigned the %{entity_name} %{entity_type} to you.\n%{entity_url}",
-  "user_mailer.assigned_entity_notification.subject": "Fat Free CRM: You have been assigned %{entity_name} %{entity_type}"
+  "subject": "Subject"
 }

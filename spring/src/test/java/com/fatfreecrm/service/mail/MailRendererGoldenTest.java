@@ -10,6 +10,8 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fatfreecrm.domain.Setting;
+import com.fatfreecrm.repository.SettingRepository;
 import jakarta.mail.Message;
 import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
@@ -18,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
 import org.thymeleaf.TemplateEngine;
@@ -39,13 +42,7 @@ class MailRendererGoldenTest {
                 testCase.path("input"), new TypeReference<>() { });
             Map<String, Object> expected = mapper.convertValue(
                 testCase.path("output"), new TypeReference<>() { });
-            MailSettingsService settings = mock(MailSettingsService.class);
-            when(settings.locale()).thenReturn("en-US");
-            when(settings.smtpFrom()).thenReturn("crm@example.test");
-            when(settings.host()).thenReturn("https://crm.example.test");
-            if ("comment".equals(input.get("kind"))) {
-                when(settings.commentReplyFrom(anyString())).thenReturn(expected.get("raw_from").toString());
-            }
+            MailSettingsService settings = settings(input.get("settings"));
             MailRendererService renderer = new MailRendererService(
                 templateEngine(".html", "HTML"),
                 templateEngine(".txt", "TEXT"),
@@ -93,6 +90,20 @@ class MailRendererGoldenTest {
             case "devise_password_change" -> renderer.devisePasswordChange(value(input, "to"));
             default -> throw new IllegalArgumentException("Unknown mail golden kind " + input.get("kind"));
         };
+    }
+
+    private static MailSettingsService settings(Object configuredSettings) {
+        SettingRepository repository = mock(SettingRepository.class);
+        when(repository.findByName(anyString())).thenReturn(Optional.empty());
+        if (configuredSettings instanceof Map<?, ?> settings) {
+            settings.forEach((name, value) -> {
+                Setting setting = mock(Setting.class);
+                when(setting.getParsedValue()).thenReturn(value);
+                when(repository.findByName(String.valueOf(name))).thenReturn(Optional.of(setting));
+            });
+        }
+        return new MailSettingsService(repository, "https://crm.example.test", "en-US", "Public",
+            "", "", "");
     }
 
     private static String value(Map<String, Object> input, String key) {

@@ -1,8 +1,0 @@
-Succesfully added the email you sent to dropbox:
-
-Added to:
-[(${mediatorLinks})]
-
-Subject: [(${subject})]
-Body:
-[(${body})]

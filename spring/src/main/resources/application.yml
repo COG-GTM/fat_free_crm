@@ -95,9 +95,9 @@ ffcrm:
       locale: en-US
       default-access: Public
       smtp:
-        from: Fat Free CRM <noreply@fatfreecrm.com>
+        from: ""
       email-comment-replies:
-        address: noreply@fatfreecrm.com
+        address: ""
       email-dropbox:
         address: ""
 

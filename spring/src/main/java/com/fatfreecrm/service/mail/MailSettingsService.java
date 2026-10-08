@@ -24,9 +24,8 @@ public class MailSettingsService {
         @Value("${ffcrm.mail.settings.host:}") String host,
         @Value("${ffcrm.mail.settings.locale:en-US}") String locale,
         @Value("${ffcrm.mail.settings.default-access:Public}") String defaultAccess,
-        @Value("${ffcrm.mail.settings.smtp.from:Fat Free CRM <noreply@fatfreecrm.com>}") String smtpFrom,
-        @Value("${ffcrm.mail.settings.email-comment-replies.address:noreply@fatfreecrm.com}")
-        String commentReplyAddress,
+        @Value("${ffcrm.mail.settings.smtp.from:}") String smtpFrom,
+        @Value("${ffcrm.mail.settings.email-comment-replies.address:}") String commentReplyAddress,
         @Value("${ffcrm.mail.settings.email-dropbox.address:}") String dropboxAddress
     ) {
         this.settingRepository = settingRepository;
@@ -49,11 +48,12 @@ public class MailSettingsService {
         if (setting.isEmpty()) {
             return defaults;
         }
-        Map<String, Object> result = new LinkedHashMap<>(defaults);
         Object parsed = setting.get().getParsedValue();
-        if (parsed instanceof Map<?, ?> map) {
-            map.forEach((key, value) -> result.put(normalizeKey(key), value));
+        if (!(parsed instanceof Map<?, ?> map)) {
+            return Map.of();
         }
+        Map<String, Object> result = new LinkedHashMap<>();
+        map.forEach((key, value) -> result.put(normalizeKey(key), value));
         return result;
     }
 
@@ -62,13 +62,16 @@ public class MailSettingsService {
     }
 
     public String smtpFrom() {
-        return stringValue(value("smtp", "from"), smtpFrom);
+        return stringValue(value("smtp", "from"), "");
     }
 
     public String commentReplyFrom(String userName) {
         String configured = stringValue(value("email_comment_replies", "address"), "");
         if (configured.isBlank()) {
             configured = smtpFrom();
+        }
+        if (configured.isBlank()) {
+            configured = "noreply@fatfreecrm.com";
         }
         if (userName != null && !userName.isBlank() && !configured.matches(".*<.+>\\s*$")) {
             return userName + " <" + configured + ">";

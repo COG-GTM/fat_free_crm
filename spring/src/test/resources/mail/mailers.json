@@ -6,6 +6,14 @@
       "entity_type": "Account",
       "entity_url": "https://crm.example.test/accounts/970003",
       "kind": "assignment",
+      "settings": {
+        "email_comment_replies": {
+          "address": "reply@example.test"
+        },
+        "smtp": {
+          "from": "crm@example.test"
+        }
+      },
       "to": "taylor@example.test"
     },
     "output": {
@@ -23,6 +31,63 @@
       ]
     }
   },
+  "assigned_account_no_mail_settings": {
+    "input": {
+      "assigner_name": "Casey",
+      "entity_name": "Example Account",
+      "entity_type": "Account",
+      "entity_url": "https://crm.example.test/accounts/970003",
+      "kind": "assignment",
+      "settings": {},
+      "to": "taylor@example.test"
+    },
+    "output": {
+      "body": "Your colleague Casey has assigned the Example Account Account to you.\nhttps://crm.example.test/accounts/970003\n\n",
+      "charset": "UTF-8",
+      "content_type": "text/html",
+      "from": [
+        "noreply@fatfreecrm.com"
+      ],
+      "raw_from": "Fat Free CRM <noreply@fatfreecrm.com>",
+      "raw_to": "taylor@example.test",
+      "subject": "Fat Free CRM: You have been assigned Example Account Account",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
+  },
+  "assigned_account_special_entity_name": {
+    "input": {
+      "assigner_name": "Casey",
+      "entity_name": "R&D <\"Special\"> 'Account'",
+      "entity_type": "Account",
+      "entity_url": "https://crm.example.test/accounts/970009",
+      "kind": "assignment",
+      "settings": {
+        "email_comment_replies": {
+          "address": "reply@example.test"
+        },
+        "smtp": {
+          "from": "crm@example.test"
+        }
+      },
+      "to": "taylor@example.test"
+    },
+    "output": {
+      "body": "Your colleague Casey has assigned the R&D <\"Special\"> 'Account' Account to you.\nhttps://crm.example.test/accounts/970009\n\n",
+      "charset": "UTF-8",
+      "content_type": "text/html",
+      "from": [
+        "crm@example.test"
+      ],
+      "raw_from": "crm@example.test",
+      "raw_to": "taylor@example.test",
+      "subject": "Fat Free CRM: You have been assigned R&D <\"Special\"> 'Account' Account",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
+  },
   "assigned_contact": {
     "input": {
       "assigner_name": "Casey",
@@ -30,6 +95,14 @@
       "entity_type": "Contact",
       "entity_url": "https://crm.example.test/contacts/970005",
       "kind": "assignment",
+      "settings": {
+        "email_comment_replies": {
+          "address": "reply@example.test"
+        },
+        "smtp": {
+          "from": "crm@example.test"
+        }
+      },
       "to": "taylor@example.test"
     },
     "output": {
@@ -54,6 +127,14 @@
       "entity_type": "Lead",
       "entity_url": "https://crm.example.test/leads/970006",
       "kind": "assignment",
+      "settings": {
+        "email_comment_replies": {
+          "address": "reply@example.test"
+        },
+        "smtp": {
+          "from": "crm@example.test"
+        }
+      },
       "to": "taylor@example.test"
     },
     "output": {
@@ -78,6 +159,14 @@
       "entity_type": "Opportunity",
       "entity_url": "https://crm.example.test/opportunities/970007",
       "kind": "assignment",
+      "settings": {
+        "email_comment_replies": {
+          "address": "reply@example.test"
+        },
+        "smtp": {
+          "from": "crm@example.test"
+        }
+      },
       "to": "taylor@example.test"
     },
     "output": {
@@ -103,6 +192,14 @@
       "entity_type": "Account",
       "from_user_name": "Casey Sender",
       "kind": "comment",
+      "settings": {
+        "email_comment_replies": {
+          "address": "reply@example.test"
+        },
+        "smtp": {
+          "from": "crm@example.test"
+        }
+      },
       "tags": "customer, priority",
       "to": "taylor@example.test"
     },
@@ -121,15 +218,151 @@
       ]
     }
   },
-  "comment_notification_fallback_from": {
+  "comment_notification_lead_full_name": {
+    "input": {
+      "comment": "Lead full name",
+      "entity_id": 970006,
+      "entity_name": "Lee Lead",
+      "entity_type": "Lead",
+      "from_user_name": "Casey Sender",
+      "kind": "comment",
+      "settings": {
+        "email_comment_replies": {
+          "address": "reply@example.test"
+        },
+        "smtp": {
+          "from": "crm@example.test"
+        }
+      },
+      "tags": "",
+      "to": "taylor@example.test"
+    },
+    "output": {
+      "body": "Casey Sender commented on Lead: Lee Lead\n\nLead full name\n\n\n--\nReply to this email directly to add a new comment, or view the lead online: https://crm.example.test/leads/970006\n",
+      "charset": "UTF-8",
+      "content_type": "text/plain",
+      "from": [
+        "reply@example.test"
+      ],
+      "raw_from": "Casey Sender <reply@example.test>",
+      "raw_to": "taylor@example.test",
+      "subject": "RE: [lead:970006] Lee Lead",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
+  },
+  "comment_notification_named_reply_address": {
     "input": {
       "comment": "Golden <b>comment</b> & tea",
       "entity_id": 970003,
       "entity_name": "Example Account",
       "entity_type": "Account",
-      "from_address": "fallback@example.test",
       "from_user_name": "Casey Sender",
       "kind": "comment",
+      "settings": {
+        "email_comment_replies": {
+          "address": "Support Team <named-reply@example.test>"
+        },
+        "smtp": {
+          "from": "crm@example.test"
+        }
+      },
+      "tags": "customer, priority",
+      "to": "taylor@example.test"
+    },
+    "output": {
+      "body": "Casey Sender commented on Account: Example Account\n\nGolden <b>comment</b> &amp; tea\n\n\n--\nReply to this email directly to add a new comment, or view the account online: https://crm.example.test/accounts/970003\n",
+      "charset": "UTF-8",
+      "content_type": "text/plain",
+      "from": [
+        "named-reply@example.test"
+      ],
+      "raw_from": "Support Team <named-reply@example.test>",
+      "raw_to": "taylor@example.test",
+      "subject": "RE: [account:970003] Example Account (customer, priority)",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
+  },
+  "comment_notification_no_mail_settings": {
+    "input": {
+      "comment": "Golden <b>comment</b> & tea",
+      "entity_id": 970003,
+      "entity_name": "Example Account",
+      "entity_type": "Account",
+      "from_user_name": "Casey Sender",
+      "kind": "comment",
+      "settings": {},
+      "tags": "customer, priority",
+      "to": "taylor@example.test"
+    },
+    "output": {
+      "body": "Casey Sender commented on Account: Example Account\n\nGolden <b>comment</b> &amp; tea\n\n\n--\nReply to this email directly to add a new comment, or view the account online: https://crm.example.test/accounts/970003\n",
+      "charset": "UTF-8",
+      "content_type": "text/plain",
+      "from": [
+        "noreply@fatfreecrm.com"
+      ],
+      "raw_from": "Casey Sender <noreply@fatfreecrm.com>",
+      "raw_to": "taylor@example.test",
+      "subject": "RE: [account:970003] Example Account (customer, priority)",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
+  },
+  "comment_notification_sanitized_script": {
+    "input": {
+      "comment": "<script>alert(1)</script>\nA newline &amp",
+      "entity_id": 970003,
+      "entity_name": "Example Account",
+      "entity_type": "Account",
+      "from_user_name": "Casey Sender",
+      "kind": "comment",
+      "settings": {
+        "email_comment_replies": {
+          "address": "reply@example.test"
+        },
+        "smtp": {
+          "from": "crm@example.test"
+        }
+      },
+      "tags": "customer, priority",
+      "to": "taylor@example.test"
+    },
+    "output": {
+      "body": "Casey Sender commented on Account: Example Account\n\nalert(1)\nA newline &amp;amp\n\n\n--\nReply to this email directly to add a new comment, or view the account online: https://crm.example.test/accounts/970003\n",
+      "charset": "UTF-8",
+      "content_type": "text/plain",
+      "from": [
+        "reply@example.test"
+      ],
+      "raw_from": "Casey Sender <reply@example.test>",
+      "raw_to": "taylor@example.test",
+      "subject": "RE: [account:970003] Example Account (customer, priority)",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
+  },
+  "comment_notification_smtp_fallback": {
+    "input": {
+      "comment": "Golden <b>comment</b> & tea",
+      "entity_id": 970003,
+      "entity_name": "Example Account",
+      "entity_type": "Account",
+      "from_user_name": "Casey Sender",
+      "kind": "comment",
+      "settings": {
+        "email_comment_replies": {
+          "address": ""
+        },
+        "smtp": {
+          "from": "fallback@example.test"
+        }
+      },
       "tags": "customer, priority",
       "to": "taylor@example.test"
     },
@@ -156,6 +389,14 @@
       "entity_type": "Contact",
       "from_user_name": "Taylor Receiver",
       "kind": "comment",
+      "settings": {
+        "email_comment_replies": {
+          "address": "reply@example.test"
+        },
+        "smtp": {
+          "from": "crm@example.test"
+        }
+      },
       "tags": "",
       "to": "casey@example.test"
     },

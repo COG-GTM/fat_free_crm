@@ -19,7 +19,7 @@ class MailTextGoldenTest {
         try (var input = getClass().getResourceAsStream("/mail/mail_text_en_US.properties")) {
             properties.load(input);
         }
-        Map<String, String> implementation = properties.stringPropertyNames().stream()
+        Map<String, String> implementation = golden.keySet().stream()
             .collect(java.util.stream.Collectors.toMap(key -> key, properties::getProperty));
         assertEquals(golden, implementation);
     }

@@ -74,18 +74,13 @@ side-effects. One-off RAMJobStore work is intentionally at-most-process-life.
 5. Check failed Solid Queue rows and rerun any one-off work lost across a
    Spring restart; recurring schedules are registered on startup.
 
-The Rails 0.6.3 IMAP constructor call uses positional arguments unsupported by
-the installed gem, and its shared permission check uses `Permission.exists`;
-the Spring implementation uses the supported APIs rather than reproducing
-those defects. The en-US Rails mail locale is
+The Rails IMAP constructor at
+`lib/fat_free_crm/mail_processor/base.rb:71` uses the deprecated positional
+`Net::IMAP.new(host, port, ssl)` form; installed `net-imap` 0.6.3 still accepts
+it. Its shared permission check uses `Permission.exists`; the Spring
+implementation uses the existing permission repository. The en-US Rails mail locale is
 `config/locales/fat_free_crm.en-US.yml`; Devise strings come from the Devise
 gem because no `config/locales/devise.en-US.yml` exists.
-
-## Architecture review
-
-ARB ticket: **ARB-xxxx (placeholder; assign before merge)**. Review is required
-for adding Quartz/mail infrastructure, external dependencies, and IMAP/SMTP
-integrations. This decision record is not approval to merge.
 
 ## Track: jobs-mail operations addendum
 
@@ -127,12 +122,14 @@ attachments are ignored; and SSRF private-address blocking is disabled by
 default for parity. Dropbox notification rendering remains available, but its
 Rails caller is dead and Spring does not send it. SMTP/IMAP credentials remain
 in existing Rails settings and are never emitted in logs or goldens; response
-bodies are bounded and redirects are not followed. ARB ticket: **TO BE CREATED**.
+bodies are bounded and redirects are not followed.
 
-### Net::IMAP constructor clarification
+### Architecture review (jobs-mail)
 
-The locally installed `net-imap` 0.6.3 source retains the deprecated
-`Net::IMAP.new(host, port, usessl)` positional form and converts it to keyword
-options. The focused call reached a connection attempt and failed only because
-localhost:143 had no server; it did not reproduce the `ArgumentError` stated
-in the original brief.
+ARB triage: ARB_REQUIRED
+Detector (heuristic, `detect_arb_triggers.py --base origin/devin/ab-273-peripherals`): ARB_LIGHT — T3 new outbound HTTP hosts (query.wikidata.org; social-URL prefixes; test/fixture URLs are false positives).
+Manual review against the trigger table raises it to ARB_REQUIRED:
+- New external integrations: outbound SMTP (JavaMailSender), IMAP polling (Jakarta Mail) of the Dropbox and comment-reply mailboxes, outbound HTTP to arbitrary account websites and to query.wikidata.org.
+- New runtime dependencies/frameworks: spring-boot-starter-mail (Jakarta Mail/Angus), spring-boot-starter-thymeleaf, spring-boot-starter-quartz (Quartz 2.5.2, RAMJobStore), org.jsoup:jsoup 1.21.2; test-only com.icegreen:greenmail-junit5 2.1.3.
+- Cross-system data integration: Spring claims and completes rows in Rails' Solid Queue tables (solid_queue_jobs / ready_executions / failed_executions) and takes PostgreSQL advisory locks (classid 1179009869) on the shared database.
+ARB ticket: TO BE CREATED

@@ -18,14 +18,14 @@ class MailRendererServiceTest {
         MailRendererService renderer = new MailRendererService(
             templateEngine(".html", "HTML"),
             templateEngine(".txt", "TEXT"),
-            new MailSettingsService(mock(SettingRepository.class), "", "en-US", "Public",
-                "Fat Free CRM <noreply@fatfreecrm.com>", "noreply@fatfreecrm.com", ""),
+            new MailSettingsService(mock(SettingRepository.class), "", "en-US", "Public", "", "", ""),
             new EnUsMailText());
 
         RenderedMail mail = renderer.assignment("taylor@example.test", "Example Account", "Account",
             "https://crm.example.test/accounts/9", "Casey Sender");
 
         assertEquals("Fat Free CRM: You have been assigned Example Account Account", mail.subject());
+        assertEquals("Fat Free CRM <noreply@fatfreecrm.com>", mail.from());
         assertEquals("text/html", mail.contentType());
         assertTrue(mail.body().contains(
             "Your colleague Casey Sender has assigned the Example Account Account to you."));

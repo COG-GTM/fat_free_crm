@@ -20,7 +20,9 @@ import org.thymeleaf.context.Context;
 public class MailRendererService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MailRendererService.class);
+    private static final String USER_MAILER_FROM = "Fat Free CRM <noreply@fatfreecrm.com>";
     private static final String DEVISE_FROM = "noreply@fatfreecrm.com";
+    private static final String NEWLINE_TOKEN = "__FFCRM_MAIL_NEWLINE__";
 
     private final TemplateEngine htmlEngine;
     private final TemplateEngine textEngine;
@@ -54,9 +56,10 @@ public class MailRendererService {
             "entity_name", entityName,
             "entity_type", entityType));
         context.setVariable("body", body);
+        String from = settings.smtpFrom();
         return new RenderedMail(
             subject,
-            settings.smtpFrom(),
+            from.isBlank() ? USER_MAILER_FROM : from,
             to,
             "text/html",
             htmlEngine.process("assigned_entity_notification", context) + "\n");
@@ -86,7 +89,7 @@ public class MailRendererService {
             "entityUrl", entityUrl(entityType, entityId),
             "intro", intro,
             "replyInstructions", replyInstructions,
-            "comment", Jsoup.clean(comment == null ? "" : comment, Safelist.basic()) + "\n"));
+            "comment", sanitizeComment(comment) + "\n"));
         String subject = mailText.text("subscription_mailer.comment_notification.subject", Map.of(
             "entity_type", entityType.toLowerCase(Locale.ROOT),
             "entity_id", entityId,
@@ -118,12 +121,6 @@ public class MailRendererService {
             "bodyLabel", mailText.text("body", Map.of())));
         return new RenderedMail(localizedSubject, from, to, "text/html",
             htmlEngine.process("dropbox_notification", context) + "\n");
-    }
-
-    public RenderedMail devise(String to, String from, String subject, String body) {
-        Context context = context(Map.of("body", body == null ? "" : body));
-        return new RenderedMail(subject, from, to, "text/html",
-            htmlEngine.process("devise_notification", context));
     }
 
     public RenderedMail deviseConfirmation(String to, String token) {
@@ -170,6 +167,14 @@ public class MailRendererService {
         context.setLocale(Locale.US);
         variables.forEach(context::setVariable);
         return context;
+    }
+
+    private static String sanitizeComment(String comment) {
+        String withPreservedNewlines = (comment == null ? "" : comment).replace("\n", NEWLINE_TOKEN);
+        String withoutScriptTags = withPreservedNewlines.replaceAll("(?is)</?script[^>]*>", "");
+        String escapedBareAmpersands = withoutScriptTags.replaceAll(
+            "&(?!#\\d+;|#x[\\da-fA-F]+;|[A-Za-z][A-Za-z\\d]+;)", "&amp;");
+        return Jsoup.clean(escapedBareAmpersands, Safelist.basic()).replace(NEWLINE_TOKEN, "\n");
     }
 
     public String host() {
