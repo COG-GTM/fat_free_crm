@@ -17,3 +17,16 @@ allowlist:
     kind: errorBody
     reason: Spring errors use RFC 9457 problem+json while Rails errors use Rails response formats.
     reference: docs/migration/target-architecture.md §2.6
+  - id: tasks-show-tracked-by-404-vs-403
+    match:
+      case: tasks-show-601-bob
+      method: GET
+      path: /tasks/601
+    kind: status
+    status:
+      rails: 404
+      spring: 403
+    reason: >-
+      Rails scopes show to Task.tracked_by(current_user) and answers 404 for an existing out-of-scope task; Spring
+      applies CrmPermissionEvaluator semantics (403 out of scope, AB-268 Task policy) before the tracked_by scope.
+    reference: "docs/adr/ab-270-read-api-accounts.md (Family: tasks); AB-270 settled decision 2"

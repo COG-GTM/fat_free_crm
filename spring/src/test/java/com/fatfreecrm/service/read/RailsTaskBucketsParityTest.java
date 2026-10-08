@@ -160,7 +160,14 @@ class RailsTaskBucketsParityTest extends AbstractPostgresIntegrationTest {
             }
         }
         assertThat(body).isNotNull();
-        assertThat(body.get("overdue").get(0).get("due_at").asText()).isEqualTo("2026-02-20T06:00:00.000-03:00");
+        JsonNode weeklySync = null;
+        for (JsonNode task : body.get("overdue")) {
+            if (task.get("id").asLong() == 9613) {
+                weeklySync = task;
+            }
+        }
+        assertThat(weeklySync).isNotNull();
+        assertThat(weeklySync.get("due_at").asText()).isEqualTo("2026-02-20T06:00:00.000-03:00");
     }
 
     /**

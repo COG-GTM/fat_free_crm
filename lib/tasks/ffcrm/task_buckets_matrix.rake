@@ -77,8 +77,8 @@ def task_matrix_seed(users)
     [9609, "Later undated", alice, nil, "due_later", nil, nil, nil],
     [9610, "Orphan bucket", alice, nil, "due_this_week", nil, nil, nil],
     [9611, "Boundary midnight", alice, nil, "due_today", "2026-03-12 00:00", nil, nil],
-    [9612, "Call", alice, nil, "overdue", "2026-03-01 09:00", nil, nil],
-    [9613, "Call", alice, nil, "overdue", "2026-02-20 09:00", nil, nil],
+    [9612, "Weekly sync", alice, nil, "overdue", "2026-03-01 09:00", nil, nil],
+    [9613, "Weekly sync", alice, nil, "overdue", "2026-02-20 09:00", nil, nil],
     [9614, "Sunday boundary", alice, nil, "due_next_week", "2026-03-22 23:30", nil, nil],
     [9615, "100% done_ish", alice, nil, "due_later", "2026-05-01 10:00", nil, nil],
     [9620, "Delegated today", alice, bob, "due_today", "2026-03-12 12:00", nil, nil],
@@ -138,7 +138,7 @@ def task_matrix_cases
     ["autocomplete_boundary", "alice", "/tasks/auto_complete.json", { "term" => "BOUNDARY" }, nil],
     ["autocomplete_stripped", "alice", "/tasks/auto_complete.json", { "term" => "100%" }, nil],
     ["autocomplete_underscore", "alice", "/tasks/auto_complete.json", { "term" => "done_" }, nil],
-    ["autocomplete_exclude_id", "alice", "/tasks/auto_complete.json", { "term" => "call", "related" => "9612" }, nil],
+    ["autocomplete_exclude_id", "alice", "/tasks/auto_complete.json", { "term" => "call", "related" => "9602" }, nil],
     ["autocomplete_none", "alice", "/tasks/auto_complete.json", { "term" => "zzz" }, nil]
   ]
   cases

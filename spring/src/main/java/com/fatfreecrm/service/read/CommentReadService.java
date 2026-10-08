@@ -8,7 +8,6 @@ import com.fatfreecrm.domain.Contact;
 import com.fatfreecrm.domain.Lead;
 import com.fatfreecrm.domain.Opportunity;
 import com.fatfreecrm.domain.Task;
-import com.fatfreecrm.domain.User;
 import com.fatfreecrm.repository.CommentRepository;
 import com.fatfreecrm.security.AuthenticatedUser;
 import com.fatfreecrm.security.authz.AccessPolicy;
@@ -44,8 +43,7 @@ public class CommentReadService {
         "contact", new Commentable("Contact", Contact.class),
         "lead", new Commentable("Lead", Lead.class),
         "opportunity", new Commentable("Opportunity", Opportunity.class),
-        "task", new Commentable("Task", Task.class),
-        "user", new Commentable("User", User.class)
+        "task", new Commentable("Task", Task.class)
     );
 
     private final CommentRepository commentRepository;

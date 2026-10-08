@@ -152,3 +152,25 @@ C4Container
   `other` session filter never persists in real Rails; those cases carry `post_status`
   and are replayed unfiltered. Facet key order is `all, other, <statuses>` (sidebar
   build order), unlike accounts' `<categories>, all, other`.
+
+## Family: tasks
+
+- **Surface**: `GET /api/v1/tasks` (`{buckets}`, `view`, `timeZone`), `GET /api/v1/tasks/{id}`,
+  `GET /api/v1/tasks/autocomplete`, `GET /api/v1/comments?<parent>_id=`; disabled gateway blocks `tasks` and
+  `comments`. No email or saved-list reads exist in Rails, so none are added. Details: `spring/README.md`
+  §"Tasks and comments read API".
+- **ARB triage**: ARB_REQUIRED — T4 (new synchronous API contracts) and T6 (gateway path routing, disabled by
+  default), same component, data store and auth boundary as the accounts family; no new dependency, data store,
+  vendor or infrastructure (detector's T7 hit on `allowlist.yml` is a false positive). Covered by this ADR's ARB
+  ticket (TO BE CREATED).
+- **Decisions**:
+  1. Bucket queries reproduce Rails `Task.my` / `Task.assigned_by` scopes and do not compose the broader AB-268 Task
+     policy (owner, assignee, completed_by): composing it would be a no-op for `assigned_by` and would not widen
+     `my`, and Rails does not widen buckets for admins.
+  2. Bucket boundaries use an explicit `timeZone` parameter (default `ffcrm.time-zone` = UTC) because the Rails zone
+     is session state (`/home/timezone`). Clients that want Rails behaviour send the browser zone.
+  3. Show keeps the AB-268 403 for rows outside the policy (allow-list entry `tasks-show-tracked-by-404-vs-403`) and
+     returns 404 for rows inside the policy but outside `tracked_by` (completed_by only), matching Rails.
+- **Observed Rails behaviour**: `Time.zone` is thread-local and `set_context` only assigns it when the session has
+  an offset, so a Puma thread keeps the previous request's zone for a session without one. The matrix resets
+  `Time.zone` per case; Spring is stateless and unaffected.
