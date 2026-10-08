@@ -1,0 +1,863 @@
+# AB-272 Phase B write cases: accounts/campaigns/contacts/leads/opportunities writes including
+# attach/discard/subscribe/unsubscribe, promote/reject/convert, comment_body, custom fields,
+# tags and permissions. All enforced; every case resets the contract corpus (reset: true) and
+# asserts response + DB rows (dbAssert) including PaperTrail versions. Timestamp columns are
+# volatile; version YAML timestamps are masked via yamlVolatile.
+
+- id: accounts-create
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /accounts
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {account: {name: "Contract Account"}}
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 108", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Account' AND item_id = 108", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at]}}
+  description: Account create → 201 + account JSON (CanCan defaults user/assigned/access) + create version.
+
+- id: accounts-create-comment-body
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /accounts
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {account: {name: "Commented Account"}, comment_body: "hello note"}
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 108", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: comments, where: "commentable_type = 'Account' AND commentable_id = 108",
+       exclude: [id], volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Account' AND item_id = 108", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at]}}
+    - {table: versions, where: "item_type = 'Comment'", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at]}}
+  description: comment_body persists a comment and subscribes the author (subscribed_users bump).
+
+- id: accounts-create-shared-user-ids
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /accounts
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {account: {name: "Shared Account", access: Shared, user_ids: [3]}}
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 108", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: permissions, where: "asset_type = 'Account' AND asset_id = 108", exclude: [id],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Account' AND item_id = 108", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at]}}
+  description: Shared create with user_ids → permission row inserted with the entity save.
+
+- id: accounts-create-shared-no-perms-422
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /accounts
+  auth: alice
+  body: {account: {name: "Orphan Shared", access: Shared}}
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 108", exclude: [custom_fields]}
+    - {table: versions, where: "item_type = 'Account' AND item_id = 108", exclude: [id]}
+  description: Shared access with no permission rows → 422 share_account; nothing persists.
+
+- id: accounts-create-blank-name-422
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /accounts
+  auth: alice
+  body: {account: {name: ""}}
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 108", exclude: [custom_fields]}
+  description: Blank name → 422 missing_account_name.
+
+- id: accounts-create-duplicate-name-422
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /accounts
+  auth: alice
+  body: {account: {name: "Contract Account 101"}}
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 108", exclude: [custom_fields]}
+  description: require_unique_account_names → 422 taken.
+
+- id: accounts-create-bad-category-422
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /accounts
+  auth: alice
+  body: {account: {name: "BadCat", category: bogus}}
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 108", exclude: [custom_fields]}
+  description: category inclusion → 422.
+
+- id: accounts-create-tag-list
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /accounts
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {account: {name: "Tagged Account", tag_list: "vip, contract"}}
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 108", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: taggings, where: "taggable_type = 'Account' AND taggable_id = 108", exclude: [id],
+       orderBy: id, volatile: [created_at]}
+    - {table: versions, where: "item_type = 'Account' AND item_id = 108", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at]}}
+  description: tag_list → taggings on the 'tags' context with NULL tagger; tags counter cache.
+
+- id: accounts-update
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /accounts/101
+  auth: alice
+  body: {account: {name: "Renamed", rating: 3}}
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 101", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Account' AND item_id = 101", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: Account update → 204 + update version.
+
+- id: accounts-update-access-deletes-perms-on-422
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /accounts/103
+  auth: alice
+  body: {account: {access: Public, category: bogus}}
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 103", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: permissions, where: "asset_type = 'Account' AND asset_id = 103", exclude: [id]}
+    - {table: versions, where: "item_type = 'Account' AND item_id = 103", exclude: [id]}
+  description: "access= commits the permission delete immediately; the later 422 leaves the row
+    unchanged (access stays Shared) — verified live Rails quirk."
+
+- id: accounts-update-missing-404
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /accounts/999999
+  auth: alice
+  body: {account: {name: "Nope"}}
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 999999", exclude: [custom_fields]}
+  description: Nonexistent entity → 404 on both sides.
+
+- id: accounts-update-out-of-scope
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /accounts/106
+  auth: alice
+  body: {account: {name: "Denied"}}
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 106", exclude: [custom_fields]}
+  description: Bob's private account → authz denied (Rails 401 vs Spring 403, allow-listed).
+
+- id: accounts-destroy
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /accounts/101
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 101", exclude: [custom_fields]}
+    - {table: versions, where: "item_type = 'Account' AND item_id = 101", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at]}}
+  description: Account destroy → 204, dependent destroys, destroy version.
+
+- id: accounts-attach-contact
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /accounts/101/attach
+  params: {assets: contact, asset_id: 201}
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: account_contacts, where: "account_id = 101 AND contact_id = 201",
+       exclude: [id], volatile: [created_at, updated_at]}
+    - {table: accounts, where: "id = 101", exclude: [custom_fields]}
+    - {table: versions, where: "item_type = 'AccountContact'", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at]}}
+  description: Attach contact → 204, AccountContact create version (meta related contact) + counter.
+
+- id: accounts-attach-missing-asset-404
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /accounts/101/attach
+  params: {assets: contact, asset_id: 999999}
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: account_contacts, where: "account_id = 101", exclude: [id]}
+  description: find_class().find missing → 404.
+
+- id: accounts-discard-contact
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /accounts/101/discard
+  params: {attachment: contact, attachment_id: 201}
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: account_contacts, where: "account_id = 101 AND contact_id = 201", exclude: [id]}
+    - {table: accounts, where: "id = 101", exclude: [custom_fields]}
+  description: Discard → 201 + account JSON; join row deleted with no callbacks (no version,
+    no counter decrement) — verified live.
+
+- id: accounts-subscribe-500-partial-commit
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /accounts/101/subscribe
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 101", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+  description: "subscribe persists subscribed_users then 500s (respond_with @entity nil ivar →
+    UrlGenerationError 'Nil location provided. Can't build URI.') — verified live."
+
+- id: accounts-unsubscribe
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /accounts/102/unsubscribe
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at", "/subscribed_users"]}
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 102", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+  description: unsubscribe → 201 + entity JSON, subscriber removed.
+
+- id: campaigns-create
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /campaigns
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {campaign: {name: "Contract Campaign", status: planned}}
+  reset: true
+  dbAssert:
+    - {table: campaigns, where: "id = 508", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Campaign' AND item_id = 508", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at]}}
+  description: Campaign create → 201 + create version.
+
+- id: campaigns-create-blank-name-422
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /campaigns
+  auth: alice
+  body: {campaign: {name: ""}}
+  reset: true
+  dbAssert:
+    - {table: campaigns, where: "id = 508", exclude: [custom_fields]}
+  description: Blank name → 422 missing_campaign_name.
+
+- id: campaigns-create-duplicate-name-422
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /campaigns
+  auth: alice
+  body: {campaign: {name: "Contract Campaign 502"}}
+  reset: true
+  dbAssert:
+    - {table: campaigns, where: "id = 508", exclude: [custom_fields]}
+  description: uniqueness scoped to user_id+deleted_at → 422 (campaign 502 is alice's).
+
+- id: campaigns-create-duplicate-other-user-201
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /campaigns
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {campaign: {name: "Contract Campaign 503"}}
+  reset: true
+  dbAssert:
+    - {table: campaigns, where: "id = 508", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+  description: Same name under a different user_id is allowed (uniqueness scope).
+
+- id: campaigns-update-bad-dates-422
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /campaigns/502
+  auth: alice
+  body: {campaign: {starts_on: "2026-02-01", ends_on: "2026-01-01"}}
+  reset: true
+  dbAssert:
+    - {table: campaigns, where: "id = 502", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+  description: ends_on before starts_on → 422 dates_not_in_sequence.
+
+- id: campaigns-destroy
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /campaigns/502
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: campaigns, where: "id = 502", exclude: [custom_fields]}
+    - {table: versions, where: "item_type = 'Campaign' AND item_id = 502", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at]}}
+  description: Campaign destroy → 204 + destroy version; leads/opps keep their campaign_id.
+
+- id: campaigns-attach-lead
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /campaigns/501/attach
+  params: {assets: lead, asset_id: 302}
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 302", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: campaigns, where: "id = 501", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Lead' AND item_id = 302", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: attach lead → update_attribute writes a Lead update version + leads_count++.
+
+- id: campaigns-discard-lead
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /campaigns/501/discard
+  params: {attachment: lead, attachment_id: 302}
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 302", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: campaigns, where: "id = 501", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+  description: discard lead → decrement leads_count + update_attribute(:campaign, nil) version.
+
+- id: contacts-create
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /contacts
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {contact: {first_name: "Jane", last_name: "Doe"}}
+  reset: true
+  dbAssert:
+    - {table: contacts, where: "id = 208", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Contact' AND item_id = 208", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at]}}
+  description: Contact create → 201 + create version.
+
+- id: contacts-create-missing-name-422
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /contacts
+  auth: alice
+  body: {contact: {last_name: "Solo"}}
+  reset: true
+  dbAssert:
+    - {table: contacts, where: "id = 208", exclude: [custom_fields]}
+  description: require_first_names → 422 missing_first_name.
+
+- id: contacts-create-nested-account-name
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /contacts
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {contact: {first_name: "Nested", last_name: "Acct"}, account: {name: "Nested Acct"}}
+  reset: true
+  dbAssert:
+    - {table: contacts, where: "id = 208", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: accounts, where: "name = 'Nested Acct'", exclude: [id, custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: account_contacts, where: "contact_id = 208", exclude: [id],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Contact' AND item_id = 208", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at]}}
+  description: Nested account create via create_or_select_for → account + join row.
+
+- id: contacts-create-nested-account-existing
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /contacts
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {contact: {first_name: "Linked", last_name: "Acct"},
+         account: {name: "Contract Account 101"}}
+  reset: true
+  dbAssert:
+    - {table: contacts, where: "id = 208", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: account_contacts, where: "contact_id = 208", exclude: [id],
+       volatile: [created_at, updated_at]}
+  description: find_by(name:) selects the existing account (unscoped) → join row only.
+
+- id: contacts-update-unlink-account
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /contacts/202
+  auth: alice
+  body: {contact: {first_name: "Unlinked"}}
+  reset: true
+  dbAssert:
+    - {table: contacts, where: "id = 202", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: account_contacts, where: "contact_id = 202", exclude: [id]}
+  description: No account key in update params → account unlinked (join row destroyed) —
+    verified live.
+
+- id: contacts-update-out-of-scope
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /contacts/206
+  auth: alice
+  body: {contact: {first_name: "Denied"}}
+  reset: true
+  dbAssert:
+    - {table: contacts, where: "id = 206", exclude: [custom_fields]}
+  description: Bob's private contact → authz denied.
+
+- id: contacts-destroy
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /contacts/202
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: contacts, where: "id = 202", exclude: [custom_fields]}
+    - {table: account_contacts, where: "contact_id = 202", exclude: [id]}
+    - {table: versions, where: "item_type = 'Contact' AND item_id = 202", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at]}}
+  description: Contact destroy → join rows destroyed (versions) + contact destroy version.
+
+- id: leads-create
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /leads
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {lead: {first_name: "New", last_name: "Lead", status: "new"}, campaign: 501}
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 308", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: campaigns, where: "id = 501", exclude: [custom_fields]}
+    - {table: versions, where: "item_type = 'Lead' AND item_id = 308", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at]}}
+  description: Lead create under a campaign → leads_count++ via counter callback.
+
+- id: leads-create-campaign-access
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /leads
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {lead: {first_name: "Copy", last_name: "Perms", access: Campaign}, campaign: 503}
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 308", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: permissions, where: "asset_type = 'Lead' AND asset_id = 308", exclude: [id],
+       volatile: [created_at, updated_at]}
+  description: access=Campaign copies the campaign's access + permission rows — verified live.
+
+- id: leads-create-campaign-access-no-campaign
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /leads
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {lead: {first_name: "Raw", last_name: "Campaign", access: Campaign}}
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 308", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+  description: access=Campaign without a campaign persists the raw 'Campaign' string — quirk.
+
+- id: leads-create-missing-campaign-404
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /leads
+  auth: alice
+  body: {lead: {first_name: "A", last_name: "B"}, campaign: 999999}
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 308", exclude: [custom_fields]}
+  description: Campaign.find missing → 404.
+
+- id: leads-update-campaign-change
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /leads/301
+  auth: alice
+  body: {lead: {campaign_id: 502}}
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 301", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: campaigns, where: "id = 501", exclude: [custom_fields]}
+    - {table: campaigns, where: "id = 502", exclude: [custom_fields]}
+  description: campaign_id change → decrement old + increment new (update_with_lead_counters).
+
+- id: leads-reject
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /leads/301/reject
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 301", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Lead' AND item_id = 301", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: reject → update_attribute status rejected → 204 + update version.
+
+- id: leads-convert
+  ticket: AB-272
+  status: enforced
+  method: GET
+  path: /leads/301/convert
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 301", exclude: [custom_fields]}
+  description: GET convert → 200 + lead JSON (Rails renders the lead like show).
+
+- id: leads-promote-success
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /leads/301/promote
+  auth: alice
+  body:
+    account: {name: "Promoted Account"}
+    opportunity: {name: "Promoted Opp"}
+    access: Private
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 301", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: accounts, where: "name = 'Promoted Account'", exclude: [id, custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: opportunities, where: "name = 'Promoted Opp'", exclude: [id, custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: contacts, where: "lead_id = 301", exclude: [id, custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Lead' AND item_id = 301", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: "promote → 204; account/opportunity/contact created; lead status converted.
+    params[:access] lands on the contact only (verified live)."
+
+- id: leads-promote-existing-account
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /leads/302/promote
+  auth: alice
+  body:
+    account: {id: 101}
+    opportunity: {}
+    access: Public
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 302", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: contacts, where: "lead_id = 302", exclude: [id, custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: account_contacts, where: "account_id = 101", exclude: [id],
+       volatile: [created_at, updated_at]}
+  description: promote against an existing account id; blank opportunity params → no opp created.
+
+- id: leads-promote-failure-500
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /leads/303/promote
+  auth: alice
+  body:
+    account: {name: "Bad Shared", access: Shared}
+    access: Shared
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 303", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: accounts, where: "name = 'Bad Shared'", exclude: [id, custom_fields]}
+    - {table: contacts, where: "lead_id = 303", exclude: [id, custom_fields]}
+  description: "failed promote → ActiveModel::Errors#+ NoMethodError → 500; nothing persists,
+    lead not converted — verified live."
+
+- id: leads-promote-partial-contact-fails
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /leads/305/promote
+  auth: alice
+  body:
+    account: {name: "Partial Acct"}
+    opportunity: {name: "Partial Opp"}
+    access: Shared
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 305", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: accounts, where: "name = 'Partial Acct'", exclude: [id, custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: opportunities, where: "name = 'Partial Opp'", exclude: [id, custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: account_opportunities, where: "opportunity_id = (SELECT id FROM opportunities WHERE name = 'Partial Opp')",
+       exclude: [id], volatile: [created_at, updated_at]}
+    - {table: contacts, where: "lead_id = 305", exclude: [id, custom_fields]}
+    - {table: versions, where: "item_type IN ('Account','Opportunity','AccountOpportunity') AND created_at > now() - interval '1 hour'",
+       exclude: [id], volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: "contact Shared + no perms → contact.save fails; account/opportunity already
+    committed → orphan rows + 500 (errors + errors NoMethodError). Verified live."
+
+- id: leads-promote-missing-account-404
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /leads/304/promote
+  auth: alice
+  body:
+    account: {id: 999999}
+    access: Public
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 304", exclude: [custom_fields]}
+  description: Account.find inside create_or_select_for → 404 (unscoped).
+
+- id: leads-destroy
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /leads/304
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 304", exclude: [custom_fields]}
+    - {table: contacts, where: "lead_id = 304", exclude: [id, custom_fields]}
+    - {table: versions, where: "item_type = 'Lead' AND item_id = 304", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at]}}
+  description: Lead destroy → contact lead_id nullified + destroy version + leads_count--.
+
+- id: opportunities-create
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /opportunities
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body:
+    opportunity: {name: "Contract Opp", stage: prospecting}
+    account: {id: 101}
+  reset: true
+  dbAssert:
+    - {table: opportunities, where: "id = 408", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: account_opportunities, where: "opportunity_id = 408", exclude: [id],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Opportunity' AND item_id = 408", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at]}}
+    - {table: versions, where: "item_type = 'AccountOpportunity'", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at]}}
+  description: Opp create with existing account → join row + both create versions.
+
+- id: opportunities-create-no-account-500
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /opportunities
+  auth: alice
+  body: {opportunity: {name: "NoAcct"}}
+  reset: true
+  dbAssert:
+    - {table: opportunities, where: "id = 408", exclude: [custom_fields]}
+  description: params[:account] absent → NoMethodError on [:id] → 500 — verified live.
+
+- id: opportunities-create-missing-account-404
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /opportunities
+  auth: alice
+  body:
+    opportunity: {name: "BadAcct"}
+    account: {id: 999999}
+  reset: true
+  dbAssert:
+    - {table: opportunities, where: "id = 408", exclude: [custom_fields]}
+  description: Account.find → 404.
+
+- id: opportunities-create-blank-name-422
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /opportunities
+  auth: alice
+  body:
+    opportunity: {name: ""}
+    account: {id: 101}
+  reset: true
+  dbAssert:
+    - {table: opportunities, where: "id = 408", exclude: [custom_fields]}
+  description: Blank name → 422 missing_opportunity_name.
+
+- id: opportunities-create-contact-campaign
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /opportunities
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body:
+    opportunity: {name: "Full Opp"}
+    account: {id: 101}
+    campaign: 501
+    contact: 201
+  reset: true
+  dbAssert:
+    - {table: opportunities, where: "id = 408", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: account_opportunities, where: "opportunity_id = 408", exclude: [id],
+       volatile: [created_at, updated_at]}
+    - {table: contact_opportunities, where: "opportunity_id = 408", exclude: [id],
+       volatile: [created_at, updated_at]}
+    - {table: campaigns, where: "id = 501", exclude: [custom_fields]}
+  description: campaign + contact links → counters + ContactOpportunity join (no trail).
+
+- id: opportunities-update
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /opportunities/401
+  auth: alice
+  body: {opportunity: {name: "Renamed Opp", stage: won}}
+  reset: true
+  dbAssert:
+    - {table: opportunities, where: "id = 401", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Opportunity' AND item_id = 401", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: Opp update → 204; stage won sets probability 100 (observer semantics).
+
+- id: opportunities-update-unlink-account
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /opportunities/401
+  auth: alice
+  body:
+    opportunity: {name: "Unlinked Opp"}
+    account: {id: ""}
+  reset: true
+  dbAssert:
+    - {table: opportunities, where: "id = 401", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: account_opportunities, where: "opportunity_id = 401", exclude: [id]}
+  description: account id "" → unlink (join row destroyed with version) — update path quirk.
+
+- id: opportunities-destroy
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /opportunities/401
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: opportunities, where: "id = 401", exclude: [custom_fields]}
+    - {table: account_opportunities, where: "opportunity_id = 401", exclude: [id]}
+    - {table: versions, where: "item_type = 'Opportunity' AND item_id = 401", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at]}}
+  description: Opp destroy → join rows destroyed + destroy version + opportunities_count--.
+
+- id: entities-subscribe-unsubscribe-roundtrip
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /contacts/201/unsubscribe
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at", "/subscribed_users"]}
+  reset: true
+  dbAssert:
+    - {table: contacts, where: "id = 201", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+  description: Contact unsubscribe → 201 + JSON.

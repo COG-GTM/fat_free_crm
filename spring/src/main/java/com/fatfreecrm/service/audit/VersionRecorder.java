@@ -103,6 +103,24 @@ public class VersionRecorder {
         Map<String, Object> after,
         java.util.List<String> assignedOrder
     ) {
+        return recordUpdate(user, entity, before, after, assignedOrder, java.util.List.of());
+    }
+
+    /**
+     * Like {@link #recordUpdate(AuthenticatedUser, Object, Map, Map, java.util.List)} but
+     * {@code materializedEarly} additionally leads the dumped {@code object}: keys Rails wrote
+     * without changing (e.g. the {@code deleted_at}/{@code id}/{@code category} sync writes an
+     * Account save performs) materialize ahead of the remaining column-order attributes.
+     */
+    @Transactional
+    public Version recordUpdate(
+        AuthenticatedUser user,
+        Object entity,
+        Map<String, Object> before,
+        Map<String, Object> after,
+        java.util.List<String> assignedOrder,
+        java.util.List<String> materializedEarly
+    ) {
         PaperTrailOptions options = options(entity);
         Map<String, Object[]> changes = new LinkedHashMap<>();
         after.forEach((name, value) -> {
@@ -125,6 +143,9 @@ public class VersionRecorder {
         Map<String, Object> orderedBefore = new LinkedHashMap<>();
         assignedOrder.stream()
             .filter(changes::containsKey)
+            .forEach(name -> orderedBefore.put(name, before.get(name)));
+        materializedEarly.stream()
+            .filter(name -> before.containsKey(name) && !orderedBefore.containsKey(name))
             .forEach(name -> orderedBefore.put(name, before.get(name)));
         before.forEach(orderedBefore::putIfAbsent);
         version.setObject(PaperTrailYaml.dumpObject(orderedBefore));
@@ -190,6 +211,10 @@ public class VersionRecorder {
                     ? pair(comment.getCommentableType(), comment.getCommentableId()) : null;
                 case com.fatfreecrm.domain.Email email -> attribute.equals("mediator")
                     ? pair(email.getMediatorType(), email.getMediatorId()) : null;
+                case com.fatfreecrm.domain.AccountContact link -> attribute.equals("contact")
+                    ? pair("Contact", link.getContact().getId().intValue()) : null;
+                case com.fatfreecrm.domain.Address address -> attribute.equals("addressable")
+                    ? pair(address.getAddressableType(), address.getAddressableId()) : null;
                 default -> null;
             };
             return value == null ? new Related(null, null) : value;

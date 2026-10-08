@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    echo "Usage: routing.sh enable|disable <upstream|accounts|campaigns|contacts|leads|opportunities|tasks|comments|users|me|home|admin|metadata|tasks-writes|comments-writes|emails-writes|lists-writes>... [--file <path>]" >&2
+    echo "Usage: routing.sh enable|disable <upstream|accounts|campaigns|contacts|leads|opportunities|tasks|comments|users|me|home|admin|metadata|tasks-writes|comments-writes|emails-writes|lists-writes|accounts-writes|campaigns-writes|contacts-writes|leads-writes|opportunities-writes>... [--file <path>]" >&2
     exit 2
 }
 
@@ -20,7 +20,7 @@ while [[ $# -gt 0 ]]; do
             config_file=$2
             shift 2
             ;;
-        upstream|accounts|campaigns|contacts|leads|opportunities|tasks|comments|users|me|home|admin|metadata|tasks-writes|comments-writes|emails-writes|lists-writes)
+        upstream|accounts|campaigns|contacts|leads|opportunities|tasks|comments|users|me|home|admin|metadata|tasks-writes|comments-writes|emails-writes|lists-writes|accounts-writes|campaigns-writes|contacts-writes|leads-writes|opportunities-writes)
             blocks+=("$1")
             shift
             ;;

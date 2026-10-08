@@ -60,17 +60,29 @@ class DualWriteSoakTest {
         // Rails so both apps share fixture ids. Comments land on shared commentable Account 101.
         List<Long> taskIds = new ArrayList<>();
         List<Long> toggleIds = new ArrayList<>();
+        List<Long> accountIds = new ArrayList<>();
+        List<Long> contactIds = new ArrayList<>();
+        List<Long> leadIds = new ArrayList<>();
         RailsSessionAuth railsAuth = new RailsSessionAuth(railsUrl, users);
         AuthContext alice = railsAuth.authenticate("alice");
         for (int index = 0; index < threads; index++) {
             taskIds.add(seedTask(alice, "soak-task-" + index));
             toggleIds.add(seedTask(alice, "soak-toggle-" + index));
+            accountIds.add(seedEntity(alice, "accounts", "account",
+                Map.of("name", "soak-account-" + index)));
+            contactIds.add(seedEntity(alice, "contacts", "contact",
+                Map.of("first_name", "soak", "last_name", "contact-" + index)));
+            leadIds.add(seedEntity(alice, "leads", "lead",
+                Map.of("first_name", "soak", "last_name", "lead-" + index)));
         }
 
         AtomicInteger taskWrites = new AtomicInteger();
         AtomicInteger completes = new AtomicInteger();
         AtomicInteger uncompletes = new AtomicInteger();
         AtomicInteger commentCreates = new AtomicInteger();
+        AtomicInteger entityWrites = new AtomicInteger();
+        AtomicInteger promotes = new AtomicInteger();
+        AtomicInteger rejects = new AtomicInteger();
         AtomicInteger errors = new AtomicInteger();
         AtomicInteger serverErrors = new AtomicInteger();
         AtomicInteger violations = new AtomicInteger();
@@ -82,6 +94,9 @@ class DualWriteSoakTest {
         for (int worker = 0; worker < threads; worker++) {
             long taskId = taskIds.get(worker);
             long toggleId = toggleIds.get(worker);
+            long accountId = accountIds.get(worker);
+            long contactId = contactIds.get(worker);
+            long leadId = leadIds.get(worker);
             futures.add(pool.submit(() -> runWriter(users, "alice", true, taskId,
                 deadline, "background_info", taskWrites, errors, serverErrors, violations,
                 failures)));
@@ -98,6 +113,14 @@ class DualWriteSoakTest {
             };
             futures.add(pool.submit(() -> runCommenter(users, "alice", commenterIsRails,
                 deadline, commentCreates, errors, serverErrors, violations, failures)));
+            futures.add(pool.submit(() -> runEntityWriter(users, "alice", "accounts",
+                "Account", accountId, deadline, entityWrites, errors,
+                serverErrors, violations, failures)));
+            futures.add(pool.submit(() -> runEntityWriter(users, "alice", "contacts",
+                "Contact", contactId, deadline, entityWrites, errors,
+                serverErrors, violations, failures)));
+            futures.add(pool.submit(() -> runPromoter(users, "alice", leadId,
+                deadline, promotes, rejects, errors, serverErrors, violations, failures)));
         }
         pool.shutdown();
         for (java.util.concurrent.Future<?> future : futures) {
@@ -113,6 +136,10 @@ class DualWriteSoakTest {
         long updateVersions = versionCount("Task", allTaskIds, "update", null);
         long completeVersions = versionCount("Task", toggleIds, "complete", null);
         long commentRows = countComments(startedAt);
+        long accountVersions = versionCount("Account", accountIds, "update", null);
+        long contactVersions = versionCount("Contact", contactIds, "update", null);
+        long leadPromoteVersions = versionCount("Lead", leadIds, "update", null);
+        long promoteContactVersions = versionCount("Contact", null, "create", startedAt);
         long commentVersions = versionCount("Comment", null, "create", startedAt);
         int subscribed = subscribedCount("accounts", 101);
         int expectedSubscriptions = commentCreates.get();
@@ -128,6 +155,11 @@ class DualWriteSoakTest {
             completeVersions, completes.get()));
         report.append(String.format("commentRows=%d commentCreateVersions=%d%n",
             commentRows, commentVersions));
+        report.append(String.format(
+            "entityWrites=%d accountVersions=%d contactVersions=%d promotes=%d "
+                + "rejects=%d leadVersions=%d promoteContactVersions=%d%n",
+            entityWrites.get(), accountVersions, contactVersions, promotes.get(), rejects.get(),
+            leadPromoteVersions, promoteContactVersions));
         report.append(String.format(
             "OBSERVATION account-101 subscribed_users entries for user 2: %d of %d expected "
                 + "comment-subscription appends persisted (lost=%d; Rails read-modify-write race,"
@@ -161,9 +193,27 @@ class DualWriteSoakTest {
             "comment create versions vs successful comments\n" + report);
         org.junit.jupiter.api.Assertions.assertEquals(commentCreates.get(), commentRows,
             "comment rows vs successful comments\n" + report);
+        org.junit.jupiter.api.Assertions.assertEquals(entityWrites.get(),
+            accountVersions + contactVersions,
+            "entity update versions vs successful entity writes\n" + report);
+        org.junit.jupiter.api.Assertions.assertEquals(promotes.get() + rejects.get(),
+            leadPromoteVersions,
+            "lead update versions vs successful promote+reject writes\n" + report);
+        org.junit.jupiter.api.Assertions.assertEquals(promotes.get(), promoteContactVersions,
+            "contact create versions vs successful promotes\n" + report);
         // Leave the contract database on the fixture snapshot so subsequent read cases
         // (e.g. activities) do not see soak rows.
         ContractDbReset.fromProperties().reset();
+    }
+
+    private long seedEntity(AuthContext alice, String family, String key,
+        Map<String, String> fields) throws SoakHttpException {
+        ObjectNode body = JSON.createObjectNode();
+        ObjectNode entity = body.putObject(key);
+        fields.forEach(entity::put);
+        JsonNode created = sendJson(alice.client(), alice, "POST",
+            railsUrl + "/" + family + ".json", body);
+        return created.path("id").asLong();
     }
 
     private long seedTask(AuthContext alice, String name) throws SoakHttpException {
@@ -270,6 +320,130 @@ class DualWriteSoakTest {
             }
         } catch (IOException | InterruptedException exception) {
             failures.add("toggle auth failed: " + exception.getMessage());
+            serverErrors.incrementAndGet();
+        }
+    }
+
+    /**
+     * Alternates Rails/Spring writes (pairs of two) of {@code background_info} on one CRM entity
+     * per worker — each successful write must produce exactly one PaperTrail update version.
+     */
+    private void runEntityWriter(
+        Map<String, FixtureUsers.FixtureUser> users,
+        String user,
+        String family,
+        String railsName,
+        long entityId,
+        Instant deadline,
+        AtomicInteger writes,
+        AtomicInteger errors,
+        AtomicInteger serverErrors,
+        AtomicInteger violations,
+        ConcurrentLinkedQueue<String> failures
+    ) {
+        try {
+            AuthContext railsContext = new RailsSessionAuth(railsUrl, users).authenticate(user);
+            AuthContext springContext = new SpringJwtAuth(springUrl, users).authenticate(user);
+            String key = railsName.toLowerCase(java.util.Locale.ROOT);
+            int sequence = 0;
+            while (Instant.now().isBefore(deadline)) {
+                boolean railsSide = (sequence / 2) % 2 == 0;
+                String value = (railsSide ? "rails" : "spring") + "-" + sequence++;
+                ObjectNode body = JSON.createObjectNode();
+                body.putObject(key).put("background_info", value);
+                try {
+                    if (railsSide) {
+                        sendJson(railsContext.client(), railsContext, "PUT",
+                            railsUrl + "/" + family + "/" + entityId + ".json", body);
+                    } else {
+                        sendJson(springContext.client(), springContext, "PUT",
+                            springUrl + "/api/v1/" + family + "/" + entityId, body);
+                    }
+                    writes.incrementAndGet();
+                    LastWrites.LAST.put(entityId + ":" + key, value);
+                } catch (SoakHttpException exception) {
+                    if (isConstraintViolation(exception)) {
+                        violations.incrementAndGet();
+                    }
+                    if (exception.status >= 500) {
+                        serverErrors.incrementAndGet();
+                        failures.add("entity " + exception.getMessage());
+                    } else {
+                        errors.incrementAndGet();
+                    }
+                }
+            }
+        } catch (IOException | InterruptedException exception) {
+            failures.add("entity auth failed: " + exception.getMessage());
+            serverErrors.incrementAndGet();
+        }
+    }
+
+    /**
+     * Alternates Rails/Spring promote calls on one seeded lead (each promote creates a fresh
+     * account/opportunity/contact and flips status to converted — Rails does not guard repeat
+     * promotes). Each success must produce one Lead update version and one Contact create version.
+     */
+    private void runPromoter(
+        Map<String, FixtureUsers.FixtureUser> users,
+        String user,
+        long leadId,
+        Instant deadline,
+        AtomicInteger promotes,
+        AtomicInteger rejects,
+        AtomicInteger errors,
+        AtomicInteger serverErrors,
+        AtomicInteger violations,
+        ConcurrentLinkedQueue<String> failures
+    ) {
+        try {
+            AuthContext railsContext = new RailsSessionAuth(railsUrl, users).authenticate(user);
+            AuthContext springContext = new SpringJwtAuth(springUrl, users).authenticate(user);
+            // Reject/promote pairs keep flipping status so every write is notable and produces
+            // exactly one Lead update version on either app; promotes add a Contact create.
+            int sequence = 0;
+            while (Instant.now().isBefore(deadline)) {
+                boolean railsSide = (sequence / 2) % 2 == 0;
+                boolean promote = sequence % 2 == 0;
+                ObjectNode body = JSON.createObjectNode();
+                String railsPath;
+                String springPath;
+                if (promote) {
+                    body.putObject("account").put("name",
+                        "soak-promo-acct-" + leadId + "-" + sequence);
+                    body.putObject("opportunity").put("name",
+                        "soak-promo-opp-" + leadId + "-" + sequence);
+                    body.put("access", "Private");
+                    railsPath = "/leads/" + leadId + "/promote.json";
+                    springPath = "/api/v1/leads/" + leadId + "/promote";
+                } else {
+                    railsPath = "/leads/" + leadId + "/reject.json";
+                    springPath = "/api/v1/leads/" + leadId + "/reject";
+                }
+                sequence++;
+                try {
+                    if (railsSide) {
+                        sendJson(railsContext.client(), railsContext, "PUT",
+                            railsUrl + railsPath, body);
+                    } else {
+                        sendJson(springContext.client(), springContext, "PUT",
+                            springUrl + springPath, body);
+                    }
+                    (promote ? promotes : rejects).incrementAndGet();
+                } catch (SoakHttpException exception) {
+                    if (isConstraintViolation(exception)) {
+                        violations.incrementAndGet();
+                    }
+                    if (exception.status >= 500) {
+                        serverErrors.incrementAndGet();
+                        failures.add("promote/reject " + exception.getMessage());
+                    } else {
+                        errors.incrementAndGet();
+                    }
+                }
+            }
+        } catch (IOException | InterruptedException exception) {
+            failures.add("promote auth failed: " + exception.getMessage());
             serverErrors.incrementAndGet();
         }
     }

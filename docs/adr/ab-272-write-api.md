@@ -133,3 +133,83 @@ below was verified against the running app.
 Every subsequent write family (AB-272 phases B+) follows the "Adding a write
 family" recipe in `spring/README.md` with no new foundation decisions. Mirrored
 Rails gaps remain open questions, deliberately not fixed.
+
+## Phase B: entities (accounts, campaigns, contacts, leads, opportunities)
+
+`EntityWriteService` + `EntitiesWriteController` implement the five CRM write
+families under `/api/v1`: `POST /{f}`, `PUT /{f}/{id}`, `DELETE /{f}/{id}`,
+`PUT /{f}/{id}/attach`, `POST /{f}/{id}/discard`, `POST /{f}/{id}/subscribe`,
+`POST /{f}/{id}/unsubscribe`, plus lead `GET /{id}/convert`,
+`PUT|PATCH /{id}/promote`, `PUT /{id}/reject`. Member writes use
+`hasPermission(#id,'<Model>','update'|'destroy')` (nonexistent → 404,
+out-of-scope → 403 vs Rails 401, covered by the existing
+`authz-denied-401-vs-403` allow-list entry).
+
+Rails semantics mirrored (verified live on the contract corpus):
+
+- `resource_params` is `permit!` — every model key is assignable, including
+  `user_ids`/`group_ids`/`tag_list`/`cf_*`/counters/FKs.
+- CanCan `attributes_for` fills `access: 'Public'`, `user_id`, `assigned_to`
+  from the current user only when the key is absent from the payload
+  (verified: `access: Private` + `user_id: 3` persisted when `assigned_to` fell
+  back to the requester — mirrored gap, not fixed).
+- Updates assign `access` before the rest of the params; `access=` and
+  `user_ids=`/`group_ids=` delete permission rows immediately — the deletes
+  commit (REQUIRES_NEW) even when the entity save then 422s (verified:
+  `PUT /accounts/103 {access: Public, category: bogus}` → 422, permission row
+  gone, `access` column stays `Shared`).
+- `subscribe` appends `subscribed_users` under a FOR UPDATE lock, persists via
+  `entity.save`, then 500s on `respond_with(@entity)`'s nil ivar
+  (`UrlGenerationError "Nil location provided. Can't build URI."`, verified);
+  `unsubscribe` → 201 + entity JSON; `attach` → 204; `discard` → 201 + entity
+  JSON and deletes join rows with no callbacks (no counter decrement, no
+  destroy version, verified).
+- Join writes: `AccountContact` create writes a version with
+  `meta: {related: :contact}` and bumps `contacts_count`; `AccountOpportunity`
+  writes a version (no meta) and bumps `opportunities_count`;
+  `ContactOpportunity` has no paper trail (commented out in Rails).
+- Campaign attach/discard of leads/opportunities goes through
+  `update_attribute(:campaign, ...)` → a Lead/Opportunity update version, plus
+  counter-cache `leads_count`/`opportunities_count` via `update_counters`
+  (no `updated_at` bump, no version of its own).
+- `update_with_lead_counters` compares `campaign_id` to the raw param:
+  a JSON number compares equal to the cast integer (same-campaign path); a
+  JSON string never does (decrement+increment drift path) — mirrored.
+- `save_with_permissions`: `campaign` param → `Campaign.find` (404); `access:
+  'Campaign'` + a campaign copies campaign access + permission rows (verified:
+  Shared campaign copies to a Shared lead with the same permission rows);
+  `access: 'Campaign'` with no campaign persists the raw string (verified).
+- Contact `save_with_account_and_permissions` on update: an absent
+  `account` key unlinks the account (join row destroyed, verified);
+  `account: {id}` → `Account.find` unscoped (404, verified); `account: {name}`
+  → unscoped `find_by(name:)` else `Account.new(params)` with
+  `user = model.user` (gaps mirrored).
+- Opportunity `save_with_account_and_permissions` requires `params[:account]`
+  — absent → `params[:account][:id]` NoMethodError → 500 (verified).
+- `promote` is NOT one transaction; a failed promote renders
+  `@account.errors + @opportunity.errors + @contact.errors` — `Errors#+`
+  does not exist on Rails 8 → 500 (verified). Because each `save` commits
+  independently, a partial promote leaves an orphan Account/Opportunity
+  (verified: `access: Shared` + no user_ids fails `contact.save`, account and
+  opportunity persist with their create versions). `promoteLead` therefore has
+  no wrapping transaction. Success → 204 after
+  `update_attribute(:status, 'converted')`; `params[:access]` lands on the
+  contact only (verified).
+- `tag_list` replaces 'tags'-context taggings with NULL tagger and maintains
+  `tags.taggings_count`; `comment_body` → `comments.create` via the Phase A
+  comment service (author subscribed); `cf_*` → AB-271 JSONB writes.
+
+Skipped (AB-273 jobs/mail): `enqueue_website_job`/`enqueue_wikidata_job`
+(account.rb:86-87), comment subscriber notifications, `update_recently_viewed`
+(entities_controller.rb:186-188 is show-only anyway).
+
+Callbacks ported: presence/inclusion/uniqueness/dates validations in Rails
+declaration order, `users_for_shared_access`, `nullify_blank_category`,
+`require_*`/`unroll` Setting reads (YAML fallback), counter callbacks,
+belongs_to required (`contact.user` → "must exist"), lengths-from-database,
+observer stage→probability (won→100, lost→0).
+
+Shared-file edits were append-only: PaperTrailOptions/VersionRecorder gained
+AccountContact/AccountOpportunity/Address trails; repositories gained scoped
+finders; nginx gained five append-only `<family>-writes` gateway blocks;
+routing.sh gained the matching block names.

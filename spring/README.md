@@ -651,3 +651,16 @@ commentable, which itself writes a commentable version), commentable-visibility
    `ContractHarnessTest` case count.
 7. Extend `dualWriteSoak` with the family's writes and per-(item_type,event)
    version assertions; report any unfixable cross-stack races as observations.
+
+### Phase B note (entities)
+
+`EntityWriteService` is the shared Phase-B implementation: per-family column
+maps applied in JSON key order (mirroring `permit!` assignment order),
+`access`/`user_ids`/`group_ids` handled through permission writers whose
+deletes commit immediately (REQUIRES_NEW, matching Rails' lack of a request
+transaction), `tag_list`, `cf_*`, `comment_body`, counter writes via
+`update_counters`-equivalent SQL, and `SELECT *` row dumps for version
+`object`/`object_changes` (Postgres ordinal order matches the Rails column
+order). Live-verified quirks — subscribe's partial-commit 500, opportunity
+create's no-account 500, promote's non-transactional 500 — are documented in
+`docs/adr/ab-272-write-api.md` §Phase B.

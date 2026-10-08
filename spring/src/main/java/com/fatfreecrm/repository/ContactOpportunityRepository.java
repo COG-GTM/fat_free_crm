@@ -14,4 +14,10 @@ public interface ContactOpportunityRepository extends JpaRepository<ContactOppor
     @Query("SELECT contactOpportunity.opportunity.id FROM ContactOpportunity contactOpportunity "
         + "WHERE contactOpportunity.contact.id = :contactId")
     List<Long> findOpportunityIdsByContactId(@Param("contactId") Long contactId);
+
+    @Query("SELECT link FROM ContactOpportunity link WHERE link.contact.id = :contactId")
+    List<ContactOpportunity> findByContactId(@Param("contactId") Long contactId);
+
+    @Query("SELECT link FROM ContactOpportunity link WHERE link.opportunity.id = :opportunityId")
+    List<ContactOpportunity> findByOpportunityId(@Param("opportunityId") Long opportunityId);
 }
