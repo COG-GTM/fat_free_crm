@@ -1,5 +1,7 @@
 package com.fatfreecrm.service.audit;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -83,6 +85,8 @@ public final class PaperTrailYaml {
                     out.append('\n').append("- ").append(scalar(item));
                 }
             }
+            case BigDecimal decimal -> out.append(prefix).append(bigDecimal(decimal));
+            case LocalDate date -> out.append(prefix).append(date);
             case Instant instant -> {
                 out.append(prefix);
                 writeTimeWithZone(out, instant, anchors);
@@ -100,10 +104,23 @@ public final class PaperTrailYaml {
         if (item instanceof Boolean bool) {
             return bool ? "true" : "false";
         }
+        if (item instanceof BigDecimal decimal) {
+            return bigDecimal(decimal);
+        }
+        if (item instanceof LocalDate date) {
+            return date.toString();
+        }
         if (item instanceof Number number) {
             return number.toString();
         }
         return quote(item.toString());
+    }
+
+    private static String bigDecimal(BigDecimal value) {
+        BigDecimal normalized = value.stripTrailingZeros();
+        String digits = normalized.unscaledValue().abs().toString();
+        int exponent = digits.length() - normalized.scale();
+        return (normalized.signum() < 0 ? "-0." : "0.") + digits + "e" + exponent;
     }
 
     private static void writeTimeWithZone(StringBuilder out, Instant instant, AnchorState anchors) {

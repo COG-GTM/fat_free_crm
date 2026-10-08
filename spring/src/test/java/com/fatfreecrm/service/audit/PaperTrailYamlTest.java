@@ -2,7 +2,9 @@ package com.fatfreecrm.service.audit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +60,17 @@ class PaperTrailYamlTest {
         String yaml = PaperTrailYaml.dumpChanges(changes);
         org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- ''"));
         org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- \"<b>hi</b>\""));
+    }
+
+    @Test
+    void dumpsRailsDateAndBigDecimalShapes() {
+        Map<String, Object> attributes = new LinkedHashMap<>();
+        attributes.put("starts_on", LocalDate.parse("2025-02-03"));
+        attributes.put("budget", new BigDecimal("12.50"));
+
+        assertEquals(
+            "---\nstarts_on: 2025-02-03\nbudget: !ruby/object:BigDecimal 18:0.125e2\n",
+            PaperTrailYaml.dumpObject(attributes));
     }
 
     @Test
