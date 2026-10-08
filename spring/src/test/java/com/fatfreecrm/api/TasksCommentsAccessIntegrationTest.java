@@ -149,6 +149,12 @@ class TasksCommentsAccessIntegrationTest extends AbstractPostgresIntegrationTest
                 .param("bogus_id", "1"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].comment").value("bob on public account"));
+
+        // Reversed order: the unknown key is detected first, so Rails raises on constantize (400 here).
+        mockMvc.perform(authed("/api/v1/comments", bobBearer)
+                .param("bogus_id", "1")
+                .param("account_id", String.valueOf(alicePublicAccount.getId())))
+            .andExpect(status().isBadRequest());
     }
 
     @Test
