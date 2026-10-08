@@ -91,7 +91,8 @@ public class AdminUserWriteService {
         }
         validate(user, credentials, true);
         user.setConfirmationToken(RailsTokens.friendlyToken());
-        user.setConfirmationSentAt(now);
+        // A distinct Time object in Rails: Psych does not anchor it to created_at.
+        user.setConfirmationSentAt(java.time.Instant.ofEpochSecond(now.getEpochSecond(), now.getNano()));
         user.setCreatedAt(now);
         user.setUpdatedAt(now);
         user = userRepository.saveAndFlush(user);
@@ -124,7 +125,29 @@ public class AdminUserWriteService {
             user.setConfirmationToken(RailsTokens.friendlyToken());
             user.setConfirmationSentAt(now());
         }
-        save(current, user, before, params.keys());
+        save(current, user, before, assignedOrder(params, credentials));
+    }
+
+    /**
+     * PaperTrail object order: attributes assigned in {@code user_params} permit order ({@code password=}
+     * sets salt then digest), then Devise's before_validation strip/downcase re-assigns {@code email}.
+     */
+    private static List<String> assignedOrder(RailsParams params, Credentials credentials) {
+        List<String> order = new java.util.ArrayList<>();
+        for (String key : List.of("admin", "username", "email", "first_name", "last_name", "title",
+            "company", "alt_email", "phone", "mobile", "google")) {
+            if (params.provided(key)) {
+                order.add(key);
+            }
+        }
+        if (credentials.password() != null && !credentials.password().isEmpty()) {
+            order.add("password_salt");
+            order.add("encrypted_password");
+        }
+        if (!order.contains("email")) {
+            order.add("email");
+        }
+        return order;
     }
 
     /** Rails {@code destroy}: no-op (still 204) unless {@code destroyable?(current_user)}. */
@@ -175,7 +198,7 @@ public class AdminUserWriteService {
         }
         user.setUpdatedAt(now());
         user = userRepository.saveAndFlush(user);
-        versionRecorder.recordUpdate(current, user, before, EntityAttributes.of(user), assigned);
+        versionRecorder.recordUpdate(current, user, before, EntityAttributes.of(user), assigned, true);
     }
 
     private User find(long id) {

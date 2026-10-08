@@ -133,3 +133,54 @@ below was verified against the running app.
 Every subsequent write family (AB-272 phases B+) follows the "Adding a write
 family" recipe in `spring/README.md` with no new foundation decisions. Mirrored
 Rails gaps remain open questions, deliberately not fixed.
+
+## Phase B: admin
+
+Scope: every JSON-reachable write in `app/controllers/admin/` — users (create/update/destroy/
+suspend/reactivate), groups, tags, research tools, field groups (incl. sort), custom fields
+(incl. sort and runtime DDL) and settings — behind `@AdminOnly` in `AdminWriteController`,
+following the "Adding a write family" recipe. Gateway block `admin-writes` (disabled by default).
+
+Decisions:
+
+- **Rails failures after commit are reproduced.** Group/tag/field-group/field create and the
+  two sort actions commit and then raise in Rails (missing `*_url` helpers / templates); Spring
+  commits the same rows and returns 500. Clients cannot distinguish less than they can in Rails.
+- **Runtime DDL is ported, not redesigned.** Custom-field create/retype issues the same
+  `ADD COLUMN`/`ALTER COLUMN TYPE` as Rails on the shared table inside the write transaction;
+  destroy keeps the column (Rails does). Flyway remains additive-only because runtime columns are
+  not schema migrations; Hibernate `validate` ignores unmapped columns; `prepareThreshold=0`
+  avoids pgjdbc cached-plan failures; `CustomFieldRegistry` is invalidated on commit so the
+  AB-271 JSONB design keeps reading current metadata.
+- **Settings YAML** is produced by `RubyYaml` (Psych-compatible) rather than a YAML library so
+  `settings.value` bytes match Rails exactly.
+- **User passwords** use the AB-264 legacy-hash encoder (Authlogic sha512 digest + salt), so
+  users created or re-passworded by either stack can sign in on both.
+
+Callbacks ported: `User` email strip/downcase, `suspend_if_needs_approval`, Devise reconfirmable
+(`unconfirmed_email`, `confirmation_token`, `confirmation_sent_at`), `destroyable?` guards,
+`has_paper_trail ignore: [:last_sign_in_at]`, dependent deletes (avatars, permissions,
+preferences, groups_users); `FieldGroup` name derivation and fields move to `custom_fields` on
+destroy; `Field` `acts_as_list` (unscoped) repositioning; `CustomField` `set_name`,
+`add_column`, `update_column`, `validate_change`; `CustomFieldPair` create/update pairing (implemented from the Rails source; no contract case yet);
+`Tag` `dependent: :destroy` taggings. Skipped: Devise confirmation/notification mail delivery,
+`Setting` in-process cache clear (AB-273 owns the cache — eviction point marked in
+`AdminSettingsWriteService`).
+
+Mirrored Rails gaps (deliberately not fixed):
+
+- Destroy of a blocked user (self / owns records) answers 204 with no change and no error.
+- Destroying a tag leaves `field_groups.tag_id` dangling.
+- Research tools have no validations (blank name/URL template accepted).
+- Group/tag names are unique case-sensitively only.
+- `group_ids=` on user update persists even when the user save then fails validation.
+- Admins may set `admin` on any user (including demoting or promoting themselves).
+- Field destroy keeps the physical `cf_*` column and its data.
+- Settings store SMTP/IMAP passwords in plain YAML.
+
+Not ported: `Admin::LeadsController#import` (multipart CSV, HTML redirect), plugins (read-only),
+`confirm`/`auto_complete`/`options`/`redraw`/`subform` and `new`/`edit` (HTML/JS only).
+
+Open questions: should Spring send Devise confirmation mail (needs a mailer decision); should the
+Rails commit-then-500 responses be fixed on both stacks together; should field destroy ever
+drop columns (needs a data-retention decision).

@@ -484,12 +484,12 @@ public class AdminFieldWriteService {
     }
 
     /** Ruby {@code to_i}: leading integer, else 0. */
-    private static Integer toI(JsonNode node) {
+    private static int toI(JsonNode node) {
         if (node == null || node.isNull()) {
             return 0;
         }
         java.util.regex.Matcher matcher = Pattern.compile("\\A\\s*([+-]?\\d+)").matcher(node.asText());
-        return matcher.find() ? Integer.valueOf(matcher.group(1)) : 0;
+        return matcher.find() ? Integer.parseInt(matcher.group(1)) : 0;
     }
 
     private void invalidateRegistry() {

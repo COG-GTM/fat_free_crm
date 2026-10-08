@@ -29,6 +29,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.net.URI;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -262,7 +263,8 @@ public class AdminWriteController {
     public ResponseEntity<Void> updateSettings(
         @RequestBody(required = false) AdminSettingsWriteRequest request) {
         settings.update(request == null ? null : request.settings());
-        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create("/admin/settings")).build();
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create("/admin/settings"))
+            .contentType(MediaType.parseMediaType("text/html;charset=utf-8")).build();
     }
 
     private static RailsParams userParams(AdminUserWriteRequest request) {

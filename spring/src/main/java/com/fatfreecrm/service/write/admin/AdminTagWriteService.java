@@ -54,7 +54,10 @@ public class AdminTagWriteService {
 
     @Transactional
     public void destroy(long id) {
-        tagRepository.delete(find(id));
+        Tag tag = find(id);
+        // acts_as_taggable_on: has_many :taggings, dependent: :destroy. field_groups.tag_id dangles.
+        jdbcTemplate.update("DELETE FROM taggings WHERE tag_id = ?", id);
+        tagRepository.delete(tag);
         tagRepository.flush();
     }
 

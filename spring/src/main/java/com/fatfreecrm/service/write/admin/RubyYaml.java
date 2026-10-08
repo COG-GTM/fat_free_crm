@@ -75,7 +75,7 @@ public final class RubyYaml {
     private static void entries(StringBuilder out, Map<?, ?> map, int indent) {
         String pad = " ".repeat(indent);
         for (Map.Entry<?, ?> entry : map.entrySet()) {
-            out.append(pad).append(PaperTrailYaml.quote(String.valueOf(entry.getKey()))).append(':');
+            out.append(pad).append(psychQuote(String.valueOf(entry.getKey()))).append(':');
             Object value = entry.getValue();
             if (value instanceof List<?> list) {
                 if (list.isEmpty()) {
@@ -112,6 +112,18 @@ public final class RubyYaml {
         }
     }
 
+    /**
+     * libyaml picks single quotes for strings that can't be plain (e.g. {@code '1'}, {@code 'true'})
+     * and double quotes only when an escape is needed.
+     */
+    static String psychQuote(String text) {
+        String quoted = PaperTrailYaml.quote(text);
+        if (quoted.startsWith("\"") && text.chars().noneMatch(c -> c < 0x20 || c == 0x7f)) {
+            return "'" + text.replace("'", "''") + "'";
+        }
+        return quoted;
+    }
+
     private static String scalar(Object value, int indent) {
         if (value instanceof Symbol symbol) {
             return ":" + symbol.name();
@@ -119,7 +131,7 @@ public final class RubyYaml {
         if (value instanceof Boolean || value instanceof Number) {
             return value.toString();
         }
-        String quoted = PaperTrailYaml.quote(value.toString());
+        String quoted = psychQuote(value.toString());
         return indent == 0 ? quoted : quoted.replace("\n", "\n" + " ".repeat(indent));
     }
 }

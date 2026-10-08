@@ -1,0 +1,766 @@
+# AB-272 Phase B admin write cases (app/controllers/admin/). Every case resets the corpus before
+# each side (reset: true) and asserts DB rows (dbAssert), including PaperTrail `versions` for User
+# (the only has_paper_trail admin model). Non-admins: Rails redirects to / (302), Spring 403
+# (allowlist admin-non-admin-302-vs-403). Where Rails persists and then fails on a missing URL
+# helper / template (groups, tags, field_groups, fields create; sort), both sides answer 500 and
+# the committed rows are asserted. Custom-field cases run runtime DDL: the harness drops columns
+# the Rails side added before the Spring side runs, and asserts information_schema.columns.
+
+# ---- users ------------------------------------------------------------------------------------
+
+- id: admin-users-create
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/users
+  auth: admin
+  body: {user: {username: dave, email: " Dave@X.Example ", first_name: Dave, last_name: Day,
+                password: secret12, password_confirmation: "", group_ids: ["1"]}}
+  reset: true
+  dbAssert:
+    - {table: users, where: "username = 'dave'", exclude: [id],
+       volatile: [created_at, updated_at, encrypted_password, password_salt, confirmation_token,
+                  confirmation_sent_at]}
+    - {table: groups_users, where: "user_id IN (SELECT id FROM users WHERE username = 'dave')",
+       orderBy: group_id}
+    - {table: versions, where: "item_type = 'User' AND event = 'create'", exclude: [id, item_id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [id, created_at, updated_at, encrypted_password, password_salt,
+                                       confirmation_token, confirmation_sent_at]}}
+  description: User create → 201 ["Dave"]; email stripped/downcased; HABTM groups; create version.
+
+- id: admin-users-create-invalid
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/users
+  auth: admin
+  body: {user: {username: "", email: "not-an-email", password: "abc", password_confirmation: "xyz"}}
+  reset: true
+  dbAssert:
+    - {table: users, where: "true", columns: [id, username]}
+    - {table: versions, where: "item_type = 'User'", exclude: [id], volatile: [created_at]}
+  description: User create validation failure → 422 with Rails/Devise messages, nothing persisted.
+
+- id: admin-users-create-duplicate
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/users
+  auth: admin
+  body: {user: {username: alice, email: "ALICE@contract.example", password: secret12,
+                password_confirmation: secret12}}
+  reset: true
+  dbAssert:
+    - {table: users, where: "true", columns: [id, username]}
+  description: Duplicate username/email (case-insensitive) → 422 "has already been taken".
+
+- id: admin-users-create-non-admin
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/users
+  auth: alice
+  body: {user: {username: eve, email: eve@x.example, password: secret12, password_confirmation: secret12}}
+  reset: true
+  dbAssert:
+    - {table: users, where: "username = 'eve'", columns: [id]}
+  description: Non-admin user create → Rails 302 to / vs Spring 403 (allowlisted); nothing persisted.
+
+- id: admin-users-update-profile-email
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/users/3
+  auth: admin
+  body: {user: {first_name: Bobby, email: "Bob2@X.Example", group_ids: ["2"]}}
+  reset: true
+  dbAssert:
+    - {table: users, where: "id = 3", volatile: [updated_at, confirmation_token, confirmation_sent_at]}
+    - {table: groups_users, where: "user_id = 3", orderBy: group_id}
+    - {table: versions, where: "item_type = 'User' AND item_id = 3", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [updated_at, confirmation_token, confirmation_sent_at]}}
+  description: Partial user update; email change goes to unconfirmed_email (Devise reconfirmable).
+
+- id: admin-users-update-password
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/users/3
+  auth: admin
+  body: {user: {password: newsecret1, password_confirmation: newsecret1}}
+  reset: true
+  dbAssert:
+    - {table: users, where: "id = 3", volatile: [updated_at, encrypted_password, password_salt]}
+    - {table: versions, where: "item_type = 'User' AND item_id = 3", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [updated_at, encrypted_password, password_salt]}}
+  description: Admin password change re-hashes with a fresh salt (Authlogic SHA-512 legacy hash).
+
+- id: admin-users-update-password-mismatch
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/users/3
+  auth: admin
+  body: {user: {password: newsecret1, password_confirmation: other}}
+  reset: true
+  dbAssert:
+    - {table: users, where: "id = 3", columns: [encrypted_password, updated_at]}
+    - {table: versions, where: "item_type = 'User' AND item_id = 3", columns: [event]}
+  description: Password confirmation mismatch → 422 "doesn't match Password".
+
+- id: admin-users-update-missing
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/users/999
+  auth: admin
+  body: {user: {first_name: Ghost}}
+  reset: true
+  dbAssert:
+    - {table: versions, where: "item_type = 'User'", columns: [id]}
+  description: Update of an unknown user → 404.
+
+- id: admin-users-suspend
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/users/3/suspend
+  auth: admin
+  reset: true
+  dbAssert:
+    - {table: users, where: "id = 3", volatile: [updated_at, suspended_at]}
+    - {table: versions, where: "item_type = 'User' AND item_id = 3", exclude: [id],
+       volatile: [created_at], yamlVolatile: {object_changes: [updated_at, suspended_at]}}
+  description: Suspend sets suspended_at → 204 + update version.
+
+- id: admin-users-suspend-self
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/users/1/suspend
+  auth: admin
+  reset: true
+  dbAssert:
+    - {table: users, where: "id = 1", columns: [suspended_at, updated_at]}
+    - {table: versions, where: "item_type = 'User' AND item_id = 1", columns: [id]}
+  description: Self-suspend is a silent no-op → 204.
+
+- id: admin-users-reactivate
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/users/4/reactivate
+  auth: admin
+  reset: true
+  dbAssert:
+    - {table: users, where: "id = 4", volatile: [updated_at]}
+    - {table: versions, where: "item_type = 'User' AND item_id = 4", exclude: [id],
+       volatile: [created_at], yamlVolatile: {object_changes: [updated_at, suspended_at]}}
+  description: Reactivate clears suspended_at → 204 + update version.
+
+- id: admin-users-suspend-non-admin
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/users/3/suspend
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: users, where: "id = 3", columns: [suspended_at]}
+  description: Non-admin suspend → 302 vs 403 (allowlisted); no change.
+
+- id: admin-users-destroy
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /admin/users/4
+  auth: admin
+  reset: true
+  dbAssert:
+    - {table: users, where: "id = 4", columns: [id]}
+    - {table: groups_users, where: "user_id = 4", columns: [group_id], orderBy: group_id}
+    - {table: versions, where: "item_type = 'User' AND item_id = 4", exclude: [id],
+       volatile: [created_at], yamlVolatile: {object: [created_at, updated_at, suspended_at,
+                                                       confirmed_at, encrypted_password, password_salt]}}
+  description: Destroy a user without related assets → 204, row gone, destroy version.
+
+- id: admin-users-destroy-self
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /admin/users/1
+  auth: admin
+  reset: true
+  dbAssert:
+    - {table: users, where: "id = 1", columns: [id]}
+    - {table: versions, where: "item_type = 'User' AND item_id = 1", columns: [id]}
+  description: destroyable? guard (current_user == self) → 204, nothing deleted.
+
+- id: admin-users-destroy-with-assets
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /admin/users/5
+  auth: admin
+  reset: true
+  dbAssert:
+    - {table: users, where: "id = 5", columns: [id]}
+    - {table: versions, where: "item_type = 'User' AND item_id = 5", columns: [id]}
+  description: has_related_assets? guard → 204, nothing deleted.
+
+- id: admin-users-destroy-non-admin
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /admin/users/4
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: users, where: "id = 4", columns: [id]}
+  description: Non-admin destroy → 302 vs 403 (allowlisted); nothing deleted.
+
+# ---- groups -----------------------------------------------------------------------------------
+
+- id: admin-groups-create
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/groups
+  auth: admin
+  body: {group: {name: Ops, user_ids: ["2", "3"]}}
+  reset: true
+  dbAssert:
+    - {table: groups, where: "name = 'Ops'", exclude: [id], volatile: [created_at, updated_at]}
+    - {table: groups_users, where: "group_id IN (SELECT id FROM groups WHERE name = 'Ops')",
+       columns: [user_id], orderBy: user_id}
+  description: Group create commits, then Rails 500s on the missing group_url helper.
+
+- id: admin-groups-create-blank
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/groups
+  auth: admin
+  body: {group: {name: ""}}
+  reset: true
+  dbAssert:
+    - {table: groups, where: "true", columns: [id, name]}
+  description: Blank group name → 422 "can't be blank".
+
+- id: admin-groups-create-duplicate
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/groups
+  auth: admin
+  body: {group: {name: Sales}}
+  reset: true
+  dbAssert:
+    - {table: groups, where: "true", columns: [id, name]}
+  description: Duplicate group name → 422 "has already been taken" (case-sensitive).
+
+- id: admin-groups-create-missing-root
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/groups
+  auth: admin
+  body: {other: 1}
+  reset: true
+  dbAssert:
+    - {table: groups, where: "true", columns: [id]}
+  description: params.require(:group) without a group root → 400.
+
+- id: admin-groups-update
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/groups/1
+  auth: admin
+  body: {group: {name: Sales EMEA, user_ids: ["3"]}}
+  reset: true
+  dbAssert:
+    - {table: groups, where: "id = 1", volatile: [updated_at]}
+    - {table: groups_users, where: "group_id = 1", columns: [user_id], orderBy: user_id}
+  description: Group rename + membership replacement → 204.
+
+- id: admin-groups-destroy
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /admin/groups/2
+  auth: admin
+  reset: true
+  dbAssert:
+    - {table: groups, where: "true", columns: [id]}
+    - {table: groups_users, where: "true", columns: [group_id, user_id], orderBy: "group_id, user_id"}
+  description: Group destroy → 204; HABTM join rows removed.
+
+- id: admin-groups-create-non-admin
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/groups
+  auth: bob
+  body: {group: {name: Ops}}
+  reset: true
+  dbAssert:
+    - {table: groups, where: "true", columns: [id]}
+  description: Non-admin group create → 302 vs 403 (allowlisted).
+
+# ---- tags -------------------------------------------------------------------------------------
+
+- id: admin-tags-create
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/tags
+  auth: admin
+  body: {tag: {name: CONTRACT-PUBLIC}}
+  reset: true
+  dbAssert:
+    - {table: tags, where: "true", orderBy: id}
+  description: Tag create (case-sensitive uniqueness) commits, then Rails 500s on tag_url.
+
+- id: admin-tags-create-duplicate
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/tags
+  auth: admin
+  body: {tag: {name: contract-public}}
+  reset: true
+  dbAssert:
+    - {table: tags, where: "true", orderBy: id}
+  description: Duplicate tag name → 422 "has already been taken".
+
+- id: admin-tags-create-blank
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/tags
+  auth: admin
+  body: {tag: {name: ""}}
+  reset: true
+  dbAssert:
+    - {table: tags, where: "true", orderBy: id}
+  description: Blank tag name → 422 "can't be blank".
+
+- id: admin-tags-update
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/tags/1
+  auth: admin
+  body: {tag: {name: contract-renamed}}
+  reset: true
+  dbAssert:
+    - {table: tags, where: "true", orderBy: id}
+  description: Tag rename → 204.
+
+- id: admin-tags-destroy-dangling-field-group
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /admin/tags/1
+  auth: admin
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, tag_id, klass_name, created_at, updated_at) VALUES (50, 'tagged', 'Tagged', 1, 1, 'Contact', now(), now())"
+  reset: true
+  dbAssert:
+    - {table: tags, where: "true", orderBy: id}
+    - {table: taggings, where: "true", columns: [tag_id, taggable_type, taggable_id], orderBy: "tag_id, taggable_id"}
+    - {table: field_groups, where: "id = 50", columns: [id, tag_id]}
+  description: Tag destroy → 204; taggings follow acts_as_taggable_on, field_groups.tag_id dangles (mirrored gap).
+
+# ---- research tools ---------------------------------------------------------------------------
+
+- id: admin-research-tools-create
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/research_tools
+  auth: admin
+  normalize: {ignore: ["/created_at", "/updated_at", "/id"]}
+  body: {research_tool: {name: Google, url_template: "https://google.com/search?q={{name}}", enabled: true}}
+  reset: true
+  dbAssert:
+    - {table: research_tools, where: "true", exclude: [id], volatile: [created_at, updated_at]}
+  description: Research tool create → 201 + full JSON (no validations).
+
+- id: admin-research-tools-create-blank
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/research_tools
+  auth: admin
+  normalize: {ignore: ["/created_at", "/updated_at", "/id"]}
+  body: {research_tool: {name: ""}}
+  reset: true
+  dbAssert:
+    - {table: research_tools, where: "true", exclude: [id], volatile: [created_at, updated_at]}
+  description: Blank name is accepted (ResearchTool has no validations) → 201.
+
+- id: admin-research-tools-update
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/research_tools/70
+  auth: admin
+  setup:
+    - "INSERT INTO research_tools (id, name, url_template, enabled, created_at, updated_at) VALUES (70, 'Bing', 'https://bing.com/?q={{name}}', true, '2026-01-01 00:00:00', '2026-01-01 00:00:00')"
+  body: {research_tool: {enabled: false}}
+  reset: true
+  dbAssert:
+    - {table: research_tools, where: "id = 70", volatile: [updated_at]}
+  description: Partial research tool update → 204.
+
+- id: admin-research-tools-destroy
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /admin/research_tools/70
+  auth: admin
+  setup:
+    - "INSERT INTO research_tools (id, name, url_template, enabled, created_at, updated_at) VALUES (70, 'Bing', 'https://bing.com/?q={{name}}', true, '2026-01-01 00:00:00', '2026-01-01 00:00:00')"
+  reset: true
+  dbAssert:
+    - {table: research_tools, where: "true", columns: [id]}
+  description: Research tool destroy → 204.
+
+# ---- field groups -----------------------------------------------------------------------------
+
+- id: admin-field-groups-create
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/field_groups
+  auth: admin
+  body: {field_group: {label: "Extra Info!", klass_name: Campaign, hint: "Extra"}}
+  reset: true
+  dbAssert:
+    - {table: field_groups, where: "true", exclude: [id], volatile: [created_at, updated_at]}
+  description: Field group create derives name from label, commits, then 500s on field_group_url.
+
+- id: admin-field-groups-create-blank-label
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/field_groups
+  auth: admin
+  body: {field_group: {label: "", klass_name: Campaign}}
+  reset: true
+  dbAssert:
+    - {table: field_groups, where: "true", columns: [id]}
+  description: Blank label → 422 "can't be blank".
+
+- id: admin-field-groups-update
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/field_groups/51
+  auth: admin
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, klass_name, created_at, updated_at) VALUES (51, 'extra', 'Extra', 2, 'Campaign', '2026-01-01', '2026-01-01')"
+  body: {field_group: {label: "More Extra", name: "", tag_id: 2}}
+  reset: true
+  dbAssert:
+    - {table: field_groups, where: "id = 51", volatile: [updated_at]}
+  description: Partial field group update; blank name re-derived from label.
+
+- id: admin-field-groups-destroy-moves-fields
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /admin/field_groups/51
+  auth: admin
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, klass_name, created_at, updated_at) VALUES (50, 'custom_fields', 'Custom Fields', 1, 'Campaign', '2026-01-01', '2026-01-01'), (51, 'extra', 'Extra', 2, 'Campaign', '2026-01-01', '2026-01-01')"
+    - "INSERT INTO fields (id, type, field_group_id, position, name, label, \"as\", minlength, created_at, updated_at) VALUES (60, 'CustomField', 51, 1, 'cf_contract_moved', 'Moved', 'string', 0, '2026-01-01', '2026-01-01')"
+  reset: true
+  dbAssert:
+    - {table: field_groups, where: "true", columns: [id, name]}
+    - {table: fields, where: "id = 60", columns: [id, field_group_id, position]}
+  description: Destroy moves fields to the klass's custom_fields group → 204.
+
+- id: admin-field-groups-destroy-without-default
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /admin/field_groups/51
+  auth: admin
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, klass_name, created_at, updated_at) VALUES (51, 'extra', 'Extra', 2, 'Campaign', '2026-01-01', '2026-01-01')"
+  reset: true
+  dbAssert:
+    - {table: field_groups, where: "true", columns: [id, name]}
+  description: No default custom_fields group → Rails NoMethodError 500, rolled back.
+
+- id: admin-field-groups-destroy-default
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /admin/field_groups/50
+  auth: admin
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, klass_name, created_at, updated_at) VALUES (50, 'custom_fields', 'Custom Fields', 1, 'Campaign', '2026-01-01', '2026-01-01')"
+  reset: true
+  dbAssert:
+    - {table: field_groups, where: "true", columns: [id, name]}
+  description: The default group itself is destroyable (before_destroy returns false without abort).
+
+- id: admin-field-groups-sort
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/field_groups/sort
+  auth: admin
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, klass_name, created_at, updated_at) VALUES (50, 'a', 'A', 1, 'Campaign', '2026-01-01', '2026-01-01'), (51, 'b', 'B', 2, 'Campaign', '2026-01-01', '2026-01-01')"
+  body: {asset: campaign, campaign_field_groups: ["51", "50"]}
+  reset: true
+  dbAssert:
+    - {table: field_groups, where: "true", columns: [id, position, updated_at]}
+  description: update_all positions (no timestamps) commit, then Rails 500s (missing template).
+
+# ---- fields (custom fields + runtime DDL) -------------------------------------------------------
+
+- id: admin-fields-create-select
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/fields
+  auth: admin
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, klass_name, created_at, updated_at) VALUES (50, 'custom_fields', 'Custom Fields', 1, 'Campaign', '2026-01-01', '2026-01-01')"
+  body: {field: {as: select, label: "Contract Tier", field_group_id: 50,
+                 collection_string: "Gold | Silver||Bronze", hint: h, settings: {a: "1", b: {c: "2"}}}}
+  reset: true
+  dbAssert:
+    - {table: fields, where: "true", exclude: [id], volatile: [created_at, updated_at]}
+    - {table: information_schema.columns,
+       where: "table_schema = current_schema() AND table_name = 'campaigns' AND column_name = 'cf_contract_tier'",
+       orderBy: column_name, columns: [table_name, column_name, data_type, character_maximum_length]}
+  description: Custom field create → ALTER TABLE campaigns ADD cf_contract_tier varchar; commits, then 500s.
+
+- id: admin-fields-create-decimal
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/fields
+  auth: admin
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, klass_name, created_at, updated_at) VALUES (50, 'custom_fields', 'Custom Fields', 1, 'Account', '2026-01-01', '2026-01-01')"
+  body: {field: {as: decimal, label: "Contract Budget", field_group_id: 50, required: "1", maxlength: "10"}}
+  reset: true
+  dbAssert:
+    - {table: fields, where: "true", exclude: [id], volatile: [created_at, updated_at]}
+    - {table: information_schema.columns,
+       where: "table_schema = current_schema() AND table_name = 'accounts' AND column_name = 'cf_contract_budget'",
+       orderBy: column_name, columns: [column_name, data_type, numeric_precision, numeric_scale]}
+  description: Decimal custom field → numeric(15,2) column.
+
+- id: admin-fields-create-invalid
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/fields
+  auth: admin
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, klass_name, created_at, updated_at) VALUES (50, 'custom_fields', 'Custom Fields', 1, 'Campaign', '2026-01-01', '2026-01-01')"
+  body: {field: {as: string, label: "", field_group_id: 50, minlength: "abc", maxlength: "0"}}
+  reset: true
+  dbAssert:
+    - {table: fields, where: "true", columns: [id]}
+    - {table: information_schema.columns,
+       where: "table_schema = current_schema() AND table_name = 'campaigns' AND column_name = 'cf_'",
+       orderBy: column_name, columns: [column_name]}
+  description: Field validations → 422 with FFCRM ^ messages; no DDL.
+
+- id: admin-fields-create-missing-as
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/fields
+  auth: admin
+  body: {field: {label: "No Type", field_group_id: 50}}
+  reset: true
+  dbAssert:
+    - {table: fields, where: "true", columns: [id]}
+  description: Field.lookup_class(nil) raises before validation → 500.
+
+- id: admin-fields-update-string-to-text
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/fields/60
+  auth: admin
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, klass_name, created_at, updated_at) VALUES (50, 'custom_fields', 'Custom Fields', 1, 'Contact', '2026-01-01', '2026-01-01')"
+    - "ALTER TABLE contacts DROP COLUMN IF EXISTS cf_contract_note"
+    - "ALTER TABLE contacts ADD COLUMN cf_contract_note character varying"
+    - "INSERT INTO fields (id, type, field_group_id, position, name, label, \"as\", minlength, created_at, updated_at) VALUES (60, 'CustomField', 50, 1, 'cf_contract_note', 'Note', 'string', 0, '2026-01-01', '2026-01-01')"
+  body: {field: {as: text, label: "Contract Note", hint: "longer"}}
+  reset: true
+  dbAssert:
+    - {table: fields, where: "id = 60", volatile: [updated_at]}
+    - {table: information_schema.columns,
+       where: "table_schema = current_schema() AND table_name = 'contacts' AND column_name = 'cf_contract_note'",
+       orderBy: column_name, columns: [column_name, data_type]}
+  description: Safe transition string → text runs ALTER COLUMN TYPE → 204.
+
+- id: admin-fields-update-unsafe
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/fields/60
+  auth: admin
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, klass_name, created_at, updated_at) VALUES (50, 'custom_fields', 'Custom Fields', 1, 'Contact', '2026-01-01', '2026-01-01')"
+    - "ALTER TABLE contacts DROP COLUMN IF EXISTS cf_contract_flag"
+    - "ALTER TABLE contacts ADD COLUMN cf_contract_flag character varying"
+    - "INSERT INTO fields (id, type, field_group_id, position, name, label, \"as\", minlength, created_at, updated_at) VALUES (60, 'CustomField', 50, 1, 'cf_contract_flag', 'Flag', 'string', 0, '2026-01-01', '2026-01-01')"
+  body: {field: {as: boolean}}
+  reset: true
+  dbAssert:
+    - {table: fields, where: "id = 60", volatile: [updated_at]}
+    - {table: information_schema.columns,
+       where: "table_schema = current_schema() AND table_name = 'contacts' AND column_name = 'cf_contract_flag'",
+       orderBy: column_name, columns: [column_name, data_type]}
+  description: Unsafe transition string → boolean saves metadata but leaves the column type (mirrored gap).
+
+- id: admin-fields-update-invalid
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/fields/60
+  auth: admin
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, klass_name, created_at, updated_at) VALUES (50, 'custom_fields', 'Custom Fields', 1, 'Contact', '2026-01-01', '2026-01-01')"
+    - "INSERT INTO fields (id, type, field_group_id, position, name, label, \"as\", minlength, created_at, updated_at) VALUES (60, 'CustomField', 50, 1, 'cf_contract_ghost', 'Ghost', 'string', 0, '2026-01-01', '2026-01-01')"
+  body: {field: {as: bogus, label: "x", minlength: "5", maxlength: "2"}}
+  reset: true
+  dbAssert:
+    - {table: fields, where: "id = 60", columns: ["\"as\"", label, minlength, maxlength, updated_at]}
+  description: Invalid type + min > max → 422; no DDL, nothing saved.
+
+- id: admin-fields-destroy-keeps-column
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /admin/fields/61
+  auth: admin
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, klass_name, created_at, updated_at) VALUES (50, 'custom_fields', 'Custom Fields', 1, 'Contact', '2026-01-01', '2026-01-01')"
+    - "ALTER TABLE contacts DROP COLUMN IF EXISTS cf_contract_keep"
+    - "ALTER TABLE contacts ADD COLUMN cf_contract_keep character varying"
+    - "INSERT INTO fields (id, type, field_group_id, position, name, label, \"as\", minlength, created_at, updated_at) VALUES (60, 'CustomField', 50, 1, 'cf_contract_a', 'A', 'string', 0, '2026-01-01', '2026-01-01'), (61, 'CustomField', 50, 2, 'cf_contract_keep', 'Keep', 'string', 0, '2026-01-01', '2026-01-01'), (62, 'CustomField', 50, 3, 'cf_contract_c', 'C', 'string', 0, '2026-01-01', '2026-01-01')"
+  reset: true
+  dbAssert:
+    - {table: fields, where: "true", columns: [id, position]}
+    - {table: information_schema.columns,
+       where: "table_schema = current_schema() AND table_name = 'contacts' AND column_name = 'cf_contract_keep'",
+       orderBy: column_name, columns: [column_name, data_type]}
+  description: Field destroy → 204; acts_as_list closes the gap; the cf_ column is NOT dropped.
+
+- id: admin-fields-destroy-core-field
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /admin/fields/60
+  auth: admin
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, klass_name, created_at, updated_at) VALUES (50, 'custom_fields', 'Custom Fields', 1, 'Contact', '2026-01-01', '2026-01-01')"
+    - "INSERT INTO fields (id, type, field_group_id, position, name, label, \"as\", minlength, created_at, updated_at) VALUES (60, 'CoreField', 50, 1, 'first_name', 'First', 'string', 0, '2026-01-01', '2026-01-01')"
+  reset: true
+  dbAssert:
+    - {table: fields, where: "true", columns: [id]}
+  description: CoreField#error_on_destroy calls removed errors.add_to_base → 500, rolled back.
+
+- id: admin-fields-sort
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/fields/sort
+  auth: admin
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, klass_name, created_at, updated_at) VALUES (50, 'custom_fields', 'Custom Fields', 1, 'Contact', '2026-01-01', '2026-01-01')"
+    - "INSERT INTO fields (id, type, field_group_id, position, name, label, \"as\", minlength, created_at, updated_at) VALUES (60, 'CustomField', 50, 1, 'cf_contract_a', 'A', 'string', 0, '2026-01-01', '2026-01-01'), (61, 'CustomField', 50, 2, 'cf_contract_b', 'B', 'string', 0, '2026-01-01', '2026-01-01')"
+  body: {field_group_id: "50", fields_field_group_50: ["61", "60"]}
+  reset: true
+  dbAssert:
+    - {table: fields, where: "true", columns: [id, position, field_group_id, updated_at]}
+  description: update_all positions commit, then Rails 500s (missing template).
+
+- id: admin-fields-create-non-admin
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /admin/fields
+  auth: alice
+  body: {field: {as: string, label: "Sneaky", field_group_id: 50}}
+  reset: true
+  dbAssert:
+    - {table: fields, where: "true", columns: [id]}
+  description: Non-admin field create → 302 vs 403 (allowlisted); no DDL.
+
+# ---- settings ---------------------------------------------------------------------------------
+
+- id: admin-settings-update
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/settings
+  auth: admin
+  body: {settings: {host: crm.example, per_user_locale: true, require_first_names: "1",
+                    user_signup: needs_approval, lead_status: ["new", "", "contacted"],
+                    task_bucket: "a\nb", smtp: {address: null, port: 25, enable_starttls_auto: "1", bogus: x},
+                    email_dropbox: {ssl: "1", address_aliases: ["x@y.z"]}, email_comment_replies: {},
+                    ai_prompts: {about_my_business: "line one\nline two"},
+                    opportunity_default_stage: 1.5, locale: "", unknown: z}}
+  reset: true
+  dbAssert:
+    - {table: settings, where: "true", volatile: [created_at, updated_at]}
+  description: Settings update → 302; Psych YAML byte-compatible settings.value, permit order.
+
+- id: admin-settings-update-existing
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/settings
+  auth: admin
+  setup:
+    - "INSERT INTO settings (id, name, value, created_at, updated_at) VALUES (40, 'host', E'--- old.example\\n', '2026-01-01', '2026-01-01'), (41, 'locale', E'--- en\\n', '2026-01-01', '2026-01-01')"
+  body: {settings: {host: new.example, locale: en, compound_address: "0"}}
+  reset: true
+  dbAssert:
+    - {table: settings, where: "true", columns: [id, name, value]}
+    - {table: settings, where: "id = 41", columns: [updated_at]}
+  description: Existing rows updated in place; unchanged values are not rewritten.
+
+- id: admin-settings-missing-root
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/settings
+  auth: admin
+  body: {other: 1}
+  reset: true
+  dbAssert:
+    - {table: settings, where: "true", columns: [id]}
+  description: params.require(:settings) → 400.
+
+- id: admin-settings-non-admin
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /admin/settings
+  auth: alice
+  body: {settings: {host: evil.example}}
+  reset: true
+  dbAssert:
+    - {table: settings, where: "true", columns: [id, name]}
+  description: Non-admin settings update → 302 vs 403 (allowlisted).

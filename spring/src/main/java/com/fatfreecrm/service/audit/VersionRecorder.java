@@ -103,6 +103,23 @@ public class VersionRecorder {
         Map<String, Object> after,
         java.util.List<String> assignedOrder
     ) {
+        return recordUpdate(user, entity, before, after, assignedOrder, false);
+    }
+
+    /**
+     * As above; with {@code leadUnchangedAssigned} the {@code object} also leads with assigned
+     * attributes whose value did not change (User: Devise's before_validation re-assigns
+     * {@code email}, and reconfirmable restores it, yet PaperTrail still dumps it first).
+     */
+    @Transactional
+    public Version recordUpdate(
+        AuthenticatedUser user,
+        Object entity,
+        Map<String, Object> before,
+        Map<String, Object> after,
+        java.util.List<String> assignedOrder,
+        boolean leadUnchangedAssigned
+    ) {
         PaperTrailOptions options = options(entity);
         Map<String, Object[]> changes = new LinkedHashMap<>();
         after.forEach((name, value) -> {
@@ -124,7 +141,7 @@ public class VersionRecorder {
         Version version = base(user, options, entity, "update");
         Map<String, Object> orderedBefore = new LinkedHashMap<>();
         assignedOrder.stream()
-            .filter(changes::containsKey)
+            .filter(name -> changes.containsKey(name) || (leadUnchangedAssigned && before.containsKey(name)))
             .forEach(name -> orderedBefore.put(name, before.get(name)));
         before.forEach(orderedBefore::putIfAbsent);
         version.setObject(PaperTrailYaml.dumpObject(orderedBefore));
