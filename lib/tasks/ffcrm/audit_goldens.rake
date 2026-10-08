@@ -59,7 +59,7 @@ end
 
 def audit_goldens_tables
   %w[users preferences permissions field_groups fields accounts campaigns leads contacts opportunities tasks addresses
-     account_contacts account_opportunities contact_opportunities comments emails versions]
+     account_contacts account_opportunities contact_opportunities comments emails tags taggings versions]
 end
 
 def audit_goldens_models
@@ -140,19 +140,41 @@ def audit_goldens_cases
       cases << audit_goldens_case(model, "timestamp_update", id, false)
     end
   end
+  [
+    [Account, "update_tag_list", nil, { tag_list: "alpha, beta" }],
+    [Account, "update_tag_list_and_name", nil, { tag_list: "alpha, beta", name: "Tagged Account" }],
+    [Account, "update_tag_list_existing", "alpha, old", { tag_list: "beta, gamma" }],
+    [Account, "destroy_tagged", "delta, epsilon", nil],
+    [Contact, "update_tag_list", nil, { tag_list: "alpha, beta" }]
+  ].each do |model, operation, initial_tag_list, custom_update_attributes|
+    id += 1
+    cases << audit_goldens_case(
+      model, operation, id, false,
+      tag_setup: {
+        initial_name: model == Account ? "Tagged Account #{id}" : nil,
+        initial_tag_list: initial_tag_list,
+        custom_update_attributes: custom_update_attributes
+      }
+    )
+  end
   cases
 end
 
-def audit_goldens_case(model, operation, id, anonymous)
+def audit_goldens_case(model, operation, id, anonymous, tag_setup: {})
+  initial_name = tag_setup[:initial_name]
+  initial_tag_list = tag_setup[:initial_tag_list]
+  custom_update_attributes = tag_setup[:custom_update_attributes]
   who = anonymous ? nil : "68999"
   record = nil
   PaperTrail.request(enabled: false) do
     record = audit_goldens_record(model, id)
+    record.name = initial_name if initial_name
+    record.tag_list = initial_tag_list if initial_tag_list
     record.save!(validate: false) unless operation == "create"
     audit_goldens_update_support(model, id, operation)
   end
 
-  if %w[update timestamp_update].include?(operation)
+  if audit_goldens_fresh_update?(operation)
     before_attributes = model.find(id).attributes
     record = model.find(id)
   else
@@ -167,6 +189,9 @@ def audit_goldens_case(model, operation, id, anonymous)
       attrs = audit_goldens_update_attributes(record, before_attributes)
       assigned_order = attrs.keys if operation == "update"
       record.update(attrs)
+    when "update_tag_list", "update_tag_list_and_name", "update_tag_list_existing"
+      assigned_order = custom_update_attributes.keys
+      raise "Audit golden update failed for #{model.name} #{id}" unless record.update(custom_update_attributes)
     when "timestamp_update"
       attrs = { updated_at: Time.utc(2025, 1, 2, 10) }
       assigned_order = attrs.keys
@@ -177,39 +202,26 @@ def audit_goldens_case(model, operation, id, anonymous)
       record.save!(validate: false)
     when "touch"
       record.touch
-    when "destroy"
+    when "destroy", "destroy_tagged"
       record.destroy!
     end
   end
   version_records = Version.where(item_type: model.name, item_id: id).order(:id).to_a
   if (version = version_records.first) && version.object
     before_attributes = version.object_deserialized
-    if operation == "update"
-      assigned_names = assigned_order.map(&:to_s)
-      object_order = before_attributes.keys.map(&:to_s)
-      changed_names = version.changeset.keys.map(&:to_s)
-      ignored_names = Array(model.paper_trail_options[:ignore]).map(&:to_s)
-      first_changed_assignment = object_order.index do |name|
-        assigned_names.include?(name) && changed_names.include?(name)
-      end
-      ignored_assignment_leads = first_changed_assignment &&
-                                 object_order.take(first_changed_assignment).any? do |name|
-                                   assigned_names.include?(name) && ignored_names.include?(name) && changed_names.exclude?(name)
-                                 end
-      assigned_order = if ignored_assignment_leads
-                         []
-                       else
-                         object_order.select { |name| assigned_names.include?(name) }
-                       end
-    end
+    assigned_order = audit_goldens_assigned_order(model, operation, assigned_order, before_attributes, version)
   end
-  after_attributes = operation == "destroy" ? before_attributes : record.reload.attributes
-  if version && operation != "destroy"
+  destroy_operation = %w[destroy destroy_tagged].include?(operation)
+  change_before_attributes = before_attributes.dup
+  after_attributes = destroy_operation ? before_attributes : record.reload.attributes
+  unless version.nil? || destroy_operation
     version.changeset.each do |attribute, values|
+      change_before_attributes[attribute] = values.first
       after_attributes[attribute] = values.last
     end
   end
   before = operation == "create" ? {} : audit_goldens_dump(before_attributes)
+  change_before = audit_goldens_dump(change_before_attributes)
   after = audit_goldens_dump(after_attributes)
   versions = version_records.map do |version|
     {
@@ -230,9 +242,34 @@ def audit_goldens_case(model, operation, id, anonymous)
     "whodunnit" => who,
     "assigned_order" => assigned_order,
     "before" => before,
+    "change_before" => change_before,
     "after" => after,
     "versions" => versions
   }
+end
+
+def audit_goldens_fresh_update?(operation)
+  %w[update timestamp_update].include?(operation) || operation.start_with?("update_tag_list")
+end
+
+def audit_goldens_assigned_order(model, operation, assigned_order, before_attributes, version)
+  return assigned_order unless operation == "update"
+
+  assigned_names = assigned_order.map(&:to_s)
+  object_order = before_attributes.keys.map(&:to_s)
+  changed_names = version.changeset.keys.map(&:to_s)
+  ignored_names = Array(model.paper_trail_options[:ignore]).map(&:to_s)
+  first_changed_assignment = object_order.index do |name|
+    assigned_names.include?(name) && changed_names.include?(name)
+  end
+  ignored_assignment_leads = first_changed_assignment &&
+                             object_order.take(first_changed_assignment).any? do |name|
+                               assigned_names.include?(name) && ignored_names.include?(name) &&
+                                 changed_names.exclude?(name)
+                             end
+  return [] if ignored_assignment_leads
+
+  object_order.select { |name| assigned_names.include?(name) }
 end
 
 def audit_goldens_record(model, id)
@@ -357,6 +394,8 @@ def audit_goldens_typed(value, references)
     identity = value.is_a?(ActiveSupport::TimeWithZone) ? value.utc : value
     ref = references[identity] ||= (references.size + 1).to_s
     { "t" => "time", "v" => value.utc.iso8601(9), "ref" => ref }
+  when ActsAsTaggableOn::TagList
+    { "t" => "tag_list", "v" => value.map { |item| audit_goldens_typed(item, references) } }
   when Array then { "t" => "array", "v" => value.map { |item| audit_goldens_typed(item, references) } }
   else
     { "t" => "str", "v" => value.to_s }
@@ -397,7 +436,7 @@ end
 def audit_goldens_reset_sequences
   connection = ActiveRecord::Base.connection
   %w[users accounts contacts leads opportunities comments emails account_contacts account_opportunities addresses
-     versions].each do |table|
+     tags taggings versions].each do |table|
     sequence = connection.select_value("SELECT pg_get_serial_sequence('#{table}', 'id')")
     connection.execute("SELECT setval(#{connection.quote(sequence)}, 300_000, false)") if sequence
   end

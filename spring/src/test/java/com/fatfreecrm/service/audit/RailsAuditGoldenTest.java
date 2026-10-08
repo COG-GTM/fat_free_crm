@@ -46,6 +46,14 @@ class RailsAuditGoldenTest {
     private static final Path SPRING_FIXTURE = Path.of("src/test/resources/audit/spring_audit_versions.json");
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final Pattern BIG_DECIMAL_TAG = Pattern.compile("!ruby/object:BigDecimal \\d+:");
+    private static final Pattern TAG_LIST_OBJECT = Pattern.compile(
+        "(?m)^([ ]*)([^\\n:]+): !ruby/array:ActsAsTaggableOn::TagList\\n"
+            + "\\1  internal:\\n((?:\\1  -[^\\n]*\\n)*)\\1  ivars:\\n"
+            + "\\1    :@parser: !ruby/class 'ActsAsTaggableOn::DefaultParser'");
+    private static final Pattern TAG_LIST_CHANGE = Pattern.compile(
+        "(?m)^([ ]*)- !ruby/array:ActsAsTaggableOn::TagList\\n"
+            + "\\1  internal:\\n((?:\\1  -[^\\n]*\\n)*)\\1  ivars:\\n"
+            + "\\1    :@parser: !ruby/class 'ActsAsTaggableOn::DefaultParser'");
     private static final String TOUCH_ANCHOR_DELTA_REASON =
         "Psych and SnakeYAML assign different anchor labels to shared touch timestamps.";
     private static final Map<String, String> ALLOWED_YAML_DELTAS = Map.of(
@@ -148,7 +156,7 @@ class RailsAuditGoldenTest {
         assertThat(ALLOWED_YAML_DELTAS.values()).allMatch(reason -> !reason.isBlank());
         assertThat(failures).as("Rails/Spring audit golden differences").isEmpty();
         assertThat(springCaseIds).containsExactlyInAnyOrderElementsOf(railsCaseIds);
-        assertThat(springCases.size()).isEqualTo(133);
+        assertThat(springCases.size()).isEqualTo(138);
         assertThat(touchModels).containsExactlyInAnyOrder(
             "Account", "Campaign", "Opportunity", "Lead", "Contact", "AccountContact",
             "AccountOpportunity", "Address", "Comment", "Email", "Task", "User");
@@ -160,6 +168,7 @@ class RailsAuditGoldenTest {
         Object entity = mock(type.entityClass());
         Map<String, Object> after = decodeMap(testCase.path("after"));
         Map<String, Object> before = decodeMap(testCase.path("before"));
+        Map<String, Object> changeBefore = decodeMap(testCase.path("change_before"));
         long id = ((Number) (testCase.path("op").asText().equals("create")
             ? after.get("id") : before.get("id"))).longValue();
         if (entity instanceof User userEntity) {
@@ -174,16 +183,17 @@ class RailsAuditGoldenTest {
         Version version = switch (testCase.path("op").asText()) {
             case "create" -> recorder.recordCreate(user, entity, after, createDefaults(after,
                 testCase.path("versions")));
-            case "update" -> recorder.recordUpdate(user, entity, before, after,
-                stringList(testCase.path("assigned_order")));
+            case "update", "update_tag_list", "update_tag_list_and_name", "update_tag_list_existing" ->
+                recorder.recordUpdate(user, entity, before, after,
+                    stringList(testCase.path("assigned_order")), changeBefore);
             case "timestamp_update" -> recorder.recordUpdate(user, entity, before, after,
-                stringList(testCase.path("assigned_order")));
+                stringList(testCase.path("assigned_order")), changeBefore);
             case "update_materialized" -> recorder.recordUpdate(user, entity, before, after,
-                stringList(testCase.path("assigned_order")));
+                stringList(testCase.path("assigned_order")), changeBefore);
             case "ignored_update" -> recorder.recordUpdate(user, entity, before, after,
-                stringList(testCase.path("assigned_order")));
+                stringList(testCase.path("assigned_order")), changeBefore);
             case "touch" -> recorder.recordTouch(user, entity, before, after);
-            case "destroy" -> recorder.recordDestroy(user, entity, before);
+            case "destroy", "destroy_tagged" -> recorder.recordDestroy(user, entity, before);
             default -> throw new IllegalArgumentException("Unknown audit operation " + testCase.path("op"));
         };
         return version == null ? List.of() : List.of(version);
@@ -227,13 +237,18 @@ class RailsAuditGoldenTest {
             case "date" -> LocalDate.parse(typed.path("v").asText());
             case "time" -> references.computeIfAbsent(typed.path("ref").asText(),
                 ignored -> Instant.parse(typed.path("v").asText()));
+            case "tag_list" -> new PaperTrailYaml.RubyTagList(decodeList(typed.path("v"), references));
             case "array" -> {
-                List<Object> items = new ArrayList<>();
-                typed.path("v").forEach(item -> items.add(decode(item, references)));
-                yield items;
+                yield decodeList(typed.path("v"), references);
             }
             default -> throw new IllegalArgumentException("Unknown typed audit value: " + typed);
         };
+    }
+
+    private static List<Object> decodeList(JsonNode values, Map<String, Instant> references) {
+        List<Object> items = new ArrayList<>();
+        values.forEach(item -> items.add(decode(item, references)));
+        return items;
     }
 
     private static void setRelated(Object entity, Map<String, Object> values) {
@@ -312,7 +327,9 @@ class RailsAuditGoldenTest {
     }
 
     private static Object yamlStructure(String yaml) {
-        String withoutTags = BIG_DECIMAL_TAG.matcher(yaml)
+        String withoutTagLists = TAG_LIST_OBJECT.matcher(yaml).replaceAll("$1$2:\n$3");
+        withoutTagLists = TAG_LIST_CHANGE.matcher(withoutTagLists).replaceAll("$1-\n$2");
+        String withoutTags = BIG_DECIMAL_TAG.matcher(withoutTagLists)
             .replaceAll("")
             .replace("!ruby/object:ActiveSupport::TimeWithZone", "")
             .replace("!ruby/object:ActiveSupport::TimeZone", "");

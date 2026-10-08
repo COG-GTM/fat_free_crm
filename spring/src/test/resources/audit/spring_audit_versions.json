@@ -1761,6 +1761,81 @@
       "object" : "---\nid: 69133\nusername: audit-user-69133\nemail: audit-69133@example.test\nfirst_name:\nlast_name:\ntitle:\ncompany:\nalt_email:\nphone:\nmobile:\ngoogle:\nencrypted_password: fixed-audit-password\npassword_salt: fixed-audit-salt\nlast_sign_in_at:\ncurrent_sign_in_at:\nlast_sign_in_ip:\ncurrent_sign_in_ip:\nsign_in_count: 0\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nadmin: false\nsuspended_at:\nunconfirmed_email:\nreset_password_token:\nreset_password_sent_at:\nremember_token:\nremember_created_at:\nauthentication_token:\nconfirmation_token: audit-confirm-69133\nconfirmed_at:\nconfirmation_sent_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nsubscribe_to_comment_replies: true\nreceive_assigned_notifications: true\nzoom:\nteams:\nsignal:\ninstagram:\nfacebook:\nmastodon:\nbluesky:\ntwitter:\nlinkedin:\nblog:\n",
       "object_changes" : "---\nusername:\n- audit-user-69133\n- audit-updated-69133\nfirst_name:\n-\n- 'leading '\nphone:\n-\n- ''\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-02 10:00:00.000000000 Z\n  zone: *1\n  time: 2025-01-02 10:00:00.000000000 Z\n"
     } ]
+  }, {
+    "id" : "Account/update_tag_list/69134/68999",
+    "model" : "Account",
+    "op" : "update_tag_list",
+    "whodunnit" : "68999",
+    "versions" : [ {
+      "item_type" : "Account",
+      "item_id" : 69134,
+      "event" : "update",
+      "whodunnit" : "68999",
+      "related_type" : null,
+      "related_id" : null,
+      "object" : "---\ntag_list: !ruby/array:ActsAsTaggableOn::TagList\n  internal:\n  - alpha\n  - beta\n  ivars:\n    :@parser: !ruby/class 'ActsAsTaggableOn::DefaultParser'\ndeleted_at:\nid: 69134\ncf_audit_decimal: !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\nuser_id: 68999\nassigned_to:\nname: Tagged Account 69134\naccess: Public\nwebsite:\ntoll_free_phone:\nphone:\nfax:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: *1\n  time: 2025-01-01 09:30:15.000000000 Z\nemail:\nbackground_info: |-\n  Line one\n  Line two\nrating: 1\ncategory: customer\nsubscribed_users:\ncontacts_count: 0\nopportunities_count: 0\nwikidata_id:\nlatitude:\nlongitude:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nbluesky:\ninstagram:\nmastodon:\ncf_audit_string: 'a: b'\ncf_audit_date: 2025-02-03\ncf_audit_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: *1\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean: true\ncf_audit_check_boxes: '[\"yes\", \"alpha\"]'\n",
+      "object_changes" : "---\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-02-01 12:00:00.000000000 Z\n  zone: *1\n  time: 2025-02-01 12:00:00.000000000 Z\ntag_list:\n- []\n- - alpha\n  - beta\n"
+    } ]
+  }, {
+    "id" : "Account/update_tag_list_and_name/69135/68999",
+    "model" : "Account",
+    "op" : "update_tag_list_and_name",
+    "whodunnit" : "68999",
+    "versions" : [ {
+      "item_type" : "Account",
+      "item_id" : 69135,
+      "event" : "update",
+      "whodunnit" : "68999",
+      "related_type" : null,
+      "related_id" : null,
+      "object" : "---\ntag_list: !ruby/array:ActsAsTaggableOn::TagList\n  internal:\n  - alpha\n  - beta\n  ivars:\n    :@parser: !ruby/class 'ActsAsTaggableOn::DefaultParser'\nname: Tagged Account 69135\ndeleted_at:\nid: 69135\ncf_audit_decimal: !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\nuser_id: 68999\nassigned_to:\naccess: Public\nwebsite:\ntoll_free_phone:\nphone:\nfax:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: *1\n  time: 2025-01-01 09:30:15.000000000 Z\nemail:\nbackground_info: |-\n  Line one\n  Line two\nrating: 1\ncategory: customer\nsubscribed_users:\ncontacts_count: 0\nopportunities_count: 0\nwikidata_id:\nlatitude:\nlongitude:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nbluesky:\ninstagram:\nmastodon:\ncf_audit_string: 'a: b'\ncf_audit_date: 2025-02-03\ncf_audit_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: *1\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean: true\ncf_audit_check_boxes: '[\"yes\", \"alpha\"]'\n",
+      "object_changes" : "---\nname:\n- Tagged Account 69135\n- Tagged Account\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-02-01 12:00:00.000000000 Z\n  zone: *1\n  time: 2025-02-01 12:00:00.000000000 Z\ntag_list:\n- []\n- - alpha\n  - beta\n"
+    } ]
+  }, {
+    "id" : "Account/update_tag_list_existing/69136/68999",
+    "model" : "Account",
+    "op" : "update_tag_list_existing",
+    "whodunnit" : "68999",
+    "versions" : [ {
+      "item_type" : "Account",
+      "item_id" : 69136,
+      "event" : "update",
+      "whodunnit" : "68999",
+      "related_type" : null,
+      "related_id" : null,
+      "object" : "---\ntag_list: !ruby/array:ActsAsTaggableOn::TagList\n  internal:\n  - beta\n  - gamma\n  ivars:\n    :@parser: !ruby/class 'ActsAsTaggableOn::DefaultParser'\ndeleted_at:\nid: 69136\ncf_audit_decimal: !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\nuser_id: 68999\nassigned_to:\nname: Tagged Account 69136\naccess: Public\nwebsite:\ntoll_free_phone:\nphone:\nfax:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: *1\n  time: 2025-01-01 09:30:15.000000000 Z\nemail:\nbackground_info: |-\n  Line one\n  Line two\nrating: 1\ncategory: customer\nsubscribed_users:\ncontacts_count: 0\nopportunities_count: 0\nwikidata_id:\nlatitude:\nlongitude:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nbluesky:\ninstagram:\nmastodon:\ncf_audit_string: 'a: b'\ncf_audit_date: 2025-02-03\ncf_audit_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: *1\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean: true\ncf_audit_check_boxes: '[\"yes\", \"alpha\"]'\n",
+      "object_changes" : "---\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-02-01 12:00:00.000000000 Z\n  zone: *1\n  time: 2025-02-01 12:00:00.000000000 Z\ntag_list:\n- - alpha\n  - old\n- - beta\n  - gamma\n"
+    } ]
+  }, {
+    "id" : "Account/destroy_tagged/69137/68999",
+    "model" : "Account",
+    "op" : "destroy_tagged",
+    "whodunnit" : "68999",
+    "versions" : [ {
+      "item_type" : "Account",
+      "item_id" : 69137,
+      "event" : "destroy",
+      "whodunnit" : "68999",
+      "related_type" : null,
+      "related_id" : null,
+      "object" : "---\nid: 69137\nuser_id: 68999\nassigned_to:\nname: Tagged Account 69137\naccess: Public\nwebsite:\ntoll_free_phone:\nphone:\nfax:\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\nemail:\nbackground_info: |-\n  Line one\n  Line two\nrating: 1\ncategory: customer\nsubscribed_users:\ncontacts_count: 0\nopportunities_count: 0\nwikidata_id:\nlatitude:\nlongitude:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nbluesky:\ninstagram:\nmastodon:\ncf_audit_string: 'a: b'\ncf_audit_decimal: !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\ncf_audit_date: 2025-02-03\ncf_audit_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_boolean: true\ncf_audit_check_boxes: '[\"yes\", \"alpha\"]'\ntag_list: !ruby/array:ActsAsTaggableOn::TagList\n  internal:\n  - delta\n  - epsilon\n  ivars:\n    :@parser: !ruby/class 'ActsAsTaggableOn::DefaultParser'\n",
+      "object_changes" : "---\nid:\n- 69137\n-\nuser_id:\n- 68999\n-\nassigned_to:\n-\n-\nname:\n- Tagged Account 69137\n-\naccess:\n- Public\n-\nwebsite:\n-\n-\ntoll_free_phone:\n-\n-\nphone:\n-\n-\nfax:\n-\n-\ndeleted_at:\n-\n-\ncreated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: &1 2025-01-01 09:30:15.000000000 Z\n  zone: &2 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\nemail:\n-\n-\nbackground_info:\n- |-\n  Line one\n  Line two\n-\nrating:\n- 1\n-\ncategory:\n- customer\n-\ncontacts_count:\n- 0\n-\nopportunities_count:\n- 0\n-\nwikidata_id:\n-\n-\nlatitude:\n-\n-\nlongitude:\n-\n-\nblog:\n-\n-\nlinkedin:\n-\n-\nfacebook:\n-\n-\ntwitter:\n-\n-\nbluesky:\n-\n-\ninstagram:\n-\n-\nmastodon:\n-\n-\ncf_audit_string:\n- 'a: b'\n-\ncf_audit_decimal:\n- !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\n-\ncf_audit_date:\n- 2025-02-03\n-\ncf_audit_datetime:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: *1\n  zone: *2\n  time: 2025-01-01 09:30:15.000000000 Z\n-\ncf_audit_boolean:\n- true\n-\ncf_audit_check_boxes:\n- '[\"yes\", \"alpha\"]'\n-\ntag_list:\n- !ruby/array:ActsAsTaggableOn::TagList\n  internal:\n  - delta\n  - epsilon\n  ivars:\n    :@parser: !ruby/class 'ActsAsTaggableOn::DefaultParser'\n-\n"
+    } ]
+  }, {
+    "id" : "Contact/update_tag_list/69138/68999",
+    "model" : "Contact",
+    "op" : "update_tag_list",
+    "whodunnit" : "68999",
+    "versions" : [ {
+      "item_type" : "Contact",
+      "item_id" : 69138,
+      "event" : "update",
+      "whodunnit" : "68999",
+      "related_type" : null,
+      "related_id" : null,
+      "object" : "---\ntag_list: !ruby/array:ActsAsTaggableOn::TagList\n  internal:\n  - alpha\n  - beta\n  ivars:\n    :@parser: !ruby/class 'ActsAsTaggableOn::DefaultParser'\ncf_audit_contact_decimal: !ruby/object:BigDecimal 9:-0.1e-8\nid: 69138\nuser_id: 68999\nlead_id:\nassigned_to:\nreports_to:\nfirst_name: \"Zoë\\U0001F600\"\nlast_name: Contact\naccess: Public\ntitle:\ndepartment:\nsource:\nemail:\nalt_email:\nphone:\nmobile:\nfax:\nblog:\nlinkedin:\nfacebook:\ntwitter:\nborn_on: 1990-01-02\ndo_not_call: true\ndeleted_at:\ncreated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\nupdated_at: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: *1\n  time: 2025-01-01 09:30:15.000000000 Z\nbackground_info:\nsubscribed_users:\nzoom:\nteams:\nsignal:\ninstagram:\nmastodon:\nbluesky:\ncf_audit_contact_string: '2025-01-01'\ncf_audit_contact_date: 2024-12-31\ncf_audit_contact_datetime: !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: *1\n  time: 2025-01-01 09:30:15.000000000 Z\ncf_audit_contact_boolean: false\ncf_audit_contact_check_boxes: '[\"123\", \"alpha\"]'\n",
+      "object_changes" : "---\nupdated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-01-01 09:30:15.000000000 Z\n  zone: &1 !ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC\n  time: 2025-01-01 09:30:15.000000000 Z\n- !ruby/object:ActiveSupport::TimeWithZone\n  utc: 2025-02-01 12:00:00.000000000 Z\n  zone: *1\n  time: 2025-02-01 12:00:00.000000000 Z\ntag_list:\n- []\n- - alpha\n  - beta\n"
+    } ]
   } ],
   "accepted_yaml_delta_count" : 6
 }

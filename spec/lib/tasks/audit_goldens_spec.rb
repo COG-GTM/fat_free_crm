@@ -44,6 +44,7 @@ RSpec.describe Rake::Task do
     expect_models_and_operations(cases, declarations)
     expect_materialized_updates(cases, declarations)
     expect_fresh_update_order(cases)
+    expect_tag_list_cases(cases)
     expect_timestamp_update(cases)
     expect_typed_values_and_whodunnit(cases)
     expect_scenarios(manifest)
@@ -57,8 +58,13 @@ RSpec.describe Rake::Task do
   def expect_models_and_operations(cases, declarations)
     expect(cases.map { |entry| entry.fetch("model") }.uniq).to match_array(declarations)
     expect(cases.map { |entry| entry.fetch("op") }.uniq)
-      .to match_array(%w[create update update_materialized ignored_update touch destroy timestamp_update])
-    expect(cases.size).to eq(133)
+      .to match_array(
+        %w[
+          create update update_materialized ignored_update touch destroy timestamp_update
+          update_tag_list update_tag_list_and_name update_tag_list_existing destroy_tagged
+        ]
+      )
+    expect(cases.size).to eq(138)
   end
 
   def expect_materialized_updates(cases, declarations)
@@ -78,6 +84,43 @@ RSpec.describe Rake::Task do
     end)
     expect(fresh_updates.find { |entry| entry.fetch("model") == "AccountContact" }
       .fetch("assigned_order")).to be_empty
+  end
+
+  def expect_tag_list_cases(cases)
+    expected_orders = {
+      "Account/update_tag_list/69134/68999" => ["tag_list"],
+      "Account/update_tag_list_and_name/69135/68999" => %w[tag_list name],
+      "Account/update_tag_list_existing/69136/68999" => ["tag_list"],
+      "Account/destroy_tagged/69137/68999" => [],
+      "Contact/update_tag_list/69138/68999" => ["tag_list"]
+    }
+    tag_cases = cases.select { |entry| expected_orders.key?(entry.fetch("id")) }
+    expect(tag_cases.map { |entry| entry.fetch("id") }).to match_array(expected_orders.keys)
+    tag_cases.each do |entry|
+      expect(entry.fetch("assigned_order")).to eq(expected_orders.fetch(entry.fetch("id")))
+      expect(entry.fetch("versions").size).to eq(1)
+    end
+    update_tag_list = tag_cases.find { |entry| entry.fetch("id") == "Account/update_tag_list/69134/68999" }
+    expect(update_tag_list.fetch("versions").first.fetch("object_changes")).to include(
+      "tag_list:\n- []\n- - alpha\n  - beta\n"
+    )
+    existing_tags = tag_cases.find { |entry| entry.fetch("id") == "Account/update_tag_list_existing/69136/68999" }
+    expect(existing_tags.fetch("versions").first.fetch("object_changes")).to include(
+      "tag_list:\n- - alpha\n  - old\n- - beta\n  - gamma\n"
+    )
+    combined_update = tag_cases.find do |entry|
+      entry.fetch("id") == "Account/update_tag_list_and_name/69135/68999"
+    end
+    expect(combined_update.fetch("versions").first.fetch("object_changes")).to include(
+      "name:\n- Tagged Account 69135\n- Tagged Account\n"
+    )
+    tagged_destroy = tag_cases.find { |entry| entry.fetch("id") == "Account/destroy_tagged/69137/68999" }
+    expect(tagged_destroy.fetch("versions").first.fetch("object"))
+      .to include("!ruby/array:ActsAsTaggableOn::TagList")
+    contact_update = tag_cases.find { |entry| entry.fetch("id") == "Contact/update_tag_list/69138/68999" }
+    expect(contact_update.fetch("versions").first.fetch("object_changes")).to include(
+      "tag_list:\n- []\n- - alpha\n  - beta\n"
+    )
   end
 
   def expect_timestamp_update(cases)
@@ -108,7 +151,7 @@ RSpec.describe Rake::Task do
 
   def audit_table_counts
     %w[accounts campaigns contacts leads opportunities tasks users versions comments emails addresses
-       account_contacts account_opportunities fields field_groups]
+       account_contacts account_opportunities fields field_groups tags taggings]
       .index_with { |table| ActiveRecord::Base.connection.select_value("SELECT COUNT(*) FROM #{table}").to_i }
   end
 end
