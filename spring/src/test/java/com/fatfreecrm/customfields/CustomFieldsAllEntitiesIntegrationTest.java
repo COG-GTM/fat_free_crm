@@ -117,8 +117,11 @@ class CustomFieldsAllEntitiesIntegrationTest extends AbstractPostgresIntegration
             assertThat(jdbcTemplate.queryForObject(
                 "SELECT updated_at FROM " + table + " WHERE id = ?", OffsetDateTime.class, id))
                 .as(table + " updated_at bump").isAfter(OffsetDateTime.parse("2020-01-02T00:00:00Z"));
-            assertThat(entity.getCustomFields()).as(table + " refreshed entity")
-                .containsEntry("cf_all_legacy", "from-java");
+            HasCustomFields reloaded = (HasCustomFields) entityManager.find(model.entityClass(), id);
+            assertThat(reloaded.getCustomFields()).as(table + " reloaded entity")
+                .containsEntry("cf_all_legacy", "from-java").containsEntry("cf_all_json", 42);
+            assertThat(readService.valuesFor(reloaded)).as(table + " reloaded dual read")
+                .containsEntry("cf_all_legacy", "from-java").containsEntry("cf_all_json", 42);
             assertThat(consistencyCheck.check(model).ok()).as(table + " consistency").isTrue();
         }
     }

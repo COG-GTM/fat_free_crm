@@ -49,6 +49,7 @@ class CustomFieldSearchAccessIntegrationTest extends AbstractPostgresIntegration
     private Long alicePrivateId;
     private Long bobPrivateId;
     private Long publicId;
+    private Long publicWithoutRegionId;
 
     @BeforeEach
     void seed() {
@@ -72,7 +73,7 @@ class CustomFieldSearchAccessIntegrationTest extends AbstractPostgresIntegration
         alicePrivateId = account("Alice Private", "Private", aliceUser);
         bobPrivateId = account("Bob Private", "Private", bobUser);
         publicId = account("Shared North", "Public", bobUser);
-        account("Public South", "Public", bobUser);
+        publicWithoutRegionId = account("Public South", "Public", bobUser);
         jdbcTemplate.update(
             "UPDATE accounts SET custom_fields = '{\"cf_access_region\": \"north\"}'::jsonb WHERE id IN (?, ?, ?)",
             alicePrivateId, bobPrivateId, publicId);
@@ -103,11 +104,12 @@ class CustomFieldSearchAccessIntegrationTest extends AbstractPostgresIntegration
 
     @Test
     void negatedAndBlankCustomFieldPredicatesStayInsideTheVisibilityScope() {
-        assertThat(ids(alice, "q[cf_access_region_blank]=1")).isEmpty();
+        assertThat(ids(alice, "q[cf_access_region_blank]=1")).containsExactly(publicWithoutRegionId);
+        assertThat(ids(alice, "q[cf_access_region_null]=1")).containsExactly(publicWithoutRegionId);
         assertThat(ids(alice, "q[cf_access_region_not_eq]=south"))
             .containsExactlyInAnyOrder(alicePrivateId, publicId);
-        assertThat(ids(alice, "q[cf_access_region_null]=1"))
-            .allSatisfy(id -> assertThat(id).isNotEqualTo(bobPrivateId));
+        assertThat(ids(alice, "q[cf_access_region_present]=1"))
+            .containsExactlyInAnyOrder(alicePrivateId, publicId);
     }
 
     private List<Long> ids(AuthenticatedUser user, String params) {
