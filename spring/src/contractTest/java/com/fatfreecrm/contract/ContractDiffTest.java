@@ -30,6 +30,8 @@ class ContractDiffTest {
     private String railsUrl;
     private String springUrl;
     private String railsUnavailable;
+    private ContractDbReset dbReset;
+    private DbAssert dbAssertClient;
 
     @Test
     void railsSignInPageIsReachable() {
@@ -52,6 +54,8 @@ class ContractDiffTest {
         JsonNode globalNormalize = loadNormalize();
         ContractClient client = new ContractClient(railsUrl, springUrl, users);
         railsUnavailable = checkRailsSignIn(railsUrl);
+        dbReset = ContractDbReset.fromProperties();
+        dbAssertClient = DbAssert.fromProperties();
         ContractDiffer differ = new ContractDiffer();
         for (ContractCase contractCase : cases) {
             if (railsUnavailable != null) {
@@ -59,12 +63,23 @@ class ContractDiffTest {
                 continue;
             }
             try {
+                List<DbAssert.Assert> dbAsserts = DbAssert.parse(contractCase.dbAssert());
+                if (contractCase.reset()) {
+                    dbReset.reset();
+                }
                 ContractClient.RequestResult rails = client.send(contractCase, true);
+                JsonNode railsDb = captureDb(dbAsserts);
+                if (contractCase.reset()) {
+                    dbReset.reset();
+                }
                 ContractClient.RequestResult spring = client.send(contractCase, false);
+                JsonNode springDb = captureDb(dbAsserts);
                 List<String> notes = new ArrayList<>(rails.notes());
                 notes.addAll(spring.notes());
+                List<Difference> dbDifferences = diffDb(dbAsserts, railsDb, springDb);
                 results.add(differ.diff(contractCase, rails.response(), spring.response(), allowlist,
-                    globalNormalize, rails.url(), spring.url(), notes, spring.authenticated())
+                    globalNormalize, rails.url(), spring.url(), notes, spring.authenticated(),
+                    dbDifferences)
                     .failIfEnforcedAuthUnavailable());
             } catch (Exception exception) {
                 results.add(error(contractCase, exception.getClass().getSimpleName() + ": " + exception.getMessage()));
@@ -90,6 +105,42 @@ class ContractDiffTest {
             ReportWriter.write(Path.of(System.getProperty("contract.reportDir", "build/reports/contract-diff")),
                 railsUrl, springUrl, results, allowlist);
         }
+    }
+
+    private JsonNode captureDb(List<DbAssert.Assert> asserts) throws java.sql.SQLException {
+        com.fasterxml.jackson.databind.node.ObjectNode snapshot =
+            com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
+        for (DbAssert.Assert assertion : asserts) {
+            snapshot.set(assertion.table() + "|" + assertion.where() + "|" + assertion.orderBy(),
+                dbAssertClient.capture(assertion));
+        }
+        return snapshot;
+    }
+
+    private static List<Difference> diffDb(
+        List<DbAssert.Assert> asserts,
+        JsonNode railsDb,
+        JsonNode springDb
+    ) {
+        List<Difference> differences = new ArrayList<>();
+        for (DbAssert.Assert assertion : asserts) {
+            String key = assertion.table() + "|" + assertion.where() + "|" + assertion.orderBy();
+            JsonNode left = railsDb.get(key);
+            JsonNode right = springDb.get(key);
+            if (!left.equals(right)) {
+                int length = Math.max(left.size(), right.size());
+                for (int index = 0; index < length; index++) {
+                    JsonNode leftRow = index < left.size() ? left.get(index) : null;
+                    JsonNode rightRow = index < right.size() ? right.get(index) : null;
+                    if (leftRow == null || rightRow == null || !leftRow.equals(rightRow)) {
+                        differences.add(new Difference(
+                            "/db/" + assertion.table() + "/" + index,
+                            Difference.Kind.DB, leftRow, rightRow, List.of()));
+                    }
+                }
+            }
+        }
+        return differences;
     }
 
     private static JsonNode loadNormalize() throws IOException {

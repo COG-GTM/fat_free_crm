@@ -93,7 +93,9 @@ public final class CaseLoader {
             objectOrEmpty(node.get("normalize")),
             text(node, "description", ""),
             expectation(node.get("expect")),
-            compare
+            compare,
+            node.path("reset").asBoolean(false),
+            node.get("dbAssert")
         );
     }
 

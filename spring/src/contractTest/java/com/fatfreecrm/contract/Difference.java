@@ -21,7 +21,8 @@ public record Difference(
         TYPE,
         MISSING_IN_SPRING,
         EXTRA_IN_SPRING,
-        TEXT_BODY
+        TEXT_BODY,
+        DB
     }
 
     public Difference(String pointer, Kind kind, JsonNode railsValue, JsonNode springValue, List<String> allowedBy) {

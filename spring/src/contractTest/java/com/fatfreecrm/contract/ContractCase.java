@@ -16,7 +16,9 @@ public record ContractCase(
     JsonNode normalize,
     String description,
     JsonNode expect,
-    String bodyCompare
+    String bodyCompare,
+    boolean reset,
+    JsonNode dbAssert
 ) {
     public static final String TEXT_BODY = "text";
 
@@ -35,8 +37,8 @@ public record ContractCase(
         String description,
         JsonNode expect
     ) {
-        this(id, ticket, status, method, path, rails, spring, params, body, auth, normalize, description, expect,
-            null);
+        this(id, ticket, status, method, path, rails, spring, params, body, auth, normalize,
+            description, expect, null, false, null);
     }
 
     public boolean textBody() {
@@ -57,8 +59,8 @@ public record ContractCase(
         JsonNode normalize,
         String description
     ) {
-        this(id, ticket, status, method, path, rails, spring, params, body, auth, normalize, description, null,
-            null);
+        this(id, ticket, status, method, path, rails, spring, params, body, auth, normalize,
+            description, null, null, false, null);
     }
 
     public record SideRequest(String path, Target target, String bodyPointer, String accept) {

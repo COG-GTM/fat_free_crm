@@ -110,3 +110,17 @@ allowlist:
     keyPattern: "(?i).*(password|token|salt).*"
     reason: Rails version changes are compared after removing secret YAML entries emitted only by Rails.
     reference: AB-270 Phase B ActivitiesControllerIntegrationTest
+  - id: tasks-update-tracked-by-404-vs-403
+    match:
+      case: tasks-update-601-bob-404
+      method: PUT
+      path: /tasks/601
+    kind: status
+    status:
+      rails: 404
+      spring: 403
+    reason: >-
+      Rails scopes update to Task.tracked_by(current_user) and answers 404 for an existing
+      out-of-scope task; Spring applies CrmPermissionEvaluator semantics (403 out of scope,
+      AB-268 Task policy) before the tracked_by scope.
+    reference: "app/controllers/tasks_controller.rb#update (Task.tracked_by.find)"
