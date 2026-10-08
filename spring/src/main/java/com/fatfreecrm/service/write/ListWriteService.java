@@ -2,8 +2,8 @@ package com.fatfreecrm.service.write;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fatfreecrm.domain.SavedList;
+import com.fatfreecrm.domain.User;
 import com.fatfreecrm.repository.SavedListRepository;
-import com.fatfreecrm.repository.UserRepository;
 import com.fatfreecrm.security.AuthenticatedUser;
 import com.fatfreecrm.service.json.RailsJsonWriter;
 import com.fatfreecrm.service.json.RailsResources;
@@ -34,7 +34,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ListWriteService {
 
     private final SavedListRepository savedListRepository;
-    private final UserRepository userRepository;
     private final RailsJsonWriter jsonWriter;
     private final RailsResources railsResources;
     private final ActiveModelMessages messages;
@@ -42,14 +41,12 @@ public class ListWriteService {
 
     public ListWriteService(
         SavedListRepository savedListRepository,
-        UserRepository userRepository,
         RailsJsonWriter jsonWriter,
         RailsResources railsResources,
         ActiveModelMessages messages,
         EntityManager entityManager
     ) {
         this.savedListRepository = savedListRepository;
-        this.userRepository = userRepository;
         this.jsonWriter = jsonWriter;
         this.railsResources = railsResources;
         this.messages = messages;
@@ -81,13 +78,13 @@ public class ListWriteService {
         if (list != null) {
             list.setName(name);
             list.setUrl(url);
-            list.setUser(userId == null ? null : userRepository.findById(userId).orElse(null));
+            list.setUser(userId == null ? null : entityManager.getReference(User.class, userId));
             list = savedListRepository.saveAndFlush(list);
         } else {
             list = new SavedList();
             list.setName(name);
             list.setUrl(url);
-            list.setUser(userId == null ? null : userRepository.findById(userId).orElse(null));
+            list.setUser(userId == null ? null : entityManager.getReference(User.class, userId));
             list = savedListRepository.saveAndFlush(list);
         }
         return jsonWriter.writeOne(railsResources.savedList, list.getId());

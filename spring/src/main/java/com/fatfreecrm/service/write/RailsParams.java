@@ -85,6 +85,10 @@ public final class RailsParams {
         return null;
     }
 
+    /**
+     * ActiveModel::Type::Boolean: nil and "" cast to nil; FALSE_VALUES (false, 0, "0", "f", "F",
+     * "false", "FALSE", "off", "OFF") cast to false; every other value casts to true.
+     */
     public static Boolean asBoolean(JsonNode node) {
         if (node == null || node.isNull()) {
             return null;
@@ -96,16 +100,19 @@ public final class RailsParams {
             return node.asInt() != 0;
         }
         String text = node.asText();
-        if ("true".equalsIgnoreCase(text) || "1".equals(text)) {
-            return true;
+        if (text == null || text.isEmpty()) {
+            return null;
         }
-        if ("false".equalsIgnoreCase(text) || "0".equals(text)) {
-            return false;
-        }
-        return null;
+        return switch (text) {
+            case "0", "f", "F", "false", "FALSE", "off", "OFF" -> false;
+            default -> true;
+        };
     }
 
-    /** Rails datetime cast accepts ISO-8601-ish text; unparseable values become nil. */
+    /**
+     * Rails datetime cast: ISO-8601 text, including numeric offsets ({@code +02:00},
+     * {@code -05:00}); naive strings and unparseable values keep the existing UTC/nil behaviour.
+     */
     public static java.time.Instant asInstant(JsonNode node) {
         if (node == null || node.isNull()) {
             return null;
@@ -113,6 +120,11 @@ public final class RailsParams {
         String text = node.asText();
         if (text == null || text.isBlank()) {
             return null;
+        }
+        try {
+            return java.time.OffsetDateTime.parse(text).toInstant();
+        } catch (java.time.format.DateTimeParseException ignored) {
+            // fall through
         }
         try {
             return java.time.Instant.parse(text);

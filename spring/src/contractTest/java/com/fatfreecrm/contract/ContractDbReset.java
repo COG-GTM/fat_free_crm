@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -77,7 +78,10 @@ public final class ContractDbReset {
         return value == null || value.isBlank() ? fallback : value;
     }
 
-    /** Tables the snapshot touches — TRUNCATE covers these so replay reproduces the corpus. */
+    /**
+     * Tables the snapshot touches. Kept for snapshot introspection; {@link #reset} truncates every
+     * application table instead (see {@link #applicationTables}).
+     */
     public List<String> snapshotTables(List<String> statements) {
         Set<String> tables = new LinkedHashSet<>();
         for (String statement : statements) {
@@ -87,6 +91,26 @@ public final class ContractDbReset {
             }
         }
         return List.copyOf(tables);
+    }
+
+    /**
+     * Every application table in {@code public} — rows left in tables the snapshot doesn't touch
+     * (versions, comments written mid-test, …) would leak into later cases, so TRUNCATE covers
+     * all of them, not just tables with INSERTs in the snapshot.
+     */
+    List<String> applicationTables(Connection connection) throws SQLException {
+        List<String> tables = new ArrayList<>();
+        try (Statement statement = connection.createStatement();
+             ResultSet rows = statement.executeQuery(
+                 "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
+                     + " AND tablename NOT IN"
+                     + " ('schema_migrations', 'ar_internal_metadata', 'flyway_schema_history')"
+                     + " ORDER BY tablename")) {
+            while (rows.next()) {
+                tables.add(rows.getString(1));
+            }
+        }
+        return tables;
     }
 
     /**
@@ -124,12 +148,12 @@ public final class ContractDbReset {
         return parseStatements(Files.readString(snapshotPath));
     }
 
-    /** TRUNCATE the snapshot tables RESTART IDENTITY CASCADE and replay the snapshot. */
+    /** TRUNCATE every application table RESTART IDENTITY CASCADE and replay the snapshot. */
     public void reset() throws IOException, SQLException {
         List<String> statements = snapshotStatements();
-        List<String> tables = snapshotTables(statements);
         try (Connection connection = DriverManager.getConnection(jdbcUrl, user, password)) {
             connection.setAutoCommit(false);
+            List<String> tables = applicationTables(connection);
             try (Statement statement = connection.createStatement()) {
                 if (!tables.isEmpty()) {
                     statement.execute("TRUNCATE " + String.join(", ", tables)

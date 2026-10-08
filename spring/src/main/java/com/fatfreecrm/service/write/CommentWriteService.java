@@ -229,11 +229,19 @@ public class CommentWriteService {
      * {@code updated_at} still makes the change notable).
      */
     private void subscribe(AuthenticatedUser user, Object commentable, Long userId) {
-        if (subscribedUsers(commentable) == null) {
-            return; // entity has no subscribed_users column (e.g. User)
-        }
+        // Lock the commentable row before reading subscribed_users: Rails' read-modify-write
+        // loses concurrent appends; the FOR UPDATE read makes both authors' ids persist.
         Object locked = entityManager.find(commentable.getClass(),
             ((BaseEntity) commentable).getId(), LockModeType.PESSIMISTIC_WRITE);
+        if (locked == null) {
+            return;
+        }
+        // find() can return the persistence-context instance loaded by findCommentable without a
+        // lock; refresh under the lock so subscribed_users reflects the row's committed state.
+        entityManager.refresh(locked, LockModeType.PESSIMISTIC_WRITE);
+        if (subscribedUsers(locked) == null) {
+            return; // entity has no subscribed_users column (e.g. User)
+        }
         if (locked instanceof Task task && !commentableSaveValid(task)) {
             return; // commentable.save returned false in Rails: subscribed_users is not persisted
         }

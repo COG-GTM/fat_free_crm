@@ -107,12 +107,8 @@ public final class PaperTrailYaml {
     }
 
     private static void writeTimeWithZone(StringBuilder out, Instant instant, AnchorState anchors) {
-        out.append("!ruby/object:ActiveSupport::TimeWithZone\n  utc: ");
-        String anchor = anchors.anchorFor(instant);
-        if (anchor != null) {
-            out.append(anchor).append(' ');
-        }
-        out.append(formatInstant(instant));
+        out.append("!ruby/object:ActiveSupport::TimeWithZone\n  utc: ")
+            .append(instantScalar(instant, anchors));
         out.append("\n  zone: ");
         String zoneAnchor = anchors.zoneAnchor();
         if (zoneAnchor.startsWith("*")) {
@@ -121,7 +117,18 @@ public final class PaperTrailYaml {
             out.append(zoneAnchor.isEmpty() ? "" : zoneAnchor + " ");
             out.append("!ruby/object:ActiveSupport::TimeZone\n    name: Etc/UTC");
         }
+        // Psych emits `time:` as a raw scalar inside the custom TWZ coder — always the literal,
+        // never an anchor (verified live on a create where created_at == updated_at).
         out.append("\n  time: ").append(formatInstant(instant));
+    }
+
+    /** An already-emitted Instant serializes as the bare {@code *N} alias — no literal after it. */
+    private static String instantScalar(Instant instant, AnchorState anchors) {
+        String anchor = anchors.anchorFor(instant);
+        if (anchor == null) {
+            return formatInstant(instant);
+        }
+        return anchor.startsWith("*") ? anchor : anchor + " " + formatInstant(instant);
     }
 
     private static String formatInstant(Instant instant) {

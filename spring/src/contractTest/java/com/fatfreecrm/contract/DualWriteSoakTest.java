@@ -50,6 +50,8 @@ class DualWriteSoakTest {
         springUrl = trimSlash(System.getProperty("contract.springUrl", "http://localhost:8080"));
         int minutes = Integer.parseInt(System.getProperty("soak.minutes", "5"));
         int threads = Integer.parseInt(System.getProperty("soak.threads", "4"));
+        // soak.commentSides: both (rails+spring alternated), spring, or rails.
+        String commentSides = System.getProperty("soak.commentSides", "both");
         Map<String, FixtureUsers.FixtureUser> users = FixtureUsers.load();
         ContractDbReset.fromProperties().reset();
         Instant startedAt = Instant.now();
@@ -81,21 +83,29 @@ class DualWriteSoakTest {
             long taskId = taskIds.get(worker);
             long toggleId = toggleIds.get(worker);
             futures.add(pool.submit(() -> runWriter(users, "alice", true, taskId,
-                deadline, "background_info", taskWrites, errors, serverErrors, failures)));
+                deadline, "background_info", taskWrites, errors, serverErrors, violations,
+                failures)));
             futures.add(pool.submit(() -> runWriter(users, "alice", false, taskId,
-                deadline, "priority", taskWrites, errors, serverErrors, failures)));
+                deadline, "priority", taskWrites, errors, serverErrors, violations,
+                failures)));
             futures.add(pool.submit(() -> runToggler(users, "alice", toggleId,
-                deadline, completes, uncompletes, errors, serverErrors, failures)));
-            boolean commenterIsRails = worker % 2 == 0;
+                deadline, completes, uncompletes, errors, serverErrors, violations,
+                failures)));
+            boolean commenterIsRails = switch (commentSides) {
+                case "rails" -> true;
+                case "spring" -> false;
+                default -> worker % 2 == 0;
+            };
             futures.add(pool.submit(() -> runCommenter(users, "alice", commenterIsRails,
-                deadline, commentCreates, errors, serverErrors, failures)));
+                deadline, commentCreates, errors, serverErrors, violations, failures)));
         }
         pool.shutdown();
         for (java.util.concurrent.Future<?> future : futures) {
             future.get();
         }
         pool.awaitTermination(minutes + 5, TimeUnit.MINUTES);
-        violations.set(constraintViolations());
+        // End-state invariants: real integrity queries — a failed query fails the test.
+        violations.addAndGet((int) endStateViolations());
 
         int taskSuccessful = taskWrites.get(); // counters only increment on success
         List<Long> allTaskIds = new ArrayList<>(taskIds);
@@ -176,6 +186,7 @@ class DualWriteSoakTest {
         AtomicInteger writes,
         AtomicInteger errors,
         AtomicInteger serverErrors,
+        AtomicInteger violations,
         ConcurrentLinkedQueue<String> failures
     ) {
         String base = railsSide ? railsUrl : springUrl;
@@ -195,6 +206,9 @@ class DualWriteSoakTest {
                     writes.incrementAndGet();
                     LastWrites.LAST.put(taskId + ":" + field, value);
                 } catch (SoakHttpException exception) {
+                    if (isConstraintViolation(exception)) {
+                        violations.incrementAndGet();
+                    }
                     if (exception.status >= 500) {
                         serverErrors.incrementAndGet();
                         failures.add((railsSide ? "rails" : "spring") + " " + exception.getMessage());
@@ -219,6 +233,7 @@ class DualWriteSoakTest {
         AtomicInteger uncompletes,
         AtomicInteger errors,
         AtomicInteger serverErrors,
+        AtomicInteger violations,
         ConcurrentLinkedQueue<String> failures
     ) {
         try {
@@ -242,6 +257,9 @@ class DualWriteSoakTest {
                     }
                     (complete ? completes : uncompletes).incrementAndGet();
                 } catch (SoakHttpException exception) {
+                    if (isConstraintViolation(exception)) {
+                        violations.incrementAndGet();
+                    }
                     if (exception.status >= 500) {
                         serverErrors.incrementAndGet();
                         failures.add("toggle " + exception.getMessage());
@@ -265,6 +283,7 @@ class DualWriteSoakTest {
         AtomicInteger commentCreates,
         AtomicInteger errors,
         AtomicInteger serverErrors,
+        AtomicInteger violations,
         ConcurrentLinkedQueue<String> failures
     ) {
         try {
@@ -285,6 +304,9 @@ class DualWriteSoakTest {
                     sendJson(auth.client(), auth, "POST", base + path, body);
                     commentCreates.incrementAndGet();
                 } catch (SoakHttpException exception) {
+                    if (isConstraintViolation(exception)) {
+                        violations.incrementAndGet();
+                    }
                     if (exception.status >= 500) {
                         serverErrors.incrementAndGet();
                         failures.add("comment " + exception.getMessage());
@@ -317,21 +339,24 @@ class DualWriteSoakTest {
                     body.toString(), StandardCharsets.UTF_8)).build(),
                 HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 400) {
-                throw new SoakHttpException(response.statusCode(), url);
+                throw new SoakHttpException(response.statusCode(),
+                    url + " " + response.body(), response.body());
             }
             String text = response.body();
             return text == null || text.isBlank() ? null : JSON.readTree(text);
         } catch (IOException | InterruptedException exception) {
-            throw new SoakHttpException(599, url + " " + exception.getMessage());
+            throw new SoakHttpException(599, url + " " + exception.getMessage(), "");
         }
     }
 
     private static final class SoakHttpException extends Exception {
         private static final long serialVersionUID = 1L;
         final int status;
-        SoakHttpException(int status, String message) {
+        final String body;
+        SoakHttpException(int status, String message, String body) {
             super("HTTP " + status + " " + message);
             this.status = status;
+            this.body = body;
         }
     }
 
@@ -395,24 +420,48 @@ class DualWriteSoakTest {
                 System.getProperty("contract.dbPassword", "postgres"));
              Statement statement = connection.createStatement();
              ResultSet rows = statement.executeQuery(sql)) {
-            return rows.next() ? rows.getLong(1) : -1;
+            return rows.next() ? rows.getLong(1) : 0;
         } catch (java.sql.SQLException exception) {
-            return -1;
+            throw new IllegalStateException("soak invariant query failed: " + sql, exception);
         }
     }
 
-    private int constraintViolations() {
-        try (Connection connection = DriverManager.getConnection(
-                System.getProperty("contract.dbUrl", "jdbc:postgresql://127.0.0.1:5433/ffcrm_contract"),
-                System.getProperty("contract.dbUser", "postgres"),
-                System.getProperty("contract.dbPassword", "postgres"));
-             Statement statement = connection.createStatement();
-             ResultSet rows = statement.executeQuery(
-                 "SELECT count(*) FROM tasks WHERE name LIKE 'soak-task-%' AND name IS NULL")) {
-            return rows.next() ? rows.getInt(1) : 0;
-        } catch (java.sql.SQLException exception) {
-            return 0;
-        }
+    /**
+     * A failed write counts as a constraint violation when its error carries a 23xxx SQLState or
+     * a constraint/duplicate-key marker (Rails renders DB errors as 500 text, Spring as 500 JSON).
+     */
+    private static boolean isConstraintViolation(SoakHttpException exception) {
+        String body = exception.body == null ? "" : exception.body.toLowerCase();
+        return body.matches("(?s).*\\b23[0-9a-z]{4}\\b.*")
+            || body.contains("constraint") || body.contains("duplicate key")
+            || body.contains("violat");
+    }
+
+    /**
+     * End-state integrity invariants, each == 0 expected: orphan comments (commentable row gone),
+     * versions pointing at a missing item (create/update events), and duplicate live task
+     * (user_id, name) pairs that index_tasks_on_user_id_and_name_and_deleted_at forbids.
+     */
+    private long endStateViolations() {
+        long orphans = 0;
+        orphans += queryLong(
+            "SELECT count(*) FROM comments c WHERE c.commentable_type = 'Account'"
+                + " AND NOT EXISTS (SELECT 1 FROM accounts a WHERE a.id = c.commentable_id)");
+        orphans += queryLong(
+            "SELECT count(*) FROM comments c WHERE c.commentable_type = 'Task'"
+                + " AND NOT EXISTS (SELECT 1 FROM tasks t WHERE t.id = c.commentable_id)");
+        orphans += queryLong(
+            "SELECT count(*) FROM versions v WHERE v.event IN ('create', 'update')"
+                + " AND v.item_type = 'Task'"
+                + " AND NOT EXISTS (SELECT 1 FROM tasks t WHERE t.id = v.item_id)");
+        orphans += queryLong(
+            "SELECT count(*) FROM versions v WHERE v.event IN ('create', 'update')"
+                + " AND v.item_type = 'Comment'"
+                + " AND NOT EXISTS (SELECT 1 FROM comments c WHERE c.id = v.item_id)");
+        orphans += queryLong(
+            "SELECT count(*) FROM (SELECT user_id, name FROM tasks WHERE deleted_at IS NULL"
+                + " GROUP BY user_id, name HAVING count(*) > 1) dup");
+        return orphans;
     }
 
     private static String trimSlash(String url) {

@@ -173,9 +173,22 @@ public final class DbAssert {
                     continue;
                 }
                 if (trimmed.startsWith("utc:") || trimmed.startsWith("time:")) {
-                    result.append(line.substring(0, line.indexOf(trimmed)))
-                        .append(trimmed.substring(0, trimmed.indexOf(':') + 1))
-                        .append(" __volatile__\n");
+                    // Mask only the timestamp literal: keep &N anchors and *N aliases so a
+                    // shared-Time anchor emitted as `utc: *1` still diffs against `utc: &N <ts>`.
+                    String indent = line.substring(0, line.indexOf(trimmed));
+                    String key = trimmed.substring(0, trimmed.indexOf(':') + 1);
+                    String rest = trimmed.substring(trimmed.indexOf(':') + 1).trim();
+                    if (rest.startsWith("*")) {
+                        result.append(indent).append(key).append(' ').append(rest)
+                            .append('\n');
+                    } else if (rest.startsWith("&")) {
+                        int space = rest.indexOf(' ');
+                        String anchor = space < 0 ? rest : rest.substring(0, space);
+                        result.append(indent).append(key).append(' ').append(anchor)
+                            .append(" __volatile__\n");
+                    } else {
+                        result.append(indent).append(key).append(" __volatile__\n");
+                    }
                     continue;
                 }
             }

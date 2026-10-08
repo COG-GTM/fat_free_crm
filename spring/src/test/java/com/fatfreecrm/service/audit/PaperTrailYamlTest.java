@@ -80,4 +80,52 @@ class PaperTrailYamlTest {
         String yaml = PaperTrailYaml.dumpChanges(changes);
         org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("subject:\n- Hello\n-\n"));
     }
+
+    @Test
+    void sharedInstantAliasEmitsNoLiteralAndTimeStaysLiteral() {
+        // Verified live on a Rails task-create version: `utc: *N` for the second occurrence and
+        // `time:` always the literal timestamp (Psych's TWZ coder doesn't anchor `time:`).
+        Instant same = Instant.parse("2026-10-08T03:32:15.444801421Z");
+        Map<String, Object[]> changes = new LinkedHashMap<>();
+        changes.put("created_at", new Object[] {null, same});
+        changes.put("updated_at", new Object[] {null, same});
+        String yaml = PaperTrailYaml.dumpChanges(changes);
+        String literal = "2026-10-08 03:32:15.444801421 Z";
+        org.junit.jupiter.api.Assertions.assertTrue(
+            yaml.contains("utc: &1 " + literal + "\n"), yaml);
+        org.junit.jupiter.api.Assertions.assertTrue(
+            yaml.contains("utc: *1\n"), yaml); // bare alias — no literal after it
+        org.junit.jupiter.api.Assertions.assertFalse(
+            yaml.contains("utc: *1 " + literal), yaml);
+        long timeLines = yaml.lines().filter(line -> line.trim().startsWith("time:")).count();
+        org.junit.jupiter.api.Assertions.assertEquals(2, timeLines, yaml);
+    }
+
+    @Test
+    void everyGeneratedYamlParsesWithSnakeYaml() {
+        Instant same = Instant.parse("2026-10-08T03:32:15.444801421Z");
+        Map<String, Object[]> changes = new LinkedHashMap<>();
+        changes.put("name", new Object[] {null, "<b>Call</b>"});
+        changes.put("body", new Object[] {"", "line one\nline two"});
+        changes.put("created_at", new Object[] {null, same});
+        changes.put("updated_at", new Object[] {null, same});
+        changes.put("subscribed_users", new Object[] {null, List.of(2, 3)});
+        String yaml = PaperTrailYaml.dumpChanges(changes);
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> parseStripTags(yaml), yaml);
+
+        Map<String, Object> attrs = new LinkedHashMap<>();
+        attrs.put("id", 1L);
+        attrs.put("created_at", same);
+        attrs.put("updated_at", same);
+        attrs.put("note", "it's here");
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+            () -> parseStripTags(PaperTrailYaml.dumpObject(attrs)));
+    }
+
+    /** SnakeYAML can't construct {@code !ruby/object:} tags — strip them and parse structure. */
+    private static Object parseStripTags(String yaml) {
+        return new org.yaml.snakeyaml.Yaml().load(
+            yaml.replace("!ruby/object:ActiveSupport::TimeWithZone", "")
+                .replace("!ruby/object:ActiveSupport::TimeZone", ""));
+    }
 }
