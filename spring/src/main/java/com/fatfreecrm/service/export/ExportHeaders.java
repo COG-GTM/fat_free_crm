@@ -1,0 +1,163 @@
+package com.fatfreecrm.service.export;
+
+import java.util.List;
+
+/** en-US static XLS headers of app/views/*/index.xls.builder (config/locales/fat_free_crm.en-US.yml). */
+final class ExportHeaders {
+
+    static final List<String> ACCOUNTS = List.of(
+        "Id",
+        "User",
+        "Assigned to",
+        "Name",
+        "Email",
+        "Phone",
+        "Fax",
+        "Website",
+        "Background",
+        "Access",
+        "Toll-free",
+        "Rating",
+        "Category",
+        "Date Created",
+        "Date Updated",
+        "Street 1",
+        "Street 2",
+        "City",
+        "State",
+        "Zip Code",
+        "Country",
+        "Address");
+
+    static final List<String> CAMPAIGNS = List.of(
+        "Id",
+        "User",
+        "Assigned to",
+        "Name",
+        "Access",
+        "Status",
+        "Budget",
+        "target leads",
+        "Target conversion",
+        "target revenue",
+        "Number of leads",
+        "Total Opportunities",
+        "Revenue",
+        "start date",
+        "end date",
+        "Objectives",
+        "Background",
+        "Date Created",
+        "Date Updated");
+
+    static final List<String> CONTACTS = List.of(
+        "Id",
+        "Lead",
+        "Title",
+        "Name",
+        "First name",
+        "Last name",
+        "Email",
+        "Alternative email",
+        "Phone",
+        "Mobile",
+        "Fax",
+        "Born on",
+        "Background",
+        "Website/Blog",
+        "LinkedIn",
+        "Facebook",
+        "Twitter",
+        "Date Created",
+        "Date Updated",
+        "Assigned to",
+        "Access",
+        "Department",
+        "Source",
+        "Do not call",
+        "Street 1",
+        "Street 2",
+        "City",
+        "State",
+        "Zip Code",
+        "Country",
+        "Address");
+
+    static final List<String> LEADS = List.of(
+        "Id",
+        "User",
+        "Campaign",
+        "Title",
+        "Name",
+        "Email",
+        "Alternative email",
+        "Phone",
+        "Mobile",
+        "Company",
+        "Background",
+        "Website/Blog",
+        "LinkedIn",
+        "Facebook",
+        "Twitter",
+        "Date Created",
+        "Date Updated",
+        "Assigned to",
+        "Access",
+        "Source",
+        "Status",
+        "Rating",
+        "Do not call",
+        "Street 1",
+        "Street 2",
+        "City",
+        "State",
+        "Zip Code",
+        "Country",
+        "Address");
+
+    static final List<String> OPPORTUNITIES = List.of(
+        "Id",
+        "User",
+        "Campaign",
+        "Assigned to",
+        "Account",
+        "Name",
+        "Access",
+        "Source",
+        "Stage",
+        "Probability",
+        "Amount",
+        "Discount",
+        "Weighted amount",
+        "close date",
+        "Date Created",
+        "Date Updated");
+
+    static final List<String> TASKS = List.of(
+        "Id",
+        "Name",
+        "Due",
+        "Date Created",
+        "Date Updated",
+        "Completed",
+        "User",
+        "Assigned to",
+        "Category",
+        "Background");
+
+    static final List<String> ACTIVITIES = List.of(
+        "Id",
+        "Item type",
+        "Item",
+        "Event",
+        "Whodunnit",
+        "Object",
+        "Created at",
+        "Object changes",
+        "Related",
+        "Related type",
+        "Transaction");
+
+    private ExportHeaders() {
+    }
+}
