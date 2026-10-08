@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workbook xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40" xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office">
+<Worksheet ss:Name="Dashboard">
+  <Table>
+    <Row>
+      <Cell>
+        <Data ss:Type="String">Id</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Item type</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Item</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Event</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Whodunnit</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Object</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Created at</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Object changes</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Related</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Related type</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Transaction</Data>
+      </Cell>
+    </Row>
+    <Row>
+      <Cell>
+        <Data ss:Type="Number">9805</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Contact</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">9741</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">view</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">9701</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2026-10-08 01:31:47 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+    </Row>
+    <Row>
+      <Cell>
+        <Data ss:Type="Number">9804</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Task</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">9761</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">create</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">9701</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2026-10-08 01:26:47 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+    </Row>
+    <Row>
+      <Cell>
+        <Data ss:Type="Number">9802</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Account</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">9711</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">update</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">9701</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">---
+name: Acme
+</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2026-10-08 01:06:47 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">---
+name:
+- Acme
+- Acme, Inc.
+</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">9721</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Campaign</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+    </Row>
+    <Row>
+      <Cell>
+        <Data ss:Type="Number">9801</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Account</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">9711</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">create</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">9701</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2026-10-08 00:36:47 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+    </Row>
+  </Table>
+</Worksheet>
+</Workbook>

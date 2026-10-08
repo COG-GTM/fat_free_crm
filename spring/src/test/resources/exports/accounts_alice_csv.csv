@@ -1,0 +1,6 @@
+Id,User,Assigned to,Name,Access,Website,Toll free phone,Phone,Fax,Deleted at,Created at,Updated at,Email,Background info,Rating,Category,Subscribed users,Contacts count,Opportunities count,Wikidata,Latitude,Longitude,Blog,Linkedin,Facebook,Twitter,Bluesky,Instagram,Mastodon,Cf region,Cf seats,Cf renewal,Cf flags,Cf active,Cf seen at,Tags
+9715,9702,9701,Zoë😀 Unicode,Private,http://acme.test,800-555,555-014,,,2025-01-01 13:30:15 UTC,2025-01-05 09:30:15 UTC,,,0,,[],0,0,,,,,,,,,,,,1000.0,,[],,,""
+9714,9702,,Delta Shared,Shared,http://acme.test,,555-013,,,2025-01-01 12:30:15 UTC,2025-01-04 09:30:15 UTC,delta@example.test,,5,partner,[],0,0,,,,,,,,,,,"",,,[],,,""
+9712,9701,,Beta & <Labs>,Private,http://acme.test,,555-011,,,2025-01-01 10:30:15 UTC,2025-01-02 09:30:15 UTC,,"",0,vendor,[],0,0,,,,,,,,,,,,,,[],false,,""
+9711,9701,9702,"Acme, Inc.",Public,http://acme.test,800-555,555-010,,,2025-01-01 09:30:15 UTC,2025-01-01 09:30:15 UTC,acme@example.test,"Says ""hi""
+Twice",3,customer,[],1,1,,,,,,,,,,,West,12.5,2025-06-30,"[""alpha"", ""beta""]",true,2025-02-03 04:05:06 UTC,west vip

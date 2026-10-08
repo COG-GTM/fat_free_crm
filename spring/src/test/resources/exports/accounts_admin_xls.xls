@@ -1,0 +1,525 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workbook xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40" xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office">
+<Worksheet ss:Name="Accounts">
+  <Table>
+    <Row>
+      <Cell>
+        <Data ss:Type="String">Id</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">User</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Assigned to</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Name</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Email</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Phone</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Fax</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Website</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Background</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Access</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Toll-free</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Rating</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Category</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Date Created</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Date Updated</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Street 1</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Street 2</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">City</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">State</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Zip Code</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Country</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Address</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Region</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Seats</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Renewal</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Flags</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Active</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Seen At</Data>
+      </Cell>
+    </Row>
+    <Row>
+      <Cell>
+        <Data ss:Type="Number">9711</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Alice</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">bob-export</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Acme, Inc.</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">acme@example.test</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">555-010</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">http://acme.test</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Says "hi"
+Twice</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Public</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">800-555</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">3</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">customer</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-01 09:30:15 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-01 09:30:15 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">1 Main St</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Suite, 5</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Boston</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">MA</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">02108</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">US</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">1 Main St
+Boston</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">West</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">12.5</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-06-30</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">["alpha", "beta"]</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">true</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-02-03 04:05:06 UTC</Data>
+      </Cell>
+    </Row>
+    <Row>
+      <Cell>
+        <Data ss:Type="Number">9712</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Alice</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Beta &amp; &lt;Labs&gt;</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">555-011</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">http://acme.test</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"></Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Private</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">0</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">vendor</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-01 10:30:15 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-02 09:30:15 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">[]</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">false</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+    </Row>
+    <Row>
+      <Cell>
+        <Data ss:Type="Number">9714</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">bob-export</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Delta Shared</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">delta@example.test</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">555-013</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">http://acme.test</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Shared</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">5</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">partner</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-01 12:30:15 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-04 09:30:15 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"></Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">[]</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+    </Row>
+    <Row>
+      <Cell>
+        <Data ss:Type="Number">9713</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">bob-export</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Gamma Hidden</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">555-012</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">http://acme.test</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Private</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">800-555</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">1</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">customer</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-01 11:30:15 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-03 09:30:15 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">[]</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+    </Row>
+    <Row>
+      <Cell>
+        <Data ss:Type="Number">9715</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">bob-export</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Alice</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Zoë😀 Unicode</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">555-014</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">http://acme.test</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Private</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">800-555</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">0</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-01 13:30:15 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-05 09:30:15 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">1000.0</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">[]</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+    </Row>
+  </Table>
+</Worksheet>
+</Workbook>

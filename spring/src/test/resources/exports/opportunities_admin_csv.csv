@@ -1,0 +1,4 @@
+Id,User,Campaign,Assigned to,Name,Access,Source,Stage,Probability,Amount,Discount,Closes on,Deleted at,Created at,Updated at,Background info,Subscribed users,Tags
+9753,9702,,,Hidden Deal,Private,campaign,lost,10,1.0,,,,2025-01-01 11:30:15 UTC,2025-01-01 11:30:15 UTC,,[],""
+9752,9701,,,Small Deal,Public,campaign,won,,,,,,2025-01-01 10:30:15 UTC,2025-01-01 10:30:15 UTC,,[],""
+9751,9701,9721,9702,Big Deal,Public,campaign,prospecting,25,10000.0,500.5,2025-03-01,,2025-01-01 09:30:15 UTC,2025-01-01 09:30:15 UTC,,[],west

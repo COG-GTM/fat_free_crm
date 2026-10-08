@@ -1,0 +1,3 @@
+Id,User,Assigned to,Name,Access,Website,Toll free phone,Phone,Fax,Deleted at,Created at,Updated at,Email,Background info,Rating,Category,Subscribed users,Contacts count,Opportunities count,Wikidata,Latitude,Longitude,Blog,Linkedin,Facebook,Twitter,Bluesky,Instagram,Mastodon,Cf region,Cf seats,Cf renewal,Cf flags,Cf active,Cf seen at,Tags
+9711,9701,9702,"Acme, Inc.",Public,http://acme.test,800-555,555-010,,,2025-01-01 09:30:15 UTC,2025-01-01 09:30:15 UTC,acme@example.test,"Says ""hi""
+Twice",3,customer,[],1,1,,,,,,,,,,,West,12.5,2025-06-30,"[""alpha"", ""beta""]",true,2025-02-03 04:05:06 UTC,west vip

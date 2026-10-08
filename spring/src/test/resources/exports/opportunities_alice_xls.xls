@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workbook xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40" xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office">
+<Worksheet ss:Name="Opportunities">
+  <Table>
+    <Row>
+      <Cell>
+        <Data ss:Type="String">Id</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">User</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Campaign</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Assigned to</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Account</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Name</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Access</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Source</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Stage</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Probability</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Amount</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Discount</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Weighted amount</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">close date</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Date Created</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Date Updated</Data>
+      </Cell>
+    </Row>
+    <Row>
+      <Cell>
+        <Data ss:Type="Number">9752</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Alice</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Small Deal</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Public</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">campaign</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">won</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">0.0</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-01 10:30:15 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-01 10:30:15 UTC</Data>
+      </Cell>
+    </Row>
+    <Row>
+      <Cell>
+        <Data ss:Type="Number">9751</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Alice</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Spring Launch</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">bob-export</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Acme, Inc.</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Big Deal</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Public</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">campaign</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">prospecting</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">25</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">10000.0</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">500.5</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">2374.875</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-03-01</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-01 09:30:15 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-01 09:30:15 UTC</Data>
+      </Cell>
+    </Row>
+  </Table>
+</Worksheet>
+</Workbook>
