@@ -35,6 +35,7 @@ public class SearchableEntities {
 
     private static final List<String> DEFAULT_ACCOUNT_CATEGORIES = List.of(
         "affiliate", "competitor", "customer", "partner", "reseller", "vendor");
+    private static final List<String> DEFAULT_LEAD_STATUSES = List.of("new", "contacted", "converted", "rejected");
 
     private static final List<String> DEFAULT_CAMPAIGN_STATUSES = List.of(
         "planned", "started", "completed", "on_hold", "called_off");
@@ -113,7 +114,8 @@ public class SearchableEntities {
                 likeEscaped(root, cb, "email", query)
             ),
             true,
-            null
+            user -> Map.of("status", leadStatusFacets(user, entityManager, settingRepository, accessPolicy)),
+            leadStateFilter()
         ));
         register(map, new SearchableEntity(
             Opportunity.class,
@@ -187,6 +189,23 @@ public class SearchableEntities {
     }
 
     private static StateFilter campaignStateFilter() {
+        return new StateFilter("status", (root, builder, values) -> {
+            List<String> statuses = new ArrayList<>(values);
+            boolean other = statuses.removeIf("other"::equals);
+            List<Predicate> predicates = new ArrayList<>();
+            if (!statuses.isEmpty()) {
+                predicates.add(root.get("status").in(statuses));
+            } else if (!other) {
+                predicates.add(builder.disjunction());
+            }
+            if (other) {
+                predicates.add(builder.isNull(root.get("status")));
+            }
+            return builder.or(predicates.toArray(Predicate[]::new));
+        });
+    }
+
+    private static StateFilter leadStateFilter() {
         return new StateFilter("status", (root, builder, values) -> {
             List<String> statuses = new ArrayList<>(values);
             boolean other = statuses.removeIf("other"::equals);
@@ -332,6 +351,60 @@ public class SearchableEntities {
                 }
             })
             .orElse(DEFAULT_CAMPAIGN_STATUSES);
+    }
+
+    private static Map<String, Long> leadStatusFacets(
+        AuthenticatedUser user,
+        EntityManager entityManager,
+        SettingRepository settingRepository,
+        AccessPolicy accessPolicy
+    ) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> query = cb.createQuery(Object[].class);
+        Root<Lead> root = query.from(Lead.class);
+        Expression<String> status = root.get("status");
+        query.multiselect(List.of(status, cb.count(root.get("id"))).toArray(Selection[]::new));
+        query.groupBy(status);
+        Predicate accessible = accessPolicy.accessibleBy(user, Lead.class).toPredicate(root, query, cb);
+        if (accessible != null) {
+            query.where(accessible);
+        }
+        Map<String, Long> counts = new LinkedHashMap<>();
+        long total = 0;
+        for (Object[] row : entityManager.createQuery(query).getResultList()) {
+            Long count = (Long) row[1];
+            if (row[0] != null) {
+                counts.merge((String) row[0], count, Long::sum);
+            }
+            total += count;
+        }
+
+        Map<String, Long> facets = new LinkedHashMap<>();
+        long categorized = 0;
+        for (String key : leadStatuses(settingRepository)) {
+            long count = counts.getOrDefault(key, 0L);
+            facets.put(key, count);
+            categorized += count;
+        }
+        facets.put("all", total);
+        facets.put("other", total - categorized);
+        return facets;
+    }
+
+    private static List<String> leadStatuses(SettingRepository settingRepository) {
+        return settingRepository.findByName("lead_status")
+            .map(Setting::getValue)
+            .map(value -> {
+                try {
+                    List<String> statuses = RailsYaml.readStringList(value).stream()
+                        .map(status -> status.startsWith(":") ? status.substring(1) : status)
+                        .toList();
+                    return statuses.isEmpty() ? DEFAULT_LEAD_STATUSES : statuses;
+                } catch (IllegalArgumentException exception) {
+                    return DEFAULT_LEAD_STATUSES;
+                }
+            })
+            .orElse(DEFAULT_LEAD_STATUSES);
     }
 
     /** {@code lower(path) LIKE '%q%' ESCAPE '\\'} with %, _, \ escaped — the Ransack {@code cont} semantics. */

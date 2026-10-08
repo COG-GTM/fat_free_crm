@@ -41,11 +41,13 @@
   description: Compare the public fixture account response.
 - id: contacts-index-alice
   ticket: AB-270
-  status: pending
+  status: enforced
   method: GET
   path: /contacts
+  params: {page: 1, query: ""}
+  spring: {bodyPointer: /items}
   auth: alice
-  description: Compare Alice's visible contacts after Spring contacts index is implemented.
+  description: Compare Alice's visible contacts with Spring.
 - id: accounts-index-anonymous
   ticket: AB-270
   status: enforced

@@ -463,3 +463,46 @@ read/write precedence and cutover sequence are documented in
 
 The registry caches field definitions and physical `cf_*` columns, and re-hashes their contents after
 the configured TTL to detect metadata or schema changes.
+
+## Contacts and leads read API (AB-270)
+
+Contacts and leads are available through the same authenticated read surface:
+
+| Endpoint | Behavior |
+| --- | --- |
+| `GET /api/v1/contacts` | Access-scoped contact list; no sidebar facets or state filter, matching Rails. |
+| `GET /api/v1/contacts/{numericId}` | Read one contact and record a Rails-compatible `view` event. |
+| `GET /api/v1/contacts/{numericId}.vcf` | Authorized vCard attachment with Rails response headers and vcardigan-compatible bytes. |
+| `GET /api/v1/contacts/autocomplete` | Search accessible contacts by full name, limited to ten. |
+| `GET /api/v1/leads` | Access-scoped lead list and configured status facets. |
+| `GET /api/v1/leads/{numericId}` | Read one lead and record a Rails-compatible `view` event. |
+| `GET /api/v1/leads/{numericId}.vcf` | Authorized vCard attachment with Rails response headers and vcardigan-compatible bytes. |
+| `GET /api/v1/leads/autocomplete` | Search accessible leads by full name, limited to ten. |
+
+List queries support `page`, `per_page`, `query`, `sort_by`, and Rails-style `q[...]`. Contacts have
+no `status` filter. Leads accept comma-separated `status` values; `other` selects NULL status and
+advanced `q[...]` search takes precedence over the status filter. Lead facets count the accessible
+scope in configured `lead_status` order, then `all`, then `other` (NULL and unconfigured statuses).
+Rails `LeadsController#index` does not pass the explicit `per_page` request parameter to its list
+query, so Spring removes it too; `leads_per_page` and `leads_sort_by` preferences still supply defaults.
+Contacts honor `per_page` and `contacts_per_page` / `contacts_sort_by` preferences normally.
+
+Autocomplete accepts `term` and either `excludeRelated` or Rails' `related` (the former wins). Contacts
+support a bare contact ID and `accounts/<id>`, `opportunities/<id>`, or `users/<id>` exclusions; leads
+support a bare lead ID and `campaigns/<id>` or `users/<id>`. Related records are existence-checked;
+missing related IDs add no exclusions.
+
+The `.vcf` endpoints authorize the same way as show, write a `view` version, and reproduce the Rails
+vcardigan output, including raw values, property order, type formatting, LF endings, and 75/74-codepoint
+folding. A handwritten `VCardWriter` is used instead of adding ez-vcard so the legacy byte-level behavior
+remains compatible. Search and vCard matrices are generated on PostgreSQL in rollback-only transactions:
+
+```sh
+bundle exec rake ffcrm:migration:search_matrix
+bundle exec rake ffcrm:migration:vcard_matrix
+```
+
+The search task writes `contacts_search_matrix.json` and `leads_search_matrix.json` alongside the
+Accounts matrix; `CONTACTS_OUTPUT` and `LEADS_OUTPUT` override those paths. The vCard task writes
+`spring/src/test/resources/vcard/rails_vcard_matrix.json` and accepts `VCARD_OUTPUT`. Spring parity
+tests replay all generated list and vCard cases.

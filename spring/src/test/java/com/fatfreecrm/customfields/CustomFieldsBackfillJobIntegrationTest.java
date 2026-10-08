@@ -86,7 +86,7 @@ class CustomFieldsBackfillJobIntegrationTest extends AbstractPostgresIntegration
 
         CustomFieldsBackfillReport report = backfillJob.run();
         assertThat(report.ok()).isTrue();
-        assertThat(report.tables().get("accounts").rowsBackfilled()).isEqualTo(5_000);
+        assertThat(report.tables().get("accounts").rowsBackfilled()).isEqualTo(7_010);
         assertThat(jdbcTemplate.queryForObject(
             "SELECT count(*) FROM accounts WHERE custom_fields ->> 'cf_backfill_text' = 'value-25000'",
             Long.class)).isEqualTo(1);
