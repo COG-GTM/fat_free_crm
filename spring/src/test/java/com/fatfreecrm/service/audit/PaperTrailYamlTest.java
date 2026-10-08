@@ -56,10 +56,16 @@ class PaperTrailYamlTest {
     @Test
     void dumpChangesQuotingMatchesPsych() {
         Map<String, Object[]> changes = new LinkedHashMap<>();
-        changes.put("body", new Object[] {"", "<b>hi</b>"});
+        changes.put("body", new Object[] {"", "yes"});
+        changes.put("notes", new Object[] {null, "a: b"});
+        changes.put("street1", new Object[] {null, "  leading"});
+        changes.put("suffix", new Object[] {null, "leading "});
         String yaml = PaperTrailYaml.dumpChanges(changes);
         org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- ''"));
-        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- \"<b>hi</b>\""));
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- 'yes'"));
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- 'a: b'"));
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- \"  leading\""));
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- 'leading '"));
     }
 
     @Test
@@ -137,8 +143,12 @@ class PaperTrailYamlTest {
         attrs.put("created_at", same);
         attrs.put("updated_at", same);
         attrs.put("note", "it's here");
+        attrs.put("unicode", "Zoë😀");
+        String objectYaml = PaperTrailYaml.dumpObject(attrs);
+        org.junit.jupiter.api.Assertions.assertTrue(
+            objectYaml.contains("unicode: \"Zoë\\U0001F600\""), objectYaml);
         org.junit.jupiter.api.Assertions.assertDoesNotThrow(
-            () -> parseStripTags(PaperTrailYaml.dumpObject(attrs)));
+            () -> parseStripTags(objectYaml));
     }
 
     /** SnakeYAML can't construct {@code !ruby/object:} tags — strip them and parse structure. */

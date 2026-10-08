@@ -18,6 +18,7 @@ import jakarta.persistence.EntityManager;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,7 +79,7 @@ class VersionRecorderTest {
     }
 
     @Test
-    void recordsATouchAsAnUpdateWithThePreTouchObjectAndNoChanges() {
+    void recordsATouchAsAnUpdateWithTheTouchedObjectAndNoChanges() {
         Account account = mock(Account.class);
         when(account.getId()).thenReturn(31L);
         Map<String, Object> before = new LinkedHashMap<>();
@@ -91,7 +92,7 @@ class VersionRecorderTest {
 
         assertThat(version.getEvent()).isEqualTo("update");
         assertThat(version.getObject()).startsWith("---\nname: before\nupdated_at: ");
-        assertThat(version.getObject()).contains("utc: 2025-02-01 11:59:00.000000000 Z");
+        assertThat(version.getObject()).contains("utc: 2025-02-01 12:00:00.000000000 Z");
         assertThat(version.getObjectChanges()).isNull();
     }
 
@@ -104,5 +105,19 @@ class VersionRecorderTest {
 
         assertThat(versionRecorder.recordTouch(null, association, before, after)).isNull();
         org.mockito.Mockito.verify(versionRepository, never()).save(any(Version.class));
+    }
+
+    @Test
+    void recordsOnlyAnExplicitUpdatedAtChange() {
+        Account account = mock(Account.class);
+        when(account.getId()).thenReturn(42L);
+        Map<String, Object> before = Map.of("updated_at", Instant.parse("2025-02-01T11:59:00Z"));
+        Map<String, Object> after = Map.of("updated_at", Instant.parse("2025-02-01T12:00:00Z"));
+
+        assertThat(versionRecorder.recordUpdate(null, account, before, after)).isNull();
+        Version version = versionRecorder.recordUpdate(null, account, before, after, List.of("updated_at"));
+
+        assertThat(version.getEvent()).isEqualTo("update");
+        assertThat(version.getObjectChanges()).contains("updated_at:");
     }
 }

@@ -93,10 +93,8 @@ public class VersionRecorder {
     }
 
     /**
-     * PaperTrail {@code update} version where {@code assignedOrder} lists the attribute names the
-     * save call assigned ({@code update(k: v, ...)} args / mass-assigned params), in order: the
-     * dumped {@code object} leads with those changed attributes (before values) and then emits the
-     * remaining columns in column order. {@code object_changes} stays column-ordered.
+     * PaperTrail {@code update} version. {@code assignedOrder} is retained for callers that track
+     * request assignment order; PaperTrail serializes both YAML fields in model column order.
      */
     @Transactional
     public Version recordUpdate(
@@ -117,25 +115,21 @@ public class VersionRecorder {
                 changes.put(name, new Object[] {old, value});
             }
         });
-        // Timestamp-only changes are not notable: PaperTrail writes no version when a save only
-        // bumps updated_at (verified live — commentable.save for subscribed_users writes none).
+        // Rails does not record an automatic timestamp-only save; an explicitly assigned
+        // updated_at still creates the PaperTrail version.
         boolean notable = changes.keySet().stream()
-            .anyMatch(name -> !name.equals("updated_at") && !name.equals("created_at"));
+            .anyMatch(name -> !name.equals("created_at")
+                && (!name.equals("updated_at") || assignedOrder.contains(name)));
         if (!notable) {
             return null;
         }
         Version version = base(user, options, entity, "update");
-        Map<String, Object> orderedBefore = new LinkedHashMap<>();
-        assignedOrder.stream()
-            .filter(changes::containsKey)
-            .forEach(name -> orderedBefore.put(name, before.get(name)));
-        before.forEach(orderedBefore::putIfAbsent);
-        version.setObject(PaperTrailYaml.dumpObject(orderedBefore));
+        version.setObject(PaperTrailYaml.dumpObject(before));
         version.setObjectChanges(PaperTrailYaml.dumpChanges(changes));
         return versionRepository.save(version);
     }
 
-    /** PaperTrail {@code touch} is a forced update with the pre-touch object and no changes YAML. */
+    /** PaperTrail {@code touch} is a forced update with the touched object and no changes YAML. */
     @Transactional
     public Version recordTouch(
         AuthenticatedUser user,
@@ -152,7 +146,7 @@ public class VersionRecorder {
             return null;
         }
         Version version = base(user, options, entity, "update");
-        version.setObject(PaperTrailYaml.dumpObject(before));
+        version.setObject(PaperTrailYaml.dumpObject(after));
         return versionRepository.save(version);
     }
 

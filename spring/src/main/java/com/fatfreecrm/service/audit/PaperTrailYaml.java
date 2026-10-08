@@ -5,7 +5,7 @@ import java.time.LocalDate;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -18,12 +18,7 @@ import java.util.regex.Pattern;
  * with {@code utc}/{@code zone}/{@code time} members, and Psych anchors: objects referenced more
  * than once get {@code &N} at first use and {@code *N} later, numbered in document order. The
  * {@code ActiveSupport::TimeZone} instance is shared by every TimeWithZone in the document, and
- * Rails assigns {@code created_at}/{@code updated_at} from one {@code Time.now}, so a shared
- * {@code utc} {@code Time} anchors the same way. The {@code time:} member is always literal.
- *
- * <p>Anchors track object identity: callers must pass the same {@link Instant} instance for
- * attributes Rails populated from one {@code Time.now} so the {@code &N}/{@code *N} anchoring
- * matches Psych output.
+ * equal UTC timestamps share anchors. The {@code time:} member is always literal.
  */
 public final class PaperTrailYaml {
 
@@ -170,6 +165,9 @@ public final class PaperTrailYaml {
         if (text.isEmpty()) {
             return true;
         }
+        if (text.codePoints().anyMatch(Character::isSupplementaryCodePoint)) {
+            return true;
+        }
         if (!text.equals(text.trim()) || text.contains(": ") || text.contains(" #")
             || text.endsWith(":") || text.contains("\n") || text.contains("\t")) {
             return true;
@@ -191,16 +189,33 @@ public final class PaperTrailYaml {
         if (text.contains("\n")) {
             return "|-\n  " + text.replace("\n", "\n  ");
         }
-        return '"' + text
-            .replace("\\", "\\\\")
-            .replace("\"", "\\\"")
-            .replace("\t", "\\t")
-            + '"';
+        if (text.startsWith(" ")
+            || text.codePoints().anyMatch(Character::isSupplementaryCodePoint)
+            || text.codePoints().anyMatch(Character::isISOControl)) {
+            StringBuilder quoted = new StringBuilder("\"");
+            text.codePoints().forEach(codePoint -> {
+                switch (codePoint) {
+                    case '\\' -> quoted.append("\\\\");
+                    case '"' -> quoted.append("\\\"");
+                    case '\t' -> quoted.append("\\t");
+                    case '\r' -> quoted.append("\\r");
+                    default -> {
+                        if (Character.isSupplementaryCodePoint(codePoint)) {
+                            quoted.append(String.format(Locale.ROOT, "\\U%08X", codePoint));
+                        } else {
+                            quoted.appendCodePoint(codePoint);
+                        }
+                    }
+                }
+            });
+            return quoted.append('"').toString();
+        }
+        return "'" + text.replace("'", "''") + "'";
     }
 
     /** Psych only anchors objects referenced more than once; scan the document up front. */
     private static AnchorState preScan(List<Object> values) {
-        Map<Instant, int[]> counts = new IdentityHashMap<>();
+        Map<Instant, int[]> counts = new HashMap<>();
         int zones = 0;
         for (Object value : values) {
             if (value instanceof Instant instant) {
@@ -213,7 +228,7 @@ public final class PaperTrailYaml {
 
     private static final class AnchorState {
         private final Map<Instant, int[]> occurrences;
-        private final Map<Instant, Integer> emitted = new IdentityHashMap<>();
+        private final Map<Instant, Integer> emitted = new HashMap<>();
         private final boolean zoneShared;
         private int count;
         private Integer zoneId;
