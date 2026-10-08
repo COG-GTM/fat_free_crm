@@ -72,6 +72,7 @@ public class JobsProperties {
 
         private String cron = "*/10 * * * * ?";
         private boolean enabled = true;
+        private Duration staleClaimThreshold = Duration.ofMinutes(15);
 
         public String getCron() {
             return cron;
@@ -87,6 +88,14 @@ public class JobsProperties {
 
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
+        }
+
+        public Duration getStaleClaimThreshold() {
+            return staleClaimThreshold;
+        }
+
+        public void setStaleClaimThreshold(Duration staleClaimThreshold) {
+            this.staleClaimThreshold = staleClaimThreshold;
         }
     }
 

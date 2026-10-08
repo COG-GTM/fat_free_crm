@@ -10,6 +10,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -49,8 +50,10 @@ class SolidQueueDrainServiceTest {
         assertEquals(0, service(jdbc, executor).drain());
 
         ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
-        verify(jdbc).<Long>query(sql.capture(), ArgumentMatchers.<RowMapper<Long>>any(), any(Object[].class));
-        assertTrue(sql.getValue().contains("class_name IN"));
+        verify(jdbc, times(2)).<Long>query(
+            sql.capture(), ArgumentMatchers.<RowMapper<Long>>any(), any(Object[].class));
+        assertTrue(sql.getAllValues().get(0).contains("solid_queue_claimed_executions"));
+        assertTrue(sql.getAllValues().get(1).contains("class_name IN"));
         verify(executor, never()).execute(anyString(), anyString());
         verify(jdbc, never()).update(anyString(), any(Object[].class));
     }
@@ -72,6 +75,9 @@ class SolidQueueDrainServiceTest {
         doAnswer(invocation -> {
             String sql = invocation.getArgument(0);
             RowMapper<Object> mapper = invocation.getArgument(1);
+            if (sql.contains("solid_queue_claimed_executions")) {
+                return List.of();
+            }
             ResultSet row = mock(ResultSet.class);
             if (sql.contains("FOR UPDATE")) {
                 when(row.getLong("id")).thenReturn(41L);
@@ -92,6 +98,6 @@ class SolidQueueDrainServiceTest {
         PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
         when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
         return new SolidQueueDrainService(
-            jdbc, new ObjectMapper(), executor, new JobsOwner(properties), transactionManager);
+            jdbc, new ObjectMapper(), executor, new JobsOwner(properties), properties, transactionManager);
     }
 }

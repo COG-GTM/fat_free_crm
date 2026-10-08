@@ -82,6 +82,7 @@ ffcrm:
     solid-queue-drain:
       cron: "*/10 * * * * ?"
       enabled: true
+      stale-claim-threshold: 15m
     http:
       connect-timeout: 5s
       read-timeout: 10s

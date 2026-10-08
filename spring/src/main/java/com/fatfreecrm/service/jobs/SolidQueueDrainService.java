@@ -2,10 +2,12 @@ package com.fatfreecrm.service.jobs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fatfreecrm.config.JobsProperties;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -37,6 +39,7 @@ public class SolidQueueDrainService {
     private final ObjectMapper objectMapper;
     private final SolidQueueJobExecutor executor;
     private final JobsOwner jobsOwner;
+    private final JobsProperties jobsProperties;
     private final TransactionTemplate transactionTemplate;
 
     public SolidQueueDrainService(
@@ -44,12 +47,14 @@ public class SolidQueueDrainService {
         ObjectMapper objectMapper,
         SolidQueueJobExecutor executor,
         JobsOwner jobsOwner,
+        JobsProperties jobsProperties,
         PlatformTransactionManager transactionManager
     ) {
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
         this.executor = executor;
         this.jobsOwner = jobsOwner;
+        this.jobsProperties = jobsProperties;
         transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
@@ -58,6 +63,7 @@ public class SolidQueueDrainService {
         if (!jobsOwner.isSpring()) {
             return 0;
         }
+        warnStaleSpringClaims();
         List<Long> candidates = jdbcTemplate.query(
             """
                 SELECT jobs.id
@@ -84,6 +90,30 @@ public class SolidQueueDrainService {
             count++;
         }
         return count;
+    }
+
+    private void warnStaleSpringClaims() {
+        Duration threshold = jobsProperties.getSolidQueueDrain().getStaleClaimThreshold();
+        Timestamp cutoff = Timestamp.from(Instant.now().minus(threshold));
+        List<Long> jobIds = jdbcTemplate.query(
+            """
+                SELECT c.job_id
+                FROM solid_queue_claimed_executions c
+                JOIN solid_queue_jobs j ON j.id = c.job_id
+                WHERE c.process_id IS NULL AND c.created_at < ?
+                ORDER BY c.job_id
+                """,
+            (result, row) -> result.getLong(1),
+            cutoff);
+        if (!jobIds.isEmpty()) {
+            LOGGER.warn(
+                "Solid Queue has {} Spring claims with no process older than {} "
+                    + "(possible crash between claim and completion); manual action required, "
+                    + "see spring/README.md: job_ids={}",
+                jobIds.size(),
+                threshold,
+                jobIds);
+        }
     }
 
     private SolidQueueJob claim(long id) {

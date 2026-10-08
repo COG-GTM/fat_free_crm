@@ -677,3 +677,44 @@ observed discard behavior. Create versions are recorded for new rows, but
 update/touch versions await the audit track. Devise token generation remains
 Rails-owned. MailText is en-US only pending settings-i18n, and private-address
 blocking is off by default for parity.
+
+### Known gap: orphaned Spring claims
+
+Spring inserts a `solid_queue_claimed_executions` row with `process_id` NULL
+before it runs a job. A crash between claiming and completing the job strands
+that job. Solid Queue only releases claims held by registered processes, and
+Spring does not automatically requeue an orphan because the mail or another
+side effect may already have happened and requeueing could deliver it twice.
+The `ffcrm.jobs.solid-queue-drain.stale-claim-threshold` property defaults to
+`15m`; a Spring-owned drain warns when it finds claims older than that
+threshold.
+
+Before changing a claim, check whether its mail or side effect already
+happened, for example with the recipient or the GreenMail/SMTP logs. Then
+choose one manual action for the job:
+
+- Release it to run again (mirrors `ClaimedExecution#release` →
+  `ReadyExecution`):
+
+  ```sql
+  BEGIN;
+  INSERT INTO solid_queue_ready_executions (job_id, queue_name, priority, created_at)
+    SELECT id, queue_name, priority, now() FROM solid_queue_jobs WHERE id = :job_id;
+  DELETE FROM solid_queue_claimed_executions WHERE job_id = :job_id AND process_id IS NULL;
+  COMMIT;
+  ```
+
+- Mark it failed so Rails/Mission Control retry and discard tooling can handle
+  it:
+
+  ```sql
+  BEGIN;
+  INSERT INTO solid_queue_failed_executions (job_id, error, created_at)
+    VALUES (:job_id, '{"exception_class":"OrphanedSpringClaim","message":"released manually after Spring crash","backtrace":[]}', now())
+    ON CONFLICT (job_id) DO NOTHING;
+  DELETE FROM solid_queue_claimed_executions WHERE job_id = :job_id AND process_id IS NULL;
+  COMMIT;
+  ```
+
+Failed jobs keep `finished_at` NULL and get a `failed_executions` row in Solid
+Queue's error JSON shape.

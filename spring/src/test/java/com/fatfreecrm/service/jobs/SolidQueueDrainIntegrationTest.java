@@ -13,17 +13,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fatfreecrm.config.JobsProperties;
 import com.fatfreecrm.support.AbstractPostgresIntegrationTest;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @SpringBootTest
+@ExtendWith(OutputCaptureExtension.class)
 class SolidQueueDrainIntegrationTest extends AbstractPostgresIntegrationTest {
 
     @Autowired
@@ -58,7 +63,7 @@ class SolidQueueDrainIntegrationTest extends AbstractPostgresIntegrationTest {
             doThrow(new IllegalStateException("expected failure"))
                 .when(executor).execute("WikidataJob", failureArguments);
             SolidQueueDrainService service = new SolidQueueDrainService(
-                jdbcTemplate, objectMapper, executor, new JobsOwner(properties), transactionManager);
+                jdbcTemplate, objectMapper, executor, new JobsOwner(properties), properties, transactionManager);
 
             assertEquals(2, service.drain());
             verify(executor).execute("AccountWebsiteJob", successArguments);
@@ -103,7 +108,7 @@ class SolidQueueDrainIntegrationTest extends AbstractPostgresIntegrationTest {
             SolidQueueJobExecutor executor = mock(SolidQueueJobExecutor.class);
             doThrow(new NullMessageException()).when(executor).execute("WikidataJob", failureArguments);
             SolidQueueDrainService service = new SolidQueueDrainService(
-                jdbcTemplate, objectMapper, executor, new JobsOwner(properties), transactionManager);
+                jdbcTemplate, objectMapper, executor, new JobsOwner(properties), properties, transactionManager);
 
             assertEquals(1, service.drain());
 
@@ -116,6 +121,47 @@ class SolidQueueDrainIntegrationTest extends AbstractPostgresIntegrationTest {
         }
     }
 
+    @Test
+    void warnsAboutOnlyStaleSpringClaimsWithoutDeletingOrReleasingThem(CapturedOutput output) {
+        String prefix = "ab273-" + UUID.randomUUID();
+        try {
+            Instant now = Instant.now();
+            long staleNullProcess = enqueueWithoutReady(
+                prefix + "-stale-null", Timestamp.from(now.minus(Duration.ofMinutes(20))));
+            long freshNullProcess = enqueueWithoutReady(prefix + "-fresh-null", Timestamp.from(now));
+            long staleWithProcess = enqueueWithoutReady(
+                prefix + "-stale-process", Timestamp.from(now.minus(Duration.ofMinutes(20))));
+            jdbcTemplate.update("""
+                INSERT INTO solid_queue_claimed_executions(job_id, process_id, created_at)
+                VALUES (?, NULL, ?), (?, NULL, ?), (?, 987654321, ?)
+                """,
+                staleNullProcess, Timestamp.from(now.minus(Duration.ofMinutes(20))),
+                freshNullProcess, Timestamp.from(now),
+                staleWithProcess, Timestamp.from(now.minus(Duration.ofMinutes(20))));
+
+            JobsProperties properties = new JobsProperties();
+            properties.setOwner("spring");
+            assertEquals(Duration.ofMinutes(15), properties.getSolidQueueDrain().getStaleClaimThreshold());
+            SolidQueueDrainService service = new SolidQueueDrainService(
+                jdbcTemplate, objectMapper, mock(SolidQueueJobExecutor.class),
+                new JobsOwner(properties), properties, transactionManager);
+
+            assertEquals(0, service.drain());
+
+            List<String> warningLines = output.getAll().lines()
+                .filter(line -> line.contains("Solid Queue has") && line.contains("job_ids="))
+                .toList();
+            assertEquals(1, warningLines.size());
+            String warning = warningLines.get(0);
+            assertTrue(warning.contains("1 Spring claims"));
+            assertTrue(warning.contains("PT15M"));
+            assertTrue(warning.contains("job_ids=[" + staleNullProcess + "]"));
+            assertEquals(1, count("solid_queue_claimed_executions", staleNullProcess));
+            assertEquals(1, count("solid_queue_claimed_executions", freshNullProcess));
+            assertEquals(1, count("solid_queue_claimed_executions", staleWithProcess));
+            System.out.println("Captured Solid Queue stale-claim WARN: " + warning);
+        } finally {
+            cleanup(prefix);
         }
     }
 
@@ -132,6 +178,15 @@ class SolidQueueDrainIntegrationTest extends AbstractPostgresIntegrationTest {
             VALUES (?, 'default', 0, ?)
             """, jobId, Timestamp.from(Instant.now()));
         return jobId;
+    }
+
+    private long enqueueWithoutReady(String activeJobId, Timestamp createdAt) {
+        return jdbcTemplate.queryForObject("""
+            INSERT INTO solid_queue_jobs
+                (queue_name, class_name, arguments, active_job_id, created_at, updated_at)
+            VALUES ('default', 'UnsupportedJob', '{}', ?, ?, ?)
+            RETURNING id
+            """, Long.class, activeJobId, createdAt, createdAt);
     }
 
     private Instant finishedAt(long jobId) {
