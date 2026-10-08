@@ -1,0 +1,16 @@
+[
+  "UserMailer",
+  "assigned_entity_notification",
+  "deliver_now",
+  {
+    "_aj_symbol_keys": [],
+    "args": [
+      {
+        "_aj_globalid": "gid://fat-free-crm/Account/9"
+      },
+      {
+        "_aj_globalid": "gid://fat-free-crm/User/7"
+      }
+    ]
+  }
+]

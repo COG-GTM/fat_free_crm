@@ -1,0 +1,30 @@
+{
+  "assigned_entity_notification": {
+    "from": "noreply@fatfreecrm.com",
+    "html": null,
+    "subject": "Fat Free CRM: You have been assigned Example Account Account",
+    "text": "Your colleague Casey has assigned the Example Account Account to you.\nhttp://localhost:3000/accounts\n\n",
+    "to": "taylor@example.test"
+  },
+  "comment_notification": {
+    "from": "noreply@fatfreecrm.com",
+    "html": null,
+    "subject": "RE: [account:9] Example Account",
+    "text": "Casey Sender commented on Account: Example Account\n\nGolden comment\n\n\n--\nReply to this email directly to add a new comment, or view the account online: http://localhost:3000/accounts\n",
+    "to": "taylor@example.test"
+  },
+  "devise_reset_password": {
+    "from": "noreply@fatfreecrm.com",
+    "html": null,
+    "subject": "Reset password instructions",
+    "text": "<p>Hello taylor@example.test!</p>\n\n<p>Someone has requested a link to change your password. You can do this through the link below.</p>\n\n<p><a href=\"http://localhost:3000/users/password/edit?reset_password_token=golden-reset-token\">Change my password</a></p>\n\n<p>If you didn't request this, please ignore this email.</p>\n<p>Your password won't change until you access the link above and create a new one.</p>\n",
+    "to": "taylor@example.test"
+  },
+  "dropbox_notification": {
+    "from": "casey@example.test",
+    "html": null,
+    "subject": "dropbox - Added email - Golden message",
+    "text": "Succesfully added the email you sent to dropbox:\n\nAdded to:\nAccount #9\n\nSubject: Golden message\nBody:\nA deterministic body\n\n",
+    "to": "taylor@example.test"
+  }
+}
