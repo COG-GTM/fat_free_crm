@@ -40,4 +40,21 @@ class DbAssertMaskTest {
     void maskYamlEmptyKeysReturnsInput() {
         assertEquals("---\nx: 1\n", DbAssert.maskYaml("---\nx: 1\n", List.of()));
     }
+
+    @Test
+    void maskingVolatileYamlTimestampsPreservesOtherValues() {
+        String rails = "---\ncreated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n"
+            + "  utc: 2026-01-01 00:00:00.000000000 Z\n"
+            + "  time: 2026-01-01 00:00:00.000000000 Z\nname: Rails value\n";
+        String spring = "---\ncreated_at:\n- !ruby/object:ActiveSupport::TimeWithZone\n"
+            + "  utc: 2026-01-02 00:00:00.000000000 Z\n"
+            + "  time: 2026-01-02 00:00:00.000000000 Z\nname: Rails value\n";
+        String railsMasked = DbAssert.maskYaml(rails, List.of("created_at"));
+        String springMasked = DbAssert.maskYaml(spring, List.of("created_at"));
+
+        assertEquals(railsMasked, springMasked);
+        assertFalse(railsMasked.equals(
+            DbAssert.maskYaml(spring.replace("name: Rails value", "name: Spring value"),
+                List.of("created_at"))));
+    }
 }

@@ -156,6 +156,25 @@ public final class JsonNormalizer {
             return;
         }
         source.properties().forEach(entry -> {
+            if (entry.getKey().equals("yamlVolatile") && entry.getValue().isObject()) {
+                JsonNode currentYamlVolatile = target.get("yamlVolatile");
+                ObjectNode yamlVolatile;
+                if (currentYamlVolatile instanceof ObjectNode object) {
+                    yamlVolatile = object;
+                } else {
+                    yamlVolatile = JSON.createObjectNode();
+                    target.set("yamlVolatile", yamlVolatile);
+                }
+                entry.getValue().properties().forEach(value -> {
+                    JsonNode current = yamlVolatile.get(value.getKey());
+                    if (current instanceof ArrayNode currentArray && value.getValue().isArray()) {
+                        value.getValue().forEach(item -> currentArray.add(item.deepCopy()));
+                    } else {
+                        yamlVolatile.set(value.getKey(), value.getValue().deepCopy());
+                    }
+                });
+                return;
+            }
             JsonNode current = target.get(entry.getKey());
             if (current == null || !current.isArray()) {
                 ArrayNode values = JSON.createArrayNode();

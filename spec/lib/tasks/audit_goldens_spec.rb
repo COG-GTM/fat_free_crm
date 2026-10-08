@@ -41,10 +41,52 @@ RSpec.describe Rake::Task do
     manifest = JSON.parse(File.read(output_dir.join("rails_audit_goldens.json")))
     declarations = manifest.fetch("declarations").map { |entry| entry.fetch("class") }
     cases = manifest.fetch("cases")
+    expect_models_and_operations(cases, declarations)
+    expect_materialized_updates(cases, declarations)
+    expect_fresh_update_order(cases)
+    expect_timestamp_update(cases)
+    expect_typed_values_and_whodunnit(cases)
+    expect_scenarios(manifest)
+  end
+
+  def generate_goldens
+    Rake::Task[task_name].reenable
+    Rake::Task[task_name].invoke
+  end
+
+  def expect_models_and_operations(cases, declarations)
     expect(cases.map { |entry| entry.fetch("model") }.uniq).to match_array(declarations)
     expect(cases.map { |entry| entry.fetch("op") }.uniq)
-      .to match_array(%w[create update ignored_update touch destroy])
-    expect(cases.size).to eq(120)
+      .to match_array(%w[create update update_materialized ignored_update touch destroy timestamp_update])
+    expect(cases.size).to eq(133)
+  end
+
+  def expect_materialized_updates(cases, declarations)
+    declarations.each do |model|
+      materialized = cases.select do |entry|
+        entry.fetch("model") == model && entry.fetch("op") == "update_materialized"
+      end
+      expect(materialized.size).to eq(1)
+      expect(materialized.first.fetch("assigned_order")).to be_empty
+    end
+  end
+
+  def expect_fresh_update_order(cases)
+    fresh_updates = cases.select { |entry| entry.fetch("op") == "update" }
+    expect(fresh_updates).to all(satisfy do |entry|
+      entry.fetch("assigned_order").any? || entry.fetch("model") == "AccountContact"
+    end)
+    expect(fresh_updates.find { |entry| entry.fetch("model") == "AccountContact" }
+      .fetch("assigned_order")).to be_empty
+  end
+
+  def expect_timestamp_update(cases)
+    timestamp_update = cases.find { |entry| entry.fetch("op") == "timestamp_update" }
+    expect(timestamp_update.fetch("assigned_order")).to eq(["updated_at"])
+    expect(timestamp_update.fetch("versions").size).to eq(1)
+  end
+
+  def expect_typed_values_and_whodunnit(cases)
     expect(cases.pluck("whodunnit").uniq).to contain_exactly(nil, "68999")
     yaml = cases.flat_map { |entry| entry.fetch("versions") }
                 .flat_map { |version| [version.fetch("object"), version.fetch("object_changes")] }
@@ -52,6 +94,9 @@ RSpec.describe Rake::Task do
     expect(yaml).to include("!ruby/object:BigDecimal 36:0.12345678901234567890123456789e20")
     expect(yaml).to include("!ruby/object:BigDecimal 9:-0.1e-8")
     expect(yaml).to include("!ruby/object:BigDecimal 9:0.0")
+  end
+
+  def expect_scenarios(manifest)
     expect(manifest.fetch("scenarios").map { |entry| entry.fetch("name") }).to match_array(
       %w[
         dropbox_create_and_attach dropbox_keyword_lead dropbox_attach_new_lead dropbox_attach_to_account
@@ -59,11 +104,6 @@ RSpec.describe Rake::Task do
       ]
     )
     expect(manifest.fetch("scenarios").flat_map { |entry| entry.fetch("rows") }).not_to be_empty
-  end
-
-  def generate_goldens
-    Rake::Task[task_name].reenable
-    Rake::Task[task_name].invoke
   end
 
   def audit_table_counts

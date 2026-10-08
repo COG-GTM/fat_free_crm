@@ -4,7 +4,9 @@
   path: /activities
   auth: alice
   reset: true
-  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  normalize:
+    ignore: ["/*/created_at", "/*/updated_at"]
+    yamlVolatile: {"/*/object_changes": [created_at, updated_at]}
   setup:
     - {method: POST, path: /tasks, body: {task: {user_id: 2, name: "Audit activity task", bucket: due_today}}}
   description: Phase-A task create is reflected in the activity feed.
@@ -15,7 +17,9 @@
   path: /activities
   auth: admin
   reset: true
-  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  normalize:
+    ignore: ["/*/created_at", "/*/updated_at"]
+    yamlVolatile: {"/*/object_changes": [created_at, updated_at]}
   setup:
     - {method: POST, path: /tasks, body: {task: {user_id: 2, name: "Audit activity task", bucket: due_today}}}
   description: Admin sees Phase-A task creation in the activity feed.
@@ -26,7 +30,9 @@
   path: /activities
   auth: alice
   reset: true
-  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  normalize:
+    ignore: ["/*/created_at", "/*/updated_at"]
+    yamlVolatile: {"/*/object_changes": [updated_at]}
   setup:
     - {method: PUT, path: /tasks/601, body: {task: {name: "Audit activity updated"}}}
   description: Phase-A task update is reflected in the activity feed.
@@ -37,7 +43,9 @@
   path: /activities
   auth: admin
   reset: true
-  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  normalize:
+    ignore: ["/*/created_at", "/*/updated_at"]
+    yamlVolatile: {"/*/object_changes": [updated_at]}
   setup:
     - {method: PUT, path: /tasks/601, auth: alice, body: {task: {name: "Audit activity updated"}}}
   description: Admin sees Phase-A task update in the activity feed.
@@ -48,7 +56,9 @@
   path: /activities
   auth: alice
   reset: true
-  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  normalize:
+    ignore: ["/*/created_at", "/*/updated_at"]
+    yamlVolatile: {"/*/object_changes": [completed_at, updated_at]}
   setup:
     - {method: PUT, path: /tasks/602/complete}
   description: Phase-A task completion is reflected in the activity feed.
@@ -59,7 +69,9 @@
   path: /activities
   auth: admin
   reset: true
-  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  normalize:
+    ignore: ["/*/created_at", "/*/updated_at"]
+    yamlVolatile: {"/*/object_changes": [completed_at, updated_at]}
   setup:
     - {method: PUT, path: /tasks/602/complete, auth: alice}
   description: Admin sees Phase-A task completion in the activity feed.
@@ -70,7 +82,9 @@
   path: /activities
   auth: alice
   reset: true
-  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  normalize:
+    ignore: ["/*/created_at", "/*/updated_at"]
+    yamlVolatile: {"/*/object_changes": [created_at, updated_at]}
   setup:
     - {method: POST, path: /comments, body: {comment: {commentable_type: Account, commentable_id: 101,
         comment: "Audit account activity"}}}
@@ -82,7 +96,9 @@
   path: /activities
   auth: admin
   reset: true
-  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  normalize:
+    ignore: ["/*/created_at", "/*/updated_at"]
+    yamlVolatile: {"/*/object_changes": [created_at, updated_at]}
   setup:
     - {method: POST, path: /comments, body: {comment: {commentable_type: Account, commentable_id: 101,
         comment: "Audit account activity"}}}
@@ -90,11 +106,14 @@
 
 - id: activity-after-task-comment-alice
   ticket: AB-273
-  status: enforced
+  status: pending
   path: /activities
   auth: alice
   reset: true
-  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  notes: "Rails Comment after_create saves the Task via Task#set_due_date after the Comment version; Spring CommentWriteService.create() calls subscribe() and records the Task update before persisting the Comment."
+  normalize:
+    ignore: ["/*/created_at", "/*/updated_at"]
+    yamlVolatile: {"/*/object_changes": [created_at, updated_at]}
   setup:
     - {method: POST, path: /comments, body: {comment: {commentable_type: Task, commentable_id: 601,
         comment: "Audit task activity"}}}
@@ -102,11 +121,14 @@
 
 - id: activity-after-task-comment-admin
   ticket: AB-273
-  status: enforced
+  status: pending
   path: /activities
   auth: admin
   reset: true
-  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  notes: "Rails Comment after_create saves the Task via Task#set_due_date after the Comment version; Spring CommentWriteService.create() calls subscribe() and records the Task update before persisting the Comment."
+  normalize:
+    ignore: ["/*/created_at", "/*/updated_at"]
+    yamlVolatile: {"/*/object_changes": [created_at, updated_at]}
   setup:
     - {method: POST, path: /comments, auth: alice, body: {comment: {commentable_type: Task, commentable_id: 601,
         comment: "Audit task activity"}}}

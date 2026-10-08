@@ -47,14 +47,14 @@ class RailsAuditGoldenTest {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final Pattern BIG_DECIMAL_TAG = Pattern.compile("!ruby/object:BigDecimal \\d+:");
     private static final String TOUCH_ANCHOR_DELTA_REASON =
-        "Rails/Psych uses opposite anchor labels for the shared UTC instant and TimeZone.";
+        "Psych and SnakeYAML assign different anchor labels to shared touch timestamps.";
     private static final Map<String, String> ALLOWED_YAML_DELTAS = Map.of(
-        "Account/touch/68999.object", TOUCH_ANCHOR_DELTA_REASON,
-        "Account/touch/anonymous.object", TOUCH_ANCHOR_DELTA_REASON,
-        "Contact/touch/68999.object", TOUCH_ANCHOR_DELTA_REASON,
-        "Contact/touch/anonymous.object", TOUCH_ANCHOR_DELTA_REASON,
-        "User/touch/68999.object", TOUCH_ANCHOR_DELTA_REASON,
-        "User/touch/anonymous.object", TOUCH_ANCHOR_DELTA_REASON);
+        "Account/touch/69007/68999.object", TOUCH_ANCHOR_DELTA_REASON,
+        "Account/touch/69008/anonymous.object", TOUCH_ANCHOR_DELTA_REASON,
+        "Contact/touch/69051/68999.object", TOUCH_ANCHOR_DELTA_REASON,
+        "Contact/touch/69052/anonymous.object", TOUCH_ANCHOR_DELTA_REASON,
+        "User/touch/69129/68999.object", TOUCH_ANCHOR_DELTA_REASON,
+        "User/touch/69130/anonymous.object", TOUCH_ANCHOR_DELTA_REASON);
     private static final int EXPECTED_YAML_DELTA_COUNT = 6;
 
     @Test
@@ -100,13 +100,14 @@ class RailsAuditGoldenTest {
                 springVersions.add(versionJson(version));
             }
             ObjectNode springCase = JSON.createObjectNode();
+            springCase.put("id", key);
+            springCaseIds.add(key);
             springCase.put("model", railsCase.path("model").asText());
             springCase.put("op", railsCase.path("op").asText());
             springCase.set("whodunnit", railsCase.get("whodunnit"));
             springCase.set("versions", springVersions);
             springCases.add(springCase);
 
-            String key = caseKey(railsCase);
             if (expectedVersions.size() != versions.size()) {
                 failures.add(key + " expected " + expectedVersions.size() + " row(s), got " + versions.size());
                 continue;
@@ -146,7 +147,8 @@ class RailsAuditGoldenTest {
         assertThat(ALLOWED_YAML_DELTAS).hasSize(EXPECTED_YAML_DELTA_COUNT);
         assertThat(ALLOWED_YAML_DELTAS.values()).allMatch(reason -> !reason.isBlank());
         assertThat(failures).as("Rails/Spring audit golden differences").isEmpty();
-        assertThat(springCases.size()).isEqualTo(120);
+        assertThat(springCaseIds).containsExactlyInAnyOrderElementsOf(railsCaseIds);
+        assertThat(springCases.size()).isEqualTo(133);
         assertThat(touchModels).containsExactlyInAnyOrder(
             "Account", "Campaign", "Opportunity", "Lead", "Contact", "AccountContact",
             "AccountOpportunity", "Address", "Comment", "Email", "Task", "User");
@@ -172,8 +174,12 @@ class RailsAuditGoldenTest {
         Version version = switch (testCase.path("op").asText()) {
             case "create" -> recorder.recordCreate(user, entity, after, createDefaults(after,
                 testCase.path("versions")));
-            case "update" -> recorder.recordUpdate(
-                user, entity, before, after, stringList(testCase.path("assigned_order")));
+            case "update" -> recorder.recordUpdate(user, entity, before, after,
+                stringList(testCase.path("assigned_order")));
+            case "timestamp_update" -> recorder.recordUpdate(user, entity, before, after,
+                stringList(testCase.path("assigned_order")));
+            case "update_materialized" -> recorder.recordUpdate(user, entity, before, after,
+                stringList(testCase.path("assigned_order")));
             case "ignored_update" -> recorder.recordUpdate(user, entity, before, after,
                 stringList(testCase.path("assigned_order")));
             case "touch" -> recorder.recordTouch(user, entity, before, after);
@@ -332,8 +338,7 @@ class RailsAuditGoldenTest {
     }
 
     private static String caseKey(JsonNode testCase) {
-        return testCase.path("model").asText() + "/" + testCase.path("op").asText()
-            + "/" + (testCase.get("whodunnit").isNull() ? "anonymous" : testCase.path("whodunnit").asText());
+        return testCase.path("id").asText();
     }
 
     private static String textOrNull(JsonNode value) {

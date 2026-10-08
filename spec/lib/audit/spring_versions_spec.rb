@@ -18,13 +18,19 @@ RSpec.describe Version do
   end
 
   it "lets Rails deserialize, reify, and read the changeset of every Spring row" do
-    rails_cases = rails_manifest.fetch("cases").index_by do |entry|
-      [entry.fetch("model"), entry.fetch("op"), entry["whodunnit"]]
-    end
+    rails_case_list = rails_manifest.fetch("cases")
+    spring_case_list = spring_manifest.fetch("cases")
+    rails_case_ids = rails_case_list.map { |entry| entry.fetch("id") }
+    spring_case_ids = spring_case_list.map { |entry| entry.fetch("id") }
 
-    spring_manifest.fetch("cases").each do |spring_case|
-      rails_case = rails_cases.fetch([spring_case.fetch("model"), spring_case.fetch("op"),
-                                      spring_case["whodunnit"]])
+    expect(rails_case_ids.uniq).to eq(rails_case_ids)
+    expect(spring_case_ids.uniq).to eq(spring_case_ids)
+    expect(spring_case_ids).to match_array(rails_case_ids)
+
+    rails_cases = rails_case_list.index_by { |entry| entry.fetch("id") }
+    spring_cases = spring_case_list.index_by { |entry| entry.fetch("id") }
+    spring_cases.each do |case_id, spring_case|
+      rails_case = rails_cases.fetch(case_id)
       expect(spring_case.fetch("versions").size).to eq(rails_case.fetch("versions").size)
 
       spring_case.fetch("versions").zip(rails_case.fetch("versions")).each do |spring_row, rails_row|

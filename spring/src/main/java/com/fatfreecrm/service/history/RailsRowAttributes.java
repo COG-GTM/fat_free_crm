@@ -2,8 +2,8 @@ package com.fatfreecrm.service.history;
 
 import com.fatfreecrm.domain.support.BaseEntity;
 import com.fatfreecrm.domain.support.SubscribedUsersConverter;
+import com.fatfreecrm.service.audit.ColumnDefaults;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -37,9 +37,14 @@ public class RailsRowAttributes {
     );
 
     private final JdbcTemplate jdbcTemplate;
+    private final ColumnDefaults columnDefaults;
 
-    public RailsRowAttributes(JdbcTemplate jdbcTemplate) {
+    public RailsRowAttributes(
+        JdbcTemplate jdbcTemplate,
+        ColumnDefaults columnDefaults
+    ) {
         this.jdbcTemplate = jdbcTemplate;
+        this.columnDefaults = columnDefaults;
     }
 
     public Map<String, Object> read(Object entity) {
@@ -61,29 +66,7 @@ public class RailsRowAttributes {
     }
 
     public Map<String, Object> defaults(String table) {
-        requireTable(table);
-        Map<String, Object> defaults = new LinkedHashMap<>();
-        jdbcTemplate.query(
-            """
-                SELECT column_name, data_type, column_default
-                FROM information_schema.columns
-                WHERE table_schema = current_schema() AND table_name = ?
-                ORDER BY ordinal_position
-                """,
-            resultSet -> {
-                while (resultSet.next()) {
-                    String name = resultSet.getString("column_name");
-                    if (!name.equals("custom_fields")) {
-                        Object value = defaultValue(resultSet.getString("data_type"),
-                            resultSet.getString("column_default"));
-                        if (value != null) {
-                            defaults.put(name, value);
-                        }
-                    }
-                }
-            },
-            table);
-        return defaults;
+        return columnDefaults.defaults(table);
     }
 
     public Map<String, Object> defaults(Object entity) {
@@ -144,79 +127,6 @@ public class RailsRowAttributes {
         } catch (SQLException exception) {
             throw new IllegalStateException("Unable to read PostgreSQL array value", exception);
         }
-    }
-
-    private static Object defaultValue(String dataType, String expression) {
-        if (expression == null) {
-            return null;
-        }
-        String value = expression.trim();
-        while (value.startsWith("(") && value.endsWith(")")) {
-            value = value.substring(1, value.length() - 1).trim();
-        }
-        int cast = value.indexOf("::");
-        String literal = cast < 0 ? value : value.substring(0, cast).trim();
-        return switch (dataType) {
-            case "boolean" -> switch (literal.toLowerCase()) {
-                case "true" -> true;
-                case "false" -> false;
-                default -> null;
-            };
-            case "smallint", "integer" -> parseInteger(literal);
-            case "bigint" -> parseLong(literal);
-            case "numeric", "decimal" -> parseDecimal(literal);
-            case "real" -> parseFloat(literal);
-            case "double precision" -> parseDouble(literal);
-            case "character varying", "character", "text" -> parseString(literal);
-            default -> null;
-        };
-    }
-
-    private static Object parseInteger(String value) {
-        try {
-            return Integer.valueOf(value);
-        } catch (NumberFormatException exception) {
-            return null;
-        }
-    }
-
-    private static Object parseLong(String value) {
-        try {
-            return Long.valueOf(value);
-        } catch (NumberFormatException exception) {
-            return null;
-        }
-    }
-
-    private static BigDecimal parseDecimal(String value) {
-        try {
-            return new BigDecimal(value);
-        } catch (NumberFormatException exception) {
-            return null;
-        }
-    }
-
-    private static Float parseFloat(String value) {
-        try {
-            return Float.valueOf(value);
-        } catch (NumberFormatException exception) {
-            return null;
-        }
-    }
-
-    private static Double parseDouble(String value) {
-        try {
-            return Double.valueOf(value);
-        } catch (NumberFormatException exception) {
-            return null;
-        }
-    }
-
-    private static String parseString(String value) {
-        if (value.length() >= 2 && value.startsWith("'") && value.endsWith("'")) {
-            return value.substring(1, value.length() - 1).replace("''", "'");
-        }
-        return null;
     }
 
     private static void requireTable(String table) {

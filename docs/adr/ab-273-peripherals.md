@@ -416,8 +416,9 @@ Rails PaperTrail 16 is the compatibility reference for the shared `versions`
 table. Spring must preserve row metadata, PaperTrail YAML values, related-item
 metadata, operation ordering, and the Rails reader's ability to deserialize
 and reify each Spring-written row. Rails-generated fixtures record declarations,
-120 model/operation/whodunnit cases, and seven mail/job sequences. The touch
-cases cover every declared model; Rails emits no row for the ignored-only
+133 model/operation/whodunnit cases, and seven mail/job sequences. Each model
+has a fresh-record update and a fully materialized in-memory update; touch cases
+cover every declared model. Rails emits no row for the ignored-only
 `AccountContact` touch.
 
 ### Decision
@@ -425,16 +426,31 @@ cases cover every declared model; Rails emits no row for the ignored-only
 - Keep `VersionRecorder` as the single Spring writer. `PaperTrailOptions`
   mirrors Rails `has_paper_trail` declarations; explicit touches use the forced
   touch path and preserve Rails' NULL `object_changes`.
+- Rails' `versions.object` ordering follows ActiveRecord attribute materialization:
+  changed assigned keys in `assignedOrder` lead the dump, then remaining
+  attributes retain column order. Fully materialized records pass an empty
+  order and preserve column order. If an ignored assigned attribute is
+  materialized before the first changed assigned attribute, as with
+  `AccountContact.updated_at`, the golden records an empty order and preserves
+  Rails' observed object order. `object_changes` remains column-ordered.
+- An explicitly assigned timestamp-only update is notable only when Rails
+  goldens show a version row; the `AccountOpportunity` `updated_at`-only case
+  pins that behavior. An implicit timestamp-only change remains non-notable.
 - Keep audit serializer corrections isolated in `fix(audit):` commits under
   `service/audit/` and its tests. `PaperTrailYaml` derives BigDecimal precision
   in Ruby's 9-digit words, including the verified forms `36:` for the long
   positive decimal, `9:-0.1e-8` for the tiny negative, and `9:0.0` for zero.
+- For creates, caller-provided defaults take precedence (including explicit
+  null); otherwise `ColumnDefaults` uses the cached table column default.
+  Expression defaults such as `nextval` and `now()` remain null.
 - Use `RailsRowAttributes` outside `service/audit/` for persisted database
   column order. It excludes `custom_fields`, retains `cf_*`, and converts
   persisted serialized and JDBC temporal values to the types the recorder uses.
 - Use Rails goldens as the contract. Exact YAML bytes are required unless an
   individual delta is explicitly allow-listed with a pinned count and rationale.
-  The current allow-list is empty.
+  Six touch-object anchor-label deltas are accepted for Account, Contact, and
+  User cases with and without whodunnit. The decoded object maps are equal; only
+  Psych and SnakeYAML's labels for shared timestamp aliases differ.
 
 ### Tests and gates
 
@@ -455,19 +471,11 @@ cases cover every declared model; Rails emits no row for the ignored-only
 
 ### Accepted YAML deltas
 
-The only accepted differences are the six `object` byte-string anchor-label
-swaps below. Their decoded YAML structures are equal; Rails/Psych and SnakeYAML
-choose opposite labels for the shared UTC instant and time-zone objects. The
-test pins the total count to **6** and rejects unlisted byte differences.
-
-| Golden case | Field | Reason |
-| --- | --- | --- |
-| `Account/touch/68999` | `object` | Opposite YAML anchor labels for the shared UTC instant and time zone. |
-| `Account/touch/anonymous` | `object` | Opposite YAML anchor labels for the shared UTC instant and time zone. |
-| `Contact/touch/68999` | `object` | Opposite YAML anchor labels for the shared UTC instant and time zone. |
-| `Contact/touch/anonymous` | `object` | Opposite YAML anchor labels for the shared UTC instant and time zone. |
-| `User/touch/68999` | `object` | Opposite YAML anchor labels for the shared UTC instant and time zone. |
-| `User/touch/anonymous` | `object` | Opposite YAML anchor labels for the shared UTC instant and time zone. |
+Six touch-object anchor-label differences are allow-listed and pinned in
+`RailsAuditGoldenTest`: Account, Contact, and User, each with and without
+whodunnit. Each has equal decoded YAML values; only the anchor labels emitted
+for shared timestamp objects differ. All other `object` and `object_changes`
+values require byte equality.
 
 ### Coverage
 
@@ -500,10 +508,21 @@ commented out.
   existing Spring flow differences. The notification caller is unreachable in
   the observed Rails path and Spring does not send it. These are not broadened
   into audit fixes.
-- No YAML byte deltas are accepted. Any Spring-vs-Rails scenario sequence
-  difference discovered by the scenario tests must be reported as a deviation
-  rather than hidden by normalization.
+- The task-comment activity cases remain pending: Rails writes the Comment
+  version before its `after_create` callback saves the Task and records the
+  `set_due_date` update, while Spring `CommentWriteService.create()` invokes
+  `subscribe()` before the Comment is persisted, reversing those version IDs
+  and activity-feed order. Their case notes capture the exact service path.
+- Activity-feed comparisons mask only generated timestamp keys inside the
+  YAML strings; item type, event, row order, and all other object/object_changes
+  content remain compared.
 
 ### ARB triage
 
-<!-- ARB triage owner: fill in the decision and any required follow-up. -->
+ARB triage: NO_ARB
+Triggers: none confirmed. Detector (`detect_arb_triggers.py --base origin/devin/ab-273-peripherals`) reported heuristic hits that were reviewed and rejected:
+- T2 `lib/fat_free_crm/migration/activemodel_messages.rb`, `spring/src/test/resources/authz/contract_corpus.sql`: arrive with the AB-272 merge (d705ef38), and neither is a schema change (a Rails message-export helper and a test fixture). This track adds no Flyway migration and no table/column; it writes to the existing `versions` table in the existing PaperTrail format.
+- T3 `audit.test` in `lib/tasks/ffcrm/audit_goldens.rake` / `rails_audit_goldens.json`: a reserved test hostname stored as an account `website` value in the golden corpus; nothing calls it. No new vendor, host or runtime dependency. The `spring/build.gradle.kts` change only forwards the `audit.writeFixtures` test system property.
+- T7 `contract/allowlist.yml`, `cases/ab-272-writes.yml`: YAML lines the detector misread; no framework or runtime change.
+Not triggered: T1, T2, T3, T4, T5, T6, T7, T8, T9
+Required next steps: none

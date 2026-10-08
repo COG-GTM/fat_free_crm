@@ -133,6 +133,12 @@ def audit_goldens_cases
         cases << audit_goldens_case(model, operation, id, anonymous)
       end
     end
+    id += 1
+    cases << audit_goldens_case(model, "update_materialized", id, false)
+    if model == AccountOpportunity
+      id += 1
+      cases << audit_goldens_case(model, "timestamp_update", id, false)
+    end
   end
   cases
 end
@@ -143,22 +149,30 @@ def audit_goldens_case(model, operation, id, anonymous)
   PaperTrail.request(enabled: false) do
     record = audit_goldens_record(model, id)
     record.save!(validate: false) unless operation == "create"
+    audit_goldens_update_support(model, id, operation)
   end
 
-  before = operation == "create" ? {} : audit_goldens_dump(record.attributes)
+  if %w[update timestamp_update].include?(operation)
+    before_attributes = model.find(id).attributes
+    record = model.find(id)
+  else
+    before_attributes = operation == "create" ? {} : record.attributes
+  end
   assigned_order = []
   PaperTrail.request(whodunnit: who, enabled: true) do
     case operation
     when "create"
       record.save!(validate: false)
-    when "update"
-      attrs = audit_goldens_update_attributes(record)
+    when "update", "update_materialized"
+      attrs = audit_goldens_update_attributes(record, before_attributes)
+      assigned_order = attrs.keys if operation == "update"
+      record.update(attrs)
+    when "timestamp_update"
+      attrs = { updated_at: Time.utc(2025, 1, 2, 10) }
       assigned_order = attrs.keys
-      record.assign_attributes(attrs)
-      record.save!(validate: false)
+      record.update(attrs)
     when "ignored_update"
       ignored = audit_goldens_ignored_attributes(record)
-      assigned_order = ignored.keys
       record.assign_attributes(ignored)
       record.save!(validate: false)
     when "touch"
@@ -167,8 +181,37 @@ def audit_goldens_case(model, operation, id, anonymous)
       record.destroy!
     end
   end
-  after = operation == "destroy" ? before : audit_goldens_dump(record.reload.attributes)
-  versions = Version.where(item_type: model.name, item_id: id).order(:id).map do |version|
+  version_records = Version.where(item_type: model.name, item_id: id).order(:id).to_a
+  if (version = version_records.first) && version.object
+    before_attributes = version.object_deserialized
+    if operation == "update"
+      assigned_names = assigned_order.map(&:to_s)
+      object_order = before_attributes.keys.map(&:to_s)
+      changed_names = version.changeset.keys.map(&:to_s)
+      ignored_names = Array(model.paper_trail_options[:ignore]).map(&:to_s)
+      first_changed_assignment = object_order.index do |name|
+        assigned_names.include?(name) && changed_names.include?(name)
+      end
+      ignored_assignment_leads = first_changed_assignment &&
+                                 object_order.take(first_changed_assignment).any? do |name|
+                                   assigned_names.include?(name) && ignored_names.include?(name) && changed_names.exclude?(name)
+                                 end
+      assigned_order = if ignored_assignment_leads
+                         []
+                       else
+                         object_order.select { |name| assigned_names.include?(name) }
+                       end
+    end
+  end
+  after_attributes = operation == "destroy" ? before_attributes : record.reload.attributes
+  if version && operation != "destroy"
+    version.changeset.each do |attribute, values|
+      after_attributes[attribute] = values.last
+    end
+  end
+  before = operation == "create" ? {} : audit_goldens_dump(before_attributes)
+  after = audit_goldens_dump(after_attributes)
+  versions = version_records.map do |version|
     {
       "item_type" => version.item_type,
       "item_id" => version.item_id,
@@ -181,6 +224,7 @@ def audit_goldens_case(model, operation, id, anonymous)
     }
   end
   {
+    "id" => "#{model.name}/#{operation}/#{id}/#{who || 'anonymous'}",
     "model" => model.name,
     "op" => operation,
     "whodunnit" => who,
@@ -195,14 +239,14 @@ def audit_goldens_record(model, id)
   time = Time.utc(2025, 1, 1, 9, 30, 15)
   values = case model.name
            when "Account"
-             { name: "yes", user_id: 68_999, access: "Public", rating: 0, category: "customer",
+             { name: "yes", user_id: 68_999, access: "Public", rating: 1, category: "customer",
                background_info: "Line one\nLine two", cf_audit_string: "a: b",
                cf_audit_decimal: BigDecimal("12345678901234567890.123456789"),
                cf_audit_date: Date.new(2025, 2, 3),
                cf_audit_datetime: time, cf_audit_boolean: true, cf_audit_check_boxes: %w[yes alpha] }
            when "Campaign"
              { name: "123", user_id: 68_999, access: "Public", status: "planned",
-               target_conversion: 2.5, budget: BigDecimal("0"), starts_on: Date.new(2025, 2, 3) }
+               target_conversion: 2.0, budget: BigDecimal("0"), starts_on: Date.new(2025, 2, 3) }
            when "Opportunity"
              { name: "a: b", user_id: 68_999, access: "Public", stage: "prospecting",
                amount: BigDecimal("10.25"), probability: 23 }
@@ -250,19 +294,37 @@ def audit_goldens_record(model, id)
   model.new({ id: id, created_at: time, updated_at: time }.merge(values))
 end
 
-def audit_goldens_update_attributes(record)
+def audit_goldens_update_support(model, id, operation)
+  if model == AccountContact && %w[update update_materialized].include?(operation)
+    Account.new(id: id + 800_000, name: "Updated parent #{id}", user_id: 68_999, access: "Public")
+           .save!(validate: false)
+  elsif model == AccountContact && operation == "ignored_update"
+    Contact.new(id: id + 900_000, first_name: "Updated child", last_name: "Contact",
+                user_id: 68_999, access: "Public").save!(validate: false)
+  elsif model == AccountOpportunity && %w[update update_materialized].include?(operation)
+    Account.new(id: id + 800_000, name: "Updated parent #{id}", user_id: 68_999, access: "Public")
+           .save!(validate: false)
+    Opportunity.new(id: id + 900_000, name: "Updated opportunity #{id}", user_id: 68_999,
+                    access: "Public", stage: "prospecting").save!(validate: false)
+  end
+end
+
+def audit_goldens_update_attributes(record, before_attributes)
   attributes = {}
-  attributes[:name] = "a: b" if record.has_attribute?(:name)
+  id = before_attributes.fetch("id")
+  attributes[:name] = "a: b #{id}" if record.has_attribute?(:name)
   attributes[:first_name] = "leading " if record.has_attribute?(:first_name)
   attributes[:comment] = "unicode 😀" if record.has_attribute?(:comment)
   attributes[:subject] = "no" if record.has_attribute?(:subject)
   attributes[:phone] = "" if record.has_attribute?(:phone)
-  attributes[:rating] = 123 if record.has_attribute?(:rating)
+  attributes[:rating] = 2 if record.has_attribute?(:rating)
   attributes[:target_conversion] = 2.5 if record.has_attribute?(:target_conversion)
   attributes[:starts_on] = Date.new(2025, 3, 4) if record.has_attribute?(:starts_on)
   attributes[:updated_at] = Time.utc(2025, 1, 2, 10) if record.has_attribute?(:updated_at)
-  attributes[:deleted_at] = nil if record.has_attribute?(:deleted_at)
   attributes[:street2] = "yes" if record.has_attribute?(:street2)
+  attributes[:account_id] = id + 800_000 if record.has_attribute?(:account_id) && before_attributes["account_id"] && (record.is_a?(AccountContact) || record.is_a?(AccountOpportunity))
+  attributes[:opportunity_id] = id + 900_000 if record.has_attribute?(:opportunity_id) && before_attributes["opportunity_id"] && record.is_a?(AccountOpportunity)
+  attributes[:username] = "audit-updated-#{id}" if record.is_a?(User)
   attributes[:cf_audit_string] = "multi\nline" if record.has_attribute?(:cf_audit_string)
   attributes[:cf_audit_decimal] = BigDecimal("42.125") if record.has_attribute?(:cf_audit_decimal)
   attributes
@@ -271,8 +333,10 @@ end
 def audit_goldens_ignored_attributes(record)
   return { last_sign_in_at: Time.utc(2025, 1, 2) } if record.is_a?(User)
   return { subscribed_users: [68_999] } if record.has_attribute?(:subscribed_users)
+  return { state: "ignored" } if record.is_a?(Comment) || record.is_a?(Email)
+  return { contact_id: record.contact_id + 1 } if record.is_a?(AccountContact)
 
-  record.has_attribute?(:state) ? { state: "ignored" } : { updated_at: Time.utc(2025, 1, 2) }
+  {}
 end
 
 def audit_goldens_dump(attributes)
@@ -290,7 +354,8 @@ def audit_goldens_typed(value, references)
   when true, false then { "t" => "bool", "v" => value }
   when Date then { "t" => "date", "v" => value.iso8601 }
   when Time, ActiveSupport::TimeWithZone
-    ref = references[value] ||= (references.size + 1).to_s
+    identity = value.is_a?(ActiveSupport::TimeWithZone) ? value.utc : value
+    ref = references[identity] ||= (references.size + 1).to_s
     { "t" => "time", "v" => value.utc.iso8601(9), "ref" => ref }
   when Array then { "t" => "array", "v" => value.map { |item| audit_goldens_typed(item, references) } }
   else

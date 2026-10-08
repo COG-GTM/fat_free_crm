@@ -229,6 +229,14 @@ public final class ContractDiffer {
         boolean problemBodyAllowed,
         JsonNode normalize
     ) {
+        List<String> volatileYamlKeys = yamlVolatileKeys(normalize, pointer);
+        if (!volatileYamlKeys.isEmpty()
+            && railsValue != null && railsValue.isTextual()
+            && springValue != null && springValue.isTextual()
+            && DbAssert.maskYaml(railsValue.asText(), volatileYamlKeys)
+                .equals(DbAssert.maskYaml(springValue.asText(), volatileYamlKeys))) {
+            return;
+        }
         if (timestampEqual(railsValue, springValue, pointer, normalize)) {
             return;
         }
@@ -417,6 +425,20 @@ public final class ContractDiffer {
             }
         }
         return true;
+    }
+
+    private static List<String> yamlVolatileKeys(JsonNode normalize, String pointer) {
+        JsonNode patterns = normalize.path("yamlVolatile");
+        if (!patterns.isObject()) {
+            return List.of();
+        }
+        List<String> keys = new ArrayList<>();
+        patterns.properties().forEach(entry -> {
+            if (pointerMatches(entry.getKey(), pointer) && entry.getValue().isArray()) {
+                entry.getValue().forEach(value -> keys.add(value.asText()));
+            }
+        });
+        return keys;
     }
 
     private static String escape(String value) {
