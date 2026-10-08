@@ -91,7 +91,12 @@ class CustomFieldsBackfillJobIntegrationTest extends AbstractPostgresIntegration
         Long expectedRemaining = jdbcTemplate.queryForObject(
             "SELECT count(*) FROM accounts WHERE custom_fields IS DISTINCT FROM " + expression,
             Long.class);
-        assertThat(expectedRemaining).isNotNull().isPositive().isLessThan(25_000);
+        Long seededRemaining = jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM accounts WHERE name LIKE 'ab271-backfill-%' "
+                + "AND custom_fields IS DISTINCT FROM " + expression,
+            Long.class);
+        assertThat(expectedRemaining).isNotNull();
+        assertThat(seededRemaining).isNotNull().isPositive().isLessThan(25_000);
 
         CustomFieldsBackfillReport report = backfillJob.run();
         assertThat(report.ok()).isTrue();
