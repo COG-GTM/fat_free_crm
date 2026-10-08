@@ -51,6 +51,7 @@ namespace :ffcrm do
       puts "wrote #{output}"
       search_matrix_contacts
       search_matrix_leads
+      search_matrix_opportunities
 
       campaigns_output = if ENV["CAMPAIGNS_OUTPUT"]
                            Rails.root.join(ENV["CAMPAIGNS_OUTPUT"])
@@ -537,4 +538,255 @@ def search_matrix_entity_case(alice, path, test_case, route)
 ensure
   Preference.where(user_id: alice.id, name: preference_names).delete_all if preference_names&.any?
   preference_names&.each { |preference| alice.pref.cached_prefs.delete(preference) }
+end
+
+def search_matrix_opportunities
+  output = Rails.root.join(
+    ENV.fetch("OPPORTUNITIES_OUTPUT", "spring/src/test/resources/search/opportunities_search_matrix.json")
+  )
+  connection = ActiveRecord::Base.connection
+  corpus_tables = %w[
+    users accounts contacts campaigns opportunities account_opportunities contact_opportunities tags taggings
+  ]
+  non_empty = corpus_tables.select do |table|
+    connection.select_value(
+      "SELECT COUNT(*) FROM #{connection.quote_table_name(table)}"
+    ).to_i.positive?
+  end
+  setting_exists = Setting.exists?(name: "opportunity_stage")
+  abort "opportunities search matrix requires empty corpus tables; found rows in: #{non_empty.join(', ')}" unless
+    non_empty.empty? && !setting_exists
+
+  result = nil
+  ActiveRecord::Base.transaction(requires_new: true) do
+    Warden.test_mode!
+
+    alice = search_matrix_user(9001, "alice", "alice@opportunities-search-matrix.test", admin: false)
+    bob = search_matrix_user(9002, "bob", "bob@opportunities-search-matrix.test", admin: false)
+    search_matrix_opportunities_seed(alice, bob)
+
+    corpus = search_matrix_opportunities_corpus
+    cases = search_matrix_opportunities_cases.map do |opportunity_case|
+      name, params, ordered, session_filter, preferences, settings = opportunity_case
+      search_matrix_opportunities_run_case(
+        alice,
+        name,
+        params,
+        ordered,
+        session_filter: session_filter,
+        preferences: preferences || {},
+        settings: settings
+      )
+    end
+    result = {
+      "generated_by" => "bundle exec rake ffcrm:migration:search_matrix " \
+                        "OPPORTUNITIES_OUTPUT=spring/src/test/resources/search/opportunities_search_matrix.json",
+      "corpus" => corpus,
+      "cases" => cases,
+      "shows" => search_matrix_opportunities_shows(alice)
+    }
+    raise ActiveRecord::Rollback
+  end
+  Warden.test_reset!
+  Setting.clear_cache!
+
+  File.write(output, JSON.pretty_generate(result) + "\n")
+  puts "wrote #{output}"
+ensure
+  Warden.test_reset!
+  Setting.clear_cache!
+end
+
+def search_matrix_opportunities_seed(alice, bob)
+  account = Account.new(
+    id: 9611, name: "Opportunity Matrix Account", email: "matrix-account@example.test",
+    access: "Public", user: alice, created_at: "2025-01-01 08:00", updated_at: "2025-01-01 08:00"
+  )
+  account.save!(validate: false)
+  contact = Contact.new(
+    id: 9621, first_name: "Matrix", last_name: "Contact", access: "Public", user: alice,
+    created_at: "2025-01-01 08:00", updated_at: "2025-01-01 08:00"
+  )
+  contact.save!(validate: false)
+  campaign = Campaign.new(
+    id: 9631, name: "Opportunity Matrix Campaign", access: "Public", user: alice,
+    created_at: "2025-01-01 08:00", updated_at: "2025-01-01 08:00"
+  )
+  campaign.save!(validate: false)
+
+  rows = [
+    [9661, "Amber Portfolio 100%", "prospecting", "Public", alice, "1500.00", "25.00", 50, "2025-04-01", nil],
+    [9662, "Blue Zero Deal", "analysis", "Private", alice, "0.00", "0.00", 0, "2025-04-02", nil],
+    [9663, "Cobalt Contact Deal", "presentation", "Shared", alice, "1234.50", "12.50", 100, "2025-04-03", nil],
+    [9664, "Delta Null Amount", "proposal", "Public", alice, nil, nil, 50, nil, nil],
+    [9665, "Emerald Maximum Deal", "negotiation", "Shared", alice, "9999999999.99", "1.25", 1, "2025-04-05", nil],
+    [9666, "Fuchsia Negative Deal", "final_review", "Public", alice, "-250.00", "2.50", 50, "2025-04-06", nil],
+    [9667, "Golden Won Deal", "won", "Public", alice, "3200.00", "0.00", 40, "2025-04-07", nil],
+    [9668, "Indigo Lost Deal", "lost", "Public", alice, "450.00", nil, 10, "2025-04-08", nil],
+    [9669, "Jade Null Stage", nil, "Public", alice, "725.00", "25.00", 25, nil, nil],
+    [9670, "Khaki Custom Stage", "custom_stage", "Public", alice, "100.00", "0.00", nil, "2025-04-10", nil],
+    [9671, "Weighted Product A", "prospecting", "Public", alice, "10.00", "0.00", 60, "2025-04-11", nil],
+    [9672, "Weighted Product B", "analysis", "Public", alice, "20.00", "0.00", 50, "2025-04-12", nil],
+    [9673, "Weighted Product C", "presentation", "Public", alice, "5.00", "0.00", 100, "2025-04-13", nil],
+    [9674, "Weighted Null Product", "proposal", "Public", alice, nil, "0.00", 90, "2025-04-14", nil],
+    [9675, "Private Bob Opportunity", "won", "Private", bob, "80.00", "0.00", 50, "2025-04-15", nil],
+    [9676, "Public Bob Opportunity", "won", "Public", bob, "90.00", "0.00", 50, "2025-04-16", nil],
+    [9677, "Shared Bob Opportunity", "lost", "Shared", bob, "70.00", "0.00", 50, "2025-04-17", nil]
+  ]
+  14.times do |index|
+    number = index + 1
+    rows << [
+      9677 + number,
+      (number == 1 ? "Matrix_Paging Deal 01" : format("Matrix Paging Deal %02d", number)),
+      "prospecting", "Public", alice,
+      format("%d.00", (number * 3) + 7), "0.00", number + 5,
+      (Time.utc(2025, 5, 1) + number.days).strftime("%Y-%m-%d"), nil
+    ]
+  end
+  rows.each do |row|
+    id, name, stage, access, owner, amount, discount, probability, closes_on, campaign_id = row
+    opportunity = Opportunity.new(
+      id: id, name: name, stage: stage, access: access, user: owner, amount: amount, discount: discount,
+      probability: probability, closes_on: closes_on, campaign_id: campaign_id,
+      created_at: Time.utc(2025, 1, 1) + id.seconds, updated_at: Time.utc(2025, 1, 1) + id.seconds,
+      subscribed_users: []
+    )
+    opportunity.save!(validate: false)
+  end
+
+  Opportunity.find(9661).update_columns(campaign_id: campaign.id)
+  ActsAsTaggableOn::Tag.create!(id: 9681, name: "priority")
+  ActsAsTaggableOn::Tag.create!(id: 9682, name: "focus")
+  ActsAsTaggableOn::Tagging.create!(
+    id: 9731, tag_id: 9681, taggable_type: "Opportunity", taggable_id: 9661, context: "tags",
+    created_at: "2025-01-01 09:00"
+  )
+  ActsAsTaggableOn::Tagging.create!(
+    id: 9732, tag_id: 9682, taggable_type: "Opportunity", taggable_id: 9663, context: "tags",
+    created_at: "2025-01-01 09:00"
+  )
+  AccountOpportunity.create!(
+    id: 9701, account_id: account.id, opportunity_id: 9661,
+    created_at: "2025-01-01 09:00", updated_at: "2025-01-01 09:00"
+  )
+  ContactOpportunity.create!(
+    id: 9711, contact_id: contact.id, opportunity_id: 9663, role: "Decision maker",
+    created_at: "2025-01-01 09:00", updated_at: "2025-01-01 09:00"
+  )
+end
+
+def search_matrix_opportunities_corpus
+  connection = ActiveRecord::Base.connection
+  %w[users accounts contacts campaigns opportunities account_opportunities contact_opportunities tags taggings]
+    .index_with do |table|
+      connection.select_all("SELECT * FROM #{connection.quote_table_name(table)} ORDER BY id").to_a
+    end
+end
+
+def search_matrix_opportunities_cases
+  [
+    ["default", {}, true],
+    ["page2", { "page" => "2" }, true],
+    ["per5", { "per_page" => "5" }, true],
+    ["per0", { "per_page" => "0" }, true],
+    ["per201", { "per_page" => "201" }, true],
+    ["perabc", { "per_page" => "abc" }, true],
+    ["page99", { "page" => "99" }, true],
+    ["query_text", { "query" => "Portfolio" }, true],
+    ["query_numeric_id", { "query" => "9661" }, true],
+    ["query_percent", { "query" => "100%" }, true],
+    ["query_underscore", { "query" => "Matrix_Paging" }, true],
+    ["query_tag", { "query" => "#missing" }, true],
+    ["query_tag_positive", { "query" => "#priority" }, true],
+    ["q_amount_gteq", { "q[amount_gteq]" => "1000" }, false],
+    ["q_probability_eq", { "q[probability_eq]" => "50" }, false],
+    ["q_stage_eq", { "q[stage_eq]" => "won" }, false],
+    ["q_name_cont", { "q[name_cont]" => "Contact" }, false],
+    ["q_closes_on_lteq", { "q[closes_on_lteq]" => "2025-04-05" }, false],
+    ["q_contact_association", { "q[contacts_first_name_eq]" => "Matrix" }, false],
+    ["q_account_association", { "q[account_name_cont]" => "Matrix" }, false],
+    ["q_tags_name_eq", { "q[tags_name_eq]" => "priority" }, false],
+    ["q_amount_sort", { "q[name_cont]" => "Weighted", "q[s]" => "amount desc" }, true],
+    ["q_name_sort", { "q[name_cont]" => "Weighted", "q[s]" => "name asc" }, true],
+    ["stage_won", { "stage" => "won" }, true],
+    ["stage_other", { "stage" => "other" }, true],
+    ["stage_won_other", { "stage" => "won,other" }, true],
+    ["stage_custom", { "stage" => "custom_stage" }, true],
+    ["stage_bogus", { "stage" => "bogus" }, true],
+    ["stage_empty", { "stage" => "" }, true],
+    ["stage_ignored_with_q", { "stage" => "won", "q[name_cont]" => "Null" }, true],
+    ["session_filter_stage", {}, true, "won"],
+    ["preference_per_page", { "query" => "Weighted" }, true, nil, { "opportunities_per_page" => 2 }],
+    ["preference_weighted_sort", { "query" => "Weighted" }, true, nil,
+     { "opportunities_sort_by" => "opportunities.amount*probability DESC" }],
+    ["preference_name_sort", { "query" => "Weighted" }, true, nil,
+     { "opportunities_sort_by" => "opportunities.name ASC" }],
+    ["preference_per_page_explicit", { "query" => "Weighted", "per_page" => "3" }, true, nil,
+     { "opportunities_per_page" => 2 }],
+    ["settings_stage_symbols", {}, true, nil, {}, "---\n- :won\n- :custom_stage\n- :prospecting\n"]
+  ]
+end
+
+def search_matrix_opportunities_run_case(alice, name, params, ordered, options = {})
+  session_filter = options.fetch(:session_filter, nil)
+  preferences = options.fetch(:preferences, {})
+  settings = options.fetch(:settings, nil)
+  preference_names = preferences.keys.map(&:to_s)
+  preferences.each { |preference, value| alice.pref[preference.to_sym] = value }
+  if settings
+    Setting.create!(name: "opportunity_stage", value: YAML.safe_load(settings, permitted_classes: [Symbol]))
+    Setting.clear_cache!
+  end
+
+  session = ActionDispatch::Integration::Session.new(Rails.application)
+  session.host! "localhost"
+  login_as(alice, scope: :user)
+  unless session_filter.nil?
+    allow_forgery_protection = OpportunitiesController.allow_forgery_protection
+    OpportunitiesController.allow_forgery_protection = false
+    begin
+      session.post "/opportunities/filter", params: { stage: session_filter },
+        headers: { "HTTP_ACCEPT" => "text/javascript" }
+    ensure
+      OpportunitiesController.allow_forgery_protection = allow_forgery_protection
+    end
+  end
+  session.get "/opportunities.json", params: params
+  status = session.response.status
+  body = status == 200 ? JSON.parse(session.response.body) : nil
+  controller = session.request.env["action_controller.instance"]
+  result = {
+    "name" => name,
+    "params" => params,
+    "ordered" => ordered,
+    "status" => status,
+    "ids" => body&.pluck("id"),
+    "total" => controller&.instance_variable_get(:@search_results_count),
+    "facets" => controller&.instance_variable_get(:@opportunity_stage_total)
+  }
+  result["session_filter"] = session_filter unless session_filter.nil?
+  result["preferences"] = preferences unless preferences.empty?
+  result["settings"] = { "opportunity_stage" => settings } if settings
+  result
+ensure
+  Setting.where(name: "opportunity_stage").delete_all if settings
+  Setting.clear_cache! if settings
+  Preference.where(user_id: alice.id, name: preference_names).delete_all if preference_names&.any?
+  preference_names&.each { |preference| alice.pref.cached_prefs.delete(preference) }
+  Preference.where(user_id: alice.id, name: %w[opportunities_per_page opportunities_sort_by]).delete_all
+  %w[opportunities_per_page opportunities_sort_by].each { |preference| alice.pref.cached_prefs.delete(preference) }
+end
+
+def search_matrix_opportunities_shows(alice)
+  session = ActionDispatch::Integration::Session.new(Rails.application)
+  session.host! "localhost"
+  login_as(alice, scope: :user)
+  [9661, 9662, 9663, 9664].map do |id|
+    session.get "/opportunities/#{id}.json"
+    {
+      "id" => id,
+      "status" => session.response.status,
+      "body" => session.response.status == 200 ? JSON.parse(session.response.body) : nil
+    }
+  end
 end

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import com.fatfreecrm.domain.Contact;
 import com.fatfreecrm.domain.Lead;
 import com.fatfreecrm.repository.AccountContactRepository;
+import com.fatfreecrm.repository.AccountOpportunityRepository;
 import com.fatfreecrm.repository.AccountRepository;
 import com.fatfreecrm.repository.CampaignRepository;
 import com.fatfreecrm.repository.ContactOpportunityRepository;
@@ -23,6 +24,7 @@ class RailsResourcesAutocompleteTest {
         RailsResources resources = new RailsResources(
             mock(AccountRepository.class),
             mock(AccountContactRepository.class),
+            mock(AccountOpportunityRepository.class),
             mock(CampaignRepository.class),
             mock(ContactOpportunityRepository.class),
             mock(ContactRepository.class),

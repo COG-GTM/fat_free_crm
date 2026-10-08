@@ -41,6 +41,9 @@ public class SearchableEntities {
     private static final List<String> DEFAULT_CAMPAIGN_STATUSES = List.of(
         "planned", "started", "completed", "on_hold", "called_off");
 
+    private static final List<String> DEFAULT_OPPORTUNITY_STAGES = List.of(
+        "prospecting", "analysis", "presentation", "proposal", "negotiation", "final_review", "won", "lost");
+
     private final Map<Class<?>, SearchableEntity> byClass;
 
     public SearchableEntities(
@@ -136,7 +139,9 @@ public class SearchableEntities {
             ),
             SearchableEntities::opportunitySearch,
             true,
-            null
+            user -> Map.of(
+                "stage", opportunityStageFacets(user, entityManager, settingRepository, accessPolicy)),
+            opportunityStateFilter()
         ));
         register(map, new SearchableEntity(
             Campaign.class,
@@ -416,6 +421,78 @@ public class SearchableEntities {
                 }
             })
             .orElse(DEFAULT_LEAD_STATUSES);
+    }
+
+    private static StateFilter opportunityStateFilter() {
+        return new StateFilter("stage", (root, builder, values) -> {
+            List<String> stages = new ArrayList<>(values);
+            boolean other = stages.removeIf("other"::equals);
+            List<Predicate> predicates = new ArrayList<>();
+            if (!stages.isEmpty()) {
+                predicates.add(root.get("stage").in(stages));
+            } else if (!other) {
+                predicates.add(builder.disjunction());
+            }
+            if (other) {
+                predicates.add(builder.isNull(root.get("stage")));
+            }
+            return builder.or(predicates.toArray(Predicate[]::new));
+        });
+    }
+
+    private static Map<String, Long> opportunityStageFacets(
+        AuthenticatedUser user,
+        EntityManager entityManager,
+        SettingRepository settingRepository,
+        AccessPolicy accessPolicy
+    ) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> query = cb.createQuery(Object[].class);
+        Root<Opportunity> root = query.from(Opportunity.class);
+        Expression<String> stage = root.get("stage");
+        query.multiselect(List.of(stage, cb.count(root.get("id"))).toArray(Selection[]::new));
+        query.groupBy(stage);
+        Predicate accessible = accessPolicy.accessibleBy(user, Opportunity.class).toPredicate(root, query, cb);
+        if (accessible != null) {
+            query.where(accessible);
+        }
+        Map<String, Long> counts = new LinkedHashMap<>();
+        long total = 0;
+        for (Object[] row : entityManager.createQuery(query).getResultList()) {
+            Long count = (Long) row[1];
+            if (row[0] != null) {
+                counts.merge((String) row[0], count, Long::sum);
+            }
+            total += count;
+        }
+
+        Map<String, Long> facets = new LinkedHashMap<>();
+        facets.put("all", total);
+        facets.put("other", 0L);
+        long configured = 0;
+        for (String key : opportunityStages(settingRepository)) {
+            long count = counts.getOrDefault(key, 0L);
+            facets.put(key, count);
+            configured += count;
+        }
+        facets.put("other", total - configured);
+        return facets;
+    }
+
+    private static List<String> opportunityStages(SettingRepository settingRepository) {
+        return settingRepository.findByName("opportunity_stage")
+            .map(Setting::getValue)
+            .map(value -> {
+                try {
+                    List<String> stages = RailsYaml.readStringList(value).stream()
+                        .map(stage -> stage.startsWith(":") ? stage.substring(1) : stage)
+                        .toList();
+                    return stages.isEmpty() ? DEFAULT_OPPORTUNITY_STAGES : stages;
+                } catch (IllegalArgumentException exception) {
+                    return DEFAULT_OPPORTUNITY_STAGES;
+                }
+            })
+            .orElse(DEFAULT_OPPORTUNITY_STAGES);
     }
 
     /** {@code lower(path) LIKE '%q%' ESCAPE '\\'} with %, _, \ escaped — the Ransack {@code cont} semantics. */

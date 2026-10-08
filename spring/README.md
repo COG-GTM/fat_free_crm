@@ -128,6 +128,45 @@ The Rails parity corpus lives in
 `bundle exec rake ffcrm:migration:search_matrix`
 (`lib/tasks/ffcrm/search_matrix_campaigns.rake`).
 
+## Opportunities read API (AB-270)
+
+Authenticated opportunity reads are available at:
+
+| Endpoint | Behavior |
+| --- | --- |
+| `GET /api/v1/opportunities` | Rails-compatible rows in a paginated `ListResult` envelope with stage facets. |
+| `GET /api/v1/opportunities/{numericId}` | Read one accessible opportunity and record a Rails-compatible `view` row in `versions`. |
+| `GET /api/v1/opportunities/autocomplete` | Return `{results: [{id, text}]}` with a ten-row limit. |
+
+List parameters include `page`, `per_page`, `query`, `sort_by`, Rails-style `q[...]`, and
+`stage` (comma-separated configured stages; `other` filters only rows with a NULL stage).
+The stage facets are access-scoped, independent of search/filter parameters, and their `other`
+count includes both NULL and unconfigured stage values. The explicit stage filter is ignored
+when an advanced `q[...]` search is present.
+
+| Rails preference | Default for | Behavior |
+| --- | --- | --- |
+| `opportunities_per_page` | `per_page` | Positive JSON integer or numeric string; invalid values are ignored. |
+| `opportunities_sort_by` | `sort_by` | Rails sort selector, including `amount*probability DESC`, used only when `sort_by` is absent. |
+
+Deviation: Rails 8 500s on the weighted-sort preference; Spring sorts by the weighted product.
+The Rails 500 is `ActiveRecord::UnknownAttributeReference` for
+`opportunities.amount*probability DESC`; Spring resolves the preference through its sort
+whitelist. Rails' tagged-list select joins taggings and can return the tagging ID instead of the
+opportunity ID; Spring returns the opportunity ID.
+The live contract run also confirmed Rails list rows expose a PostgreSQL-generated `?column?`
+alias; the contract allow-list ignores only `/*/?column?` on GET `/opportunities`. Show and
+autocomplete responses are unaffected.
+
+Autocomplete accepts `term` and either `excludeRelated` or Rails' `related`; when both are
+provided, `excludeRelated` wins. Related values support a bare opportunity ID and
+`users/<id>`, `accounts/<id>`, `contacts/<id>`, or `campaigns/<id>`; related Leads do not
+exclude opportunities. Results are scoped to opportunities the caller can read, ordered by ID,
+and limited to ten.
+
+Showing an opportunity writes a `versions` row with `item_type: Opportunity`, `event: view`,
+and the viewer's ID in `whodunnit`; other version-change fields remain null.
+
 ## Adding a read family
 
 Phase B should reuse the Accounts read foundation rather than add family-specific serialization

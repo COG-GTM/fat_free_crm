@@ -5,8 +5,10 @@ import com.fatfreecrm.domain.Campaign;
 import com.fatfreecrm.domain.Comment;
 import com.fatfreecrm.domain.Contact;
 import com.fatfreecrm.domain.Lead;
+import com.fatfreecrm.domain.Opportunity;
 import com.fatfreecrm.domain.Task;
 import com.fatfreecrm.repository.AccountContactRepository;
+import com.fatfreecrm.repository.AccountOpportunityRepository;
 import com.fatfreecrm.repository.AccountRepository;
 import com.fatfreecrm.repository.CampaignRepository;
 import com.fatfreecrm.repository.ContactOpportunityRepository;
@@ -31,14 +33,14 @@ public class RailsResources {
     public final RailsResource campaign;
     public final RailsResource contact;
     public final RailsResource lead;
-
+    public final RailsResource opportunity;
     public final RailsResource task;
-
     public final RailsResource comment;
 
     public RailsResources(
         AccountRepository accountRepository,
         AccountContactRepository accountContactRepository,
+        AccountOpportunityRepository accountOpportunityRepository,
         CampaignRepository campaignRepository,
         ContactOpportunityRepository contactOpportunityRepository,
         ContactRepository contactRepository,
@@ -132,6 +134,42 @@ public class RailsResources {
                         return Set.of();
                     }
                     return Set.copyOf(leadRepository.findIdsByUserId(userId));
+                })
+            )
+        );
+        opportunity = new RailsResource(
+            "Opportunity",
+            "opportunities",
+            Opportunity.class,
+            Set.of("subscribed_users"),
+            true,
+            CRM_EXCLUDED_COLUMNS,
+            "opportunities",
+            entity -> ((Opportunity) entity).getName(),
+            Map.of(
+                "users", new RailsResource.RelatedExclusion(userId -> {
+                    if (!userRepository.existsById(userId)) {
+                        return Set.of();
+                    }
+                    return Set.copyOf(opportunityRepository.findIdsByUserId(userId));
+                }),
+                "accounts", new RailsResource.RelatedExclusion(accountId -> {
+                    if (!accountRepository.existsById(accountId)) {
+                        return Set.of();
+                    }
+                    return Set.copyOf(accountOpportunityRepository.findOpportunityIdsByAccountId(accountId));
+                }),
+                "contacts", new RailsResource.RelatedExclusion(contactId -> {
+                    if (!contactRepository.existsById(contactId)) {
+                        return Set.of();
+                    }
+                    return Set.copyOf(contactOpportunityRepository.findOpportunityIdsByContactId(contactId));
+                }),
+                "campaigns", new RailsResource.RelatedExclusion(campaignId -> {
+                    if (!campaignRepository.existsById(campaignId)) {
+                        return Set.of();
+                    }
+                    return Set.copyOf(opportunityRepository.findIdsByCampaignId(campaignId));
                 })
             )
         );

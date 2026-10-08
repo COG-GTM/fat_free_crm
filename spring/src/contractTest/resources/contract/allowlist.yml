@@ -74,3 +74,12 @@ allowlist:
       Rails scopes show to Task.tracked_by(current_user) and answers 404 for an existing out-of-scope task; Spring
       applies CrmPermissionEvaluator semantics (403 out of scope, AB-268 Task policy) before the tracked_by scope.
     reference: "docs/adr/ab-270-read-api-accounts.md (Family: tasks); AB-270 settled decision 2"
+  - id: opportunity-list-weighted-column-alias
+    match:
+      method: GET
+      path: /opportunities
+    kind: pointer
+    pointer: "/*/?column?"
+    rule: ignore
+    reason: Rails' weighted-sort projection exposes a PostgreSQL-generated SQL column alias that is not a persisted resource field.
+    reference: app/controllers/entities/opportunities_controller.rb#order_by_attributes
