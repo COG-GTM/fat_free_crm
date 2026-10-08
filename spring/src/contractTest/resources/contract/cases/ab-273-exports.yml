@@ -1,0 +1,133 @@
+# AB-273 exports: Rails format.csv / format.xls list exports vs Spring content negotiation.
+# compare: text diffs the exact body (CSV dialect, SpreadsheetML markup); Content-Type is compared as usual.
+# Rails exports are unpaginated (app/controllers/entities_controller.rb get_list_of_records,
+# `unless wants.xls? || wants.csv?` around paginate). Full byte parity incl. Content-Disposition is also
+# replayed by RailsExportGoldenTest against rake ffcrm:migration:export_goldens.
+- id: exports-accounts-csv-admin
+  ticket: AB-273
+  status: enforced
+  path: /accounts
+  compare: text
+  rails: {path: /accounts.csv}
+  spring: {accept: text/csv}
+  auth: admin
+  description: Accounts CSV via Accept text/csv (ExportCSV.from_array columns, cf_* columns, tags).
+- id: exports-accounts-xls-alice
+  ticket: AB-273
+  status: enforced
+  path: /accounts
+  compare: text
+  params: {format: xls}
+  rails: {path: /accounts.xls}
+  auth: alice
+  description: Accounts SpreadsheetML via ?format=xls, scoped to alice (Account.my).
+- id: exports-accounts-csv-search-alice
+  ticket: AB-273
+  status: enforced
+  path: /accounts
+  compare: text
+  params: {query: a}
+  rails: {path: /accounts.csv}
+  spring: {path: /api/v1/accounts.csv}
+  auth: alice
+  description: Text search applies to the export; Spring .csv suffix path.
+- id: exports-campaigns-csv-bob
+  ticket: AB-273
+  status: enforced
+  path: /campaigns
+  compare: text
+  rails: {path: /campaigns.csv}
+  spring: {accept: text/csv}
+  auth: bob
+  description: Campaigns CSV.
+- id: exports-campaigns-xls-admin
+  ticket: AB-273
+  status: enforced
+  path: /campaigns
+  compare: text
+  rails: {path: /campaigns.xls}
+  spring: {accept: application/vnd.ms-excel}
+  auth: admin
+  description: Campaigns SpreadsheetML via Accept application/vnd.ms-excel.
+- id: exports-contacts-xls-admin
+  ticket: AB-273
+  status: enforced
+  path: /contacts
+  compare: text
+  rails: {path: /contacts.xls}
+  spring: {accept: application/vnd.ms-excel}
+  auth: admin
+  description: Contacts SpreadsheetML (lead name, business address, custom fields).
+- id: exports-contacts-csv-alice
+  ticket: AB-273
+  status: enforced
+  path: /contacts
+  compare: text
+  params: {format: csv}
+  rails: {path: /contacts.csv}
+  auth: alice
+  description: Contacts CSV via ?format=csv.
+- id: exports-leads-csv-admin
+  ticket: AB-273
+  status: enforced
+  path: /leads
+  compare: text
+  rails: {path: /leads.csv}
+  spring: {accept: text/csv}
+  auth: admin
+  description: Leads CSV; per_page is irrelevant because exports are unpaginated.
+- id: exports-leads-xls-alice
+  ticket: AB-273
+  status: enforced
+  path: /leads
+  compare: text
+  rails: {path: /leads.xls}
+  spring: {path: /api/v1/leads.xls}
+  auth: alice
+  description: Leads SpreadsheetML via .xls suffix (campaign name, business address).
+- id: exports-opportunities-xls-admin
+  ticket: AB-273
+  status: enforced
+  path: /opportunities
+  compare: text
+  rails: {path: /opportunities.xls}
+  spring: {accept: application/vnd.ms-excel}
+  auth: admin
+  description: Opportunities SpreadsheetML (account name, weighted amount).
+- id: exports-opportunities-csv-ransack-admin
+  ticket: AB-273
+  status: enforced
+  path: /opportunities
+  compare: text
+  params: {"q[name_cont]": a, "q[s]": name desc}
+  rails: {path: /opportunities.csv}
+  spring: {accept: text/csv}
+  auth: admin
+  description: Advanced Ransack search and q[s] order apply to the export.
+- id: exports-tasks-csv-alice
+  ticket: AB-273
+  status: enforced
+  path: /tasks
+  compare: text
+  rails: {path: /tasks.csv}
+  spring: {accept: text/csv}
+  auth: alice
+  description: Pending tasks flattened in bucket order (tasks_controller.rb index).
+- id: exports-tasks-xls-completed-admin
+  ticket: AB-273
+  status: enforced
+  path: /tasks
+  compare: text
+  params: {view: completed}
+  rails: {path: /tasks.xls}
+  spring: {accept: application/vnd.ms-excel}
+  auth: admin
+  description: Completed tasks SpreadsheetML.
+- id: exports-accounts-csv-anonymous
+  ticket: AB-273
+  status: enforced
+  path: /accounts
+  rails: {path: /accounts.csv}
+  spring: {accept: text/csv}
+  auth: anonymous
+  description: Unauthenticated exports are rejected on both sides (status only).
