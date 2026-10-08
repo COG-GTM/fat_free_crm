@@ -151,7 +151,9 @@ tasks.register<Test>("contractTest") {
 }
 
 // AB-272: contract DB coordinates for reset:true / dbAssert cases in the contractTest suite.
+// The 5+ minute dual-write soak is excluded here; it runs via ./gradlew dualWriteSoak.
 tasks.named<Test>("contractTest") {
+    filter { excludeTestsMatching("com.fatfreecrm.contract.DualWriteSoakTest") }
     systemProperty("contract.dbUrl", contractSetting("CONTRACT_DB_URL", "contract.dbUrl", "contractDbUrl", "jdbc:postgresql://127.0.0.1:5433/ffcrm_contract").get())
     systemProperty("contract.dbUser", contractSetting("CONTRACT_DB_USER", "contract.dbUser", "contractDbUser", "postgres").get())
     systemProperty("contract.dbPassword", contractSetting("CONTRACT_DB_PASSWORD", "contract.dbPassword", "contractDbPassword", "postgres").get())

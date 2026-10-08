@@ -52,37 +52,43 @@ class DualWriteSoakTest {
         int threads = Integer.parseInt(System.getProperty("soak.threads", "4"));
         Map<String, FixtureUsers.FixtureUser> users = FixtureUsers.load();
         ContractDbReset.fromProperties().reset();
+        Instant startedAt = Instant.now();
 
-        // Seed: one task + one account per thread via Rails so both apps share fixture ids.
+        // Seed: one field-update task and one complete/uncomplete toggle task per thread via
+        // Rails so both apps share fixture ids. Comments land on shared commentable Account 101.
         List<Long> taskIds = new ArrayList<>();
+        List<Long> toggleIds = new ArrayList<>();
         RailsSessionAuth railsAuth = new RailsSessionAuth(railsUrl, users);
         AuthContext alice = railsAuth.authenticate("alice");
         for (int index = 0; index < threads; index++) {
-            ObjectNode body = JSON.createObjectNode();
-            ObjectNode task = body.putObject("task");
-            task.put("user_id", 2);
-            task.put("name", "soak-task-" + index);
-            task.put("bucket", "due_today");
-            JsonNode created = sendJson(alice.client(), alice, "POST", railsUrl + "/tasks.json",
-                body);
-            taskIds.add(created.path("id").asLong());
+            taskIds.add(seedTask(alice, "soak-task-" + index));
+            toggleIds.add(seedTask(alice, "soak-toggle-" + index));
         }
 
-        AtomicInteger writes = new AtomicInteger();
+        AtomicInteger taskWrites = new AtomicInteger();
+        AtomicInteger completes = new AtomicInteger();
+        AtomicInteger uncompletes = new AtomicInteger();
+        AtomicInteger commentCreates = new AtomicInteger();
         AtomicInteger errors = new AtomicInteger();
         AtomicInteger serverErrors = new AtomicInteger();
         AtomicInteger violations = new AtomicInteger();
         ConcurrentLinkedQueue<String> failures = new ConcurrentLinkedQueue<>();
 
         Instant deadline = Instant.now().plus(Duration.ofMinutes(minutes));
-        ExecutorService pool = Executors.newFixedThreadPool(threads * 2);
+        ExecutorService pool = Executors.newFixedThreadPool(threads * 4);
         List<java.util.concurrent.Future<?>> futures = new ArrayList<>();
         for (int worker = 0; worker < threads; worker++) {
             long taskId = taskIds.get(worker);
+            long toggleId = toggleIds.get(worker);
             futures.add(pool.submit(() -> runWriter(users, "alice", true, taskId,
-                deadline, "background_info", writes, errors, serverErrors, failures)));
+                deadline, "background_info", taskWrites, errors, serverErrors, failures)));
             futures.add(pool.submit(() -> runWriter(users, "alice", false, taskId,
-                deadline, "priority", writes, errors, serverErrors, failures)));
+                deadline, "priority", taskWrites, errors, serverErrors, failures)));
+            futures.add(pool.submit(() -> runToggler(users, "alice", toggleId,
+                deadline, completes, uncompletes, errors, serverErrors, failures)));
+            boolean commenterIsRails = worker % 2 == 0;
+            futures.add(pool.submit(() -> runCommenter(users, "alice", commenterIsRails,
+                deadline, commentCreates, errors, serverErrors, failures)));
         }
         pool.shutdown();
         for (java.util.concurrent.Future<?> future : futures) {
@@ -91,16 +97,36 @@ class DualWriteSoakTest {
         pool.awaitTermination(minutes + 5, TimeUnit.MINUTES);
         violations.set(constraintViolations());
 
-        // Assertions: no 5xx, no constraint violations, no lost updates.
-        int successful = writes.get() - errors.get();
-        Map<String, String> lastWritten = LastWrites.LAST;
+        int taskSuccessful = taskWrites.get(); // counters only increment on success
+        List<Long> allTaskIds = new ArrayList<>(taskIds);
+        allTaskIds.addAll(toggleIds);
+        long updateVersions = versionCount("Task", allTaskIds, "update", null);
+        long completeVersions = versionCount("Task", toggleIds, "complete", null);
+        long commentRows = countComments(startedAt);
+        long commentVersions = versionCount("Comment", null, "create", startedAt);
+        int subscribed = subscribedCount("accounts", 101);
+        int expectedSubscriptions = commentCreates.get();
         StringBuilder report = new StringBuilder();
-        report.append(String.format("writes=%d errors=%d 5xx=%d constraintViolations=%d%n",
-            writes.get(), errors.get(), serverErrors.get(), violations.get()));
+        report.append(String.format(
+            "taskWrites=%d completes=%d uncompletes=%d comments=%d errors=%d 5xx=%d "
+                + "constraintViolations=%d%n",
+            taskWrites.get(), completes.get(), uncompletes.get(), commentCreates.get(),
+            errors.get(), serverErrors.get(), violations.get()));
+        report.append(String.format(
+            "updateVersions=%d taskWrites+toggles=%d completeVersions=%d completes=%d%n",
+            updateVersions, taskSuccessful + completes.get() + uncompletes.get(),
+            completeVersions, completes.get()));
+        report.append(String.format("commentRows=%d commentCreateVersions=%d%n",
+            commentRows, commentVersions));
+        report.append(String.format(
+            "OBSERVATION account-101 subscribed_users entries for user 2: %d of %d expected "
+                + "comment-subscription appends persisted (lost=%d; Rails read-modify-write race,"
+                + " Spring locks FOR UPDATE)%n",
+            subscribed, expectedSubscriptions, Math.max(0, expectedSubscriptions - subscribed)));
         int lost = 0;
         for (long taskId : taskIds) {
             for (String field : List.of("background_info", "priority")) {
-                String expected = lastWritten.get(taskId + ":" + field);
+                String expected = LastWrites.LAST.get(taskId + ":" + field);
                 String actual = column("tasks", taskId, field);
                 if (expected != null && !expected.equals(actual == null ? "" : actual)) {
                     lost++;
@@ -110,20 +136,34 @@ class DualWriteSoakTest {
                 }
             }
         }
-        long versionCount = versionCount(taskIds);
-        report.append("task update versions=").append(versionCount)
-            .append(" successfulWrites=").append(successful).append('\n');
         System.out.print(report);
         org.junit.jupiter.api.Assertions.assertEquals(0, serverErrors.get(),
             "5xx responses: " + failures);
         org.junit.jupiter.api.Assertions.assertEquals(0, violations.get(),
             "constraint violations");
         org.junit.jupiter.api.Assertions.assertEquals(0, lost, "lost updates\n" + report);
-        org.junit.jupiter.api.Assertions.assertEquals(successful, versionCount,
-            "version count vs successful writes\n" + report);
+        org.junit.jupiter.api.Assertions.assertEquals(
+            taskWrites.get() + completes.get() + uncompletes.get(), updateVersions,
+            "task update versions vs successful task writes\n" + report);
+        org.junit.jupiter.api.Assertions.assertEquals(completes.get(), completeVersions,
+            "complete observer versions vs successful completes\n" + report);
+        org.junit.jupiter.api.Assertions.assertEquals(commentCreates.get(), commentVersions,
+            "comment create versions vs successful comments\n" + report);
+        org.junit.jupiter.api.Assertions.assertEquals(commentCreates.get(), commentRows,
+            "comment rows vs successful comments\n" + report);
         // Leave the contract database on the fixture snapshot so subsequent read cases
         // (e.g. activities) do not see soak rows.
         ContractDbReset.fromProperties().reset();
+    }
+
+    private long seedTask(AuthContext alice, String name) throws SoakHttpException {
+        ObjectNode body = JSON.createObjectNode();
+        ObjectNode task = body.putObject("task");
+        task.put("user_id", 2);
+        task.put("name", name);
+        task.put("bucket", "due_today");
+        JsonNode created = sendJson(alice.client(), alice, "POST", railsUrl + "/tasks.json", body);
+        return created.path("id").asLong();
     }
 
     private void runWriter(
@@ -148,11 +188,11 @@ class DualWriteSoakTest {
                 String value = (railsSide ? "rails" : "spring") + "-" + sequence++;
                 ObjectNode body = JSON.createObjectNode();
                 body.putObject("task").put(field, value);
-                writes.incrementAndGet();
                 try {
-                    JsonNode response = sendJson(auth.client(), auth, "PUT",
+                    sendJson(auth.client(), auth, "PUT",
                         base + (railsSide ? "/tasks/" + taskId + ".json"
                             : "/api/v1/tasks/" + taskId), body);
+                    writes.incrementAndGet();
                     LastWrites.LAST.put(taskId + ":" + field, value);
                 } catch (SoakHttpException exception) {
                     if (exception.status >= 500) {
@@ -165,6 +205,96 @@ class DualWriteSoakTest {
             }
         } catch (IOException | InterruptedException exception) {
             failures.add("auth failed: " + exception.getMessage());
+            serverErrors.incrementAndGet();
+        }
+    }
+
+    /** Alternates complete/uncomplete on one task, switching apps each iteration. */
+    private void runToggler(
+        Map<String, FixtureUsers.FixtureUser> users,
+        String user,
+        long taskId,
+        Instant deadline,
+        AtomicInteger completes,
+        AtomicInteger uncompletes,
+        AtomicInteger errors,
+        AtomicInteger serverErrors,
+        ConcurrentLinkedQueue<String> failures
+    ) {
+        try {
+            AuthContext railsContext = new RailsSessionAuth(railsUrl, users).authenticate(user);
+            AuthContext springContext = new SpringJwtAuth(springUrl, users).authenticate(user);
+            int sequence = 0;
+            while (Instant.now().isBefore(deadline)) {
+                // Strict complete/uncomplete alternation (each op flips state, so Rails PaperTrail
+                // writes a version every time); apps alternate in pairs of two.
+                boolean complete = sequence % 2 == 0;
+                boolean railsSide = (sequence / 2) % 2 == 0;
+                sequence++;
+                String path = "/tasks/" + taskId + (complete ? "/complete" : "/uncomplete");
+                try {
+                    if (railsSide) {
+                        sendJson(railsContext.client(), railsContext, "PUT",
+                            railsUrl + path + ".json", JSON.createObjectNode());
+                    } else {
+                        sendJson(springContext.client(), springContext, "PUT",
+                            springUrl + "/api/v1" + path, JSON.createObjectNode());
+                    }
+                    (complete ? completes : uncompletes).incrementAndGet();
+                } catch (SoakHttpException exception) {
+                    if (exception.status >= 500) {
+                        serverErrors.incrementAndGet();
+                        failures.add("toggle " + exception.getMessage());
+                    } else {
+                        errors.incrementAndGet();
+                    }
+                }
+            }
+        } catch (IOException | InterruptedException exception) {
+            failures.add("toggle auth failed: " + exception.getMessage());
+            serverErrors.incrementAndGet();
+        }
+    }
+
+    /** Posts comment creates on shared Account 101 from one app. */
+    private void runCommenter(
+        Map<String, FixtureUsers.FixtureUser> users,
+        String user,
+        boolean railsSide,
+        Instant deadline,
+        AtomicInteger commentCreates,
+        AtomicInteger errors,
+        AtomicInteger serverErrors,
+        ConcurrentLinkedQueue<String> failures
+    ) {
+        try {
+            AuthContext auth = railsSide
+                ? new RailsSessionAuth(railsUrl, users).authenticate(user)
+                : new SpringJwtAuth(springUrl, users).authenticate(user);
+            String base = railsSide ? railsUrl : springUrl;
+            String path = railsSide ? "/comments.json" : "/api/v1/comments";
+            int sequence = 0;
+            while (Instant.now().isBefore(deadline)) {
+                ObjectNode body = JSON.createObjectNode();
+                ObjectNode comment = body.putObject("comment");
+                comment.put("commentable_type", "Account");
+                comment.put("commentable_id", 101);
+                comment.put("comment",
+                    (railsSide ? "rails" : "spring") + "-soak-" + sequence++);
+                try {
+                    sendJson(auth.client(), auth, "POST", base + path, body);
+                    commentCreates.incrementAndGet();
+                } catch (SoakHttpException exception) {
+                    if (exception.status >= 500) {
+                        serverErrors.incrementAndGet();
+                        failures.add("comment " + exception.getMessage());
+                    } else {
+                        errors.incrementAndGet();
+                    }
+                }
+            }
+        } catch (IOException | InterruptedException exception) {
+            failures.add("comment auth failed: " + exception.getMessage());
             serverErrors.incrementAndGet();
         }
     }
@@ -223,16 +353,48 @@ class DualWriteSoakTest {
         }
     }
 
-    private long versionCount(List<Long> taskIds) {
-        String ids = taskIds.toString().replace("[", "(").replace("]", ")");
+    private long versionCount(String itemType, List<Long> itemIds, String event,
+        Instant createdAfter) {
+        StringBuilder sql = new StringBuilder(
+            "SELECT count(*) FROM versions WHERE item_type = '" + itemType
+                + "' AND event = '" + event + "'");
+        if (itemIds != null) {
+            sql.append(" AND item_id IN ")
+                .append(itemIds.toString().replace("[", "(").replace("]", ")"));
+        }
+        if (createdAfter != null) {
+            sql.append(" AND created_at >= '").append(createdAfter.toString()).append("'");
+        }
+        return queryLong(sql.toString());
+    }
+
+    private long countComments(Instant createdAfter) {
+        return queryLong(
+            "SELECT count(*) FROM comments WHERE created_at >= '" + createdAfter + "'");
+    }
+
+    /** Count of user-2 entries inside the {@code subscribed_users} YAML of {@code table.id}. */
+    private int subscribedCount(String table, long id) {
+        String yaml = column(table, id, "subscribed_users");
+        if (yaml == null) {
+            return 0;
+        }
+        int count = 0;
+        for (String line : yaml.split("\n")) {
+            if (line.trim().equals("- 2")) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private long queryLong(String sql) {
         try (Connection connection = DriverManager.getConnection(
                 System.getProperty("contract.dbUrl", "jdbc:postgresql://127.0.0.1:5433/ffcrm_contract"),
                 System.getProperty("contract.dbUser", "postgres"),
                 System.getProperty("contract.dbPassword", "postgres"));
              Statement statement = connection.createStatement();
-             ResultSet rows = statement.executeQuery(
-                 "SELECT count(*) FROM versions WHERE item_type = 'Task' AND item_id IN " + ids
-                     + " AND event = 'update'")) {
+             ResultSet rows = statement.executeQuery(sql)) {
             return rows.next() ? rows.getLong(1) : -1;
         } catch (java.sql.SQLException exception) {
             return -1;

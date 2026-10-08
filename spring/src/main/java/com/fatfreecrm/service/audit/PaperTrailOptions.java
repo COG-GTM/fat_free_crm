@@ -1,7 +1,12 @@
 package com.fatfreecrm.service.audit;
 
+import com.fatfreecrm.domain.Account;
+import com.fatfreecrm.domain.Campaign;
 import com.fatfreecrm.domain.Comment;
+import com.fatfreecrm.domain.Contact;
 import com.fatfreecrm.domain.Email;
+import com.fatfreecrm.domain.Lead;
+import com.fatfreecrm.domain.Opportunity;
 import com.fatfreecrm.domain.Task;
 import com.fatfreecrm.domain.support.RailsModelType;
 import java.util.Map;
@@ -20,7 +25,18 @@ public record PaperTrailOptions(RailsModelType itemType, Set<String> ignore, Str
     private static final Map<Class<?>, PaperTrailOptions> REGISTRY = Map.of(
         Task.class, new PaperTrailOptions(RailsModelType.TASK, Set.of("subscribed_users"), "asset"),
         Comment.class, new PaperTrailOptions(RailsModelType.COMMENT, Set.of("state"), "commentable"),
-        Email.class, new PaperTrailOptions(RailsModelType.EMAIL, Set.of("state"), "mediator")
+        Email.class, new PaperTrailOptions(RailsModelType.EMAIL, Set.of("state"), "mediator"),
+        // Commentable entities (app/models/{account,contact,lead,opportunity,campaign}.rb):
+        // all declare ignore: [:subscribed_users] — their entry exists so that a commentable.save
+        // during comment subscription can evaluate notability; with only subscribed_users +
+        // updated_at changed, PaperTrail writes no version.
+        Account.class, new PaperTrailOptions(RailsModelType.ACCOUNT, Set.of("subscribed_users"), null),
+        Contact.class, new PaperTrailOptions(RailsModelType.CONTACT, Set.of("subscribed_users"), null),
+        Lead.class, new PaperTrailOptions(RailsModelType.LEAD, Set.of("subscribed_users"), null),
+        Opportunity.class, new PaperTrailOptions(RailsModelType.OPPORTUNITY,
+            Set.of("subscribed_users"), null),
+        Campaign.class, new PaperTrailOptions(RailsModelType.CAMPAIGN, Set.of("subscribed_users"),
+            null)
     );
 
     public static Optional<PaperTrailOptions> forClass(Class<?> entityClass) {

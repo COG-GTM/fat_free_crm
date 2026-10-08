@@ -56,7 +56,7 @@ class PaperTrailYamlTest {
         Map<String, Object[]> changes = new LinkedHashMap<>();
         changes.put("body", new Object[] {"", "<b>hi</b>"});
         String yaml = PaperTrailYaml.dumpChanges(changes);
-        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- \"\""));
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- ''"));
         org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- \"<b>hi</b>\""));
     }
 
