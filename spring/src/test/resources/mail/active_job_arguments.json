@@ -1,0 +1,356 @@
+{
+  "account_website": {
+    "solid_queue": {
+      "arguments": [
+        {
+          "_aj_globalid": "gid://fat-free-crm/Account/970003"
+        }
+      ],
+      "exception_executions": {},
+      "executions": 0,
+      "job_class": "AccountWebsiteJob",
+      "locale": "en-US",
+      "priority": null,
+      "provider_job_id": null,
+      "queue_name": "default",
+      "scheduled_at": "2026-01-01T00:00:00.000000000Z",
+      "timezone": "UTC"
+    },
+    "test_adapter": {
+      "arguments": [
+        {
+          "_aj_globalid": "gid://fat-free-crm/Account/970003"
+        }
+      ],
+      "exception_executions": {},
+      "executions": 0,
+      "job_class": "AccountWebsiteJob",
+      "locale": "en-US",
+      "priority": null,
+      "provider_job_id": null,
+      "queue_name": "default",
+      "scheduled_at": null,
+      "timezone": "UTC"
+    }
+  },
+  "devise_confirmation": {
+    "solid_queue": {
+      "arguments": [
+        "DeviseMailer",
+        "confirmation_instructions",
+        "deliver_now",
+        {
+          "_aj_ruby2_keywords": [
+            "args"
+          ],
+          "args": [
+            {
+              "_aj_globalid": "gid://fat-free-crm/User/970002"
+            },
+            "golden-token"
+          ]
+        }
+      ],
+      "exception_executions": {},
+      "executions": 0,
+      "job_class": "ActionMailer::MailDeliveryJob",
+      "locale": "en-US",
+      "priority": null,
+      "provider_job_id": null,
+      "queue_name": "default",
+      "scheduled_at": "2026-01-01T00:00:00.000000000Z",
+      "timezone": "UTC"
+    },
+    "test_adapter": {
+      "arguments": [
+        "DeviseMailer",
+        "confirmation_instructions",
+        "deliver_now",
+        {
+          "_aj_ruby2_keywords": [
+            "args"
+          ],
+          "args": [
+            {
+              "_aj_globalid": "gid://fat-free-crm/User/970002"
+            },
+            "golden-token"
+          ]
+        }
+      ],
+      "exception_executions": {},
+      "executions": 0,
+      "job_class": "ActionMailer::MailDeliveryJob",
+      "locale": "en-US",
+      "priority": null,
+      "provider_job_id": null,
+      "queue_name": "default",
+      "scheduled_at": null,
+      "timezone": "UTC"
+    }
+  },
+  "devise_password_change": {
+    "solid_queue": {
+      "arguments": [
+        "DeviseMailer",
+        "password_change",
+        "deliver_now",
+        {
+          "_aj_ruby2_keywords": [
+            "args"
+          ],
+          "args": [
+            {
+              "_aj_globalid": "gid://fat-free-crm/User/970002"
+            }
+          ]
+        }
+      ],
+      "exception_executions": {},
+      "executions": 0,
+      "job_class": "ActionMailer::MailDeliveryJob",
+      "locale": "en-US",
+      "priority": null,
+      "provider_job_id": null,
+      "queue_name": "default",
+      "scheduled_at": "2026-01-01T00:00:00.000000000Z",
+      "timezone": "UTC"
+    },
+    "test_adapter": {
+      "arguments": [
+        "DeviseMailer",
+        "password_change",
+        "deliver_now",
+        {
+          "_aj_ruby2_keywords": [
+            "args"
+          ],
+          "args": [
+            {
+              "_aj_globalid": "gid://fat-free-crm/User/970002"
+            }
+          ]
+        }
+      ],
+      "exception_executions": {},
+      "executions": 0,
+      "job_class": "ActionMailer::MailDeliveryJob",
+      "locale": "en-US",
+      "priority": null,
+      "provider_job_id": null,
+      "queue_name": "default",
+      "scheduled_at": null,
+      "timezone": "UTC"
+    }
+  },
+  "devise_reset_password": {
+    "solid_queue": {
+      "arguments": [
+        "DeviseMailer",
+        "reset_password_instructions",
+        "deliver_now",
+        {
+          "_aj_ruby2_keywords": [
+            "args"
+          ],
+          "args": [
+            {
+              "_aj_globalid": "gid://fat-free-crm/User/970002"
+            },
+            "golden-reset-token"
+          ]
+        }
+      ],
+      "exception_executions": {},
+      "executions": 0,
+      "job_class": "ActionMailer::MailDeliveryJob",
+      "locale": "en-US",
+      "priority": null,
+      "provider_job_id": null,
+      "queue_name": "default",
+      "scheduled_at": "2026-01-01T00:00:00.000000000Z",
+      "timezone": "UTC"
+    },
+    "test_adapter": {
+      "arguments": [
+        "DeviseMailer",
+        "reset_password_instructions",
+        "deliver_now",
+        {
+          "_aj_ruby2_keywords": [
+            "args"
+          ],
+          "args": [
+            {
+              "_aj_globalid": "gid://fat-free-crm/User/970002"
+            },
+            "golden-reset-token"
+          ]
+        }
+      ],
+      "exception_executions": {},
+      "executions": 0,
+      "job_class": "ActionMailer::MailDeliveryJob",
+      "locale": "en-US",
+      "priority": null,
+      "provider_job_id": null,
+      "queue_name": "default",
+      "scheduled_at": null,
+      "timezone": "UTC"
+    }
+  },
+  "subscription_comment": {
+    "solid_queue": {
+      "arguments": [
+        "SubscriptionMailer",
+        "comment_notification",
+        "deliver_now",
+        {
+          "_aj_ruby2_keywords": [
+            "args"
+          ],
+          "args": [
+            {
+              "_aj_globalid": "gid://fat-free-crm/User/970002"
+            },
+            {
+              "_aj_globalid": "gid://fat-free-crm/Comment/970004"
+            }
+          ]
+        }
+      ],
+      "exception_executions": {},
+      "executions": 0,
+      "job_class": "ActionMailer::MailDeliveryJob",
+      "locale": "en-US",
+      "priority": null,
+      "provider_job_id": null,
+      "queue_name": "default",
+      "scheduled_at": "2026-01-01T00:00:00.000000000Z",
+      "timezone": "UTC"
+    },
+    "test_adapter": {
+      "arguments": [
+        "SubscriptionMailer",
+        "comment_notification",
+        "deliver_now",
+        {
+          "_aj_ruby2_keywords": [
+            "args"
+          ],
+          "args": [
+            {
+              "_aj_globalid": "gid://fat-free-crm/User/970002"
+            },
+            {
+              "_aj_globalid": "gid://fat-free-crm/Comment/970004"
+            }
+          ]
+        }
+      ],
+      "exception_executions": {},
+      "executions": 0,
+      "job_class": "ActionMailer::MailDeliveryJob",
+      "locale": "en-US",
+      "priority": null,
+      "provider_job_id": null,
+      "queue_name": "default",
+      "scheduled_at": null,
+      "timezone": "UTC"
+    }
+  },
+  "user_assignment": {
+    "solid_queue": {
+      "arguments": [
+        "UserMailer",
+        "assigned_entity_notification",
+        "deliver_now",
+        {
+          "_aj_ruby2_keywords": [
+            "args"
+          ],
+          "args": [
+            {
+              "_aj_globalid": "gid://fat-free-crm/Account/970003"
+            },
+            {
+              "_aj_globalid": "gid://fat-free-crm/User/970001"
+            }
+          ]
+        }
+      ],
+      "exception_executions": {},
+      "executions": 0,
+      "job_class": "ActionMailer::MailDeliveryJob",
+      "locale": "en-US",
+      "priority": null,
+      "provider_job_id": null,
+      "queue_name": "default",
+      "scheduled_at": "2026-01-01T00:00:00.000000000Z",
+      "timezone": "UTC"
+    },
+    "test_adapter": {
+      "arguments": [
+        "UserMailer",
+        "assigned_entity_notification",
+        "deliver_now",
+        {
+          "_aj_ruby2_keywords": [
+            "args"
+          ],
+          "args": [
+            {
+              "_aj_globalid": "gid://fat-free-crm/Account/970003"
+            },
+            {
+              "_aj_globalid": "gid://fat-free-crm/User/970001"
+            }
+          ]
+        }
+      ],
+      "exception_executions": {},
+      "executions": 0,
+      "job_class": "ActionMailer::MailDeliveryJob",
+      "locale": "en-US",
+      "priority": null,
+      "provider_job_id": null,
+      "queue_name": "default",
+      "scheduled_at": null,
+      "timezone": "UTC"
+    }
+  },
+  "wikidata": {
+    "solid_queue": {
+      "arguments": [
+        {
+          "_aj_globalid": "gid://fat-free-crm/Account/970003"
+        }
+      ],
+      "exception_executions": {},
+      "executions": 0,
+      "job_class": "WikidataJob",
+      "locale": "en-US",
+      "priority": null,
+      "provider_job_id": null,
+      "queue_name": "default",
+      "scheduled_at": "2026-01-01T00:00:00.000000000Z",
+      "timezone": "UTC"
+    },
+    "test_adapter": {
+      "arguments": [
+        {
+          "_aj_globalid": "gid://fat-free-crm/Account/970003"
+        }
+      ],
+      "exception_executions": {},
+      "executions": 0,
+      "job_class": "WikidataJob",
+      "locale": "en-US",
+      "priority": null,
+      "provider_job_id": null,
+      "queue_name": "default",
+      "scheduled_at": null,
+      "timezone": "UTC"
+    }
+  }
+}

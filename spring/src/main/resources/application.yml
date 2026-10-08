@@ -25,6 +25,20 @@ spring:
     postgresql:
       transactional-lock: false
     clean-disabled: true
+  quartz:
+    job-store-type: memory
+    auto-startup: false
+  mail:
+    host: ${FFCRM_SMTP_HOST:localhost}
+    properties:
+      mail:
+        smtp:
+          connectiontimeout: 5000
+          timeout: 10000
+          writetimeout: 10000
+  thymeleaf:
+    enabled: false
+    check-template-location: false
 springdoc:
   api-docs:
     version: openapi_3_1
@@ -56,6 +70,37 @@ ffcrm:
     registry-ttl: 30s
     backfill:
       batch-size: 10000
+  jobs:
+    owner: ${FFCRM_JOBS_OWNER:rails}
+    setup-mail-folders: false
+    dropbox:
+      cron: "0 */5 * * * ?"
+      dry-run: false
+    comment-replies:
+      cron: "0 */5 * * * ?"
+      dry-run: false
+    solid-queue-drain:
+      cron: "*/10 * * * * ?"
+      enabled: true
+      stale-claim-threshold: 15m
+    http:
+      connect-timeout: 5s
+      read-timeout: 10s
+      max-body-bytes: 5242880
+      block-private-addresses: false
+    wikidata:
+      endpoint: https://query.wikidata.org/sparql
+  mail:
+    settings:
+      host: ""
+      locale: en-US
+      default-access: Public
+      smtp:
+        from: ""
+      email-comment-replies:
+        address: ""
+      email-dropbox:
+        address: ""
 
 management:
   endpoints:
@@ -67,6 +112,9 @@ management:
       probes:
         enabled: true
       show-details: never
+  health:
+    mail:
+      enabled: false
   info:
     build:
       enabled: true

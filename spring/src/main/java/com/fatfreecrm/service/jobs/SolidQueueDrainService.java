@@ -1,0 +1,201 @@
+package com.fatfreecrm.service.jobs;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fatfreecrm.config.JobsProperties;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
+
+@Service
+@SuppressFBWarnings(
+    value = "EI_EXPOSE_REP2",
+    justification = "Spring-managed JdbcTemplate is intentionally retained by this service."
+)
+public class SolidQueueDrainService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SolidQueueDrainService.class);
+    private static final int BATCH_SIZE = 50;
+    private static final String SUPPORTED_CLASS_FILTER = """
+        class_name IN ('ActionMailer::MailDeliveryJob', 'AccountWebsiteJob', 'WikidataJob')
+        """;
+
+    private final JdbcTemplate jdbcTemplate;
+    private final ObjectMapper objectMapper;
+    private final SolidQueueJobExecutor executor;
+    private final JobsOwner jobsOwner;
+    private final JobsProperties jobsProperties;
+    private final TransactionTemplate transactionTemplate;
+
+    public SolidQueueDrainService(
+        JdbcTemplate jdbcTemplate,
+        ObjectMapper objectMapper,
+        SolidQueueJobExecutor executor,
+        JobsOwner jobsOwner,
+        JobsProperties jobsProperties,
+        PlatformTransactionManager transactionManager
+    ) {
+        this.jdbcTemplate = jdbcTemplate;
+        this.objectMapper = objectMapper;
+        this.executor = executor;
+        this.jobsOwner = jobsOwner;
+        this.jobsProperties = jobsProperties;
+        transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    }
+
+    public int drain() {
+        if (!jobsOwner.isSpring()) {
+            return 0;
+        }
+        warnStaleSpringClaims();
+        List<Long> candidates = jdbcTemplate.query(
+            """
+                SELECT jobs.id
+                FROM solid_queue_ready_executions ready
+                JOIN solid_queue_jobs jobs ON jobs.id = ready.job_id
+                WHERE jobs.finished_at IS NULL AND %s
+                ORDER BY ready.priority, ready.job_id
+                LIMIT ?
+                """.replace("%s", SUPPORTED_CLASS_FILTER),
+            (result, row) -> result.getLong(1),
+            BATCH_SIZE);
+        int count = 0;
+        for (Long id : candidates) {
+            SolidQueueJob job = transactionTemplate.execute(status -> claim(id));
+            if (job == null) {
+                continue;
+            }
+            try {
+                executor.execute(job.className(), job.arguments());
+                complete(job.id());
+            } catch (Exception exception) {
+                fail(job.id(), exception);
+            }
+            count++;
+        }
+        return count;
+    }
+
+    private void warnStaleSpringClaims() {
+        Duration threshold = jobsProperties.getSolidQueueDrain().getStaleClaimThreshold();
+        Timestamp cutoff = Timestamp.from(Instant.now().minus(threshold));
+        List<Long> jobIds = jdbcTemplate.query(
+            """
+                SELECT c.job_id
+                FROM solid_queue_claimed_executions c
+                JOIN solid_queue_jobs j ON j.id = c.job_id
+                WHERE c.process_id IS NULL AND c.created_at < ?
+                ORDER BY c.job_id
+                """,
+            (result, row) -> result.getLong(1),
+            cutoff);
+        if (!jobIds.isEmpty()) {
+            LOGGER.warn(
+                "Solid Queue has {} Spring claims with no process older than {} "
+                    + "(possible crash between claim and completion); manual action required, "
+                    + "see spring/README.md: job_ids={}",
+                jobIds.size(),
+                threshold,
+                jobIds);
+        }
+    }
+
+    private SolidQueueJob claim(long id) {
+        List<SolidQueueJob> jobs = jdbcTemplate.query(
+            """
+                SELECT jobs.id, jobs.class_name, jobs.arguments
+                FROM solid_queue_ready_executions ready
+                JOIN solid_queue_jobs jobs ON jobs.id = ready.job_id
+                WHERE jobs.id = ? AND jobs.finished_at IS NULL
+                  AND %s
+                FOR UPDATE OF ready SKIP LOCKED
+                """.replace("%s", SUPPORTED_CLASS_FILTER),
+            new SolidQueueJobMapper(),
+            id);
+        if (jobs.isEmpty()) {
+            return null;
+        }
+        SolidQueueJob job = jobs.get(0);
+        int deleted = jdbcTemplate.update("DELETE FROM solid_queue_ready_executions WHERE job_id = ?", id);
+        if (deleted == 0) {
+            return null;
+        }
+        jdbcTemplate.update(
+            "INSERT INTO solid_queue_claimed_executions(job_id, process_id, created_at) VALUES (?, NULL, ?)",
+            id,
+            timestamp());
+        return job;
+    }
+
+    private void complete(long id) {
+        transactionTemplate.executeWithoutResult(status -> {
+            jdbcTemplate.update("DELETE FROM solid_queue_claimed_executions WHERE job_id = ?", id);
+            jdbcTemplate.update("UPDATE solid_queue_jobs SET finished_at = ?, updated_at = ? WHERE id = ?",
+                timestamp(), timestamp(), id);
+        });
+    }
+
+    private void fail(long id, Exception exception) {
+        LOGGER.error("Solid Queue job {} failed", id, exception);
+        String error = failureDetails(exception);
+        transactionTemplate.executeWithoutResult(status -> {
+            jdbcTemplate.update("DELETE FROM solid_queue_claimed_executions WHERE job_id = ?", id);
+            jdbcTemplate.update(
+                """
+                    INSERT INTO solid_queue_failed_executions(job_id, error, created_at) VALUES (?, ?, ?)
+                    ON CONFLICT (job_id) DO UPDATE SET error = EXCLUDED.error
+                    """,
+                id,
+                error,
+                timestamp());
+        });
+    }
+
+    private static Timestamp timestamp() {
+        return Timestamp.from(Instant.now());
+    }
+
+    private String failureDetails(Exception exception) {
+        try {
+            String exceptionClass = exception.getClass().getName();
+            Map<String, Object> details = new LinkedHashMap<>();
+            details.put("exception_class", exceptionClass);
+            details.put("message", exception.getMessage() == null ? exceptionClass : exception.getMessage());
+            details.put("backtrace", Arrays.stream(exception.getStackTrace())
+                .limit(50)
+                .map(StackTraceElement::toString)
+                .toList());
+            return objectMapper.writeValueAsString(details);
+        } catch (JsonProcessingException serializationFailure) {
+            throw new IllegalStateException("Unable to serialize Solid Queue failure", serializationFailure);
+        }
+    }
+
+    private record SolidQueueJob(long id, String className, String arguments) {
+    }
+
+    private static class SolidQueueJobMapper implements RowMapper<SolidQueueJob> {
+
+        @Override
+        public SolidQueueJob mapRow(ResultSet result, int rowNumber) throws SQLException {
+            return new SolidQueueJob(result.getLong("id"), result.getString("class_name"),
+                result.getString("arguments"));
+        }
+    }
+}
