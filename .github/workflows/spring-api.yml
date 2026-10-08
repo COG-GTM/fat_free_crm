@@ -460,3 +460,37 @@ jobs:
             spec/lib/tasks/i18n_matrix_spec.rb \
             spec/lib/fat_free_crm/migration/settings_cf_coverage_spec.rb \
             spec/lib/fat_free_crm/migration/i18n_properties_spec.rb
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Settings YAML->JSON conversion runbook (backup, convert, re-run, restore)
+        shell: bash
+        env:
+          RAILS_ENV: development
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ffcrm_settings_convert
+          FFCRM_DB_URL: jdbc:postgresql://localhost:5432/ffcrm_settings_convert
+          FFCRM_DB_USER: postgres
+          FFCRM_DB_PASSWORD: postgres
+          FFCRM_JWT_SECRET: settings-i18n-ci-only-jwt-secret-0123456789abcdef
+        run: |
+          (cd spring && ./gradlew bootJar --no-daemon)
+          createdb -h localhost -U postgres ffcrm_settings_convert
+          bundle exec rails db:schema:load
+          bundle exec rails runner 'Setting[:email_dropbox] = { server: "imap.example.com", port: 993, ssl: true }; Setting[:background_info] = %i[account contact]'
+          sql() { psql -h localhost -U postgres -d ffcrm_settings_convert -v ON_ERROR_STOP=1 -tAc "$1"; }
+          convert() { java -jar spring/build/libs/fat-free-crm-api-0.1.0-SNAPSHOT.jar --spring.profiles.active=convert-settings-json "$@" | tee conversion.log; }
+          sql "CREATE TABLE settings_yaml_backup AS SELECT id, name, value FROM settings"
+          convert
+          test "$(sql "SELECT count(*) FROM settings WHERE value LIKE '---%'")" -gt 0
+          convert --ffcrm.settings.conversion.dry-run=false --ffcrm.settings.conversion.confirm-rails-stopped=true
+          test "$(sql "SELECT count(*) FROM settings WHERE value LIKE '---%'")" = 0
+          convert --ffcrm.settings.conversion.dry-run=false --ffcrm.settings.conversion.confirm-rails-stopped=true
+          grep -q 'converted=0 ' conversion.log
+          # Documented rollback delta: Rails reads converted rows with ":name" strings, not symbols.
+          # Boot fills Setting.cache from YAML; clear it as every request does (application_controller.rb:109-111).
+          bundle exec rails runner 'Setting.clear_cache!; abort "Rails read converted symbols" unless Setting.dig(:email_dropbox, :server).nil? && Setting.background_info == [":account", ":contact"]'
+          sql "UPDATE settings s SET value = b.value FROM settings_yaml_backup b WHERE s.id = b.id"
+          test "$(sql "SELECT count(*) FROM settings s JOIN settings_yaml_backup b USING (id) WHERE s.value IS DISTINCT FROM b.value")" = 0
+          bundle exec rails runner 'Setting.clear_cache!; abort "restore did not bring back symbols" unless Setting.dig(:email_dropbox, :server) == "imap.example.com" && Setting.background_info == %i[account contact]'

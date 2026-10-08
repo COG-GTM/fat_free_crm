@@ -56,10 +56,37 @@ their own files: rails-i18n 8.1.0 (287 files, 123 locales), devise-i18n 1.15.0 (
    the JSON decodes to the same value, and writes with
    `UPDATE settings SET value = ? WHERE id = ? AND value = ?` (concurrent-change guard). Dry run is
    the default; a real run also needs `confirm-rails-stopped=true`; re-runs are no-ops; any failed
-   row → non-zero exit. Cutover runbook:
-   `java -jar spring/build/libs/fat-free-crm-api-0.1.0-SNAPSHOT.jar --spring.profiles.active=convert-settings-json` (dry run, review
-   the report), then add `--ffcrm.settings.conversion.dry-run=false
-   --ffcrm.settings.conversion.confirm-rails-stopped=true` once Rails is stopped.
+   row → non-zero exit. The profile boots the full context on an ephemeral loopback port
+   (`server.port: 0`), because `SecurityConfig` needs a servlet context. It therefore needs the
+   API's `FFCRM_DB_*` and `FFCRM_JWT_SECRET`.
+
+   Cutover runbook, with Rails stopped:
+   1. Back up: `CREATE TABLE settings_yaml_backup AS SELECT id, name, value FROM settings;`
+   2. Dry run: `java -jar spring/build/libs/fat-free-crm-api-0.1.0-SNAPSHOT.jar --spring.profiles.active=convert-settings-json`,
+      then review the report.
+   3. Convert by adding `--ffcrm.settings.conversion.dry-run=false
+      --ffcrm.settings.conversion.confirm-rails-stopped=true`.
+   4. Rollback to Rails **requires the restore**:
+      `UPDATE settings s SET value = b.value FROM settings_yaml_backup b WHERE s.id = b.id;`
+      Rows created after the conversion are not in the backup, so review them first.
+
+   **What Rails reads from converted rows.** This was verified with `rails runner` on a PG16
+   database that the profile had converted. It was seeded through `Setting[]=`; for example,
+   `email_dropbox` was stored as `{":server":"imap.example.com",":port":993,":ssl":true,…}`.
+   - The reads ran after `Setting.clear_cache!`, which Rails runs before every request
+     (`app/controllers/application_controller.rb:109-111`). Booting fills the cache from YAML, so
+     a check run without clearing it sees the defaults.
+   - Psych loads the JSON without error, but symbols do not survive.
+   - `Setting[:email_dropbox]` is a `HashWithIndifferentAccess` keyed by the strings `":server"`
+     and so on. `Setting.email_dropbox[:server]` and `Setting.dig(:email_dropbox, :server)`
+     return `nil`.
+   - `Setting[:background_info]` is `[":account", ":contact"]`, so `include?(:account)` is
+     `false`. `Setting.task_bucket.first` is `":due_asap"`, not `:due_asap`.
+   - Strings, integers and booleans (`locale`, `host`, `per_user_locale`, …) read back unchanged.
+
+   After the restore SQL, every value matched the backup (0 rows differed) and Rails returned
+   symbols again. The CI job `settings-i18n` repeats this cycle: backup, convert, re-run, restore,
+   compare.
 5. **i18n catalog.** `rake ffcrm:migration:i18n_properties` generates
    `spring/src/main/resources/i18n/messages_<tag>.properties` (UTF-8, flattened dotted keys,
    deterministic) from the 18 app files. Plain strings keep Rails `%{name}` text (Rails interpolates
