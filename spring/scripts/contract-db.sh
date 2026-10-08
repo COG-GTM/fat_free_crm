@@ -52,6 +52,35 @@ else
 fi
 export DATABASE_URL
 
+# AB-272: data-only snapshot the write-case harness replays for `reset: true` (TRUNCATE + replay
+# via JDBC, incl. setval). Uses the managed container when there is one, else dumps the resolved
+# URL (CI service containers expose the DB on DATABASE_URL's host/port, not a forwarded port).
+SNAPSHOT_SQL="${CONTRACT_FIXTURES_SQL:-$REPO_ROOT/spring/build/contract-db/fixtures.sql}"
+write_snapshot() {
+    mkdir -p "$(dirname "$SNAPSHOT_SQL")"
+    if [[ -n "$CONTAINER_ID" ]]; then
+        SNAPSHOT_CONTAINER="${CONTRACT_DB_CONTAINER:-ffcrm-contract-db}"
+        docker exec "$SNAPSHOT_CONTAINER" pg_dump -U postgres -d "${CONTRACT_DB_NAME:-ffcrm_contract}" \
+            --data-only --column-inserts \
+            --exclude-table=schema_migrations --exclude-table=ar_internal_metadata \
+            > "$SNAPSHOT_SQL"
+    else
+        DUMP_URL="$DATABASE_URL"
+        docker run --rm --network host "${PG_IMAGE:-postgres:16}" \
+            pg_dump "$DUMP_URL" \
+            --data-only --column-inserts \
+            --exclude-table=schema_migrations --exclude-table=ar_internal_metadata \
+            > "$SNAPSHOT_SQL"
+    fi
+    printf 'Contract fixture snapshot written to %s\n' "$SNAPSHOT_SQL" >&2
+}
+
+# --snapshot dumps the current database and exits without touching it (no reload).
+if [[ "${1:-}" == "--snapshot" ]]; then
+    write_snapshot
+    exit 0
+fi
+
 if [[ ! -f "$REPO_ROOT/config/database.yml" && -f "$REPO_ROOT/config/database.postgres.yml" ]]; then
     cp "$REPO_ROOT/config/database.postgres.yml" "$REPO_ROOT/config/database.yml"
     CREATED_DATABASE_YML=true
@@ -85,3 +114,8 @@ printf '\n%s\n' \
     "export FFCRM_DB_URL='${FFCRM_DB_URL}'" \
     "export FFCRM_DB_USER='${FFCRM_DB_USER}'" \
     "export FFCRM_DB_PASSWORD='${FFCRM_DB_PASSWORD}'"
+
+# After the reload, snapshot the fresh fixtures (default; CONTRACT_FIXTURES_SNAPSHOT=0 skips).
+if [[ "${CONTRACT_FIXTURES_SNAPSHOT:-1}" == "1" ]]; then
+    write_snapshot
+fi

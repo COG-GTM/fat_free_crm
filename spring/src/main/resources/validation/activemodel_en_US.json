@@ -1,0 +1,402 @@
+{
+  "activerecord": {
+    "attributes": {
+      "account": {
+        "access": "Access",
+        "assigned_to": "Assigned to",
+        "background_info": "Background info",
+        "blog": "Blog",
+        "bluesky": "Bluesky",
+        "category": "Category",
+        "contacts_count": "Contacts count",
+        "created_at": "Created at",
+        "deleted_at": "Deleted at",
+        "email": "Email",
+        "facebook": "Facebook",
+        "fax": "Fax",
+        "id": "Id",
+        "instagram": "Instagram",
+        "latitude": "Latitude",
+        "linkedin": "Linkedin",
+        "longitude": "Longitude",
+        "mastodon": "Mastodon",
+        "name": "Name",
+        "opportunities_count": "Opportunities count",
+        "phone": "Phone",
+        "rating": "Rating",
+        "subscribed_users": "Subscribed users",
+        "toll_free_phone": "Toll free phone",
+        "twitter": "Twitter",
+        "updated_at": "Updated at",
+        "user_id": "User",
+        "website": "Website",
+        "wikidata_id": "Wikidata"
+      },
+      "campaign": {
+        "access": "Access",
+        "assigned_to": "Assigned to",
+        "background_info": "Background info",
+        "budget": "Budget",
+        "created_at": "Created at",
+        "deleted_at": "Deleted at",
+        "ends_on": "Ends on",
+        "id": "Id",
+        "leads_count": "Leads count",
+        "name": "Name",
+        "objectives": "Objectives",
+        "opportunities_count": "Opportunities count",
+        "revenue": "Revenue",
+        "starts_on": "Starts on",
+        "status": "Status",
+        "subscribed_users": "Subscribed users",
+        "target_conversion": "Target conversion",
+        "target_leads": "Target leads",
+        "target_revenue": "Target revenue",
+        "updated_at": "Updated at",
+        "user_id": "User"
+      },
+      "comment": {
+        "comment": "Comment",
+        "commentable_id": "Commentable",
+        "commentable_type": "Commentable type",
+        "created_at": "Created at",
+        "id": "Id",
+        "private": "Private",
+        "state": "State",
+        "title": "Title",
+        "updated_at": "Updated at",
+        "user_id": "User"
+      },
+      "contact": {
+        "access": "Access",
+        "alt_email": "Alt email",
+        "assigned_to": "Assigned to",
+        "background_info": "Background info",
+        "blog": "Blog",
+        "bluesky": "Bluesky",
+        "born_on": "Born on",
+        "created_at": "Created at",
+        "deleted_at": "Deleted at",
+        "department": "Department",
+        "do_not_call": "Do not call",
+        "email": "Email",
+        "facebook": "Facebook",
+        "fax": "Fax",
+        "first_name": "First name",
+        "id": "Id",
+        "instagram": "Instagram",
+        "last_name": "Last name",
+        "lead_id": "Lead",
+        "linkedin": "Linkedin",
+        "mastodon": "Mastodon",
+        "mobile": "Mobile",
+        "phone": "Phone",
+        "reports_to": "Reports to",
+        "signal": "Signal",
+        "source": "Source",
+        "subscribed_users": "Subscribed users",
+        "teams": "Teams",
+        "title": "Title",
+        "twitter": "Twitter",
+        "updated_at": "Updated at",
+        "user_id": "User",
+        "zoom": "Zoom"
+      },
+      "email": {
+        "bcc": "Bcc",
+        "body": "Body",
+        "cc": "Cc",
+        "created_at": "Created at",
+        "deleted_at": "Deleted at",
+        "header": "Header",
+        "id": "Id",
+        "imap_message_id": "Imap message",
+        "mediator_id": "Mediator",
+        "mediator_type": "Mediator type",
+        "received_at": "Received at",
+        "sent_at": "Sent at",
+        "sent_from": "Sent from",
+        "sent_to": "Sent to",
+        "state": "State",
+        "subject": "Subject",
+        "updated_at": "Updated at",
+        "user_id": "User"
+      },
+      "lead": {
+        "access": "Access",
+        "alt_email": "Alt email",
+        "assigned_to": "Assigned to",
+        "background_info": "Background info",
+        "blog": "Blog",
+        "bluesky": "Bluesky",
+        "campaign_id": "Campaign",
+        "company": "Company",
+        "created_at": "Created at",
+        "deleted_at": "Deleted at",
+        "do_not_call": "Do not call",
+        "email": "Email",
+        "facebook": "Facebook",
+        "first_name": "First name",
+        "id": "Id",
+        "instagram": "Instagram",
+        "last_name": "Last name",
+        "linkedin": "Linkedin",
+        "mastodon": "Mastodon",
+        "mobile": "Mobile",
+        "phone": "Phone",
+        "rating": "Rating",
+        "referred_by": "Referred by",
+        "signal": "Signal",
+        "source": "Source",
+        "status": "Status",
+        "subscribed_users": "Subscribed users",
+        "teams": "Teams",
+        "title": "Title",
+        "twitter": "Twitter",
+        "updated_at": "Updated at",
+        "user_id": "User",
+        "zoom": "Zoom"
+      },
+      "list": {
+        "created_at": "Created at",
+        "id": "Id",
+        "name": "Name",
+        "updated_at": "Updated at",
+        "url": "Url",
+        "user_id": "User"
+      },
+      "opportunity": {
+        "access": "Access",
+        "amount": "Amount",
+        "assigned_to": "Assigned to",
+        "background_info": "Background info",
+        "campaign_id": "Campaign",
+        "closes_on": "Closes on",
+        "created_at": "Created at",
+        "deleted_at": "Deleted at",
+        "discount": "Discount",
+        "id": "Id",
+        "name": "Name",
+        "probability": "Probability",
+        "source": "Source",
+        "stage": "Stage",
+        "subscribed_users": "Subscribed users",
+        "updated_at": "Updated at",
+        "user_id": "User"
+      },
+      "task": {
+        "asset_id": "Asset",
+        "asset_type": "Asset type",
+        "assigned_to": "Assigned to",
+        "background_info": "Background info",
+        "bucket": "Bucket",
+        "category": "Category",
+        "completed_at": "Completed at",
+        "completed_by": "Completed by",
+        "created_at": "Created at",
+        "deleted_at": "Deleted at",
+        "due_at": "Due at",
+        "id": "Id",
+        "name": "Name",
+        "priority": "Priority",
+        "subscribed_users": "Subscribed users",
+        "updated_at": "Updated at",
+        "user_id": "User"
+      },
+      "user": {
+        "admin": "Admin",
+        "alt_email": "Alt email",
+        "authentication_token": "Authentication token",
+        "blog": "Blog",
+        "bluesky": "Bluesky",
+        "company": "Company",
+        "confirmation_sent_at": "Confirmation sent at",
+        "confirmation_token": "Confirmation token",
+        "confirmed_at": "Confirmed at",
+        "created_at": "Created at",
+        "current_sign_in_at": "Current sign in at",
+        "current_sign_in_ip": "Current sign in IP",
+        "deleted_at": "Deleted at",
+        "email": "Email",
+        "encrypted_password": "Encrypted password",
+        "facebook": "Facebook",
+        "first_name": "First name",
+        "google": "Google",
+        "id": "Id",
+        "instagram": "Instagram",
+        "last_name": "Last name",
+        "last_sign_in_at": "Last sign in at",
+        "last_sign_in_ip": "Last sign in IP",
+        "linkedin": "Linkedin",
+        "mastodon": "Mastodon",
+        "mobile": "Mobile",
+        "password_salt": "Password salt",
+        "phone": "Phone",
+        "receive_assigned_notifications": "Receive assigned notifications",
+        "remember_created_at": "Remember created at",
+        "remember_token": "Remember token",
+        "reset_password_sent_at": "Reset password sent at",
+        "reset_password_token": "Reset password token",
+        "sign_in_count": "Sign in count",
+        "signal": "Signal",
+        "subscribe_to_comment_replies": "Subscribe to comment replies",
+        "suspended_at": "Suspended at",
+        "teams": "Teams",
+        "title": "Title",
+        "twitter": "Twitter",
+        "unconfirmed_email": "Unconfirmed email",
+        "updated_at": "Updated at",
+        "username": "Username",
+        "zoom": "Zoom"
+      }
+    },
+    "errors": {
+      "messages": {
+        "record_invalid": "Validation failed: %{errors}",
+        "restrict_dependent_destroy": {
+          "has_many": "Cannot delete record because dependent %{record} exist",
+          "has_one": "Cannot delete record because a dependent %{record} exists"
+        }
+      },
+      "models": {
+        "account": {
+          "attributes": {
+            "access": {
+              "share_account": "^Please specify users with whom to share the account."
+            },
+            "name": {
+              "missing_account_name": "^Please specify account name."
+            }
+          }
+        },
+        "authentication": {
+          "attributes": {
+            "login_field": {
+              "is_not_valid": "is not valid"
+            },
+            "password_field": {
+              "is_not_valid": "is not valid"
+            }
+          }
+        },
+        "campaign": {
+          "attributes": {
+            "access": {
+              "share_campaign": "^Please specify users with whom to share the campaign."
+            },
+            "ends_on": {
+              "dates_not_in_sequence": "^Please make sure the campaign end date is after the start date."
+            },
+            "name": {
+              "missing_campaign_name": "^Please specify campaign name."
+            }
+          }
+        },
+        "contact": {
+          "attributes": {
+            "access": {
+              "share_contact": "^Please specify users with whom to share the contact."
+            },
+            "first_name": {
+              "missing_first_name": "^Please specify first name."
+            },
+            "last_name": {
+              "missing_last_name": "^Please specify last name."
+            }
+          }
+        },
+        "custom_field": {
+          "endbeforestart": "^%{field} cannot end before it begins.",
+          "maxlength": "^%{field} is too long.",
+          "minlength": "^%{field} is too short.",
+          "required": "^%{field} is required."
+        },
+        "lead": {
+          "attributes": {
+            "access": {
+              "share_lead": "^Please specify users with whom to share the lead."
+            },
+            "first_name": {
+              "missing_first_name": "^Please specify first name."
+            },
+            "last_name": {
+              "missing_last_name": "^Please specify last name."
+            }
+          }
+        },
+        "opportunity": {
+          "attributes": {
+            "access": {
+              "share_opportunity": "^Please specify users with whom to share the opportunity."
+            },
+            "name": {
+              "missing_opportunity_name": "^Please specify opportunity name."
+            }
+          }
+        },
+        "task": {
+          "attributes": {
+            "calendar": {
+              "invalid_date": "^Please specify valid date."
+            },
+            "name": {
+              "missing_task_name": "^Please specify task name."
+            }
+          }
+        },
+        "user": {
+          "attributes": {
+            "email": {
+              "email_in_use": "^There is another user with the same email.",
+              "missing_email": "^Please specify email address."
+            },
+            "username": {
+              "missing_username": "^Please specify username.",
+              "username_taken": "^This username is already taken."
+            }
+          }
+        }
+      }
+    }
+  },
+  "errors": {
+    "attributes": {},
+    "format": "%{attribute} %{message}",
+    "messages": {
+      "accepted": "must be accepted",
+      "blank": "can't be blank",
+      "confirmation": "doesn't match %{attribute}",
+      "empty": "can't be empty",
+      "equal_to": "must be equal to %{count}",
+      "even": "must be even",
+      "exclusion": "is reserved",
+      "greater_than": "must be greater than %{count}",
+      "greater_than_or_equal_to": "must be greater than or equal to %{count}",
+      "in": "must be in %{count}",
+      "inclusion": "is not included in the list",
+      "invalid": "is invalid",
+      "less_than": "must be less than %{count}",
+      "less_than_or_equal_to": "must be less than or equal to %{count}",
+      "model_invalid": "Validation failed: %{errors}",
+      "not_a_number": "is not a number",
+      "not_an_integer": "must be an integer",
+      "odd": "must be odd",
+      "other_than": "must be other than %{count}",
+      "present": "must be blank",
+      "required": "must exist",
+      "taken": "has already been taken",
+      "too_long": {
+        "one": "is too long (maximum is %{count} character)",
+        "other": "is too long (maximum is %{count} characters)"
+      },
+      "too_short": {
+        "one": "is too short (minimum is %{count} character)",
+        "other": "is too short (minimum is %{count} characters)"
+      },
+      "wrong_length": {
+        "one": "is the wrong length (should be %{count} character)",
+        "other": "is the wrong length (should be %{count} characters)"
+      }
+    }
+  }
+}

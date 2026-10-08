@@ -1,6 +1,9 @@
 package com.fatfreecrm.api;
 
 import com.fatfreecrm.customfields.CustomFieldValidationException;
+import com.fatfreecrm.service.validation.RailsValidationException;
+import com.fatfreecrm.service.write.RailsInternalError;
+import com.fatfreecrm.service.write.RailsParameterMissing;
 import com.fatfreecrm.service.query.InvalidPageException;
 import com.fatfreecrm.service.query.InvalidSearchQueryException;
 import jakarta.persistence.EntityNotFoundException;
@@ -37,6 +40,29 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
             .contentType(MediaType.APPLICATION_JSON)
             .body(Map.of("errors", exception.errors()));
+    }
+
+    /** Rails 422 {@code {"errors": {attr: [messages]}}} from ActiveModel-style validations. */
+    @ExceptionHandler(RailsValidationException.class)
+    public ResponseEntity<Object> handleRailsValidation(RailsValidationException exception) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(Map.of("errors", exception.errors()));
+    }
+
+    /** Rails {@code params.require} ({@code ActionController::ParameterMissing}) → 400. */
+    @ExceptionHandler(RailsParameterMissing.class)
+    public ResponseEntity<Object> handleRailsParameterMissing(RailsParameterMissing exception,
+        HttpServletRequest request) {
+        return problemResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request);
+    }
+
+    /** Mirrored Rails runtime defects (e.g. {@code Time.parse(nil)} TypeError) → 500. */
+    @ExceptionHandler(RailsInternalError.class)
+    public ResponseEntity<Object> handleRailsInternalError(RailsInternalError exception,
+        HttpServletRequest request) {
+        return problemResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+            "An unexpected error occurred.", request);
     }
 
     @ExceptionHandler(AuthenticationException.class)
