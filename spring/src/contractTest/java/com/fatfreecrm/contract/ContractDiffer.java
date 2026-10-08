@@ -38,7 +38,23 @@ public final class ContractDiffer {
         List<String> notes,
         boolean springAuthenticated
     ) {
-        List<Difference> differences = new ArrayList<>();
+        return diff(contractCase, rails, spring, allowlist, globalNormalize, railsUrl, springUrl,
+            notes, springAuthenticated, List.of());
+    }
+
+    public CaseResult diff(
+        ContractCase contractCase,
+        CapturedResponse rails,
+        CapturedResponse spring,
+        Allowlist allowlist,
+        JsonNode globalNormalize,
+        String railsUrl,
+        String springUrl,
+        List<String> notes,
+        boolean springAuthenticated,
+        List<Difference> dbDifferences
+    ) {
+        List<Difference> differences = new ArrayList<>(dbDifferences);
         List<String> resultNotes = new ArrayList<>(notes);
         boolean authenticated = springAuthenticated && !contractCase.auth().equals("anonymous");
         List<AllowlistEntry> matching = allowlist.matching(contractCase, authenticated);

@@ -88,7 +88,9 @@ public final class CaseLoader {
             text(node, "auth", "anonymous"),
             objectOrEmpty(node.get("normalize")),
             text(node, "description", ""),
-            expectation(node.get("expect"))
+            expectation(node.get("expect")),
+            node.path("reset").asBoolean(false),
+            node.get("dbAssert")
         );
     }
 

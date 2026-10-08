@@ -1,0 +1,350 @@
+# AB-272 Phase A write cases: tasks/comments/emails/lists writes. All enforced; every case resets
+# the contract corpus before each side (reset: true) and asserts response + DB rows (dbAssert)
+# including PaperTrail `versions`. Timestamp columns are volatile; version YAML timestamps are
+# masked via yamlVolatile.
+
+- id: tasks-create-due-today
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /tasks
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {task: {user_id: 2, name: "Contract write task", bucket: due_today}}
+  reset: true
+  dbAssert:
+    - {table: tasks, where: "id = 606", exclude: [custom_fields], volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Task' AND item_id = 606", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at, due_at]}}
+  description: Task create (due_today bucket) → 201 + task JSON + create version.
+
+- id: tasks-create-due-later
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /tasks
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {task: {user_id: 2, name: "Contract later task", bucket: due_later}}
+  reset: true
+  dbAssert:
+    - {table: tasks, where: "id = 606", exclude: [custom_fields], volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Task' AND item_id = 606", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at, due_at]}}
+  description: Task create (due_later bucket → due_at = midnight + 100y).
+
+- id: tasks-create-specific-time
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /tasks
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {task: {user_id: 2, name: "Contract specific task", bucket: specific_time,
+                calendar: "2030-05-04 10:00"}}
+  reset: true
+  dbAssert:
+    - {table: tasks, where: "id = 606", exclude: [custom_fields], volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Task' AND item_id = 606", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at]}}
+  description: Task create (specific_time + calendar) → due_at parsed in process-local zone.
+
+- id: tasks-create-with-asset
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /tasks
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {task: {user_id: 2, name: "Contract asset task", bucket: due_tomorrow,
+                asset_type: Account, asset_id: 101}}
+  reset: true
+  dbAssert:
+    - {table: tasks, where: "id = 606", exclude: [custom_fields], volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Task' AND item_id = 606", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at, due_at]}}
+  description: Task create with asset → create version related meta (Account 101).
+
+- id: tasks-create-blank-name-422
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /tasks
+  auth: alice
+  body: {task: {user_id: 2, name: "", bucket: due_today}}
+  reset: true
+  dbAssert:
+    - {table: tasks, where: "id = 606", columns: [id]}
+    - {table: versions, where: "item_type = 'Task' AND item_id = 606", columns: [id]}
+  description: 'Blank name → 422 {"errors": {name: ["^Please specify task name."]}}, no row/version.'
+
+- id: tasks-create-missing-user-422
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /tasks
+  auth: alice
+  body: {task: {name: "No owner", bucket: due_today}}
+  reset: true
+  dbAssert:
+    - {table: tasks, where: "id = 606", columns: [id]}
+    - {table: versions, where: "item_type = 'Task' AND item_id = 606", columns: [id]}
+  description: 'Missing user → 422 {"errors": {user: ["must exist", "can''t be blank"]}}.'
+
+- id: tasks-update-601-bucket
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /tasks/601
+  auth: alice
+  body: {task: {bucket: due_later}}
+  reset: true
+  dbAssert:
+    - {table: tasks, where: "id = 601", exclude: [custom_fields],
+       volatile: [updated_at, due_at]}
+    - {table: versions, where: "item_type = 'Task' AND item_id = 601", exclude: [id],
+       orderBy: id, volatile: [created_at],
+       yamlVolatile: {object: [updated_at], object_changes: [updated_at, due_at]}}
+  description: Partial update (bucket change) → 204 + update version + reschedule observer version.
+
+- id: tasks-update-601-bob-404
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /tasks/601
+  auth: bob
+  body: {task: {name: "Bob edit"}}
+  reset: true
+  dbAssert:
+    - {table: tasks, where: "id = 601", exclude: [custom_fields]}
+  description: Bob updates Alice's task → Rails 404 (tracked_by) vs Spring 403 (allow-listed).
+
+- id: tasks-complete-602
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /tasks/602/complete
+  rails: {path: /tasks/602/complete.json}
+  spring: {path: /api/v1/tasks/602/complete}
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: tasks, where: "id = 602", exclude: [custom_fields],
+       volatile: [updated_at, completed_at]}
+    - {table: versions, where: "item_type = 'Task' AND item_id = 602", exclude: [id],
+       orderBy: id, volatile: [created_at],
+       yamlVolatile: {object: [updated_at], object_changes: [updated_at, completed_at]}}
+  description: Complete → 204 + update version + complete observer version.
+
+- id: tasks-uncomplete-603
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /tasks/603/uncomplete
+  rails: {path: /tasks/603/uncomplete.json}
+  spring: {path: /api/v1/tasks/603/uncomplete}
+  auth: carol
+  reset: true
+  dbAssert:
+    - {table: tasks, where: "id = 603", exclude: [custom_fields],
+       volatile: [updated_at, due_at]}
+    - {table: versions, where: "item_type = 'Task' AND item_id = 603", exclude: [id],
+       orderBy: id, volatile: [created_at],
+       yamlVolatile: {object: [updated_at, due_at], object_changes: [updated_at, due_at, completed_at, completed_by]}}
+  description: Uncomplete → 204; set_due_date recomputes due_at from bucket.
+
+- id: tasks-destroy-601
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /tasks/601
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: tasks, where: "id = 601", columns: [id]}
+    - {table: versions, where: "item_type = 'Task' AND item_id = 601", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: Destroy → 204 + destroy version (object dump + [value, nil] changes).
+
+- id: comments-create-account-101
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /comments
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {comment: {commentable_type: Account, commentable_id: 101,
+                   comment: "Ping @bob for review", title: "Contract comment"}}
+  reset: true
+  dbAssert:
+    - {table: comments, where: "commentable_type = 'Account' AND commentable_id = 101",
+       orderBy: id, exclude: [updated_at]}
+    - {table: accounts, where: "id = 101", columns: [id, subscribed_users], volatile: [updated_at]}
+    - {table: versions, where: "item_type = 'Comment' AND item_id = 5", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at]}}
+  description: Comment create on account 101 with @bob mention → 201 + create version +
+    commentable subscribed_users [3, 2].
+
+- id: comments-create-blank-422
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /comments
+  auth: alice
+  body: {comment: {commentable_type: Account, commentable_id: 101, comment: ""}}
+  reset: true
+  dbAssert:
+    - {table: comments, where: "id = 5", columns: [id]}
+    - {table: versions, where: "item_type = 'Comment' AND item_id = 5", columns: [id]}
+  description: 'Blank comment → 422 {"errors": {comment: ["can''t be blank"]}}.'
+
+- id: comments-create-invisible-404
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /comments
+  auth: alice
+  body: {comment: {commentable_type: Account, commentable_id: 107, comment: "No access"}}
+  reset: true
+  dbAssert:
+    - {table: comments, where: "comment = 'No access'", columns: [id]}
+    - {table: versions, where: "item_type = 'Comment'", columns: [id]}
+  description: Comment on admin's private account 107 → 404 (my-scope miss), no row.
+
+- id: comments-update-own-204
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /comments/2
+  auth: bob
+  body: {comment: {comment: "Bob edited own comment"}}
+  reset: true
+  dbAssert:
+    - {table: comments, where: "id = 2", exclude: [updated_at]}
+    - {table: versions, where: "item_type = 'Comment' AND item_id = 2", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [updated_at], object_changes: [updated_at]}}
+  description: Bob updates own comment 2 → 204 + update version.
+
+- id: comments-update-nonowner-401
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /comments/1
+  auth: bob
+  body: {comment: {comment: "Bob edits alice's comment"}}
+  reset: true
+  dbAssert:
+    - {table: comments, where: "id = 1", exclude: [updated_at]}
+  description: Bob updates Alice's comment → Rails 401 vs Spring 403 (global allow-list).
+
+- id: comments-destroy-1
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /comments/1
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: comments, where: "id = 1", columns: [id]}
+    - {table: versions, where: "item_type = 'Comment' AND item_id = 1", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: Alice destroys own comment → 204 + destroy version.
+
+- id: emails-destroy-701
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /emails/701
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: emails, where: "id = 701", columns: [id]}
+    - {table: versions, where: "item_type = 'Email' AND item_id = 701", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: Alice destroys own email → 204 + destroy version related Account 101.
+
+- id: emails-destroy-nonowner-401
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /emails/702
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: emails, where: "id = 702", columns: [id]}
+    - {table: versions, where: "item_type = 'Email' AND item_id = 702", columns: [id]}
+  description: Alice destroys Bob's email → Rails 401 vs Spring 403; no row change.
+
+- id: lists-create-alice
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /lists
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {list: {name: "New Alice List", url: "/tasks?view=assigned"}}
+  reset: true
+  dbAssert:
+    - {table: lists, where: "name = 'New Alice List'", volatile: [created_at, updated_at]}
+  description: List create (is_global != 1 → user_id = current) → 201.
+
+- id: lists-upsert-case-insensitive
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /lists
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {list: {name: "ALICE CONTRACT LIST", url: "/leads?view=all"}}
+  reset: true
+  dbAssert:
+    - {table: lists, where: "lower(name) = 'alice contract list'", volatile: [updated_at],
+       columns: [id, name, url, user_id]}
+    - {table: lists, columns: [id]}
+  description: Case-insensitive name upsert → updates list 801 in place, still 201.
+
+- id: lists-create-global
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /lists
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {list: {name: "New Global List", url: "/accounts"}, is_global: "1"}
+  reset: true
+  dbAssert:
+    - {table: lists, where: "name = 'New Global List'", volatile: [created_at, updated_at]}
+  description: is_global=1 keeps params user_id (nil → NULL) → 201.
+
+- id: lists-create-422
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /lists
+  auth: alice
+  body: {list: {name: "", url: ""}}
+  reset: true
+  dbAssert:
+    - {table: lists, where: "name = ''", columns: [id]}
+  description: 'Blank name + url → 422 {"errors": {name/url: ["can''t be blank"]}}.'
+
+- id: lists-destroy-802
+  ticket: AB-272
+  status: enforced
+  method: DELETE
+  path: /lists/802
+  auth: alice
+  reset: true
+  dbAssert:
+    - {table: lists, where: "id = 802", columns: [id]}
+    - {table: lists, columns: [id]}
+  description: Alice destroys Bob's list → 204 (Rails has no authorization — mirrored gap).

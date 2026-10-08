@@ -85,3 +85,24 @@ printf '\n%s\n' \
     "export FFCRM_DB_URL='${FFCRM_DB_URL}'" \
     "export FFCRM_DB_USER='${FFCRM_DB_USER}'" \
     "export FFCRM_DB_PASSWORD='${FFCRM_DB_PASSWORD}'"
+
+# AB-272: data-only snapshot the write-case harness replays for `reset: true` (TRUNCATE + replay
+# via JDBC, incl. setval). --snapshot rewrites it from the current database instead.
+SNAPSHOT_SQL="${CONTRACT_FIXTURES_SQL:-$REPO_ROOT/spring/build/contract-db/fixtures.sql}"
+if [[ "${1:-}" == "--snapshot" || "${CONTRACT_FIXTURES_SNAPSHOT:-1}" == "1" ]]; then
+    mkdir -p "$(dirname "$SNAPSHOT_SQL")"
+    SNAPSHOT_CONTAINER="${CONTRACT_DB_CONTAINER:-ffcrm-contract-db}"
+    if [[ -n "$CONTAINER_ID" ]]; then
+        docker exec "$SNAPSHOT_CONTAINER" pg_dump -U postgres -d "${CONTRACT_DB_NAME:-ffcrm_contract}" \
+            --data-only --column-inserts \
+            --exclude-table=schema_migrations --exclude-table=ar_internal_metadata \
+            > "$SNAPSHOT_SQL"
+    else
+        docker run --rm --network host "${PG_IMAGE:-postgres:16}" \
+            pg_dump "postgres://postgres:postgres@127.0.0.1:${DB_PORT:-5433}/${CONTRACT_DB_NAME:-ffcrm_contract}" \
+            --data-only --column-inserts \
+            --exclude-table=schema_migrations --exclude-table=ar_internal_metadata \
+            > "$SNAPSHOT_SQL"
+    fi
+    printf 'Contract fixture snapshot written to %s\n' "$SNAPSHOT_SQL" >&2
+fi
