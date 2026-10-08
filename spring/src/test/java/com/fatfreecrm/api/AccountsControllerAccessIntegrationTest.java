@@ -186,6 +186,7 @@ class AccountsControllerAccessIntegrationTest extends AbstractPostgresIntegratio
         jdbcTemplate.update("DELETE FROM groups");
 
         assertThat(listNames(memberBearer)).containsExactlyInAnyOrder("Shared With Member", "Assigned Private");
+        assertThat(autocompleteNames(memberBearer, "Shared")).containsExactly("Shared With Member");
         mockMvc.perform(get("/api/v1/accounts/{id}", sharedWithNobody.getId())
                 .header(HttpHeaders.AUTHORIZATION, memberBearer))
             .andExpect(status().isForbidden());
