@@ -2,10 +2,12 @@ package com.fatfreecrm.service.mailprocessor;
 
 import com.fatfreecrm.domain.Comment;
 import com.fatfreecrm.domain.User;
-import com.fatfreecrm.domain.Version;
 import com.fatfreecrm.domain.support.CrmEntity;
 import com.fatfreecrm.repository.CommentRepository;
 import com.fatfreecrm.repository.UserRepository;
+import com.fatfreecrm.security.AuthenticatedUser;
+import com.fatfreecrm.service.audit.VersionRecorder;
+import com.fatfreecrm.service.history.RailsRowAttributes;
 import com.fatfreecrm.service.jobs.JobsOwner;
 import com.fatfreecrm.service.mail.CommentNotificationService;
 import com.fatfreecrm.service.mail.MailSettingsService;
@@ -31,6 +33,8 @@ public class CommentRepliesProcessor extends MailProcessorBase {
 
     private final CommentRepository commentRepository;
     private final CommentNotificationService commentNotificationService;
+    private final RailsRowAttributes rowAttributes;
+    private final VersionRecorder versionRecorder;
 
     public CommentRepliesProcessor(
         MailSettingsService settings,
@@ -38,6 +42,8 @@ public class CommentRepliesProcessor extends MailProcessorBase {
         CommentRepository commentRepository,
         EntityManager entityManager,
         JdbcTemplate jdbcTemplate,
+        RailsRowAttributes rowAttributes,
+        VersionRecorder versionRecorder,
         CommentNotificationService commentNotificationService,
         JobsOwner jobsOwner,
         ImapClient imapClient,
@@ -46,6 +52,8 @@ public class CommentRepliesProcessor extends MailProcessorBase {
         super(settings, userRepository, entityManager, jdbcTemplate, jobsOwner, imapClient, transactionManager);
         this.commentRepository = commentRepository;
         this.commentNotificationService = commentNotificationService;
+        this.rowAttributes = rowAttributes;
+        this.versionRecorder = versionRecorder;
     }
 
     public void process(boolean dryRun) {
@@ -89,17 +97,8 @@ public class CommentRepliesProcessor extends MailProcessorBase {
         entity.setUpdatedAt(Instant.now());
         entityManager.merge(entity);
         commentNotificationService.afterCreate(comment);
-        Version version = new Version();
-        version.setItemType("Comment");
-        version.setItemId(Math.toIntExact(comment.getId()));
-        version.setRelatedType(comment.getCommentableType());
-        version.setRelatedId(comment.getCommentableId());
-        version.setEvent("create");
-        version.setWhodunnit(sender.getId().toString());
-        version.setObject(null);
-        version.setObjectChanges(null);
-        version.setCreatedAt(now);
-        entityManager.persist(version);
+        versionRecorder.recordCreate(new AuthenticatedUser(sender.getId(), null, false), comment,
+            rowAttributes.read(comment), rowAttributes.defaults(comment));
     }
 
     static List<String> subjectLine(String subject) {

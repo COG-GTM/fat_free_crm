@@ -73,6 +73,7 @@ tasks.withType<Test>().configureEach {
 
 tasks.named<Test>("test") {
     systemProperty("spring.profiles.active", "test")
+    systemProperty("audit.writeFixtures", System.getProperty("audit.writeFixtures", "false"))
 }
 
 tasks.named("spotbugsTest") {

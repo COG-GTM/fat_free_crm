@@ -8,10 +8,12 @@ import com.fatfreecrm.domain.Email;
 import com.fatfreecrm.domain.Lead;
 import com.fatfreecrm.domain.Opportunity;
 import com.fatfreecrm.domain.User;
-import com.fatfreecrm.domain.Version;
 import com.fatfreecrm.domain.support.CrmEntity;
 import com.fatfreecrm.repository.UserRepository;
+import com.fatfreecrm.security.AuthenticatedUser;
+import com.fatfreecrm.service.audit.VersionRecorder;
 import com.fatfreecrm.service.jobs.JobsOwner;
+import com.fatfreecrm.service.history.RailsRowAttributes;
 import com.fatfreecrm.service.mail.MailSettingsService;
 import jakarta.mail.Message;
 import jakarta.persistence.EntityManager;
@@ -35,16 +37,23 @@ public class DropboxProcessor extends MailProcessorBase {
     private static final Pattern FORWARDED_RECIPIENT = Pattern.compile(
         "\\b([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4})\\b");
 
+    private final RailsRowAttributes rowAttributes;
+    private final VersionRecorder versionRecorder;
+
     public DropboxProcessor(
         MailSettingsService settings,
         UserRepository userRepository,
         EntityManager entityManager,
         JdbcTemplate jdbcTemplate,
+        RailsRowAttributes rowAttributes,
+        VersionRecorder versionRecorder,
         JobsOwner jobsOwner,
         ImapClient imapClient,
         PlatformTransactionManager transactionManager
     ) {
         super(settings, userRepository, entityManager, jdbcTemplate, jobsOwner, imapClient, transactionManager);
+        this.rowAttributes = rowAttributes;
+        this.versionRecorder = versionRecorder;
     }
 
     public void process(boolean dryRun) {
@@ -153,7 +162,7 @@ public class DropboxProcessor extends MailProcessorBase {
         asset.setUpdatedAt(now);
         entityManager.persist(asset);
         entityManager.flush();
-        createVersion(asset.getClass().getSimpleName(), asset.getId(), null, null, sender, now);
+        recordCreate(asset, sender);
         return asset;
     }
 
@@ -210,14 +219,14 @@ public class DropboxProcessor extends MailProcessorBase {
             account.setUpdatedAt(now);
             entityManager.persist(account);
             entityManager.flush();
-            createVersion("Account", account.getId(), null, null, sender, now);
+            recordCreate(account, sender);
         } else {
             account = entityManager.find(Account.class, accountIds.get(0));
         }
         entityManager.persist(contact);
         entityManager.flush();
-        attachContactToAccount(contact, account, now);
-        createVersion("Contact", contact.getId(), null, null, sender, now);
+        attachContactToAccount(contact, account, now, sender);
+        recordCreate(contact, sender);
         attach(message, sender, contact, config, false);
     }
 
@@ -241,18 +250,32 @@ public class DropboxProcessor extends MailProcessorBase {
         Date date = message.getSentDate();
         Instant sentAt = date == null ? null : date.toInstant();
         createEmail(message, sender, asset, to, cc, body, sentAt);
+        Map<String, Object> beforeTouch = rowAttributes.read(asset);
         Instant now = Instant.now();
         asset.setUpdatedAt(now);
-        if (asset instanceof Lead lead && "new".equals(lead.getStatus())) {
-            lead.setStatus("contacted");
-        }
         entityManager.merge(asset);
+        entityManager.flush();
+        versionRecorder.recordTouch(new AuthenticatedUser(sender.getId(), null, false), asset, beforeTouch,
+            rowAttributes.read(asset));
+        if (asset instanceof Lead lead && "new".equals(lead.getStatus())) {
+            Map<String, Object> beforeStatus = rowAttributes.read(lead);
+            lead.setStatus("contacted");
+            lead.setUpdatedAt(Instant.now());
+            entityManager.merge(lead);
+            entityManager.flush();
+            versionRecorder.recordUpdate(new AuthenticatedUser(sender.getId(), null, false), lead, beforeStatus,
+                rowAttributes.read(lead));
+        }
         Integer accountId = relatedAccountId(asset);
         if (accountId != null) {
             Account account = entityManager.find(Account.class, accountId.longValue());
             createEmail(message, sender, account, to, cc, body, sentAt);
+            Map<String, Object> beforeAccountTouch = rowAttributes.read(account);
             account.setUpdatedAt(now);
             entityManager.merge(account);
+            entityManager.flush();
+            versionRecorder.recordTouch(new AuthenticatedUser(sender.getId(), null, false), account,
+                beforeAccountTouch, rowAttributes.read(account));
         }
     }
 
@@ -277,7 +300,7 @@ public class DropboxProcessor extends MailProcessorBase {
         email.setUpdatedAt(now);
         entityManager.persist(email);
         entityManager.flush();
-        createVersion("Email", email.getId(), email.getMediatorType(), email.getMediatorId(), sender, now);
+        recordCreate(email, sender);
     }
 
     private Integer relatedAccountId(CrmEntity asset) {
@@ -298,29 +321,20 @@ public class DropboxProcessor extends MailProcessorBase {
         return ids.isEmpty() ? null : ids.get(0);
     }
 
-    private void attachContactToAccount(Contact contact, Account account, Instant now) {
+    private void attachContactToAccount(Contact contact, Account account, Instant now, User sender) {
         AccountContact association = new AccountContact();
         association.setAccount(account);
         association.setContact(contact);
         association.setCreatedAt(now);
         association.setUpdatedAt(now);
         entityManager.persist(association);
+        entityManager.flush();
+        recordCreate(association, sender);
     }
 
-    private void createVersion(
-        String itemType, Long itemId, String relatedType, Integer relatedId, User sender, Instant now
-    ) {
-        Version version = new Version();
-        version.setItemType(itemType);
-        version.setItemId(Math.toIntExact(itemId));
-        version.setRelatedType(relatedType);
-        version.setRelatedId(relatedId);
-        version.setEvent("create");
-        version.setWhodunnit(sender.getId().toString());
-        version.setObject(null);
-        version.setObjectChanges(null);
-        version.setCreatedAt(now);
-        entityManager.persist(version);
+    private void recordCreate(Object entity, User sender) {
+        versionRecorder.recordCreate(new AuthenticatedUser(sender.getId(), null, false), entity,
+            rowAttributes.read(entity), rowAttributes.defaults(entity));
     }
 
     static List<String> explicitKeyword(String body) {

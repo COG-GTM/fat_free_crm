@@ -6,6 +6,8 @@ import com.fatfreecrm.domain.Account;
 import com.fatfreecrm.domain.Address;
 import com.fatfreecrm.repository.AccountRepository;
 import com.fatfreecrm.repository.AddressRepository;
+import com.fatfreecrm.service.audit.VersionRecorder;
+import com.fatfreecrm.service.history.RailsRowAttributes;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -14,6 +16,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -39,6 +42,10 @@ public class AccountWebsiteJob implements Job {
     private AccountRepository accountRepository;
     @Autowired
     private AddressRepository addressRepository;
+    @Autowired
+    private VersionRecorder versionRecorder;
+    @Autowired
+    private RailsRowAttributes rowAttributes;
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
@@ -139,6 +146,7 @@ public class AccountWebsiteJob implements Job {
     }
 
     private void updateFromOrganization(Account account, JsonNode organization) {
+        Map<String, Object> before = rowAttributes.read(account);
         boolean changed = false;
         changed |= fill(account.getPhone(), organization.path("telephone").asText(null), account::setPhone);
         changed |= fill(account.getEmail(), organization.path("email").asText(null), account::setEmail);
@@ -190,7 +198,8 @@ public class AccountWebsiteJob implements Job {
         }
         if (changed) {
             account.setUpdatedAt(Instant.now());
-            accountRepository.save(account);
+            accountRepository.saveAndFlush(account);
+            versionRecorder.recordUpdate(null, account, before, rowAttributes.read(account));
         }
         JsonNode address = organization.get("address");
         if (address != null && address.isObject()) {
@@ -217,7 +226,9 @@ public class AccountWebsiteJob implements Job {
             || address.getZipcode() != null || address.getCountry() != null) {
             address.setCreatedAt(Instant.now());
             address.setUpdatedAt(address.getCreatedAt());
-            addressRepository.save(address);
+            addressRepository.saveAndFlush(address);
+            versionRecorder.recordCreate(null, address, rowAttributes.read(address),
+                rowAttributes.defaults("addresses"));
         }
     }
 

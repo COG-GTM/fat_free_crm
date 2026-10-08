@@ -111,7 +111,7 @@ def audit_goldens_custom_fields
   end
   ActiveRecord::Base.connection.change_column :accounts, :cf_audit_decimal, :decimal, precision: 30, scale: 9
   ActiveRecord::Base.connection.change_column :contacts, :cf_audit_contact_decimal, :decimal,
-                                               precision: 30, scale: 9
+                                              precision: 30, scale: 9
   [Account, Contact].each(&:reset_column_information)
 end
 

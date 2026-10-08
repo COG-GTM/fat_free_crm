@@ -18,7 +18,8 @@ public record ContractCase(
     JsonNode expect,
     String bodyCompare,
     boolean reset,
-    JsonNode dbAssert
+    JsonNode dbAssert,
+    java.util.List<SetupRequest> setup
 ) {
     public static final String TEXT_BODY = "text";
 
@@ -38,7 +39,7 @@ public record ContractCase(
         JsonNode expect
     ) {
         this(id, ticket, status, method, path, rails, spring, params, body, auth, normalize,
-            description, expect, null, false, null);
+            description, expect, null, false, null, java.util.List.of());
     }
 
     public boolean textBody() {
@@ -60,7 +61,7 @@ public record ContractCase(
         String description
     ) {
         this(id, ticket, status, method, path, rails, spring, params, body, auth, normalize,
-            description, null, null, false, null);
+            description, null, null, false, null, java.util.List.of());
     }
 
     public record SideRequest(String path, Target target, String bodyPointer, String accept) {
@@ -71,6 +72,16 @@ public record ContractCase(
         public SideRequest(String path, Target target, String bodyPointer) {
             this(path, target, bodyPointer, null);
         }
+    }
+
+    public record SetupRequest(
+        String method,
+        SideRequest rails,
+        SideRequest spring,
+        JsonNode params,
+        JsonNode body,
+        String auth
+    ) {
     }
 
     public enum Target {

@@ -407,3 +407,103 @@ Not triggered: T1, T2, T3, T4, T5, T6, T7, T8, T9
 Required next steps: none. The new dependency is recorded here (Decision 9). Re-triage under AB-274 before
 executing the settings conversion against the shared database.
 ```
+
+## Track: audit
+
+### Context
+
+Rails PaperTrail 16 is the compatibility reference for the shared `versions`
+table. Spring must preserve row metadata, PaperTrail YAML values, related-item
+metadata, operation ordering, and the Rails reader's ability to deserialize
+and reify each Spring-written row. Rails-generated fixtures record declarations,
+120 model/operation/whodunnit cases, and seven mail/job sequences. The touch
+cases cover every declared model; Rails emits no row for the ignored-only
+`AccountContact` touch.
+
+### Decision
+
+- Keep `VersionRecorder` as the single Spring writer. `PaperTrailOptions`
+  mirrors Rails `has_paper_trail` declarations; explicit touches use the forced
+  touch path and preserve Rails' NULL `object_changes`.
+- Keep audit serializer corrections isolated in `fix(audit):` commits under
+  `service/audit/` and its tests. `PaperTrailYaml` derives BigDecimal precision
+  in Ruby's 9-digit words, including the verified forms `36:` for the long
+  positive decimal, `9:-0.1e-8` for the tiny negative, and `9:0.0` for zero.
+- Use `RailsRowAttributes` outside `service/audit/` for persisted database
+  column order. It excludes `custom_fields`, retains `cf_*`, and converts
+  persisted serialized and JDBC temporal values to the types the recorder uses.
+- Use Rails goldens as the contract. Exact YAML bytes are required unless an
+  individual delta is explicitly allow-listed with a pinned count and rationale.
+  The current allow-list is empty.
+
+### Tests and gates
+
+- `ffcrm:migration:audit_goldens` runs transactionally against empty PostgreSQL
+  corpus tables with fixed time and IDs. CI runs it twice and checks that the
+  Rails fixture directory has no diff.
+- `RailsAuditGoldenTest` replays every typed Rails case through `VersionRecorder`,
+  checking row attributes, decoded YAML, and exact YAML bytes; its fixture-write
+  mode generates `spring_audit_versions.json`.
+- `spec/lib/audit/spring_versions_spec.rb` inserts Spring rows and checks Rails
+  `object_deserialized`, `reify`, and `changeset` behavior.
+- Jobs/mail scenario tests compare Spring row sequences with the Rails scenario
+  goldens. The contract harness runs enforced Phase-A writes followed by Rails
+  and Spring activity-feed reads for alice and admin.
+- CI runs the golden task twice, the two Rails compatibility specs, and RuboCop
+  on changed Ruby files. The full local gate additionally includes the Spring
+  build, reset contract database, and live contract suite.
+
+### Accepted YAML deltas
+
+The only accepted differences are the six `object` byte-string anchor-label
+swaps below. Their decoded YAML structures are equal; Rails/Psych and SnakeYAML
+choose opposite labels for the shared UTC instant and time-zone objects. The
+test pins the total count to **6** and rejects unlisted byte differences.
+
+| Golden case | Field | Reason |
+| --- | --- | --- |
+| `Account/touch/68999` | `object` | Opposite YAML anchor labels for the shared UTC instant and time zone. |
+| `Account/touch/anonymous` | `object` | Opposite YAML anchor labels for the shared UTC instant and time zone. |
+| `Contact/touch/68999` | `object` | Opposite YAML anchor labels for the shared UTC instant and time zone. |
+| `Contact/touch/anonymous` | `object` | Opposite YAML anchor labels for the shared UTC instant and time zone. |
+| `User/touch/68999` | `object` | Opposite YAML anchor labels for the shared UTC instant and time zone. |
+| `User/touch/anonymous` | `object` | Opposite YAML anchor labels for the shared UTC instant and time zone. |
+
+### Coverage
+
+| Rails model (declaration) | Rails options | Spring writer |
+| --- | --- | --- |
+| `Task` (`app/models/polymorphic/task.rb:112`) | related `:asset`; ignore `:subscribed_users` | AB-272 Phase A task writes |
+| `Comment` (`app/models/polymorphic/comment.rb:31`) | related `:commentable`; ignore `:state` | AB-272 Phase A comments; CommentRepliesProcessor |
+| `Email` (`app/models/polymorphic/email.rb:36`) | related `:mediator`; ignore `:state` | AB-272 Phase A email writes; DropboxProcessor |
+| `Address` (`app/models/polymorphic/address.rb:31`) | related `:addressable` | AccountWebsiteJob |
+| `AccountContact` (`app/models/entities/account_contact.rb:24`) | related `:contact`; ignore `id`, `created_at`, `updated_at`, `contact_id` | DropboxProcessor |
+| `Account` (`app/models/entities/account.rb:68`) | ignore `:subscribed_users` | DropboxProcessor; AccountWebsiteJob; WikidataJob |
+| `Campaign` (`app/models/entities/campaign.rb:56`) | ignore `:subscribed_users` | DropboxProcessor keyword create |
+| `Opportunity` (`app/models/entities/opportunity.rb:76`) | ignore `:subscribed_users` | DropboxProcessor keyword create |
+| `Lead` (`app/models/entities/lead.rb:68`) | ignore `:subscribed_users` | DropboxProcessor |
+| `Contact` (`app/models/entities/contact.rb:90`) | ignore `:subscribed_users` | DropboxProcessor |
+| `AccountOpportunity` (`app/models/entities/account_opportunity.rb:25`) | none | none |
+| `User` (`app/models/users/user.rb:65`) | ignore `:last_sign_in_at` | none |
+
+AB-272 Phase B entity/admin writes remain pending in sibling work. No
+`ContactOpportunity` declaration is active in Rails; its declaration is
+commented out.
+
+### Deviations
+
+- The Spring Dropbox attachment path records the second account email and
+  account touch whenever the contact has an account; Rails gates these effects
+  on `attach_to_account`. This is a mail-flow deviation, not an audit serializer
+  issue, and is documented rather than changed in this audit track.
+- Rails' keyword-based Dropbox asset lookup and notification behavior have
+  existing Spring flow differences. The notification caller is unreachable in
+  the observed Rails path and Spring does not send it. These are not broadened
+  into audit fixes.
+- No YAML byte deltas are accepted. Any Spring-vs-Rails scenario sequence
+  difference discovered by the scenario tests must be reported as a deviation
+  rather than hidden by normalization.
+
+### ARB triage
+
+<!-- ARB triage owner: fill in the decision and any required follow-up. -->

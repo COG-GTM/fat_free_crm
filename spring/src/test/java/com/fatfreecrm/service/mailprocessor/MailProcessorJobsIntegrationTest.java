@@ -8,16 +8,26 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.fatfreecrm.config.JobsProperties;
 import com.fatfreecrm.domain.Setting;
+import com.fatfreecrm.repository.AccountRepository;
+import com.fatfreecrm.repository.AddressRepository;
 import com.fatfreecrm.repository.CommentRepository;
 import com.fatfreecrm.repository.SettingRepository;
 import com.fatfreecrm.repository.UserRepository;
+import com.fatfreecrm.service.jobs.AccountEnrichmentTrigger;
+import com.fatfreecrm.service.jobs.AccountWebsiteJob;
 import com.fatfreecrm.service.jobs.JobLockKey;
 import com.fatfreecrm.service.jobs.JobLockService;
+import com.fatfreecrm.service.jobs.JobsHttpClient;
 import com.fatfreecrm.service.jobs.JobsOwner;
+import com.fatfreecrm.service.jobs.WikidataJob;
 import com.fatfreecrm.service.mail.CommentNotificationService;
 import com.fatfreecrm.service.mail.MailDeliveryScheduler;
 import com.fatfreecrm.service.mail.MailSettingsService;
+import com.fatfreecrm.service.audit.VersionRecorder;
+import com.fatfreecrm.service.history.RailsRowAttributes;
 import com.fatfreecrm.support.AbstractPostgresIntegrationTest;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
 import jakarta.mail.Folder;
@@ -29,8 +39,13 @@ import jakarta.mail.Transport;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.persistence.EntityManager;
+import com.sun.net.httpserver.HttpServer;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.Statement;
+import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;
 import javax.sql.DataSource;
@@ -41,6 +56,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.junit.jupiter.api.Assertions;
 
 @SpringBootTest(properties = "ffcrm.jobs.owner=rails")
 class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
@@ -53,6 +70,7 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
     private static final String MESSAGE_ID = "<ab273-jobs-mail@example.test>";
     private static final int LOCK_CLASS_ID = 1179009869;
     private static final int DROPBOX_LOCK_OBJECT_ID = 1;
+    private static final ObjectMapper JSON = new ObjectMapper();
 
     @Autowired
     private DataSource dataSource;
@@ -60,6 +78,10 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
     private JdbcTemplate jdbcTemplate;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private AccountRepository accountRepository;
+    @Autowired
+    private AddressRepository addressRepository;
     @Autowired
     private EntityManager entityManager;
     @Autowired
@@ -78,6 +100,10 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
     private MailDeliveryScheduler mailDeliveryScheduler;
     @Autowired
     private JobsOwner jobsOwner;
+    @Autowired
+    private RailsRowAttributes rowAttributes;
+    @Autowired
+    private VersionRecorder versionRecorder;
 
     @Test
     void railsOwnerDoesNotScheduleDeliverOrConnectToImap() throws Exception {
@@ -103,6 +129,8 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
                 userRepository,
                 entityManager,
                 jdbcTemplate,
+                rowAttributes,
+                versionRecorder,
                 jobsOwner,
                 imapClient,
                 transactionManager);
@@ -136,6 +164,8 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
                 userRepository,
                 entityManager,
                 jdbcTemplate,
+                rowAttributes,
+                versionRecorder,
                 springOwner,
                 new ImapClient(),
                 transactionManager);
@@ -193,6 +223,8 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
                 commentRepository,
                 entityManager,
                 jdbcTemplate,
+                rowAttributes,
+                versionRecorder,
                 commentNotificationService,
                 new JobsOwner(properties),
                 new ImapClient(),
@@ -217,6 +249,10 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
                     + "AND related_type = 'Account' AND related_id = ? AND event = 'create' "
                     + "AND whodunnit = ?",
                 Integer.class, commentId, accountId, senderId.toString()));
+            assertRailsScenario("comment_reply", jdbcTemplate.query(
+                "SELECT item_type, event, related_type, whodunnit FROM versions ORDER BY id",
+                (rows, index) -> springVersionSignature(rows.getString("item_type"), rows.getString("event"),
+                    rows.getString("related_type"), rows.getString("whodunnit"))));
         } finally {
             greenMail.stop();
             clearFixtures();
@@ -247,6 +283,36 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
                 "SELECT count(*) FROM versions WHERE item_type = 'Account' AND item_id = ? "
                     + "AND event = 'create' AND whodunnit = (SELECT id::text FROM users WHERE username = ?)",
                 Integer.class, accountId, SENDER_USERNAME));
+        } finally {
+            greenMail.stop();
+            clearFixtures();
+        }
+    }
+
+    @Test
+    void dropboxKeywordLeadMatchesRailsVersionScenario() throws Exception {
+        clearFixtures();
+        GreenMail greenMail = greenMail();
+        greenMail.start();
+        try {
+            greenMail.setUser(DROPBOX_EMAIL, "dropbox", "secret");
+            insertSender();
+            insertDropboxSetting(greenMail.getImap().getPort());
+            sendMessage(greenMail, SENDER_EMAIL, DROPBOX_EMAIL, "<ab273-e2e-keyword-lead@example.test>",
+                "Lead: AB273 Keyword Lead\nKeyword lead body", "text/plain");
+
+            dropboxProcessor().process(false);
+
+            Long leadId = jdbcTemplate.queryForObject(
+                "SELECT id FROM leads WHERE first_name = 'AB273' AND last_name = 'Keyword Lead'", Long.class);
+            assertRailsScenario("dropbox_keyword_lead", jdbcTemplate.query("""
+                SELECT item_type, event, related_type, whodunnit
+                FROM versions
+                WHERE (item_type = 'Lead' AND item_id = ?)
+                   OR (item_type = 'Email' AND related_type = 'Lead' AND related_id = ?)
+                ORDER BY id
+                """, (rows, index) -> springVersionSignature(rows.getString("item_type"), rows.getString("event"),
+                    rows.getString("related_type"), rows.getString("whodunnit")), leadId, leadId));
         } finally {
             greenMail.stop();
             clearFixtures();
@@ -305,6 +371,61 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
             assertEquals(2, jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM emails WHERE mediator_type = 'Account' AND mediator_id = ?",
                 Integer.class, accountId));
+            assertRailsScenario("dropbox_attach_new_lead", jdbcTemplate.query("""
+                SELECT item_type, event, related_type, whodunnit
+                FROM versions
+                WHERE (item_type = 'Email' AND related_type = 'Lead' AND related_id = ?)
+                   OR (item_type = 'Lead' AND item_id = ?)
+                ORDER BY id
+                """, (rows, index) -> springVersionSignature(rows.getString("item_type"), rows.getString("event"),
+                    rows.getString("related_type"), rows.getString("whodunnit")), leadId, leadId));
+        } finally {
+            greenMail.stop();
+            clearFixtures();
+        }
+    }
+
+    @Test
+    void dropboxAttachToAccountMatchesRailsVersionScenario() throws Exception {
+        clearFixtures();
+        GreenMail greenMail = greenMail();
+        greenMail.start();
+        try {
+            greenMail.setUser(DROPBOX_EMAIL, "dropbox", "secret");
+            insertSender();
+            Long senderId = jdbcTemplate.queryForObject(
+                "SELECT id FROM users WHERE username = ?", Long.class, SENDER_USERNAME);
+            int accountId = jdbcTemplate.queryForObject("""
+                INSERT INTO accounts (user_id, name, access, created_at, updated_at)
+                VALUES (?, 'AB273 Attach Account', 'Public', now(), now())
+                RETURNING id
+                """, Integer.class, senderId);
+            int contactId = jdbcTemplate.queryForObject("""
+                INSERT INTO contacts (user_id, first_name, last_name, access, alt_email, created_at, updated_at)
+                VALUES (?, 'AB273', 'Attach Contact', 'Public', 'contact-alt@example.test', now(), now())
+                RETURNING id
+                """, Integer.class, senderId);
+            jdbcTemplate.update("""
+                INSERT INTO account_contacts (account_id, contact_id, created_at, updated_at)
+                VALUES (?, ?, now(), now())
+                """, accountId, contactId);
+            insertDropboxSetting(greenMail.getImap().getPort());
+            sendMessage(greenMail, SENDER_EMAIL, DROPBOX_EMAIL, "<ab273-e2e-attach-account@example.test>",
+                "Please review these details", "text/plain", "contact-alt@example.test");
+
+            dropboxProcessor().process(false);
+
+            assertRailsScenario("dropbox_attach_to_account", jdbcTemplate.query("""
+                SELECT item_type, event, related_type, whodunnit
+                FROM versions
+                WHERE (item_type = 'Email' AND related_type = 'Contact' AND related_id = ?)
+                   OR (item_type = 'Contact' AND item_id = ?)
+                   OR (item_type = 'Email' AND related_type = 'Account' AND related_id = ?)
+                   OR (item_type = 'Account' AND item_id = ?)
+                ORDER BY id
+                """, (rows, index) -> springVersionSignature(rows.getString("item_type"), rows.getString("event"),
+                    rows.getString("related_type"), rows.getString("whodunnit")), contactId, contactId,
+                accountId, accountId));
         } finally {
             greenMail.stop();
             clearFixtures();
@@ -412,9 +533,134 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
             assertEquals(2, jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM emails WHERE subject = ?", Integer.class,
                 subjectFor("<ab273-e2e-domain@example.test>")));
+            assertRailsScenario("dropbox_create_and_attach", jdbcTemplate.query("""
+                SELECT item_type, event, related_type, whodunnit
+                FROM versions
+                WHERE (item_type = 'Account' AND item_id = ? AND event = 'create')
+                   OR (item_type = 'Contact' AND item_id = ?)
+                   OR (item_type = 'AccountContact' AND related_type = 'Contact' AND related_id = ?)
+                   OR (item_type = 'Email' AND related_type = 'Contact' AND related_id = ?)
+                ORDER BY id
+                """, (rows, index) -> springVersionSignature(rows.getString("item_type"), rows.getString("event"),
+                    rows.getString("related_type"), rows.getString("whodunnit")), accountId, contactId,
+                contactId, contactId));
+            assertEquals(java.util.List.of("Email|create|Account|sender", "Account|update|none|sender"),
+                jdbcTemplate.query("""
+                    SELECT item_type, event, related_type, whodunnit
+                    FROM versions
+                    WHERE (item_type = 'Email' AND related_type = 'Account' AND related_id = ?)
+                       OR (item_type = 'Account' AND item_id = ? AND event = 'update')
+                    ORDER BY id
+                    """, (rows, index) -> springVersionSignature(rows.getString("item_type"), rows.getString("event"),
+                        rows.getString("related_type"), rows.getString("whodunnit")), accountId, accountId),
+                "Spring's create-and-attach path also attaches the account");
         } finally {
             greenMail.stop();
             clearFixtures();
+        }
+    }
+
+    @Test
+    void accountWebsiteJobWritesRailsCompatibleVersions() throws Exception {
+        clearFixtures();
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/site", exchange -> respond(exchange, """
+            <script type="application/ld+json">
+            {"@type":"Organization","telephone":"+1-555-0100",
+             "address":{"@type":"PostalAddress","streetAddress":"10 Main St","addressLocality":"Hartford"}}
+            </script>
+            """));
+        server.start();
+        try {
+            long accountId = jdbcTemplate.queryForObject("""
+                INSERT INTO accounts (name, website, access, created_at, updated_at)
+                VALUES ('AB273 Website Job', ?, 'Public', now(), now()) RETURNING id
+                """, Long.class, "http://127.0.0.1:" + server.getAddress().getPort() + "/site");
+            JobsProperties properties = springJobsProperties();
+
+            accountWebsiteJob(properties).perform(accountId);
+
+            assertRailsScenario("account_website_job", jdbcTemplate.query("""
+                SELECT item_type, event, related_type, whodunnit
+                FROM versions
+                WHERE (item_type = 'Account' AND item_id = ?)
+                   OR (item_type = 'Address' AND related_type = 'Account' AND related_id = ?)
+                ORDER BY id
+                """, (rows, index) -> springVersionSignature(rows.getString("item_type"), rows.getString("event"),
+                    rows.getString("related_type"), rows.getString("whodunnit")), accountId, accountId));
+        } finally {
+            server.stop(0);
+            clearFixtures();
+        }
+    }
+
+    @Test
+    void wikidataJobWritesRailsCompatibleVersions() throws Exception {
+        clearFixtures();
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/sparql", exchange -> respond(exchange, """
+            {"results":{"bindings":[{"description":{"value":"Wikidata description"}}]}}
+            """));
+        server.start();
+        try {
+            long accountId = jdbcTemplate.queryForObject("""
+                INSERT INTO accounts (name, wikidata_id, access, created_at, updated_at)
+                VALUES ('AB273 Wikidata Job', 'Q42', 'Public', now(), now()) RETURNING id
+                """, Long.class);
+            JobsProperties properties = springJobsProperties();
+            properties.getWikidata().setEndpoint(
+                "http://127.0.0.1:" + server.getAddress().getPort() + "/sparql");
+
+            wikidataJob(properties).perform(accountId);
+
+            assertRailsScenario("wikidata_service", jdbcTemplate.query("""
+                SELECT item_type, event, related_type, whodunnit
+                FROM versions WHERE item_type = 'Account' AND item_id = ? ORDER BY id
+                """, (rows, index) -> springVersionSignature(rows.getString("item_type"), rows.getString("event"),
+                    rows.getString("related_type"), rows.getString("whodunnit")), accountId));
+        } finally {
+            server.stop(0);
+            clearFixtures();
+        }
+    }
+
+    private JobsProperties springJobsProperties() {
+        JobsProperties properties = new JobsProperties();
+        properties.setOwner("spring");
+        return properties;
+    }
+
+    private AccountWebsiteJob accountWebsiteJob(JobsProperties properties) {
+        AccountWebsiteJob job = new AccountWebsiteJob();
+        ReflectionTestUtils.setField(job, "jobsOwner", new JobsOwner(properties));
+        ReflectionTestUtils.setField(job, "httpClient", new JobsHttpClient(properties));
+        ReflectionTestUtils.setField(job, "accountRepository", accountRepository);
+        ReflectionTestUtils.setField(job, "addressRepository", addressRepository);
+        ReflectionTestUtils.setField(job, "versionRecorder", versionRecorder);
+        ReflectionTestUtils.setField(job, "rowAttributes", rowAttributes);
+        ReflectionTestUtils.setField(job, "objectMapper", JSON);
+        ReflectionTestUtils.setField(job, "enrichmentTrigger", mock(AccountEnrichmentTrigger.class));
+        return job;
+    }
+
+    private WikidataJob wikidataJob(JobsProperties properties) {
+        WikidataJob job = new WikidataJob();
+        ReflectionTestUtils.setField(job, "jobsOwner", new JobsOwner(properties));
+        ReflectionTestUtils.setField(job, "httpClient", new JobsHttpClient(properties));
+        ReflectionTestUtils.setField(job, "properties", properties);
+        ReflectionTestUtils.setField(job, "accountRepository", accountRepository);
+        ReflectionTestUtils.setField(job, "versionRecorder", versionRecorder);
+        ReflectionTestUtils.setField(job, "rowAttributes", rowAttributes);
+        ReflectionTestUtils.setField(job, "objectMapper", JSON);
+        ReflectionTestUtils.setField(job, "enrichmentTrigger", mock(AccountEnrichmentTrigger.class));
+        return job;
+    }
+
+    private static void respond(com.sun.net.httpserver.HttpExchange exchange, String body) throws IOException {
+        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+        exchange.sendResponseHeaders(200, bytes.length);
+        try (var output = exchange.getResponseBody()) {
+            output.write(bytes);
         }
     }
 
@@ -426,9 +672,52 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
             userRepository,
             entityManager,
             jdbcTemplate,
+            rowAttributes,
+            versionRecorder,
             new JobsOwner(properties),
             new ImapClient(),
             transactionManager);
+    }
+
+    private void assertRailsScenario(String scenarioName, java.util.List<String> actual) throws Exception {
+        JsonNode fixture;
+        try (InputStream input = getClass().getClassLoader()
+                .getResourceAsStream("audit/rails_audit_goldens.json")) {
+            fixture = JSON.readTree(input);
+        }
+        JsonNode scenario = null;
+        for (JsonNode candidate : fixture.path("scenarios")) {
+            if (scenarioName.equals(candidate.path("name").asText())) {
+                scenario = candidate;
+                break;
+            }
+        }
+        Assertions.assertNotNull(scenario, "missing Rails scenario " + scenarioName);
+        java.util.List<String> expected = new java.util.ArrayList<>();
+        scenario.path("rows").forEach(row -> expected.add(versionSignature(
+            row.path("item_type").asText(), row.path("event").asText(),
+            row.path("related_type").isNull() ? null : row.path("related_type").asText(),
+            row.path("whodunnit").isNull() ? null : row.path("whodunnit").asText())));
+        assertEquals(expected, actual, scenarioName + " Spring/Rails version sequence");
+    }
+
+    private static String versionSignature(String itemType, String event, String relatedType, String whodunnit) {
+        return itemType + "|" + event + "|" + (relatedType == null ? "none" : relatedType) + "|"
+            + (whodunnit == null ? "nil" : "sender");
+    }
+
+    private String springVersionSignature(String itemType, String event, String relatedType, String whodunnit) {
+        if (whodunnit != null) {
+            String senderId = jdbcTemplate.query(
+                "SELECT id::text FROM users WHERE username = ?",
+                resultSet -> resultSet.next() ? resultSet.getString(1) : null,
+                SENDER_USERNAME);
+            if (!whodunnit.equals(senderId)) {
+                return itemType + "|" + event + "|" + (relatedType == null ? "none" : relatedType)
+                    + "|unexpected:" + whodunnit;
+            }
+        }
+        return versionSignature(itemType, event, relatedType, whodunnit);
     }
 
     private void clearFixtures() {
@@ -446,6 +735,11 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
             + "OR email = 'new-contact@example.test')");
         jdbcTemplate.update("DELETE FROM versions WHERE item_type = 'Lead' AND item_id IN "
             + "(SELECT id FROM leads WHERE first_name = 'AB273')");
+        jdbcTemplate.update("DELETE FROM versions WHERE item_type = 'Address' AND item_id IN "
+            + "(SELECT id FROM addresses WHERE addressable_type = 'Account' AND addressable_id IN "
+            + "(SELECT id FROM accounts WHERE name LIKE 'AB273 %'))");
+        jdbcTemplate.update("DELETE FROM addresses WHERE addressable_type = 'Account' AND addressable_id IN "
+            + "(SELECT id FROM accounts WHERE name LIKE 'AB273 %')");
         jdbcTemplate.update("DELETE FROM account_contacts WHERE account_id IN "
             + "(SELECT id FROM accounts WHERE name LIKE 'AB273 %' "
             + "OR email = 'new-contact@example.test') OR contact_id IN "

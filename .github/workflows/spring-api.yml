@@ -48,6 +48,10 @@ on:
       - "lib/fat_free_crm/migration/activemodel_messages.rb"
       - "spec/lib/tasks/activemodel_messages_spec.rb"
       - "spec/db/contract_fixtures_spec.rb"
+      - "lib/tasks/ffcrm/audit_goldens.rake"
+      - "spec/lib/tasks/audit_goldens_spec.rb"
+      - "spec/lib/audit/spring_versions_spec.rb"
+      - "docs/adr/ab-273-peripherals.md"
   push:
     paths:
       - "spring/**"
@@ -95,6 +99,10 @@ on:
       - "lib/fat_free_crm/migration/activemodel_messages.rb"
       - "spec/lib/tasks/activemodel_messages_spec.rb"
       - "spec/db/contract_fixtures_spec.rb"
+      - "lib/tasks/ffcrm/audit_goldens.rake"
+      - "spec/lib/tasks/audit_goldens_spec.rb"
+      - "spec/lib/audit/spring_versions_spec.rb"
+      - "docs/adr/ab-273-peripherals.md"
 
 permissions:
   contents: read
@@ -509,6 +517,47 @@ jobs:
         run: |
           bundle exec rspec spec/lib/tasks/mail_golden_spec.rb
           bundle exec rubocop lib/tasks/ffcrm/migration_mail_golden.rake spec/lib/tasks/mail_golden_spec.rb
+
+  audit-goldens:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      SECRET_KEY_BASE: audit-golden-only-secret-key-base-0123456789abcdef
+      PGPASSWORD: postgres
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/ffcrm_audit_golden
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ruby/setup-ruby@v1
+        env:
+          BUNDLE_FROZEN: "false"
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - name: Load Rails schema and generate audit goldens
+        env:
+          RAILS_ENV: development
+        run: |
+          cp config/database.postgres.yml config/database.yml
+          createdb -h localhost -U postgres ffcrm_audit_golden
+          bundle exec rails db:schema:load
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f spring/src/main/resources/db/migration/V2__custom_fields_jsonb.sql
+          bundle exec rake ffcrm:migration:audit_goldens
+          bundle exec rake ffcrm:migration:audit_goldens
+          git diff --exit-code -- spring/src/test/resources/audit
+      - name: Verify Rails compatibility specs and Ruby style
+        env:
+          RAILS_ENV: test
+        run: |
+          bundle exec rspec spec/lib/tasks/audit_goldens_spec.rb spec/lib/audit/spring_versions_spec.rb
+          bundle exec rubocop lib/tasks/ffcrm/audit_goldens.rake spec/lib/tasks/audit_goldens_spec.rb spec/lib/audit/spring_versions_spec.rb
 
   settings-i18n:
     runs-on: ubuntu-latest

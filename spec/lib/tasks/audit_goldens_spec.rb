@@ -47,8 +47,8 @@ RSpec.describe Rake::Task do
     expect(cases.size).to eq(120)
     expect(cases.pluck("whodunnit").uniq).to contain_exactly(nil, "68999")
     yaml = cases.flat_map { |entry| entry.fetch("versions") }
-      .flat_map { |version| [version.fetch("object"), version.fetch("object_changes")] }
-      .compact.join("\n")
+                .flat_map { |version| [version.fetch("object"), version.fetch("object_changes")] }
+                .compact.join("\n")
     expect(yaml).to include("!ruby/object:BigDecimal 36:0.12345678901234567890123456789e20")
     expect(yaml).to include("!ruby/object:BigDecimal 9:-0.1e-8")
     expect(yaml).to include("!ruby/object:BigDecimal 9:0.0")

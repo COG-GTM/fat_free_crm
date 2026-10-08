@@ -79,6 +79,8 @@ public final class CaseLoader {
         if (compare != null && !compare.equals("json") && !compare.equals(ContractCase.TEXT_BODY)) {
             throw new IllegalArgumentException("Contract case compare must be json or text: " + compare);
         }
+        String auth = text(node, "auth", "anonymous");
+        List<ContractCase.SetupRequest> setup = setup(node.get("setup"), auth);
         return new ContractCase(
             requiredText(node, "id"),
             text(node, "ticket", ""),
@@ -89,14 +91,37 @@ public final class CaseLoader {
             spring,
             objectOrEmpty(node.get("params")),
             node.get("body"),
-            text(node, "auth", "anonymous"),
+            auth,
             objectOrEmpty(node.get("normalize")),
             text(node, "description", ""),
             expectation(node.get("expect")),
             compare,
             node.path("reset").asBoolean(false),
-            node.get("dbAssert")
+            node.get("dbAssert"),
+            setup
         );
+    }
+
+    private static List<ContractCase.SetupRequest> setup(JsonNode node, String defaultAuth) {
+        if (node == null || node.isNull()) {
+            return List.of();
+        }
+        if (!node.isArray()) {
+            throw new IllegalArgumentException("Contract case setup must be a list.");
+        }
+        List<ContractCase.SetupRequest> requests = new ArrayList<>();
+        for (JsonNode request : node) {
+            String path = requiredText(request, "path");
+            requests.add(new ContractCase.SetupRequest(
+                text(request, "method", "POST").toUpperCase(Locale.ROOT),
+                side(request.get("rails"), path + ".json", ContractCase.Target.RAILS),
+                side(request.get("spring"), "/api/v1" + path, ContractCase.Target.SPRING),
+                objectOrEmpty(request.get("params")),
+                request.get("body"),
+                text(request, "auth", defaultAuth)
+            ));
+        }
+        return List.copyOf(requests);
     }
 
     private static JsonNode expectation(JsonNode node) {

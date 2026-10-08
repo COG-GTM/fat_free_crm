@@ -1,0 +1,157 @@
+- id: activity-after-task-create-alice
+  ticket: AB-273
+  status: enforced
+  path: /activities
+  auth: alice
+  reset: true
+  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  setup:
+    - {method: POST, path: /tasks, body: {task: {user_id: 2, name: "Audit activity task", bucket: due_today}}}
+  description: Phase-A task create is reflected in the activity feed.
+
+- id: activity-after-task-create-admin
+  ticket: AB-273
+  status: enforced
+  path: /activities
+  auth: admin
+  reset: true
+  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  setup:
+    - {method: POST, path: /tasks, body: {task: {user_id: 2, name: "Audit activity task", bucket: due_today}}}
+  description: Admin sees Phase-A task creation in the activity feed.
+
+- id: activity-after-task-update-alice
+  ticket: AB-273
+  status: enforced
+  path: /activities
+  auth: alice
+  reset: true
+  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  setup:
+    - {method: PUT, path: /tasks/601, body: {task: {name: "Audit activity updated"}}}
+  description: Phase-A task update is reflected in the activity feed.
+
+- id: activity-after-task-update-admin
+  ticket: AB-273
+  status: enforced
+  path: /activities
+  auth: admin
+  reset: true
+  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  setup:
+    - {method: PUT, path: /tasks/601, auth: alice, body: {task: {name: "Audit activity updated"}}}
+  description: Admin sees Phase-A task update in the activity feed.
+
+- id: activity-after-task-complete-alice
+  ticket: AB-273
+  status: enforced
+  path: /activities
+  auth: alice
+  reset: true
+  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  setup:
+    - {method: PUT, path: /tasks/602/complete}
+  description: Phase-A task completion is reflected in the activity feed.
+
+- id: activity-after-task-complete-admin
+  ticket: AB-273
+  status: enforced
+  path: /activities
+  auth: admin
+  reset: true
+  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  setup:
+    - {method: PUT, path: /tasks/602/complete, auth: alice}
+  description: Admin sees Phase-A task completion in the activity feed.
+
+- id: activity-after-account-comment-alice
+  ticket: AB-273
+  status: enforced
+  path: /activities
+  auth: alice
+  reset: true
+  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  setup:
+    - {method: POST, path: /comments, body: {comment: {commentable_type: Account, commentable_id: 101,
+        comment: "Audit account activity"}}}
+  description: Phase-A account comment is reflected in the activity feed.
+
+- id: activity-after-account-comment-admin
+  ticket: AB-273
+  status: enforced
+  path: /activities
+  auth: admin
+  reset: true
+  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  setup:
+    - {method: POST, path: /comments, body: {comment: {commentable_type: Account, commentable_id: 101,
+        comment: "Audit account activity"}}}
+  description: Admin sees Phase-A account comment in the activity feed.
+
+- id: activity-after-task-comment-alice
+  ticket: AB-273
+  status: enforced
+  path: /activities
+  auth: alice
+  reset: true
+  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  setup:
+    - {method: POST, path: /comments, body: {comment: {commentable_type: Task, commentable_id: 601,
+        comment: "Audit task activity"}}}
+  description: Phase-A task comment is reflected in the activity feed.
+
+- id: activity-after-task-comment-admin
+  ticket: AB-273
+  status: enforced
+  path: /activities
+  auth: admin
+  reset: true
+  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  setup:
+    - {method: POST, path: /comments, auth: alice, body: {comment: {commentable_type: Task, commentable_id: 601,
+        comment: "Audit task activity"}}}
+  description: Admin sees Phase-A task comment in the activity feed.
+
+- id: activity-after-email-delete-alice
+  ticket: AB-273
+  status: enforced
+  path: /activities
+  auth: alice
+  reset: true
+  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  setup:
+    - {method: DELETE, path: /emails/701}
+  description: Phase-A email deletion is reflected in the activity feed.
+
+- id: activity-after-email-delete-admin
+  ticket: AB-273
+  status: enforced
+  path: /activities
+  auth: admin
+  reset: true
+  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  setup:
+    - {method: DELETE, path: /emails/701}
+  description: Admin sees Phase-A email deletion in the activity feed.
+
+- id: activity-after-list-create-alice
+  ticket: AB-273
+  status: enforced
+  path: /activities
+  auth: alice
+  reset: true
+  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  setup:
+    - {method: POST, path: /lists, body: {list: {name: "Audit activity list", url: "/tasks"}}}
+  description: Check whether Phase-A list creation emits an activity.
+
+- id: activity-after-list-create-admin
+  ticket: AB-273
+  status: enforced
+  path: /activities
+  auth: admin
+  reset: true
+  normalize: {ignore: ["/*/created_at", "/*/updated_at"]}
+  setup:
+    - {method: POST, path: /lists, body: {list: {name: "Audit activity list", url: "/tasks"}}}
+  description: Check whether admin sees activity from Phase-A list creation.

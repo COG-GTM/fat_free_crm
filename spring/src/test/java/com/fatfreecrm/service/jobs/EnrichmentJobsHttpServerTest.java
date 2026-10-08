@@ -12,6 +12,8 @@ import com.fatfreecrm.config.JobsProperties;
 import com.fatfreecrm.domain.Account;
 import com.fatfreecrm.repository.AccountRepository;
 import com.fatfreecrm.repository.AddressRepository;
+import com.fatfreecrm.service.audit.VersionRecorder;
+import com.fatfreecrm.service.history.RailsRowAttributes;
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
 import java.net.http.HttpTimeoutException;
@@ -51,6 +53,7 @@ class EnrichmentJobsHttpServerTest {
             ReflectionTestUtils.setField(job, "httpClient", new JobsHttpClient(properties));
             ReflectionTestUtils.setField(job, "accountRepository", accounts);
             ReflectionTestUtils.setField(job, "addressRepository", addresses);
+            wireAuditMocks(job);
             ReflectionTestUtils.setField(job, "objectMapper", new ObjectMapper());
             ReflectionTestUtils.setField(job, "enrichmentTrigger", trigger);
 
@@ -60,8 +63,8 @@ class EnrichmentJobsHttpServerTest {
             assertEquals("info@example.test", account.getEmail());
             assertEquals("41.5", account.getLatitude().toPlainString());
             assertEquals("-72.25", account.getLongitude().toPlainString());
-            verify(accounts).save(account);
-            verify(addresses).save(org.mockito.ArgumentMatchers.argThat(address ->
+            verify(accounts).saveAndFlush(account);
+            verify(addresses).saveAndFlush(org.mockito.ArgumentMatchers.argThat(address ->
                 "10 Main St".equals(address.getStreet1()) && "Hartford".equals(address.getCity())));
             verify(trigger).afterAccountSaved(51L, false, true);
         } finally {
@@ -96,6 +99,7 @@ class EnrichmentJobsHttpServerTest {
             ReflectionTestUtils.setField(job, "httpClient", new JobsHttpClient(properties));
             ReflectionTestUtils.setField(job, "properties", properties);
             ReflectionTestUtils.setField(job, "accountRepository", accounts);
+            wireAuditMocks(job);
             ReflectionTestUtils.setField(job, "objectMapper", new ObjectMapper());
             ReflectionTestUtils.setField(job, "enrichmentTrigger", trigger);
 
@@ -107,7 +111,7 @@ class EnrichmentJobsHttpServerTest {
             assertEquals("https://www.linkedin.com/company/example-company", account.getLinkedin());
             assertEquals("application/x-www-form-urlencoded", contentType.get());
             org.junit.jupiter.api.Assertions.assertTrue(requestBody.get().contains("query="));
-            verify(accounts).save(account);
+            verify(accounts).saveAndFlush(account);
             verify(trigger).websiteChanged(52L);
         } finally {
             server.stop(0);
@@ -218,6 +222,7 @@ class EnrichmentJobsHttpServerTest {
             ReflectionTestUtils.setField(wikidataJob, "httpClient", new JobsHttpClient(properties));
             ReflectionTestUtils.setField(wikidataJob, "properties", properties);
             ReflectionTestUtils.setField(wikidataJob, "accountRepository", accounts);
+            wireAuditMocks(wikidataJob);
             ReflectionTestUtils.setField(wikidataJob, "objectMapper", new ObjectMapper());
             ReflectionTestUtils.setField(wikidataJob, "enrichmentTrigger", trigger);
 
@@ -243,9 +248,15 @@ class EnrichmentJobsHttpServerTest {
         ReflectionTestUtils.setField(job, "httpClient", new JobsHttpClient(properties));
         ReflectionTestUtils.setField(job, "accountRepository", accounts);
         ReflectionTestUtils.setField(job, "addressRepository", addresses);
+        wireAuditMocks(job);
         ReflectionTestUtils.setField(job, "objectMapper", new ObjectMapper());
         ReflectionTestUtils.setField(job, "enrichmentTrigger", trigger);
         return job;
+    }
+
+    private static void wireAuditMocks(Object job) {
+        ReflectionTestUtils.setField(job, "versionRecorder", mock(VersionRecorder.class));
+        ReflectionTestUtils.setField(job, "rowAttributes", mock(RailsRowAttributes.class));
     }
 
     private static void respond(com.sun.net.httpserver.HttpExchange exchange, int status, String response)

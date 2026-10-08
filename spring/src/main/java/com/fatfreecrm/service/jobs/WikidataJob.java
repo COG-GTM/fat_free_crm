@@ -5,11 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fatfreecrm.config.JobsProperties;
 import com.fatfreecrm.domain.Account;
 import com.fatfreecrm.repository.AccountRepository;
+import com.fatfreecrm.service.audit.VersionRecorder;
+import com.fatfreecrm.service.history.RailsRowAttributes;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Map;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.slf4j.Logger;
@@ -77,6 +80,10 @@ public class WikidataJob implements Job {
     @Autowired
     private AccountRepository accountRepository;
     @Autowired
+    private VersionRecorder versionRecorder;
+    @Autowired
+    private RailsRowAttributes rowAttributes;
+    @Autowired
     private ObjectMapper objectMapper;
     @Autowired
     private AccountEnrichmentTrigger enrichmentTrigger;
@@ -104,6 +111,7 @@ public class WikidataJob implements Job {
         if (account == null || blank(account.getWikidataId())) {
             return;
         }
+        Map<String, Object> before = rowAttributes.read(account);
         String query = QUERY.replace("%s", account.getWikidataId());
         JobsHttpClient.Response response = httpClient.postForm(
             URI.create(properties.getWikidata().getEndpoint()),
@@ -147,7 +155,8 @@ public class WikidataJob implements Job {
         changed |= fill(account.getBlog(), value(result, "blog"), account::setBlog);
         if (changed) {
             account.setUpdatedAt(Instant.now());
-            accountRepository.save(account);
+            accountRepository.saveAndFlush(account);
+            versionRecorder.recordUpdate(null, account, before, rowAttributes.read(account));
         }
         if (blank(previousWebsite) && !blank(account.getWebsite())) {
             enrichmentTrigger.websiteChanged(accountId);

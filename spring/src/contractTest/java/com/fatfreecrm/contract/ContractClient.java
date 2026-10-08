@@ -35,19 +35,35 @@ public final class ContractClient {
     public RequestResult send(ContractCase contractCase, boolean railsSide)
         throws IOException, InterruptedException {
         ContractCase.SideRequest side = railsSide ? contractCase.rails() : contractCase.spring();
+        return send(contractCase.method(), side, contractCase.params(), contractCase.body(), contractCase.auth());
+    }
+
+    public RequestResult sendSetup(ContractCase.SetupRequest setup, boolean railsSide)
+        throws IOException, InterruptedException {
+        ContractCase.SideRequest side = railsSide ? setup.rails() : setup.spring();
+        RequestResult result = send(setup.method(), side, setup.params(), setup.body(), setup.auth());
+        if (result.response().status() < 200 || result.response().status() >= 300) {
+            throw new IOException("Setup request " + setup.method() + " " + side.path()
+                + " returned HTTP " + result.response().status());
+        }
+        return result;
+    }
+
+    private RequestResult send(String method, ContractCase.SideRequest side, JsonNode params, JsonNode body,
+                               String auth) throws IOException, InterruptedException {
         String targetBase = side.target() == ContractCase.Target.RAILS ? railsUrl : springUrl;
-        String requestUrl = targetBase + side.path() + query(contractCase.params());
+        String requestUrl = targetBase + side.path() + query(params);
         HttpClient client = anonymousClient;
         String authorization = null;
         AuthContext authContext = null;
         boolean authenticated = false;
         List<String> notes = new ArrayList<>();
-        if (!contractCase.auth().equals("anonymous")) {
+        if (!auth.equals("anonymous")) {
             AuthAdapter adapter = side.target() == ContractCase.Target.RAILS ? railsAuth : springAuth;
             try {
-                authContext = adapter.authenticate(contractCase.auth());
+                authContext = adapter.authenticate(auth);
             } catch (IOException | InterruptedException exception) {
-                throw new IOException("Authentication failed for fixture user " + contractCase.auth()
+                throw new IOException("Authentication failed for fixture user " + auth
                     + " via " + side.target() + " for " + requestUrl + ": " + describe(exception), exception);
             }
             client = authContext.client();
@@ -65,22 +81,22 @@ public final class ContractClient {
             request.header("Authorization", authorization);
         }
         if (authContext != null && side.target() == ContractCase.Target.RAILS
-            && !contractCase.method().equalsIgnoreCase("GET")
-            && !contractCase.method().equalsIgnoreCase("HEAD") && authContext.csrfToken() != null) {
+            && !method.equalsIgnoreCase("GET")
+            && !method.equalsIgnoreCase("HEAD") && authContext.csrfToken() != null) {
             request.header("X-CSRF-Token", authContext.csrfToken());
         }
-        if (contractCase.body() != null && !contractCase.body().isNull()) {
+        if (body != null && !body.isNull()) {
             request.header("Content-Type", "application/json")
-                .method(contractCase.method(), HttpRequest.BodyPublishers.ofString(
-                    JSON.writeValueAsString(contractCase.body()), StandardCharsets.UTF_8));
+                .method(method, HttpRequest.BodyPublishers.ofString(
+                    JSON.writeValueAsString(body), StandardCharsets.UTF_8));
         } else {
-            request.method(contractCase.method(), HttpRequest.BodyPublishers.noBody());
+            request.method(method, HttpRequest.BodyPublishers.noBody());
         }
         HttpResponse<String> response;
         try {
             response = client.send(request.build(), HttpResponse.BodyHandlers.ofString());
         } catch (IOException | InterruptedException exception) {
-            throw new IOException("Request failed: " + contractCase.method() + " " + requestUrl, exception);
+            throw new IOException("Request failed: " + method + " " + requestUrl, exception);
         }
         return new RequestResult(requestUrl, CapturedResponse.from(response), List.copyOf(notes), authenticated);
     }

@@ -689,8 +689,9 @@ uses the deprecated positional `Net::IMAP.new(host, port, ssl)` form; installed
 `net-imap` 0.6.3 still accepts it. The shared-access predicate calls
 `Permission.exists`. The Dropbox notification caller is unreachable; Spring
 renders the template but does not send it. Shared-asset failures follow the
-observed discard behavior. Create versions are recorded for new rows, but
-update/touch versions await the audit track. Devise token generation remains
+observed discard behavior. `VersionRecorder` covers supported mail/job create,
+update, and touch paths; Rails-vs-Spring flow differences are listed in the
+AB-273 audit ADR. Devise token generation remains
 Rails-owned. MailText is en-US only pending settings-i18n, and private-address
 blocking is off by default for parity.
 
@@ -808,8 +809,9 @@ harness can observe them.
   as the entity write, with `object`/`object_changes` rendered by `PaperTrailYaml`
   (Psych byte-parity: `key:` nil, `""` quoting, TimeWithZone tagged blocks,
   `&N`/`*N` anchors only for objects referenced more than once, column-order keys).
-  Per-model `ignore:`/`meta:` options live in `PaperTrailOptions`. Timestamp-only
-  updates produce no version, exactly like PaperTrail's notability check.
+  Per-model `ignore:`/`meta:` options live in `PaperTrailOptions`. Ordinary
+  timestamp-only updates produce no version; explicit touches write Rails-compatible
+  `update` rows with NULL `object_changes`.
 - **Partial updates**: entities use `@DynamicUpdate`, so PUT diffs only touched
   columns — mirroring ActiveRecord partial writes (no `lock_version`; Rails does
   not use optimistic locking here).
@@ -846,3 +848,25 @@ commentable, which itself writes a commentable version), commentable-visibility
    `ContractHarnessTest` case count.
 7. Extend `dualWriteSoak` with the family's writes and per-(item_type,event)
    version assertions; report any unfixable cross-stack races as observations.
+
+## Audit (AB-273)
+
+Spring writes PaperTrail-16-compatible records to the shared `versions` table
+through `VersionRecorder`. `PaperTrailOptions` mirrors every Rails declaration;
+`PaperTrailYaml` is checked byte-for-byte against Rails-generated goldens,
+including Ruby BigDecimal precision and zero/negative encodings. Explicit touch
+paths use `recordTouch` and preserve Rails' NULL `object_changes` shape.
+
+`RailsRowAttributes` reads persisted rows in PostgreSQL column order, excludes
+the AB-271 `custom_fields` JSONB column, retains physical `cf_*` columns, and
+converts serialized/timestamp values for the recorder. CI regenerates Rails
+fixtures twice, checks for drift, runs Rails-read compatibility specs and
+RuboCop. Run the Spring replay with:
+
+```bash
+cd spring
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew test
+```
+
+See `docs/adr/ab-273-peripherals.md` under **Track: audit** for per-model
+coverage, Rails/Spring deviations, accepted YAML deltas and contract gates.
