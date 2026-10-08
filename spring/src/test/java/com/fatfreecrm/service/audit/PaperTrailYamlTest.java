@@ -67,9 +67,15 @@ class PaperTrailYamlTest {
         Map<String, Object> attributes = new LinkedHashMap<>();
         attributes.put("starts_on", LocalDate.parse("2025-02-03"));
         attributes.put("budget", new BigDecimal("12.50"));
+        attributes.put("long_budget", new BigDecimal("12345678901234567890.123456789"));
+        attributes.put("tiny_budget", new BigDecimal("-0.000000001"));
+        attributes.put("zero_budget", BigDecimal.ZERO);
 
         assertEquals(
-            "---\nstarts_on: 2025-02-03\nbudget: !ruby/object:BigDecimal 18:0.125e2\n",
+            "---\nstarts_on: 2025-02-03\nbudget: !ruby/object:BigDecimal 18:0.125e2\n"
+                + "long_budget: !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\n"
+                + "tiny_budget: !ruby/object:BigDecimal 9:-0.1e-8\n"
+                + "zero_budget: !ruby/object:BigDecimal 9:0.0\n",
             PaperTrailYaml.dumpObject(attributes));
     }
 

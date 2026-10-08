@@ -118,10 +118,23 @@ public final class PaperTrailYaml {
 
     private static String bigDecimal(BigDecimal value) {
         BigDecimal normalized = value.stripTrailingZeros();
+        if (normalized.signum() == 0) {
+            return "!ruby/object:BigDecimal 9:0.0";
+        }
         String digits = normalized.unscaledValue().abs().toString();
         int exponent = digits.length() - normalized.scale();
-        return "!ruby/object:BigDecimal 18:"
+        int precision = bigDecimalPrecision(normalized);
+        return "!ruby/object:BigDecimal " + precision + ":"
             + (normalized.signum() < 0 ? "-0." : "0.") + digits + "e" + exponent;
+    }
+
+    private static int bigDecimalPrecision(BigDecimal value) {
+        int digits = value.precision();
+        int scale = value.scale();
+        int words = scale > 0
+            ? (Math.max(0, digits - scale) + 8) / 9 + (scale + 8) / 9
+            : (digits + 8) / 9;
+        return Math.max(1, words) * 9;
     }
 
     private static void writeTimeWithZone(StringBuilder out, Instant instant, AnchorState anchors) {
