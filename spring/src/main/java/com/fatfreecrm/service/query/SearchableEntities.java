@@ -162,7 +162,8 @@ public class SearchableEntities {
             (root, cb, query) -> {
                 String sanitized = query.replaceAll("[^\\w\\s\\-.'\\p{L}]", "").strip();
                 String pattern = "%" + sanitized + "%";
-                Expression<String> upperPattern = cb.upper(cb.literal(pattern));
+                Expression<String> upperPattern =
+                    cb.upper(((org.hibernate.query.criteria.HibernateCriteriaBuilder) cb).value(pattern));
                 return cb.or(
                     cb.like(cb.upper(root.get("username")), upperPattern),
                     cb.like(cb.upper(root.get("email")), upperPattern),

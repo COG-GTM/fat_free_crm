@@ -144,16 +144,29 @@ class UsersAdminControllerIntegrationTest extends AbstractPostgresIntegrationTes
     @Test
     void userTextSearchUsesPostgresUpperForSearchAndAutocompletePatterns() throws Exception {
         User strasse = user("straße", "Straße", "Search", false);
+        User apostrophe = user("quoted_user", "O'Neil", "Search", false);
 
         JsonNode adminList = JSON.readTree(mockMvc.perform(get("/api/v1/admin/users").param("query", "ß")
                 .header(HttpHeaders.AUTHORIZATION, adminBearer))
             .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
         assertThat(adminList.path("items").findValuesAsText("id")).contains(strasse.getId().toString());
 
+        JsonNode apostropheList = JSON.readTree(mockMvc.perform(get("/api/v1/admin/users").param("query", "o'")
+                .header(HttpHeaders.AUTHORIZATION, adminBearer))
+            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(apostropheList.path("items").findValuesAsText("id")).contains(apostrophe.getId().toString());
+
         JsonNode autocomplete = JSON.readTree(mockMvc.perform(get("/api/v1/users/autocomplete").param("term", "ß")
                 .header(HttpHeaders.AUTHORIZATION, adminBearer))
             .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
         assertThat(autocomplete.path("results").findValuesAsText("id")).contains(strasse.getId().toString());
+
+        JsonNode apostropheAutocomplete = JSON.readTree(mockMvc.perform(get("/api/v1/users/autocomplete")
+                .param("term", "o'")
+                .header(HttpHeaders.AUTHORIZATION, adminBearer))
+            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(apostropheAutocomplete.path("results").findValuesAsText("id"))
+            .contains(apostrophe.getId().toString());
     }
 
     @Test
