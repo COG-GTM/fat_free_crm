@@ -66,23 +66,32 @@ class RailsAuditGoldenTest {
         }
 
         VersionRepository repository = mock(VersionRepository.class);
+        ColumnDefaults columnDefaults = mock(ColumnDefaults.class);
+        when(columnDefaults.defaults(org.mockito.ArgumentMatchers.any(Object.class))).thenReturn(Map.of());
         when(repository.save(org.mockito.ArgumentMatchers.any(Version.class)))
             .thenAnswer(invocation -> invocation.getArgument(0));
         VersionRecorder recorder = new VersionRecorder(
             repository,
             mock(EntityManager.class),
-            Clock.fixed(Instant.parse("2025-02-01T12:00:00Z"), ZoneOffset.UTC));
+            Clock.fixed(Instant.parse("2025-02-01T12:00:00Z"), ZoneOffset.UTC),
+            columnDefaults);
 
         ArrayNode springCases = JSON.createArrayNode();
         List<String> failures = new ArrayList<>();
         Set<String> touchModels = new LinkedHashSet<>();
+        Set<String> railsCaseIds = new LinkedHashSet<>();
+        Set<String> springCaseIds = new LinkedHashSet<>();
         int yamlDeltaCount = 0;
         for (JsonNode railsCase : manifest.path("cases")) {
+            String key = caseKey(railsCase);
+            if (!railsCaseIds.add(key)) {
+                failures.add("duplicate Rails case id " + key);
+            }
             JsonNode expectedVersions = railsCase.path("versions");
             if (railsCase.path("op").asText().equals("touch")) {
                 touchModels.add(railsCase.path("model").asText());
                 expectedVersions.forEach(version ->
-                    compareScalar(caseKey(railsCase), "touch.object_changes", null,
+                    compareScalar(key, "touch.object_changes", null,
                         textOrNull(version.get("object_changes")), failures));
             }
             List<Version> versions = record(recorder, railsCase);

@@ -43,17 +43,23 @@ public class VersionRecorder {
     private final VersionRepository versionRepository;
     private final EntityManager entityManager;
     private final Clock clock;
+    private final ColumnDefaults columnDefaults;
 
-    public VersionRecorder(VersionRepository versionRepository, EntityManager entityManager, Clock clock) {
+    public VersionRecorder(
+        VersionRepository versionRepository,
+        EntityManager entityManager,
+        Clock clock,
+        ColumnDefaults columnDefaults
+    ) {
         this.versionRepository = versionRepository;
         this.entityManager = entityManager;
         this.clock = clock;
+        this.columnDefaults = columnDefaults;
     }
 
     /**
      * PaperTrail {@code create} version. {@code attributes} must be the post-insert attribute dump
-     * in column order (timestamps populated) and {@code defaults} the per-column defaults
-     * ({@code "name" -> ""} on Task); entries whose value equals the default are omitted.
+     * in column order (timestamps populated); provided defaults override database column defaults.
      */
     @Transactional
     public Version recordCreate(
@@ -63,12 +69,13 @@ public class VersionRecorder {
         Map<String, Object> defaults
     ) {
         PaperTrailOptions options = options(entity);
+        Map<String, Object> databaseDefaults = columnDefaults.defaults(entity);
         Map<String, Object[]> changes = new LinkedHashMap<>();
         attributes.forEach((name, value) -> {
             if (options.ignore().contains(name)) {
                 return;
             }
-            Object initial = defaults.getOrDefault(name, null);
+            Object initial = defaults.containsKey(name) ? defaults.get(name) : databaseDefaults.get(name);
             if (!Objects.equals(initial, value)) {
                 changes.put(name, new Object[] {initial, value});
             }

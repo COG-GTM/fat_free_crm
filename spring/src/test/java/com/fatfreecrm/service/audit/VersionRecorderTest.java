@@ -6,9 +6,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 
-import com.fatfreecrm.domain.AccountContact;
 import com.fatfreecrm.domain.Account;
+import com.fatfreecrm.domain.AccountContact;
 import com.fatfreecrm.domain.Address;
+import com.fatfreecrm.domain.Comment;
 import com.fatfreecrm.domain.Contact;
 import com.fatfreecrm.domain.User;
 import com.fatfreecrm.domain.Version;
@@ -17,23 +18,26 @@ import jakarta.persistence.EntityManager;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.LinkedHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class VersionRecorderTest {
 
     private final VersionRepository versionRepository = mock(VersionRepository.class);
+    private final ColumnDefaults columnDefaults = mock(ColumnDefaults.class);
     private final VersionRecorder versionRecorder = new VersionRecorder(
         versionRepository,
         mock(EntityManager.class),
-        Clock.fixed(Instant.parse("2025-02-01T12:00:00Z"), ZoneOffset.UTC));
+        Clock.fixed(Instant.parse("2025-02-01T12:00:00Z"), ZoneOffset.UTC),
+        columnDefaults);
 
     @BeforeEach
     void returnSavedVersion() {
         when(versionRepository.save(any(Version.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(columnDefaults.defaults(any(Object.class))).thenReturn(Map.of());
     }
 
     @Test
@@ -75,6 +79,22 @@ class VersionRecorderTest {
 
         assertThat(version.getItemType()).isEqualTo("User");
         assertThat(version.getItemId()).isEqualTo(68_999);
+    }
+
+    @Test
+    void usesTheDatabaseCommentTitleDefaultWhenCallerDefaultsOmitIt() {
+        Comment comment = mock(Comment.class);
+        when(comment.getId()).thenReturn(7L);
+        when(columnDefaults.defaults(comment)).thenReturn(Map.of("title", ""));
+        Map<String, Object> attributes = new LinkedHashMap<>();
+        attributes.put("id", 7L);
+        attributes.put("title", "");
+        attributes.put("comment", "New account comment");
+
+        Version version = versionRecorder.recordCreate(null, comment, attributes, Map.of());
+
+        assertThat(version.getObjectChanges())
+            .isEqualTo("---\nid:\n-\n- 7\ncomment:\n-\n- New account comment\n");
     }
 
     @Test
