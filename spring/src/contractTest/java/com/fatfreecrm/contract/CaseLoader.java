@@ -90,7 +90,8 @@ public final class CaseLoader {
             text(node, "description", ""),
             expectation(node.get("expect")),
             node.path("reset").asBoolean(false),
-            node.get("dbAssert")
+            node.get("dbAssert"),
+            node.get("setup")
         );
     }
 
