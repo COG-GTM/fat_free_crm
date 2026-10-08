@@ -1,6 +1,8 @@
 package com.fatfreecrm.service.audit;
 
 import com.fatfreecrm.domain.Version;
+import com.fatfreecrm.domain.AccountContact;
+import com.fatfreecrm.domain.Address;
 import com.fatfreecrm.domain.support.BaseEntity;
 import com.fatfreecrm.domain.support.RailsModelType;
 import com.fatfreecrm.repository.VersionRepository;
@@ -190,6 +192,12 @@ public class VersionRecorder {
                     ? pair(comment.getCommentableType(), comment.getCommentableId()) : null;
                 case com.fatfreecrm.domain.Email email -> attribute.equals("mediator")
                     ? pair(email.getMediatorType(), email.getMediatorId()) : null;
+                case Address address -> attribute.equals("addressable")
+                    ? pair(address.getAddressableType(), address.getAddressableId()) : null;
+                case AccountContact accountContact -> attribute.equals("contact")
+                    ? pair("Contact", accountContact.getContact() == null
+                        ? null : accountContact.getContact().getId().intValue())
+                    : null;
                 default -> null;
             };
             return value == null ? new Related(null, null) : value;
