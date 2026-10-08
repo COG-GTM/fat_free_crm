@@ -686,6 +686,109 @@
   description: "contact Shared + no perms → contact.save fails; account/opportunity already
     committed → orphan rows + 500 (errors + errors NoMethodError). Verified live."
 
+- id: leads-promote-account-by-name
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /leads/302/promote
+  auth: alice
+  body:
+    account: {name: "Contract Account 101"}
+    access: Public
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 302", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: accounts, where: "id = 101", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: contacts, where: "lead_id = 302", exclude: [id, custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: account_contacts, where: "account_id = 101", exclude: [id],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Lead' AND item_id = 302", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: "promote with account name only → create_or_select_for find_by(name) selects
+    the existing account; no new account, contact linked via AccountContact."
+
+- id: leads-promote-account-access-lead
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /leads/303/promote
+  auth: alice
+  body:
+    account: {name: "Lead Perms Acct", access: "Lead"}
+    access: Public
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 303", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: accounts, where: "name = 'Lead Perms Acct'", exclude: [id, custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: permissions, where: "asset_type = 'Account' AND asset_id = (SELECT id FROM accounts WHERE name = 'Lead Perms Acct')",
+       exclude: [id], volatile: [created_at, updated_at]}
+    - {table: contacts, where: "lead_id = 303", exclude: [id, custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Account' AND item_id = (SELECT id FROM accounts WHERE name = 'Lead Perms Acct')",
+       exclude: [id], volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: "account access 'Lead' on a Shared-with-user_ids lead → save_with_model_permissions
+    copies lead access + permission rows onto the new account."
+
+- id: leads-promote-contact-access-lead
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /leads/304/promote
+  auth: alice
+  body:
+    account: {name: "Contact Perms Acct"}
+    access: Lead
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 304", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: accounts, where: "name = 'Contact Perms Acct'", exclude: [id, custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: contacts, where: "lead_id = 304", exclude: [id, custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: permissions, where: "asset_type = 'Contact' AND asset_id = (SELECT id FROM contacts WHERE lead_id = 304)",
+       exclude: [id], volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Contact' AND item_id = (SELECT id FROM contacts WHERE lead_id = 304)",
+       exclude: [id], volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: "top-level access 'Lead' → contact.save_with_model_permissions copies the lead's
+    group permission row (lead 304 is Shared with group 2) onto the new contact."
+
+- id: leads-promote-opportunity-campaign
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /leads/301/promote
+  auth: alice
+  body:
+    account: {name: "Campaign Opp Acct"}
+    opportunity: {name: "Campaign Opp", campaign_id: 501}
+    access: Public
+  reset: true
+  dbAssert:
+    - {table: leads, where: "id = 301", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: accounts, where: "name = 'Campaign Opp Acct'", exclude: [id, custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: campaigns, where: "id = 501", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: opportunities, where: "name = 'Campaign Opp'", exclude: [id, custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: contacts, where: "lead_id = 301", exclude: [id, custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Opportunity' AND item_id = (SELECT id FROM opportunities WHERE name = 'Campaign Opp')",
+       exclude: [id], volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: "opportunity with campaign_id → after_create :increment_opportunities_count bumps
+    campaigns.opportunities_count on campaign 501."
+
 - id: leads-promote-missing-account-404
   ticket: AB-272
   status: enforced

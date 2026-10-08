@@ -247,6 +247,17 @@ public class EntityWriteService {
     private static final Map<String, Object> OPPORTUNITY_DEFAULTS = Map.of(
         "name", "", "access", "Public", "tag_list", List.of());
 
+    private static Map<String, Object> defaultsFor(String assetType) {
+        return switch (assetType) {
+            case "Account" -> ACCOUNT_DEFAULTS;
+            case "Campaign" -> CAMPAIGN_DEFAULTS;
+            case "Contact" -> CONTACT_DEFAULTS;
+            case "Lead" -> LEAD_DEFAULTS;
+            case "Opportunity" -> OPPORTUNITY_DEFAULTS;
+            default -> Map.of();
+        };
+    }
+
     private static List<Long> parseSubscribedIds(String yaml) {
         List<Long> ids = new ArrayList<>();
         for (String line : yaml.split("\n")) {
@@ -1114,8 +1125,9 @@ public class EntityWriteService {
             entityManager.flush(); // Rails saves are unwrapped — commit independently
         });
         flushPendingPermissions(assetType, entity.getId(), pending);
+        // object_changes befores are the column defaults, not nil — verified live.
         versionRecorder.recordCreate(user, entity,
-            rowAttributes(entity.getClass(), entity.getId()), Map.of());
+            rowAttributes(entity.getClass(), entity.getId()), defaultsFor(assetType));
     }
 
     private String railsNameOf(CrmEntity entity) {
@@ -1461,6 +1473,11 @@ public class EntityWriteService {
                 validateOpportunity(opportunity, pending);
                 opportunity = opportunityRepository.saveAndFlush(opportunity);
                 flushPendingPermissions("Opportunity", opportunity.getId(), pending);
+            }
+            // Rails after_create :increment_opportunities_count fires on any persisted save.
+            if (opportunity.getId() != null && opportunity.getCampaign() != null) {
+                counter("campaigns", "opportunities_count",
+                    opportunity.getCampaign().getId(), 1);
             }
             if (account != null && account.getId() != null) {
                 AccountOpportunity link = new AccountOpportunity();
