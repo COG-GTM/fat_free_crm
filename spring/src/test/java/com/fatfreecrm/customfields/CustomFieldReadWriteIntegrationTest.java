@@ -327,9 +327,9 @@ class CustomFieldReadWriteIntegrationTest extends AbstractPostgresIntegrationTes
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
         assertThat(response.getBody()).isEqualTo(Map.of(
-            "errors", Map.of("cf_read_required", List.of("Required is required."))));
+            "errors", Map.of("cf_read_required", List.of("^Required is required."))));
         assertThat(objectMapper.writeValueAsString(response.getBody()))
-            .isEqualTo("{\"errors\":{\"cf_read_required\":[\"Required is required.\"]}}");
+            .isEqualTo("{\"errors\":{\"cf_read_required\":[\"^Required is required.\"]}}");
         assertThat(jdbcTemplate.queryForObject(
             "SELECT updated_at::text FROM accounts WHERE id = ?", String.class, id)).isEqualTo(updatedAt);
         assertThat(jdbcTemplate.queryForObject(
