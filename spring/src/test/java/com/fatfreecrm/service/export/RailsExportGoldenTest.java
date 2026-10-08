@@ -97,8 +97,10 @@ class RailsExportGoldenTest extends AbstractPostgresIntegrationTest {
             // MockMvc does not form-decode "+" in query strings the way Tomcat does.
             String spring = "/api/v1" + testCase.get("spring_path").asText().replace("+", "%20");
             Map<String, Function<String, MockHttpServletRequestBuilder>> styles = Map.of(
-                "accept", path -> get(URI.create(path)).header(HttpHeaders.ACCEPT, xls ? "application/vnd.ms-excel" : "text/csv"),
-                "format", path -> get(URI.create(path + (path.contains("?") ? "&" : "?") + "format=" + (xls ? "xls" : "csv"))),
+                "accept", path -> get(URI.create(path))
+                    .header(HttpHeaders.ACCEPT, xls ? "application/vnd.ms-excel" : "text/csv"),
+                "format", path -> get(URI.create(
+                    path + (path.contains("?") ? "&" : "?") + "format=" + (xls ? "xls" : "csv"))),
                 "suffix", path -> get(URI.create(suffixed(path, xls ? ".xls" : ".csv"))));
             byte[] golden = golden(testCase.get("body_file").asText());
             for (Map.Entry<String, Function<String, MockHttpServletRequestBuilder>> style : styles.entrySet()) {

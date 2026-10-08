@@ -589,3 +589,19 @@ tests replay all generated list and vCard cases.
   `/tasks/auto_complete.json` on a frozen clock (`2026-03-12T02:30:00Z`) with session offsets for UTC-10, UTC-3,
   UTC+1 and UTC+13 and writes `spring/src/test/resources/search/tasks_search_matrix.json` (27 cases, 32 tasks);
   `RailsTaskBucketsParityTest` replays it. Gateway blocks: `tasks`, `comments` (disabled).
+
+## CSV / XLS exports (AB-273, track `exports`)
+
+`ExportsController` serves Rails-identical exports on the list endpoints for accounts, campaigns, contacts,
+leads, opportunities, tasks and activities: `Accept: text/csv` or `application/vnd.ms-excel`, `?format=csv|xls`,
+or the `.csv` / `.xls` suffix. Exports are the full filtered/sorted list (Rails does not paginate them). CSV
+mirrors `FatFreeCRM::ExportCSV`; XLS is the SpreadsheetML of `app/views/*/index.xls.builder`.
+
+Regenerate the Rails goldens after changing an export (empty PostgreSQL database with the Rails schema):
+
+```sh
+DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/ffcrm_export bundle exec rake ffcrm:migration:export_goldens
+./gradlew test --tests '*RailsExportGoldenTest'
+```
+
+Atom/RSS/XML remain on Rails. Details: `docs/adr/ab-273-peripherals.md` (`## Track: exports`).

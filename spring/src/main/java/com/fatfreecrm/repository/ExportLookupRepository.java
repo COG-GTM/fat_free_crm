@@ -1,5 +1,6 @@
 package com.fatfreecrm.repository;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -10,6 +11,10 @@ import org.springframework.stereotype.Repository;
 
 /** Associations the Rails export templates dereference (app/views/x/index.xls.builder, export_csv.rb). */
 @Repository
+@SuppressFBWarnings(
+    value = "EI_EXPOSE_REP2",
+    justification = "Spring-managed collaborators are intentionally retained by this repository."
+)
 public class ExportLookupRepository {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;

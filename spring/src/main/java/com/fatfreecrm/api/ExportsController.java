@@ -8,6 +8,7 @@ import com.fatfreecrm.service.export.ExportService.Format;
 import com.fatfreecrm.service.json.RailsResource;
 import com.fatfreecrm.service.json.RailsResources;
 import com.fatfreecrm.service.read.TaskReadService;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,6 +33,10 @@ import org.springframework.web.context.request.ServletWebRequest;
  */
 @RestController
 @RequestMapping("/api/v1")
+@SuppressFBWarnings(
+    value = "EI_EXPOSE_REP2",
+    justification = "Spring-managed collaborators are intentionally retained by this controller."
+)
 public class ExportsController {
 
     static final String CSV = "text/csv";

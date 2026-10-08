@@ -18,6 +18,7 @@ import com.fatfreecrm.service.query.ListQuery;
 import com.fatfreecrm.service.query.ListResult;
 import com.fatfreecrm.service.read.ActivitiesReadService;
 import com.fatfreecrm.service.read.TaskReadService;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.Clock;
@@ -49,11 +50,23 @@ import org.springframework.util.MultiValueMap;
  * wants.csv?} skips {@code paginate}).
  */
 @Service
+@SuppressFBWarnings(
+    value = "EI_EXPOSE_REP2",
+    justification = "Spring-managed collaborators are intentionally retained by this service."
+)
 public class ExportService {
 
     public enum Format { CSV, XLS }
 
     public record ExportDocument(String contentType, String contentDisposition, byte[] body) {
+        public ExportDocument {
+            body = body.clone();
+        }
+
+        @Override
+        public byte[] body() {
+            return body.clone();
+        }
     }
 
     static final String CSV_CONTENT_TYPE = "text/csv";
