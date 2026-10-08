@@ -124,7 +124,7 @@ class CommentsAccessControlIntegrationTest extends AbstractPostgresIntegrationTe
     }
 
     @Test
-    void adminsSeeCommentsOnAnyRecordAndEveryCommentWithoutACommentable() throws Exception {
+    void adminsSeeCommentsOnAnyRecordAndAllCommentsWhenNoCommentableIsRequested() throws Exception {
         long privateAccount = entity("accounts", bob, null, "Private");
         comment(bob, "Account", privateAccount, "private note", "now() - interval '1 hour'");
         comment(alice, "User", bob.getId(), "about bob", "now()");
