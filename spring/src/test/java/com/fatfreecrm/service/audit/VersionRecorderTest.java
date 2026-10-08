@@ -11,6 +11,7 @@ import com.fatfreecrm.domain.AccountContact;
 import com.fatfreecrm.domain.Account;
 import com.fatfreecrm.domain.Address;
 import com.fatfreecrm.domain.Contact;
+import com.fatfreecrm.domain.User;
 import com.fatfreecrm.domain.Version;
 import com.fatfreecrm.repository.VersionRepository;
 import jakarta.persistence.EntityManager;
@@ -66,17 +67,31 @@ class VersionRecorderTest {
     }
 
     @Test
+    void recordsUserVersionsUsingItsPrimaryKey() {
+        User user = mock(User.class);
+        when(user.getId()).thenReturn(68_999L);
+
+        Version version = versionRecorder.recordCreate(null, user, Map.of("id", 68_999L), Map.of());
+
+        assertThat(version.getItemType()).isEqualTo("User");
+        assertThat(version.getItemId()).isEqualTo(68_999);
+    }
+
+    @Test
     void recordsATouchAsAnUpdateWithThePreTouchObjectAndNoChanges() {
         Account account = mock(Account.class);
         when(account.getId()).thenReturn(31L);
         Map<String, Object> before = new LinkedHashMap<>();
         before.put("name", "before");
+        before.put("updated_at", Instant.parse("2025-02-01T11:59:00Z"));
         Map<String, Object> after = new LinkedHashMap<>(before);
+        after.put("updated_at", Instant.parse("2025-02-01T12:00:00Z"));
 
         Version version = versionRecorder.recordTouch(null, account, before, after);
 
         assertThat(version.getEvent()).isEqualTo("update");
-        assertThat(version.getObject()).isEqualTo("---\nname: before\n");
+        assertThat(version.getObject()).startsWith("---\nname: before\nupdated_at: ");
+        assertThat(version.getObject()).contains("utc: 2025-02-01 11:59:00.000000000 Z");
         assertThat(version.getObjectChanges()).isNull();
     }
 

@@ -3,6 +3,7 @@ package com.fatfreecrm.service.audit;
 import com.fatfreecrm.domain.Version;
 import com.fatfreecrm.domain.AccountContact;
 import com.fatfreecrm.domain.Address;
+import com.fatfreecrm.domain.User;
 import com.fatfreecrm.domain.support.BaseEntity;
 import com.fatfreecrm.domain.support.RailsModelType;
 import com.fatfreecrm.repository.VersionRepository;
@@ -189,7 +190,8 @@ public class VersionRecorder {
     private Version base(AuthenticatedUser user, PaperTrailOptions options, Object entity, String event) {
         Version version = new Version();
         version.setItemType(options.itemType().railsName());
-        version.setItemId(((BaseEntity) entity).getId().intValue());
+        Long id = entity instanceof User auditUser ? auditUser.getId() : ((BaseEntity) entity).getId();
+        version.setItemId(id.intValue());
         version.setEvent(event);
         version.setWhodunnit(whodunnit(user));
         version.setCreatedAt(now());
