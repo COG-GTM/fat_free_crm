@@ -1,0 +1,400 @@
+- id: contacts-index-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts
+  params: {page: 1, query: ""}
+  spring: {path: /api/v1/contacts, bodyPointer: /items}
+  auth: alice
+  description: Compare Alice's default contacts list with Spring's list envelope.
+- id: contacts-index-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts
+  params: {page: 1, query: ""}
+  spring: {path: /api/v1/contacts, bodyPointer: /items}
+  auth: admin
+  description: Compare the administrator contacts list.
+- id: contacts-index-page2
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts
+  params: {page: 2, per_page: 1, query: ""}
+  spring: {path: /api/v1/contacts, bodyPointer: /items}
+  auth: alice
+  description: Compare contacts pagination.
+- id: contacts-index-query
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts
+  params: {page: 1, query: Contact}
+  spring: {path: /api/v1/contacts, bodyPointer: /items}
+  auth: alice
+  description: Compare contacts text search.
+- id: contacts-show-public
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts/201
+  auth: alice
+  description: Compare a public contact show response.
+- id: contacts-show-missing
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts/999999
+  auth: alice
+  description: Compare missing contact responses.
+- id: contacts-show-denied
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts/206
+  auth: alice
+  description: Compare denial for Bob's private contact.
+- id: contacts-show-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts/201
+  auth: anonymous
+  description: Compare anonymous contact show authentication behavior.
+- id: contacts-autocomplete-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts/auto_complete
+  rails: {path: /contacts/auto_complete.json}
+  spring: {path: /api/v1/contacts/autocomplete}
+  params: {term: Contact}
+  auth: alice
+  description: Compare Alice's contact autocomplete.
+- id: contacts-autocomplete-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts/auto_complete
+  rails: {path: /contacts/auto_complete.json}
+  spring: {path: /api/v1/contacts/autocomplete}
+  params: {term: Contact}
+  auth: admin
+  description: Compare administrator contact autocomplete.
+- id: contacts-autocomplete-related-id
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts/auto_complete
+  rails: {path: /contacts/auto_complete.json}
+  spring: {path: /api/v1/contacts/autocomplete}
+  params: {term: Contact, related: "201"}
+  auth: alice
+  description: Exclude contact 201 using a bare related ID.
+- id: contacts-autocomplete-related-account
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts/auto_complete
+  rails: {path: /contacts/auto_complete.json}
+  spring: {path: /api/v1/contacts/autocomplete}
+  params: {term: Contact, related: accounts/101}
+  auth: alice
+  description: Exclude contacts related to account 101.
+- id: contacts-autocomplete-related-opportunity
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts/auto_complete
+  rails: {path: /contacts/auto_complete.json}
+  spring: {path: /api/v1/contacts/autocomplete}
+  params: {term: Contact, related: opportunities/401}
+  auth: alice
+  description: Exclude contacts related to opportunity 401.
+- id: contacts-autocomplete-related-user
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts/auto_complete
+  rails: {path: /contacts/auto_complete.json}
+  spring: {path: /api/v1/contacts/autocomplete}
+  params: {term: Contact, related: users/2}
+  auth: alice
+  description: Exclude contacts owned by user 2.
+- id: contacts-autocomplete-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts/auto_complete
+  rails: {path: /contacts/auto_complete.json}
+  spring: {path: /api/v1/contacts/autocomplete}
+  params: {term: Contact}
+  auth: anonymous
+  description: Compare anonymous contact autocomplete authentication behavior.
+- id: contacts-vcard-success
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts/201.vcf
+  rails: {path: /contacts/201.vcf}
+  spring: {path: /api/v1/contacts/201.vcf}
+  auth: alice
+  description: Compare vCard status and content type; exact bytes and disposition are covered by the vCard matrix replay.
+- id: contacts-vcard-missing
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts/999999.vcf
+  rails: {path: /contacts/999999.vcf}
+  spring: {path: /api/v1/contacts/999999.vcf}
+  auth: alice
+  description: Compare missing contact vCard responses.
+- id: contacts-vcard-denied
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts/206.vcf
+  rails: {path: /contacts/206.vcf}
+  spring: {path: /api/v1/contacts/206.vcf}
+  auth: alice
+  description: Compare access denial for a private contact vCard.
+- id: contacts-vcard-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts/201.vcf
+  rails: {path: /contacts/201.vcf}
+  spring: {path: /api/v1/contacts/201.vcf}
+  auth: anonymous
+  description: Compare anonymous contact vCard authentication behavior.
+- id: contacts-envelope-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /contacts
+  rails: {path: /api/v1/contacts, target: spring}
+  spring: {path: /api/v1/contacts, target: spring}
+  auth: alice
+  expect:
+    status: 200
+    json: {/page: 1, /perPage: 20, /totalCount: 5, /totalPages: 1}
+  description: Pin Alice's contacts list envelope; contacts have no facets provider.
+- id: leads-index-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads
+  params: {page: 1, query: ""}
+  spring: {path: /api/v1/leads, bodyPointer: /items}
+  auth: alice
+  description: Compare Alice's default leads list with Spring's envelope.
+- id: leads-index-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads
+  params: {page: 1, query: ""}
+  spring: {path: /api/v1/leads, bodyPointer: /items}
+  auth: admin
+  description: Compare the administrator leads list.
+- id: leads-index-page2-per-page-ignored
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads
+  params: {page: 2, per_page: 1, query: ""}
+  spring: {path: /api/v1/leads, bodyPointer: /items}
+  auth: alice
+  description: Both Rails and Spring ignore explicit leads per_page and use the user's preference or default.
+- id: leads-index-query
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads
+  params: {page: 1, query: Lead}
+  spring: {path: /api/v1/leads, bodyPointer: /items}
+  auth: alice
+  description: Compare lead text search.
+- id: leads-show-public
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads/301
+  auth: alice
+  description: Compare a public lead show response.
+- id: leads-show-missing
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads/999999
+  auth: alice
+  description: Compare missing lead responses.
+- id: leads-show-denied
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads/306
+  auth: alice
+  description: Compare denial for Bob's private lead.
+- id: leads-show-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads/301
+  auth: anonymous
+  description: Compare anonymous lead show authentication behavior.
+- id: leads-autocomplete-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads/auto_complete
+  rails: {path: /leads/auto_complete.json}
+  spring: {path: /api/v1/leads/autocomplete}
+  params: {term: Lead}
+  auth: alice
+  description: Compare Alice's lead autocomplete.
+- id: leads-autocomplete-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads/auto_complete
+  rails: {path: /leads/auto_complete.json}
+  spring: {path: /api/v1/leads/autocomplete}
+  params: {term: Lead}
+  auth: admin
+  description: Compare administrator lead autocomplete.
+- id: leads-autocomplete-related-id
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads/auto_complete
+  rails: {path: /leads/auto_complete.json}
+  spring: {path: /api/v1/leads/autocomplete}
+  params: {term: Lead, related: "301"}
+  auth: alice
+  description: Exclude lead 301 using a bare related ID.
+- id: leads-autocomplete-related-campaign
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads/auto_complete
+  rails: {path: /leads/auto_complete.json}
+  spring: {path: /api/v1/leads/autocomplete}
+  params: {term: Lead, related: campaigns/501}
+  auth: alice
+  description: Exclude leads related to campaign 501.
+- id: leads-autocomplete-related-user
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads/auto_complete
+  rails: {path: /leads/auto_complete.json}
+  spring: {path: /api/v1/leads/autocomplete}
+  params: {term: Lead, related: users/2}
+  auth: alice
+  description: Exclude leads owned by user 2.
+- id: leads-autocomplete-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads/auto_complete
+  rails: {path: /leads/auto_complete.json}
+  spring: {path: /api/v1/leads/autocomplete}
+  params: {term: Lead}
+  auth: anonymous
+  description: Compare anonymous lead autocomplete authentication behavior.
+- id: leads-vcard-success
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads/301.vcf
+  rails: {path: /leads/301.vcf}
+  spring: {path: /api/v1/leads/301.vcf}
+  auth: alice
+  description: Compare vCard status and content type; exact bytes and disposition are covered by the vCard matrix replay.
+- id: leads-vcard-missing
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads/999999.vcf
+  rails: {path: /leads/999999.vcf}
+  spring: {path: /api/v1/leads/999999.vcf}
+  auth: alice
+  description: Compare missing lead vCard responses.
+- id: leads-vcard-denied
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads/306.vcf
+  rails: {path: /leads/306.vcf}
+  spring: {path: /api/v1/leads/306.vcf}
+  auth: alice
+  description: Compare access denial for a private lead vCard.
+- id: leads-vcard-anonymous
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads/301.vcf
+  rails: {path: /leads/301.vcf}
+  spring: {path: /api/v1/leads/301.vcf}
+  auth: anonymous
+  description: Compare anonymous lead vCard authentication behavior.
+- id: leads-envelope-alice
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads
+  rails: {path: /api/v1/leads, target: spring}
+  spring: {path: /api/v1/leads, target: spring}
+  auth: alice
+  expect:
+    status: 200
+    json:
+      /page: 1
+      /perPage: 20
+      /totalCount: 5
+      /totalPages: 1
+      /facets/status/new: 0
+      /facets/status/contacted: 0
+      /facets/status/converted: 0
+      /facets/status/rejected: 0
+      /facets/status/all: 5
+      /facets/status/other: 5
+  description: Pin lead facets to the configured order and include null statuses in other.
+- id: leads-envelope-admin
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads
+  rails: {path: /api/v1/leads, target: spring}
+  spring: {path: /api/v1/leads, target: spring}
+  auth: admin
+  expect:
+    status: 200
+    json: {/page: 1, /perPage: 20, /totalCount: 7, /totalPages: 1, /facets/status/all: 7, /facets/status/other: 7}
+  description: Pin administrator lead counts over the full accessible scope.
+- id: leads-envelope-page2
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads
+  rails: {path: /api/v1/leads, target: spring}
+  spring: {path: /api/v1/leads, target: spring}
+  params: {page: 2, per_page: 1}
+  auth: alice
+  expect: {status: 200, json: {/page: 2, /perPage: 20, /totalCount: 5, /totalPages: 1}}
+  description: Verify explicit leads per_page is ignored while the page and envelope remain stable.
+- id: leads-envelope-status-other
+  ticket: AB-270
+  status: enforced
+  method: GET
+  path: /leads
+  rails: {path: /api/v1/leads, target: spring}
+  spring: {path: /api/v1/leads, target: spring}
+  params: {status: other}
+  auth: alice
+  expect:
+    status: 200
+    json: {/totalCount: 5, /facets/status/all: 5, /facets/status/other: 5}
+  description: Verify status=other selects null-status rows without changing the unfiltered facet scope.

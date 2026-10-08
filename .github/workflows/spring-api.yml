@@ -17,6 +17,8 @@ on:
       - "spec/lib/tasks/entity_fixture_spec.rb"
       - "lib/tasks/ffcrm/search_matrix.rake"
       - "spec/lib/tasks/search_matrix_spec.rb"
+      - "lib/tasks/ffcrm/vcard_matrix.rake"
+      - "spec/lib/tasks/vcard_matrix_spec.rb"
       - "app/models/users/ability.rb"
       - "lib/fat_free_crm/permissions.rb"
       - "lib/fat_free_crm/migration/authz_matrix.rb"
@@ -38,6 +40,8 @@ on:
       - "spec/lib/tasks/entity_fixture_spec.rb"
       - "lib/tasks/ffcrm/search_matrix.rake"
       - "spec/lib/tasks/search_matrix_spec.rb"
+      - "lib/tasks/ffcrm/vcard_matrix.rake"
+      - "spec/lib/tasks/vcard_matrix_spec.rb"
       - "app/models/users/ability.rb"
       - "lib/fat_free_crm/permissions.rb"
       - "lib/fat_free_crm/migration/authz_matrix.rb"
@@ -275,3 +279,15 @@ jobs:
           PGPASSWORD=postgres createdb -h localhost -U postgres ffcrm_search_test
           bundle exec rails db:schema:load
           bundle exec rspec spec/lib/tasks/search_matrix_spec.rb
+      - name: Verify committed Rails vCard matrix
+        env:
+          RAILS_ENV: development
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ffcrm_search
+        run: |
+          bundle exec rake ffcrm:migration:vcard_matrix
+          git diff --exit-code -- spring/src/test/resources/vcard
+      - name: Rails vCard matrix spec
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ffcrm_search_test
+        run: bundle exec rspec spec/lib/tasks/vcard_matrix_spec.rb
