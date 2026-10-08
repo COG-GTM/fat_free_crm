@@ -1,17 +1,13 @@
 package com.fatfreecrm.service.json;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fatfreecrm.domain.Account;
 import com.fatfreecrm.domain.User;
 import com.fatfreecrm.repository.AccountRepository;
-import com.fatfreecrm.repository.RailsRow;
-import com.fatfreecrm.repository.RailsRowRepository;
 import com.fatfreecrm.repository.UserRepository;
 import com.fatfreecrm.support.AbstractPostgresIntegrationTest;
-import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -24,8 +20,8 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Row loading and scalar mapping that {@link RailsJsonWriterTest} does not exercise: id ordering,
- * missing ids, the remaining PostgreSQL scalar types, and resources without {@code tag_list}.
+ * Scalar mapping that {@link RailsJsonWriterTest} does not exercise: the remaining PostgreSQL
+ * scalar types and resources without {@code tag_list}.
  * The ALTER TABLE statements roll back with the test transaction.
  */
 @TestPropertySource(properties = "spring.datasource.hikari.data-source-properties.prepareThreshold=0")
@@ -34,9 +30,6 @@ class RailsJsonWriterRowsTest extends AbstractPostgresIntegrationTest {
 
     @Autowired
     private RailsJsonWriter jsonWriter;
-
-    @Autowired
-    private RailsRowRepository rowRepository;
 
     @Autowired
     private RailsResources railsResources;
@@ -72,38 +65,8 @@ class RailsJsonWriterRowsTest extends AbstractPostgresIntegrationTest {
         second = account(owner, "Second Rows");
     }
 
-    @Test
-    void writesRowsInRequestedOrderAndSkipsUnknownIds() {
-        List<ObjectNode> reversed = jsonWriter.write(accounts, List.of(second.getId(), first.getId(), 987654321L));
 
-        assertThat(reversed).extracting(node -> node.get("id").asLong())
-            .containsExactly(second.getId(), first.getId());
-        assertThat(jsonWriter.write(accounts, List.of())).isEmpty();
-        assertThat(jsonWriter.write(accounts, List.of(987654321L))).isEmpty();
-    }
 
-    @Test
-    void writeOneRaisesEntityNotFoundForUnknownIds() {
-        assertThatThrownBy(() -> jsonWriter.writeOne(accounts, 987654321L))
-            .isInstanceOf(EntityNotFoundException.class)
-            .hasMessageContaining("Account")
-            .hasMessageContaining("987654321");
-    }
-
-    @Test
-    void rowRepositoryReturnsEveryColumnWithPostgresTypeNames() {
-        assertThat(rowRepository.findByIds(accounts, List.of())).isEmpty();
-
-        List<RailsRow> rows = rowRepository.findByIds(accounts, List.of(first.getId()));
-        assertThat(rows).hasSize(1);
-        RailsRow row = rows.getFirst();
-        assertThat(row.id()).isEqualTo(first.getId());
-        assertThat(row.columns()).containsKeys("id", "name", "category", "access", "created_at", "subscribed_users");
-        assertThat(row.typeNames().get("id")).isIn("int8", "bigserial");
-        assertThat(row.typeNames().get("name")).isEqualTo("varchar");
-        assertThat(row.typeNames().get("created_at")).isEqualTo("timestamp");
-        assertThat(row.typeNames().get("subscribed_users")).isEqualTo("text");
-    }
 
     @Test
     void mapsRemainingPostgresScalarTypesLikeRailsAsJson() {

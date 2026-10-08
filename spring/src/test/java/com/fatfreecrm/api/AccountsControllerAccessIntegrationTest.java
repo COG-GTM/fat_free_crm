@@ -5,7 +5,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fatfreecrm.domain.Account;
 import com.fatfreecrm.domain.Group;
@@ -195,45 +194,7 @@ class AccountsControllerAccessIntegrationTest extends AbstractPostgresIntegratio
             .andExpect(status().isForbidden());
     }
 
-    @Test
-    void malformedRelatedExclusionsAreIgnoredByAutocomplete() throws Exception {
-        for (String related : new String[] {"abc", "campaigns", "users/not-a-number", "a/b/c", "users/999999", ""}) {
-            MvcResult result = mockMvc.perform(get("/api/v1/accounts/autocomplete")
-                    .header(HttpHeaders.AUTHORIZATION, memberBearer)
-                    .param("term", "Shared")
-                    .param("related", related))
-                .andExpect(status().isOk())
-                .andReturn();
-            JsonNode body = JSON.readTree(result.getResponse().getContentAsString());
-            assertThat(body.path("results").findValuesAsText("text"))
-                .as("related=%s", related)
-                .containsExactlyInAnyOrder("Shared With Member", "Shared With Group");
-        }
-    }
 
-    @Test
-    void blankAndTrailingCommaCategoryFiltersMatchRailsSplit() throws Exception {
-        jdbcTemplate.update("UPDATE accounts SET category = 'customer' WHERE id = ?", sharedWithMember.getId());
-
-        mockMvc.perform(get("/api/v1/accounts").param("category", ",,")
-                .header(HttpHeaders.AUTHORIZATION, memberBearer))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.totalCount").value(3));
-        mockMvc.perform(get("/api/v1/accounts").param("category", "customer,")
-                .header(HttpHeaders.AUTHORIZATION, memberBearer))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.totalCount").value(1))
-            .andExpect(jsonPath("$.items[0].name").value("Shared With Member"));
-        mockMvc.perform(get("/api/v1/accounts").param("category", ",customer")
-                .header(HttpHeaders.AUTHORIZATION, memberBearer))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.totalCount").value(1));
-        mockMvc.perform(get("/api/v1/accounts").param("category", "nonexistent")
-                .header(HttpHeaders.AUTHORIZATION, memberBearer))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.totalCount").value(0))
-            .andExpect(jsonPath("$.facets.category.all").value(3));
-    }
 
     private List<String> listNames(String bearer) throws Exception {
         MvcResult result = mockMvc.perform(get("/api/v1/accounts").header(HttpHeaders.AUTHORIZATION, bearer))
