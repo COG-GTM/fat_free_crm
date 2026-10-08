@@ -18,7 +18,7 @@ describe "custom_fields ignored column" do # rubocop:disable RSpec/DescribeClass
 
   before do
     @added_columns = []
-    entities.each do |klass, _factory|
+    entities.map(&:first).each do |klass|
       connection = klass.connection
       next if connection.column_exists?(klass.table_name, :custom_fields)
 
@@ -37,7 +37,7 @@ describe "custom_fields ignored column" do # rubocop:disable RSpec/DescribeClass
   end
 
   it "registers custom_fields as an ignored column exactly once per has_fields model" do
-    entities.each do |klass, _factory|
+    entities.map(&:first).each do |klass|
       expect(klass.ignored_columns).to include("custom_fields"), klass.name
       klass.has_fields
       klass.has_fields
