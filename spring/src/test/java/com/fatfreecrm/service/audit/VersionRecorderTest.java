@@ -158,6 +158,29 @@ class VersionRecorderTest {
     }
 
     @Test
+    void usesSeparateDirtyTrackingBeforeValueForVirtualTagListChanges() {
+        Account account = mock(Account.class);
+        when(account.getId()).thenReturn(46L);
+        PaperTrailYaml.RubyTagList objectTagList = new PaperTrailYaml.RubyTagList(List.of("alpha", "beta"));
+        Map<String, Object> objectBefore = new LinkedHashMap<>();
+        objectBefore.put("tag_list", objectTagList);
+        Map<String, Object> changeBefore = new LinkedHashMap<>();
+        changeBefore.put("tag_list", List.of());
+        Map<String, Object> after = new LinkedHashMap<>();
+        after.put("tag_list", List.of("alpha", "beta"));
+
+        Version version = versionRecorder.recordUpdate(
+            null, account, objectBefore, after, List.of("tag_list"), changeBefore);
+
+        assertThat(version.getObject()).contains(
+            "tag_list: !ruby/array:ActsAsTaggableOn::TagList\n"
+                + "  internal:\n  - alpha\n  - beta\n"
+                + "  ivars:\n    :@parser: !ruby/class 'ActsAsTaggableOn::DefaultParser'\n");
+        assertThat(version.getObjectChanges()).isEqualTo(
+            "---\ntag_list:\n- []\n- - alpha\n  - beta\n");
+    }
+
+    @Test
     void recordsAnExplicitUpdatedAtOnlyChange() {
         Account account = mock(Account.class);
         when(account.getId()).thenReturn(44L);

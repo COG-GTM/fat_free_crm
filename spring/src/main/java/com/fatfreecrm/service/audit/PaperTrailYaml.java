@@ -25,6 +25,13 @@ public final class PaperTrailYaml {
     private static final DateTimeFormatter TIMESTAMP =
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC);
 
+    /** Ruby's {@code ActsAsTaggableOn::TagList} array wrapper used in PaperTrail snapshots. */
+    public record RubyTagList(List<?> values) {
+        public RubyTagList {
+            values = List.copyOf(values);
+        }
+    }
+
     // Scalars Psych would parse back as non-strings must be quoted.
     private static final Pattern IMPLICIT = Pattern.compile(
         "(?i)null|~|true|false|yes|no|on|off|[-+]?\\d+(\\.\\d+)?([eE][-+]?\\d+)?"
@@ -56,6 +63,16 @@ public final class PaperTrailYaml {
             for (Object value : entry.getValue()) {
                 if (value == null) {
                     out.append('-');
+                } else if (value instanceof List<?> list) {
+                    if (list.isEmpty()) {
+                        out.append("- []");
+                    } else {
+                        out.append("- - ").append(scalar(list.get(0)));
+                        for (int index = 1; index < list.size(); index++) {
+                            Object item = list.get(index);
+                            out.append("\n  - ").append(scalar(item));
+                        }
+                    }
                 } else {
                     out.append('-');
                     writeValue(out, value, " ", anchors);
@@ -75,6 +92,7 @@ public final class PaperTrailYaml {
             return;
         }
         switch (value) {
+            case RubyTagList tagList -> writeRubyTagList(out, tagList, prefix);
             case List<?> list -> {
                 for (Object item : list) {
                     out.append('\n').append("- ").append(scalar(item));
@@ -90,6 +108,16 @@ public final class PaperTrailYaml {
             case Number number -> out.append(prefix).append(number);
             default -> out.append(prefix).append(quote(value.toString()));
         }
+    }
+
+    private static void writeRubyTagList(StringBuilder out, RubyTagList tagList, String prefix) {
+        out.append(prefix).append("!ruby/array:ActsAsTaggableOn::TagList\n")
+            .append(prefix).append(" internal:\n");
+        for (Object item : tagList.values()) {
+            out.append(prefix).append(" - ").append(scalar(item)).append('\n');
+        }
+        out.append(prefix).append(" ivars:\n")
+            .append(prefix).append("   :@parser: !ruby/class 'ActsAsTaggableOn::DefaultParser'");
     }
 
     private static String scalar(Object item) {

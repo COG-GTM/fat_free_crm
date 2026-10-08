@@ -97,7 +97,7 @@ public class VersionRecorder {
         Map<String, Object> before,
         Map<String, Object> after
     ) {
-        return recordUpdate(user, entity, before, after, java.util.List.of());
+        return recordUpdate(user, entity, before, after, java.util.List.of(), before);
     }
 
     /**
@@ -114,13 +114,29 @@ public class VersionRecorder {
         Map<String, Object> after,
         List<String> assignedOrder
     ) {
+        return recordUpdate(user, entity, before, after, assignedOrder, before);
+    }
+
+    /**
+     * PaperTrail {@code update} version when an attribute's object snapshot differs from its
+     * dirty-tracking before value, as with virtual tag-list attributes.
+     */
+    @Transactional
+    public Version recordUpdate(
+        AuthenticatedUser user,
+        Object entity,
+        Map<String, Object> objectBefore,
+        Map<String, Object> after,
+        List<String> assignedOrder,
+        Map<String, Object> changeBefore
+    ) {
         PaperTrailOptions options = options(entity);
         Map<String, Object[]> changes = new LinkedHashMap<>();
         after.forEach((name, value) -> {
             if (options.ignore().contains(name)) {
                 return;
             }
-            Object old = before.get(name);
+            Object old = changeBefore.get(name);
             if (!Objects.equals(old, value)) {
                 changes.put(name, new Object[] {old, value});
             }
@@ -136,8 +152,8 @@ public class VersionRecorder {
         Map<String, Object> orderedBefore = new LinkedHashMap<>();
         assignedOrder.stream()
             .filter(changes::containsKey)
-            .forEach(name -> orderedBefore.put(name, before.get(name)));
-        before.forEach(orderedBefore::putIfAbsent);
+            .forEach(name -> orderedBefore.put(name, objectBefore.get(name)));
+        objectBefore.forEach(orderedBefore::putIfAbsent);
         version.setObject(PaperTrailYaml.dumpObject(orderedBefore));
         version.setObjectChanges(PaperTrailYaml.dumpChanges(changes));
         return versionRepository.save(version);

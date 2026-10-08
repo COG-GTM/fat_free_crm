@@ -130,6 +130,36 @@ class PaperTrailYamlTest {
     }
 
     @Test
+    void dumpsTagListSnapshotAsRubyArrayAndEmptyChangesAsSequences() {
+        Map<String, Object> attributes = new LinkedHashMap<>();
+        attributes.put("tag_list", new PaperTrailYaml.RubyTagList(List.of("alpha", "beta")));
+        assertEquals(
+            "---\ntag_list: !ruby/array:ActsAsTaggableOn::TagList\n"
+                + "  internal:\n  - alpha\n  - beta\n"
+                + "  ivars:\n    :@parser: !ruby/class 'ActsAsTaggableOn::DefaultParser'\n",
+            PaperTrailYaml.dumpObject(attributes));
+
+        Map<String, Object[]> changes = new LinkedHashMap<>();
+        changes.put("tag_list", new Object[] {List.of(), List.of("alpha", "beta")});
+        assertEquals(
+            "---\ntag_list:\n- []\n- - alpha\n  - beta\n",
+            PaperTrailYaml.dumpChanges(changes));
+    }
+
+    @Test
+    void destroyTagListChangesUseTaggedRubyArraySnapshot() {
+        PaperTrailYaml.RubyTagList tagList = new PaperTrailYaml.RubyTagList(List.of("delta", "epsilon"));
+        Map<String, Object[]> changes = new LinkedHashMap<>();
+        changes.put("tag_list", new Object[] {tagList, null});
+
+        assertEquals(
+            "---\ntag_list:\n- !ruby/array:ActsAsTaggableOn::TagList\n"
+                + "  internal:\n  - delta\n  - epsilon\n"
+                + "  ivars:\n    :@parser: !ruby/class 'ActsAsTaggableOn::DefaultParser'\n-\n",
+            PaperTrailYaml.dumpChanges(changes));
+    }
+
+    @Test
     void destroyChangesUseBeforeNilPairs() {
         Map<String, Object[]> changes = new LinkedHashMap<>();
         changes.put("subject", new Object[] {"Hello", null});
