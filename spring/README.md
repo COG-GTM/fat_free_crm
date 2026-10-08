@@ -40,6 +40,55 @@ been applied to any shared database, never regenerate V1; add an additive
 into a frozen V1 comparison and a current Rails fixture comparison is follow-up work
 once V1 ships.
 
+## Jobs, mail, and IMAP ownership (AB-273)
+
+Spring's jobs owner is controlled by `FFCRM_JOBS_OWNER=rails|spring` (default
+`rails`). Keep Rails as the owner while validating the Spring deployment. For
+cutover, stop Rails workers and mail processors, set the Spring deployment to
+`FFCRM_JOBS_OWNER=spring`, then verify the Quartz scheduler and IMAP inbox
+health. Rollback by disabling Spring ownership (`FFCRM_JOBS_OWNER=rails`) and
+restarting Rails workers. Only one runtime should own mail, IMAP, and recurring
+jobs at a time.
+
+Spring Quartz uses the in-memory RAMJobStore. One-off mail and account-enrichment
+jobs are therefore lost on a process restart; recurring poll schedules are
+recreated at startup. The recurring Dropbox, comment-reply, and Solid Queue
+drain jobs use PostgreSQL session advisory locks with class ID `1179009869`
+and object IDs 1, 2, and 3, respectively. Solid Queue's bounded drain claims
+only `ActionMailer::MailDeliveryJob`, `AccountWebsiteJob`, and `WikidataJob`;
+unsupported classes remain ready in the Rails tables.
+
+Schedule cron expressions and HTTP limits are under `ffcrm.jobs` in
+`application.yml`. IMAP settings and SMTP sender values are read from the Rails
+`settings` rows first, with Spring configuration defaults as fallback.
+Attachments are intentionally ignored by the IMAP reader. Private-address
+blocking is configurable and defaults off for Rails parity; redirects are not
+followed, response bodies are capped, and HTTP connect/read timeouts are
+bounded.
+
+Rails source inventory: assignment notifications are gated by
+`app/models/observers/entity_observer.rb:22`; comment subscriptions and
+PaperTrail hooks are in `app/models/polymorphic/comment.rb:57`; account
+enrichment callbacks are in `app/models/entities/account.rb:86-87`.
+`app/mailers/user_mailer.rb:9`,
+`app/mailers/subscription_mailer.rb:9`, and
+`app/mailers/dropbox_mailer.rb:9-15` define mail headers and settings
+precedence. The source templates are under
+`app/views/{user,subscription,dropbox}_mailer/`. IMAP behavior is in
+`lib/fat_free_crm/mail_processor/{base,dropbox,comment_replies}.rb`; the
+`Net::IMAP.new` constructor is at `lib/fat_free_crm/mail_processor/base.rb:71`.
+Account website parsing is in `app/jobs/account_website_job.rb:10-25`; SPARQL
+fields and request headers are in `app/services/wikidata_service.rb:8-25`.
+
+Known Rails defects retained as migration notes: the current processor passes
+positional `Net::IMAP.new` arguments although `net-imap` 0.6.3 requires keyword
+arguments, and its shared-access predicate calls `Permission.exists` rather
+than an Active Record existence query. Spring uses the supported IMAP API and
+the existing permission repository. The en-US mail strings are in
+`config/locales/fat_free_crm.en-US.yml`; there is no Rails
+`config/locales/devise.en-US.yml`, so Devise strings are provided by the
+Devise locale.
+
 ## Gateway
 
 Start the Rails app and gateway with `docker compose -f spring/docker-compose.yml up`.
