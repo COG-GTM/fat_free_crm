@@ -3,6 +3,7 @@ package com.fatfreecrm.service.audit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 
@@ -77,5 +78,16 @@ class VersionRecorderTest {
         assertThat(version.getEvent()).isEqualTo("update");
         assertThat(version.getObject()).isEqualTo("---\nname: before\n");
         assertThat(version.getObjectChanges()).isNull();
+    }
+
+    @Test
+    void doesNotRecordTouchesWhoseOnlyChangeIsIgnored() {
+        AccountContact association = mock(AccountContact.class);
+        when(association.getId()).thenReturn(41L);
+        Map<String, Object> before = Map.of("updated_at", Instant.parse("2025-02-01T11:59:00Z"));
+        Map<String, Object> after = Map.of("updated_at", Instant.parse("2025-02-01T12:00:00Z"));
+
+        assertThat(versionRecorder.recordTouch(null, association, before, after)).isNull();
+        org.mockito.Mockito.verify(versionRepository, never()).save(any(Version.class));
     }
 }

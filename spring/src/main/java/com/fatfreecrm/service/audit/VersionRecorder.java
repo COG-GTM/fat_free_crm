@@ -144,6 +144,12 @@ public class VersionRecorder {
     ) {
         Objects.requireNonNull(after, "after");
         PaperTrailOptions options = options(entity);
+        boolean notable = after.entrySet().stream()
+            .anyMatch(entry -> !options.ignore().contains(entry.getKey())
+                && !Objects.equals(before.get(entry.getKey()), entry.getValue()));
+        if (!notable) {
+            return null;
+        }
         Version version = base(user, options, entity, "update");
         version.setObject(PaperTrailYaml.dumpObject(before));
         return versionRepository.save(version);
