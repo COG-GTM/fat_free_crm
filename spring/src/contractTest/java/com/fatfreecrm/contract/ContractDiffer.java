@@ -100,6 +100,10 @@ public final class ContractDiffer {
                     problemBodyAllowed, options);
             }
         }
+        if (contractCase.textBody() && rails.json() == null && spring.json() == null) {
+            compareText(rails.rawBody(), spring.rawBody(), differences, matching, allowlist, rails, spring,
+                contractCase);
+        }
         if (problemBodyAllowed) {
             validateProblemBody(spring, differences, matching, allowlist);
         }
@@ -108,6 +112,34 @@ public final class ContractDiffer {
         boolean clean = differences.stream().allMatch(Difference::allowed);
         return new CaseResult(contractCase, clean ? CaseResult.Outcome.CLEAN : CaseResult.Outcome.DIFF,
             railsUrl, springUrl, rails, spring, resultNotes, differences, null);
+    }
+
+    /** {@code compare: text}: exact non-JSON bodies (CSV, SpreadsheetML), reported at the first differing line. */
+    private void compareText(
+        String railsBody,
+        String springBody,
+        List<Difference> differences,
+        List<AllowlistEntry> matching,
+        Allowlist allowlist,
+        CapturedResponse rails,
+        CapturedResponse spring,
+        ContractCase contractCase
+    ) {
+        String left = railsBody == null ? "" : railsBody;
+        String right = springBody == null ? "" : springBody;
+        if (left.equals(right)) {
+            return;
+        }
+        String[] railsLines = left.split("\n", -1);
+        String[] springLines = right.split("\n", -1);
+        int line = 0;
+        while (line < railsLines.length && line < springLines.length && railsLines[line].equals(springLines[line])) {
+            line++;
+        }
+        add(differences, Difference.Kind.TEXT_BODY, "/line/" + (line + 1),
+            line < railsLines.length ? TextNode.valueOf(railsLines[line]) : null,
+            line < springLines.length ? TextNode.valueOf(springLines[line]) : null,
+            matching, allowlist, rails, spring, contractCase, false);
     }
 
     private static PointerBody pointedBody(

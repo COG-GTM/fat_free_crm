@@ -60,7 +60,7 @@ public final class ContractClient {
         }
         HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(requestUrl))
             .timeout(Duration.ofSeconds(15))
-            .header("Accept", "application/json");
+            .header("Accept", side.accept() == null ? "application/json" : side.accept());
         if (authorization != null) {
             request.header("Authorization", authorization);
         }

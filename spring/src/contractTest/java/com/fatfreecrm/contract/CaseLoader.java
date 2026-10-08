@@ -75,6 +75,10 @@ public final class CaseLoader {
         ContractCase.SideRequest spring = side(
             node.get("spring"), path == null ? null : "/api/v1" + path, ContractCase.Target.SPRING);
         String logicalPath = path != null ? path : removeJsonSuffix(rails.path());
+        String compare = text(node, "compare", null);
+        if (compare != null && !compare.equals("json") && !compare.equals(ContractCase.TEXT_BODY)) {
+            throw new IllegalArgumentException("Contract case compare must be json or text: " + compare);
+        }
         return new ContractCase(
             requiredText(node, "id"),
             text(node, "ticket", ""),
@@ -88,7 +92,8 @@ public final class CaseLoader {
             text(node, "auth", "anonymous"),
             objectOrEmpty(node.get("normalize")),
             text(node, "description", ""),
-            expectation(node.get("expect"))
+            expectation(node.get("expect")),
+            compare
         );
     }
 
@@ -134,7 +139,7 @@ public final class CaseLoader {
         if (bodyPointer != null) {
             validateBodyPointer(bodyPointer);
         }
-        return new ContractCase.SideRequest(path, target, bodyPointer);
+        return new ContractCase.SideRequest(path, target, bodyPointer, text(node, "accept", null));
     }
 
     private static void validateBodyPointer(String bodyPointer) {
