@@ -122,11 +122,15 @@ class TasksControllerBucketSettingsIntegrationTest extends AbstractPostgresInteg
 
     @Test
     void configuredTaskCompletedSettingControlsCompletedBuckets() throws Exception {
-        setting("task_completed", "---\n- :completed_last_month\n- :completed_today\n");
+        setting("task_completed", "---\n- :completed_last_month\n- :completed_yesterday\n- :completed_today\n");
 
         JsonNode buckets = getJson("/api/v1/tasks", bobBearer, "view", "completed").get("buckets");
-        assertThat(fieldNames(buckets)).containsExactly("completed_last_month", "completed_today");
+        assertThat(fieldNames(buckets)).containsExactly("completed_last_month", "completed_yesterday",
+            "completed_today");
+        // completed_at was set to "now" during seeding; include yesterday so a midnight rollover between seeding
+        // and the request cannot move the task out of the asserted window.
         assertThat(ids(buckets)).containsExactly(aliceAssignedToBobDone);
+        assertThat(ids(buckets.get("completed_last_month"))).isEmpty();
 
         JsonNode pending = getJson("/api/v1/tasks", bobBearer, "view", "pending").get("buckets");
         assertThat(fieldNames(pending)).as("task_completed does not leak into pending").isEqualTo(DEFAULT_PENDING);

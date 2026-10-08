@@ -21,8 +21,9 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 /**
  * Rails {@code CommentsController#index} resolves the commentable through {@code Model.my(current_user).find},
- * so a comment list on a record the caller cannot see is a 404 (never a 403, never an empty list) for every
- * CRM entity type and for both Private and Shared visibility, while admins see everything.
+ * so a comment list on a record the caller cannot see is a 404 (never a 403, never an empty list). Covered here:
+ * Account (Public/Private/Shared), Lead (Private), Campaign (Private), Contact (Shared), Opportunity (Public) and
+ * User commentables, with admins seeing everything.
  */
 class CommentsControllerAuthorizationIntegrationTest extends AbstractPostgresIntegrationTest {
 
@@ -48,6 +49,8 @@ class CommentsControllerAuthorizationIntegrationTest extends AbstractPostgresInt
     private long bobSharedAccount;
     private long bobPrivateLead;
     private long bobPublicOpportunity;
+    private long bobPrivateCampaign;
+    private long bobSharedContact;
 
     @BeforeEach
     void seed() {
@@ -69,12 +72,21 @@ class CommentsControllerAuthorizationIntegrationTest extends AbstractPostgresInt
             + "stage, created_at, updated_at) VALUES (?, 'Bob Deal', 'Public', 'prospecting', now(), now()) "
             + "RETURNING id", Long.class, bob.getId());
 
+        bobPrivateCampaign = jdbcTemplate.queryForObject("INSERT INTO campaigns (user_id, name, access, status, "
+            + "created_at, updated_at) VALUES (?, 'Bob Campaign', 'Private', 'planned', now(), now()) RETURNING id",
+            Long.class, bob.getId());
+        bobSharedContact = jdbcTemplate.queryForObject("INSERT INTO contacts (user_id, first_name, last_name, "
+            + "access, created_at, updated_at) VALUES (?, 'Bob', 'Contact', 'Shared', now(), now()) RETURNING id",
+            Long.class, bob.getId());
+
         comment(bob, "Account", alicePublicAccount, "older on alice", "now() - interval '2 hours'");
         comment(alice, "Account", alicePublicAccount, "newer on alice", "now()");
         comment(bob, "Account", bobPrivateAccount, "bob private note", "now()");
         comment(bob, "Account", bobSharedAccount, "bob shared note", "now()");
         comment(bob, "Lead", bobPrivateLead, "lead note", "now()");
         comment(bob, "Opportunity", bobPublicOpportunity, "deal note", "now()");
+        comment(bob, "Campaign", bobPrivateCampaign, "campaign note", "now()");
+        comment(bob, "Contact", bobSharedContact, "contact note", "now()");
         comment(bob, "User", bob.getId(), "about bob", "now()");
     }
 
@@ -132,6 +144,25 @@ class CommentsControllerAuthorizationIntegrationTest extends AbstractPostgresInt
     }
 
     @Test
+    void visibilityRulesApplyToCampaignAndContactCommentables() throws Exception {
+        mockMvc.perform(comments("campaign_id", bobPrivateCampaign, aliceBearer))
+            .andExpect(status().isNotFound());
+        assertThat(getJson("/api/v1/comments", bobBearer, "campaign_id", String.valueOf(bobPrivateCampaign))
+            .findValuesAsText("comment")).containsExactly("campaign note");
+        assertThat(getJson("/api/v1/comments", adminBearer, "campaign_id", String.valueOf(bobPrivateCampaign))
+            .findValuesAsText("comment")).containsExactly("campaign note");
+
+        mockMvc.perform(comments("contact_id", bobSharedContact, aliceBearer))
+            .andExpect(status().isNotFound());
+        jdbcTemplate.update("INSERT INTO permissions (user_id, asset_type, asset_id, created_at, updated_at) "
+            + "VALUES (?, 'Contact', ?, now(), now())", alice.getId(), bobSharedContact);
+        assertThat(getJson("/api/v1/comments", aliceBearer, "contact_id", String.valueOf(bobSharedContact))
+            .findValuesAsText("comment")).containsExactly("contact note");
+        assertThat(getJson("/api/v1/comments", adminBearer, "contact_id", String.valueOf(bobSharedContact))
+            .findValuesAsText("comment")).containsExactly("contact note");
+    }
+
+    @Test
     void adminsCanListCommentsOnAnotherUsersRecordButRegularUsersCannot() throws Exception {
         mockMvc.perform(comments("user_id", bob.getId(), aliceBearer))
             .andExpect(status().isNotFound());
@@ -144,8 +175,9 @@ class CommentsControllerAuthorizationIntegrationTest extends AbstractPostgresInt
         assertThat(getJson("/api/v1/comments", aliceBearer).findValuesAsText("comment"))
             .containsExactly("newer on alice");
         assertThat(getJson("/api/v1/comments", adminBearer).findValuesAsText("comment"))
-            .hasSize(7)
-            .contains("bob private note", "lead note", "about bob", "newer on alice");
+            .hasSize(9)
+            .contains("bob private note", "lead note", "campaign note", "contact note", "about bob",
+                "newer on alice");
     }
 
     @Test
@@ -208,6 +240,8 @@ class CommentsControllerAuthorizationIntegrationTest extends AbstractPostgresInt
         jdbcTemplate.update("DELETE FROM comments");
         jdbcTemplate.update("DELETE FROM permissions");
         jdbcTemplate.update("DELETE FROM leads");
+        jdbcTemplate.update("DELETE FROM contacts");
+        jdbcTemplate.update("DELETE FROM campaigns");
         jdbcTemplate.update("DELETE FROM opportunities");
         jdbcTemplate.update("DELETE FROM accounts");
         jdbcTemplate.update("DELETE FROM users");
