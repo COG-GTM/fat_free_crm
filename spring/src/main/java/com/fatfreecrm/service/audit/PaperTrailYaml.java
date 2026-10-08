@@ -120,7 +120,8 @@ public final class PaperTrailYaml {
         BigDecimal normalized = value.stripTrailingZeros();
         String digits = normalized.unscaledValue().abs().toString();
         int exponent = digits.length() - normalized.scale();
-        return (normalized.signum() < 0 ? "-0." : "0.") + digits + "e" + exponent;
+        return "!ruby/object:BigDecimal 18:"
+            + (normalized.signum() < 0 ? "-0." : "0.") + digits + "e" + exponent;
     }
 
     private static void writeTimeWithZone(StringBuilder out, Instant instant, AnchorState anchors) {
