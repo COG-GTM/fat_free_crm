@@ -176,6 +176,27 @@ public class SearchableEntities {
             false,
             null
         ));
+        register(map, new SearchableEntity(
+            com.fatfreecrm.domain.User.class,
+            "User",
+            DEFAULT_PER_PAGE,
+            SortWhitelist.of(com.fatfreecrm.domain.User.class, "id DESC", "id DESC"),
+            Map.of(),
+            (root, cb, query) -> {
+                String sanitized = query.replaceAll("[^\\w\\s\\-.'\\p{L}]", "").strip();
+                String pattern = "%" + sanitized + "%";
+                Expression<String> upperPattern =
+                    cb.upper(((org.hibernate.query.criteria.HibernateCriteriaBuilder) cb).value(pattern));
+                return cb.or(
+                    cb.like(cb.upper(root.get("username")), upperPattern),
+                    cb.like(cb.upper(root.get("email")), upperPattern),
+                    cb.like(cb.upper(root.get("firstName")), upperPattern),
+                    cb.like(cb.upper(root.get("lastName")), upperPattern)
+                );
+            },
+            false,
+            null
+        ));
         byClass = Map.copyOf(map);
     }
 

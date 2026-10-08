@@ -83,3 +83,30 @@ allowlist:
     rule: ignore
     reason: Rails' weighted-sort projection exposes a PostgreSQL-generated SQL column alias that is not a persisted resource field.
     reference: app/controllers/entities/opportunities_controller.rb#order_by_attributes
+  - id: users-admin-authentication-token-omitted
+    match:
+      method: GET
+      path: /admin/users
+    kind: pointer
+    pointer: /*/authentication_token
+    rule: ignore
+    reason: The Spring RailsJsonWriter never emits token columns.
+    reference: AB-270 Phase B captured Rails user-list key set
+  - id: activities-object-secrets-scrubbed
+    match:
+      method: GET
+      path: /activities
+    kind: yamlKeysRemoved
+    pointer: /*/object
+    keyPattern: "(?i).*(password|token|salt).*"
+    reason: Rails version objects are compared after removing secret YAML entries emitted only by Rails.
+    reference: AB-270 Phase B ActivitiesControllerIntegrationTest
+  - id: activities-object-changes-secrets-scrubbed
+    match:
+      method: GET
+      path: /activities
+    kind: yamlKeysRemoved
+    pointer: /*/object_changes
+    keyPattern: "(?i).*(password|token|salt).*"
+    reason: Rails version changes are compared after removing secret YAML entries emitted only by Rails.
+    reference: AB-270 Phase B ActivitiesControllerIntegrationTest

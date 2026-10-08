@@ -155,6 +155,27 @@ describe Opportunity do
         expect(Opportunity.unassigned).not_to include(assigned_opportunity)
       end
     end
+
+    describe "weighted_sort" do
+      it "keeps opportunity ids when joined to taggings" do
+        opportunity = create(:opportunity)
+        opportunity.tag_list = "priority"
+        opportunity.save!
+
+        ids = Opportunity.joins(:taggings).weighted_sort.map(&:id)
+        expect(ids).to include(opportunity.id)
+      end
+
+      it "projects qualified non-ignored columns instead of select('*')" do
+        expect(Opportunity.ignored_columns).to include("custom_fields")
+
+        select_values = Opportunity.weighted_sort.select_values
+        expect(select_values.map(&:to_s)).to all(satisfy { |v| %w[* opportunities.*].exclude?(v) })
+
+        projected = select_values.map { |value| value.respond_to?(:name) ? value.name : value.to_s }
+        expect(projected).to eq(Opportunity.column_names + ["amount*probability"])
+      end
+    end
   end
 
   describe "Attach" do

@@ -18,10 +18,12 @@ module ContractFixtures
       reset_tables! if ENV["CONTRACT_FIXTURES_RESET"] == "1"
       ActiveRecord::Base.transaction do
         seed_users!(users)
+        seed_activity_preferences!
         seed_groups!
         seed_secret_token!
         seed_entities!
         FixtureSupport.seed_relations!
+        seed_versions!
         FixtureSupport.reset_sequences!
         seed_metadata!
       end
@@ -86,6 +88,12 @@ module ContractFixtures
       )
     end
 
+    def seed_activity_preferences!
+      bob = User.find_by!(username: "bob")
+      bob.pref[:activity_user] = "admin@contract.example"
+      bob.pref[:activity_event] = "all_events"
+    end
+
     def seed_secret_token!
       timestamp = time_for(30)
       setting = Setting.find_by(name: "secret_token")
@@ -112,6 +120,45 @@ module ContractFixtures
         table.to_s.classify.constantize.insert_all!(entity_rows(table))
       end
       Task.insert_all!(FixtureSupport.task_rows)
+    end
+
+    def seed_versions!
+      now = Time.current
+      user = User.find(2)
+      user_attributes = user.attributes.merge(
+        "encrypted_password" => "fixture-encrypted-password",
+        "password_salt" => "fixture-password-salt",
+        "authentication_token" => "fixture-authentication-token"
+      )
+      rows = [{
+        id: 1,
+        item_type: "User",
+        item_id: user.id,
+        event: "update",
+        whodunnit: "1",
+        object: PaperTrail.serializer.dump(user_attributes),
+        created_at: now - 1.minute,
+        object_changes: PaperTrail.serializer.dump(
+          "email" => [user.email, "alice.activity@example.test"],
+          "encrypted_password" => %w[fixture-old-password fixture-new-password]
+        )
+      }]
+      [101, 103, 104, 102].each_with_index do |account_id, index|
+        account = Account.find(account_id)
+        rows << {
+          id: index + 2,
+          item_type: "Account",
+          item_id: account.id,
+          event: "update",
+          whodunnit: "1",
+          object: PaperTrail.serializer.dump(account.attributes),
+          created_at: now - (index + 2).minutes,
+          object_changes: PaperTrail.serializer.dump(
+            "name" => ["Before #{account.name}", account.name]
+          )
+        }
+      end
+      Version.insert_all!(rows)
     end
 
     def entity_rows(table)
@@ -239,7 +286,7 @@ module ContractFixtures
         return unless connection.adapter_name == "PostgreSQL"
 
         tables = %w[users groups settings accounts contacts leads opportunities campaigns tasks permissions comments
-                    addresses tags taggings]
+                    addresses tags taggings versions]
         tables.each do |table|
           quoted = connection.quote_table_name(table)
           connection.execute(

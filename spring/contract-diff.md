@@ -159,6 +159,10 @@ authenticated and unauthenticated requests:
 * `status` allows only the declared Rails and Spring status pair.
 * `pointer` supports `ignore` and `equalsAfter` with `instant`, `trim`, `lowercase`, `number`, or
   `string` transforms.
+* `yamlKeysRemoved` uses `pointer` and `keyPattern` to remove complete top-level YAML entries
+  (including continuation lines) from matching Rails-side string values before exact comparison.
+  The key regex is a full match; JSON pointer `*` wildcards are supported. Missing or non-string
+  values are unchanged.
 * `errorBody` handles a Spring RFC 9457 `application/problem+json` response against a Rails error
   format. When both statuses are errors and the Spring body parses, it allows content-type and body
   differences, including Rails-side `INVALID_JSON`. It never allows a malformed Spring body, and

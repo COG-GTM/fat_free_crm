@@ -31,6 +31,12 @@ public class UserPreferenceService {
         return new ListDefaults(perPage, sortBy);
     }
 
+    public Optional<String> stringPreference(long userId, String name) {
+        return read(userId, name)
+            .filter(JsonNode::isTextual)
+            .map(JsonNode::asText);
+    }
+
     private Optional<JsonNode> read(long userId, String name) {
         try {
             return preferenceRepository.findFirstByUserIdAndNameOrderByIdAsc(userId, name)
