@@ -20,6 +20,7 @@ import com.fatfreecrm.domain.User;
 import com.fatfreecrm.domain.support.Access;
 import com.fatfreecrm.domain.support.CrmEntity;
 import com.fatfreecrm.domain.support.RailsModelType;
+import org.hibernate.Hibernate;
 import com.fatfreecrm.repository.AccountContactRepository;
 import com.fatfreecrm.repository.AccountOpportunityRepository;
 import com.fatfreecrm.repository.AccountRepository;
@@ -573,6 +574,10 @@ public class EntityWriteService {
                     if (setter != null) {
                         setter.accept(value);
                         assignedOrder.add(key);
+                    } else if (key.startsWith("cf_")) {
+                        // cf_* params are assigned on the model in Rails — they lead the
+                        // dumped version object in payload order.
+                        assignedOrder.add(key);
                     }
                     // Unknown keys: permit! would raise on non-columns; contract sends real ones.
                 }
@@ -657,7 +662,7 @@ public class EntityWriteService {
         assignInOrder(account, "Account", params, accountColumns(account), pending, order);
         validateAccount(account, pending);
         account = accountRepository.saveAndFlush(account);
-        customFieldWriteService.write(account, cfInput(params));
+        customFieldWriteService.write(account, cfInput(params), false);
         accountRepository.saveAndFlush(account);
         flushPendingPermissions("Account", account.getId(), pending);
         applyTagListIfProvided(account, "Account", params);
@@ -806,7 +811,7 @@ public class EntityWriteService {
         assignInOrder(campaign, "Campaign", params, campaignColumns(campaign), pending, order);
         validateCampaign(campaign, pending);
         campaign = campaignRepository.saveAndFlush(campaign);
-        customFieldWriteService.write(campaign, cfInput(params));
+        customFieldWriteService.write(campaign, cfInput(params), false);
         campaignRepository.saveAndFlush(campaign);
         flushPendingPermissions("Campaign", campaign.getId(), pending);
         applyTagListIfProvided(campaign, "Campaign", params);
@@ -915,7 +920,7 @@ public class EntityWriteService {
         validateContact(contact, pending);
         contact = contactRepository.saveAndFlush(contact);
         setContactAccount(user, contact, account);
-        customFieldWriteService.write(contact, cfInput(params));
+        customFieldWriteService.write(contact, cfInput(params), false);
         contactRepository.saveAndFlush(contact);
         flushPendingPermissions("Contact", contact.getId(), pending);
         applyTagListIfProvided(contact, "Contact", params);
@@ -1229,7 +1234,7 @@ public class EntityWriteService {
         validateLead(lead, pending);
         lead = leadRepository.saveAndFlush(lead);
         counter("campaigns", "leads_count", campaignId, 1);
-        customFieldWriteService.write(lead, cfInput(params));
+        customFieldWriteService.write(lead, cfInput(params), false);
         leadRepository.saveAndFlush(lead);
         flushPendingPermissions("Lead", lead.getId(), pending);
         applyTagListIfProvided(lead, "Lead", params);
@@ -1617,7 +1622,7 @@ public class EntityWriteService {
             versionRecorder.recordCreate(user, link,
                 rowAttributes(AccountOpportunity.class, link.getId()), Map.of());
         }
-        customFieldWriteService.write(opportunity, cfInput(params));
+        customFieldWriteService.write(opportunity, cfInput(params), false);
         opportunityRepository.saveAndFlush(opportunity);
         flushPendingPermissions("Opportunity", opportunity.getId(), pending);
         applyTagListIfProvided(opportunity, "Opportunity", params);
@@ -1668,9 +1673,36 @@ public class EntityWriteService {
         opportunityRepository.saveAndFlush(opportunity);
         flushPendingPermissions("Opportunity", opportunity.getId(), pending);
         applyTagListIfProvided(opportunity, "Opportunity", params);
-        versionRecorder.recordUpdate(user, opportunity, before,
-            rowAttributes(Opportunity.class, id), order);
-        runOpportunityObserver(user, opportunity, id, before, order);
+        // On a won transition the observer reads amount/discount on the record — those attributes
+        // materialize before the rest in Rails' dumped version object.
+        List<String> objectOrder = order;
+        Map<String, Object> beforeObject = before;
+        // The observer only touches amount/discount while updating a campaign's revenue;
+        // a won transition with no campaign keeps them in column order (verified live).
+        boolean wonTransition = "won".equals(opportunity.getStage())
+                != "won".equals(before.get("stage"))
+            && ("won".equals(opportunity.getStage()) ? opportunity.getCampaign() != null
+                : before.get("campaign_id") != null);
+        if (wonTransition) {
+            objectOrder = new ArrayList<>(order);
+            for (String key : List.of("amount", "discount")) {
+                if (!objectOrder.contains(key)) {
+                    objectOrder.add(key);
+                }
+            }
+            // unchanged leading keys never make it into changes — lead the before-map instead.
+            Map<String, Object> orderedBefore = new LinkedHashMap<>();
+            for (String k : objectOrder) {
+                if (before.containsKey(k)) {
+                    orderedBefore.put(k, before.get(k));
+                }
+            }
+            orderedBefore.putAll(before);
+            beforeObject = orderedBefore;
+        }
+        versionRecorder.recordUpdate(user, opportunity, beforeObject,
+            rowAttributes(Opportunity.class, id), objectOrder);
+        runOpportunityObserver(user, opportunity, id, beforeObject, objectOrder);
     }
 
     private void setOpportunityAccount(AuthenticatedUser user, Opportunity opportunity,
@@ -1774,12 +1806,16 @@ public class EntityWriteService {
         base = base.subtract(discount == null ? java.math.BigDecimal.ZERO : discount);
         java.math.BigDecimal delta = sign > 0 ? base : base.negate();
         Map<String, Object> campaignBefore = rowAttributes(Campaign.class, campaign.getId());
-        java.math.BigDecimal revenue = campaign.getRevenue() == null
-            ? java.math.BigDecimal.ZERO : campaign.getRevenue();
-        campaign.setRevenue(revenue.add(delta));
-        campaignRepository.saveAndFlush(campaign);
-        versionRecorder.recordUpdate(user, campaign, campaignBefore,
-            rowAttributes(Campaign.class, campaign.getId()), List.of("revenue"));
+        // opportunity.getCampaign() is a Hibernate proxy — PaperTrailOptions keys on the real
+        // entity class, so unproxy before versionRecorder sees it.
+        Campaign persisted = Hibernate.unproxy(campaign, Campaign.class);
+        long campaignId = persisted.getId();
+        java.math.BigDecimal revenue = persisted.getRevenue() == null
+            ? java.math.BigDecimal.ZERO : persisted.getRevenue();
+        persisted.setRevenue(revenue.add(delta));
+        campaignRepository.saveAndFlush(persisted);
+        versionRecorder.recordUpdate(user, persisted, campaignBefore,
+            rowAttributes(Campaign.class, campaignId), List.of("revenue"));
     }
 
     private void validateOpportunity(Opportunity opportunity, PendingPermissions pending) {

@@ -937,6 +937,133 @@
     - {table: account_opportunities, where: "opportunity_id = 401", exclude: [id]}
   description: account id "" → unlink (join row destroyed with version) — update path quirk.
 
+- id: accounts-create-custom-field
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /accounts
+  auth: alice
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, klass_name, created_at, updated_at) VALUES (50, 'custom_fields', 'Custom Fields', 1, 'Account', '2026-01-01', '2026-01-01')"
+    - "INSERT INTO fields (name, label, type, \"as\", field_group_id, position, required, maxlength, created_at, updated_at) VALUES ('cf_contract_budget', 'Contract Budget', 'CustomField', 'decimal', 50, 1, false, 10, '2026-01-01', '2026-01-01')"
+    - "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS cf_contract_budget numeric(15,2)"
+  body: {account: {name: "CF Account", cf_contract_budget: "1500.75"}}
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "name = 'CF Account'", exclude: [id, custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Account' AND item_id = (SELECT id FROM accounts WHERE name = 'CF Account')",
+       exclude: [id], volatile: [created_at],
+       yamlVolatile: {object_changes: [created_at, updated_at]}}
+  description: "cf_* param lands on the Rails-visible column (custom_fields JSONB excluded —
+    synced by trigger); version object_changes carry cf_contract_budget."
+
+- id: accounts-update-custom-field
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /accounts/101
+  auth: alice
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, klass_name, created_at, updated_at) VALUES (50, 'custom_fields', 'Custom Fields', 1, 'Account', '2026-01-01', '2026-01-01')"
+    - "INSERT INTO fields (name, label, type, \"as\", field_group_id, position, required, maxlength, created_at, updated_at) VALUES ('cf_contract_budget', 'Contract Budget', 'CustomField', 'decimal', 50, 1, false, 10, '2026-01-01', '2026-01-01')"
+    - "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS cf_contract_budget numeric(15,2)"
+  body: {account: {cf_contract_budget: "2000.50"}}
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 101", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Account' AND item_id = 101", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: "cf_* update on an existing account → cf column + update version."
+
+- id: accounts-update-custom-field-maxlength-422
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /accounts/101
+  auth: alice
+  setup:
+    - "INSERT INTO field_groups (id, name, label, position, klass_name, created_at, updated_at) VALUES (50, 'custom_fields', 'Custom Fields', 1, 'Account', '2026-01-01', '2026-01-01')"
+    - "INSERT INTO fields (name, label, type, \"as\", field_group_id, position, required, maxlength, created_at, updated_at) VALUES ('cf_contract_budget', 'Contract Budget', 'CustomField', 'decimal', 50, 1, false, 10, '2026-01-01', '2026-01-01')"
+    - "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS cf_contract_budget numeric(15,2)"
+  body: {account: {cf_contract_budget: "12345678901234"}}
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 101", exclude: [custom_fields]}
+    - {table: versions, where: "item_type = 'Account' AND item_id = 101", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: "cf maxlength violation → CustomField#custom_validator error → 422; row unchanged."
+
+- id: opportunities-update-won-campaign
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /opportunities/401
+  auth: alice
+  setup:
+    - "UPDATE opportunities SET campaign_id = 501, amount = 500.00, discount = 100.00 WHERE id = 401"
+  body: {opportunity: {stage: won}}
+  reset: true
+  dbAssert:
+    - {table: opportunities, where: "id = 401", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: campaigns, where: "id = 501", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Opportunity' AND item_id = 401", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+    - {table: versions, where: "item_type = 'Campaign' AND item_id = 501", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: "stage → won: observer adds amount−discount to campaign revenue, then
+    update_attribute(probability: 100) (second update version) + 'won' activity version."
+
+- id: opportunities-update-unwin-campaign
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /opportunities/402
+  auth: alice
+  setup:
+    - "UPDATE opportunities SET stage = 'won', campaign_id = 501, amount = 500.00, discount = 100.00 WHERE id = 402"
+    - "UPDATE campaigns SET revenue = 400.00 WHERE id = 501"
+  body: {opportunity: {stage: negotiation}}
+  reset: true
+  dbAssert:
+    - {table: opportunities, where: "id = 402", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: campaigns, where: "id = 501", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Opportunity' AND item_id = 402", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+    - {table: versions, where: "item_type = 'Campaign' AND item_id = 501", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: "won → other: observer subtracts ORIGINAL amount−discount from the original
+    campaign's revenue; no probability write, no activity version."
+
+- id: opportunities-update-lost
+  ticket: AB-272
+  status: enforced
+  method: PUT
+  path: /opportunities/405
+  auth: alice
+  body: {opportunity: {stage: lost}}
+  reset: true
+  dbAssert:
+    - {table: opportunities, where: "id = 405", exclude: [custom_fields],
+       volatile: [created_at, updated_at]}
+    - {table: versions, where: "item_type = 'Opportunity' AND item_id = 405", exclude: [id],
+       volatile: [created_at],
+       yamlVolatile: {object: [created_at, updated_at], object_changes: [created_at, updated_at]}}
+  description: "non-lost → lost: update_attribute(probability: 0) writes a second update version;
+    no revenue touch (no campaign), no activity version."
+
 - id: opportunities-destroy
   ticket: AB-272
   status: enforced

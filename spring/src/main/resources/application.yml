@@ -59,7 +59,7 @@ ffcrm:
     legacy-password:
       stretches: 20
   custom-fields:
-    registry-ttl: 30s
+    registry-ttl: ${FFCRM_CF_REGISTRY_TTL:30s}
     backfill:
       batch-size: 10000
 
