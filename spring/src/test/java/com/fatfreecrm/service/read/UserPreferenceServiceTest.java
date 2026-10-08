@@ -111,7 +111,8 @@ class UserPreferenceServiceTest {
 
         Preference nullValue = new Preference();
         nullValue.setName("accounts_sort_by");
-        when(repository.findFirstByUserIdAndNameOrderByIdAsc(1L, "accounts_sort_by")).thenReturn(Optional.of(nullValue));
+        when(repository.findFirstByUserIdAndNameOrderByIdAsc(1L, "accounts_sort_by"))
+            .thenReturn(Optional.of(nullValue));
         assertThat(service.listDefaults(1L, "accounts").sortBy()).isNull();
     }
 

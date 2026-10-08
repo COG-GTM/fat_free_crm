@@ -125,7 +125,7 @@ class TasksCommentsAccessIntegrationTest extends AbstractPostgresIntegrationTest
         mockMvc.perform(authed("/api/v1/comments", bobBearer).param("task_id", taskId))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].comment").value("bob on delegated task"));
-        // Task.my is not ability-based in Rails, so even an admin gets a 404 for a task they neither own nor are assigned.
+        // Task.my is not ability-based in Rails: an admin also gets 404 for a task they neither own nor are assigned.
         mockMvc.perform(authed("/api/v1/comments", adminBearer).param("task_id", taskId))
             .andExpect(status().isNotFound());
     }
