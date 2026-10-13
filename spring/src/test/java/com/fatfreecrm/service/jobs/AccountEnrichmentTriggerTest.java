@@ -1,39 +1,22 @@
 package com.fatfreecrm.service.jobs;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
-import com.fatfreecrm.config.JobsProperties;
 import com.fatfreecrm.domain.Account;
-import com.fatfreecrm.repository.AccountRepository;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.quartz.JobDetail;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.quartz.SimpleTrigger;
-import org.quartz.Trigger;
 
 /**
- * Mirrors Rails {@code Account} callbacks: {@code after_save :enqueue_website_job if saved_change_to_website?}
- * and the Wikidata job on {@code wikidata_id} changes — but only when Spring owns background jobs.
+ * Mirrors Rails {@code Account}:
+ * {@code after_save_commit :enqueue_website_job, if: website.present? && saved_change_to_website?} and
+ * {@code after_save_commit :enqueue_wikidata_job, if: wikidata_id.present? && saved_change_to_wikidata_id?
+ * && !saved_change_to_website?}, both via {@code perform_later(self)}.
  */
 class AccountEnrichmentTriggerTest {
 
-    private final AccountRepository accountRepository = mock(AccountRepository.class);
-    private final Scheduler scheduler = mock(Scheduler.class);
-
-    private static JobsOwner owner(String owner) {
-        JobsProperties properties = new JobsProperties();
-        properties.setOwner(owner);
-        return new JobsOwner(properties);
-    }
+    private final RailsJobEnqueuer enqueuer = mock(RailsJobEnqueuer.class);
+    private final AccountEnrichmentTrigger trigger = new AccountEnrichmentTrigger(enqueuer);
 
     private static Account account(String website, String wikidataId) {
         Account account = new Account();
@@ -43,95 +26,72 @@ class AccountEnrichmentTriggerTest {
         return account;
     }
 
-    private AccountEnrichmentTrigger trigger(String owner) {
-        return new AccountEnrichmentTrigger(accountRepository, scheduler, owner(owner));
+    @Test
+    void createWithWebsiteEnqueuesTheWebsiteJob() {
+        Account account = account("https://acme.test", null);
+
+        trigger.afterAccountSaved(account, null, null);
+
+        verify(enqueuer).performLater("AccountWebsiteJob", account);
+        verifyNoMoreEnqueues();
     }
 
     @Test
-    void railsOwnerSchedulesNothingAndDoesNotLoadTheAccount() {
-        trigger("rails").afterAccountSaved(7L, true, true);
+    void createWithOnlyWikidataIdEnqueuesTheWikidataJob() {
+        Account account = account(null, "Q42");
 
-        verifyNoInteractions(accountRepository, scheduler);
+        trigger.afterAccountSaved(account, null, null);
+
+        verify(enqueuer).performLater("WikidataJob", account);
+        verifyNoMoreEnqueues();
     }
 
     @Test
-    void missingAccountSchedulesNothing() {
-        when(accountRepository.findById(7L)).thenReturn(Optional.empty());
+    void unchangedValuesEnqueueNothing() {
+        trigger.afterAccountSaved(account("https://acme.test", "Q42"), "https://acme.test", "Q42");
+        trigger.afterAccountSaved(account(null, null), null, null);
 
-        trigger("spring").afterAccountSaved(7L, true, true);
-
-        verifyNoInteractions(scheduler);
+        verifyNoInteractions(enqueuer);
     }
 
     @Test
-    void websiteChangeSchedulesAOneOffWebsiteJobFiringNow() throws Exception {
-        when(accountRepository.findById(7L)).thenReturn(Optional.of(account("https://acme.test", "Q1")));
+    void websiteChangeSuppressesTheWikidataJobEvenWhenWikidataIdAlsoChanged() {
+        Account account = account("https://acme.test", "Q42");
 
-        trigger("spring").websiteChanged(7L);
+        trigger.afterAccountSaved(account, "https://old.test", "Q1");
 
-        ArgumentCaptor<JobDetail> detail = ArgumentCaptor.forClass(JobDetail.class);
-        ArgumentCaptor<Trigger> quartzTrigger = ArgumentCaptor.forClass(Trigger.class);
-        verify(scheduler).scheduleJob(detail.capture(), quartzTrigger.capture());
-        assertThat(detail.getValue().getJobClass()).isEqualTo(AccountWebsiteJob.class);
-        assertThat(detail.getValue().getKey().getGroup()).isEqualTo("ffcrm-one-off");
-        assertThat(detail.getValue().getKey().getName()).startsWith("accountwebsitejob-7-");
-        assertThat(detail.getValue().getJobDataMap().getLong("accountId")).isEqualTo(7L);
-        assertThat(quartzTrigger.getValue()).isInstanceOf(SimpleTrigger.class);
-        assertThat(quartzTrigger.getValue().getMisfireInstruction())
-            .isEqualTo(SimpleTrigger.MISFIRE_INSTRUCTION_FIRE_NOW);
-        assertThat(quartzTrigger.getValue().getStartTime()).isBeforeOrEqualTo(new java.util.Date());
+        verify(enqueuer).performLater("AccountWebsiteJob", account);
+        verifyNoMoreEnqueues();
     }
 
     @Test
-    void wikidataChangeSchedulesTheWikidataJobOnlyWhenWebsiteDidNotChange() throws Exception {
-        when(accountRepository.findById(7L)).thenReturn(Optional.of(account("https://acme.test", "Q42")));
+    void wikidataChangeAloneEnqueuesTheWikidataJob() {
+        Account account = account("https://acme.test", "Q42");
 
-        trigger("spring").afterAccountSaved(7L, false, true);
+        trigger.afterAccountSaved(account, "https://acme.test", null);
 
-        ArgumentCaptor<JobDetail> detail = ArgumentCaptor.forClass(JobDetail.class);
-        verify(scheduler).scheduleJob(detail.capture(), any(Trigger.class));
-        assertThat(detail.getValue().getJobClass()).isEqualTo(WikidataJob.class);
-        assertThat(detail.getValue().getKey().getName()).startsWith("wikidatajob-7-");
+        verify(enqueuer).performLater("WikidataJob", account);
+        verifyNoMoreEnqueues();
     }
 
     @Test
-    void websiteChangeTakesPrecedenceOverWikidataChange() throws Exception {
-        when(accountRepository.findById(7L)).thenReturn(Optional.of(account("https://acme.test", "Q42")));
+    void blankWebsiteChangeEnqueuesNothingAndBlocksTheWikidataFallback() {
+        trigger.afterAccountSaved(account("   ", "Q42"), "https://acme.test", "Q1");
+        trigger.afterAccountSaved(account("", "Q42"), "https://acme.test", null);
+        trigger.afterAccountSaved(account(null, null), "https://acme.test", "Q1");
 
-        trigger("spring").afterAccountSaved(7L, true, true);
-
-        ArgumentCaptor<JobDetail> detail = ArgumentCaptor.forClass(JobDetail.class);
-        verify(scheduler).scheduleJob(detail.capture(), any(Trigger.class));
-        assertThat(detail.getValue().getJobClass()).isEqualTo(AccountWebsiteJob.class);
+        verifyNoInteractions(enqueuer);
     }
 
     @Test
-    void blankValuesSchedulesNothingEvenWhenChanged() {
-        when(accountRepository.findById(7L)).thenReturn(Optional.of(account("   ", null)));
+    void blankWikidataIdChangeEnqueuesNothing() {
+        trigger.afterAccountSaved(account("https://acme.test", "  "), "https://acme.test", "Q1");
+        trigger.afterAccountSaved(account("https://acme.test", null), "https://acme.test", "Q1");
 
-        trigger("spring").afterAccountSaved(7L, true, true);
-
-        verifyNoInteractions(scheduler);
+        verifyNoInteractions(enqueuer);
     }
 
-    @Test
-    void clearedWebsiteWithExistingWikidataDoesNotFallBackToWikidata() {
-        when(accountRepository.findById(7L)).thenReturn(Optional.of(account("", "Q42")));
-
-        trigger("spring").afterAccountSaved(7L, true, false);
-
-        verifyNoInteractions(scheduler);
-    }
-
-    @Test
-    void schedulerFailuresSurfaceAsIllegalState() throws Exception {
-        when(accountRepository.findById(7L)).thenReturn(Optional.of(account("https://acme.test", null)));
-        when(scheduler.scheduleJob(any(JobDetail.class), any(Trigger.class)))
-            .thenThrow(new SchedulerException("down"));
-
-        assertThatThrownBy(() -> trigger("spring").websiteChanged(7L))
-            .isInstanceOf(IllegalStateException.class)
-            .hasMessage("Unable to schedule account enrichment")
-            .hasCauseInstanceOf(SchedulerException.class);
+    private void verifyNoMoreEnqueues() {
+        org.mockito.Mockito.verifyNoMoreInteractions(enqueuer);
     }
 }
