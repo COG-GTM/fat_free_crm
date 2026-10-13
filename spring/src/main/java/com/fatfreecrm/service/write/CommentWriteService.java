@@ -103,10 +103,10 @@ public class CommentWriteService {
         validate(comment);
         // before_create subscribe_mentioned_users; after_create subscribe_user_to_entity.
         subscribeMentions(user, commentable, comment.getComment());
-        subscribe(user, commentable, user.id());
         comment = commentRepository.saveAndFlush(comment);
         versionRecorder.recordCreate(user, comment, EntityAttributes.of(comment),
             Map.of("title", ""));
+        subscribe(user, commentable, user.id());
         return jsonWriter.writeOne(railsResources.comment, comment.getId());
     }
 
