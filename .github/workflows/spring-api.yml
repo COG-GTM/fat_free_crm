@@ -237,6 +237,7 @@ jobs:
             spring/build/reports/contract-diff/report.md
             spring/build/reports/contract-diff/rails.log
             spring/build/reports/contract-diff/spring.log
+            spring/build/test-results/dualWriteSoak/
 
   gateway:
     runs-on: ubuntu-latest
