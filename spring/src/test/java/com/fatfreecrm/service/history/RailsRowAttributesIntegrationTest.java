@@ -66,8 +66,8 @@ class RailsRowAttributesIntegrationTest extends AbstractPostgresIntegrationTest 
         alice = userRepository.saveAndFlush(alice);
         aliceBearer = "Bearer " + jwtTokenService.issue(alice).accessToken();
         taskId = jdbcTemplate.queryForObject(
-            "INSERT INTO tasks (user_id, name, bucket, category, priority, due_at, subscribed_users, created_at, updated_at) "
-                + "VALUES (?, 'Call Acme', 'due_asap', 'call', NULL, '2025-05-06 07:08:09', "
+            "INSERT INTO tasks (user_id, name, bucket, category, priority, due_at, subscribed_users, "
+                + "created_at, updated_at) VALUES (?, 'Call Acme', 'due_asap', 'call', NULL, '2025-05-06 07:08:09', "
                 + "'---\n- 1\n- 2\n', '2025-01-02 03:04:05.123456', '2025-01-02 03:04:05.123456') RETURNING id",
             Long.class, alice.getId().intValue());
     }

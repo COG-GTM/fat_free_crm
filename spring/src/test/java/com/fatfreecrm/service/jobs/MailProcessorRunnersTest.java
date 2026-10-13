@@ -12,7 +12,10 @@ import com.fatfreecrm.service.mailprocessor.MailProcessorSetupRunner;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.DefaultApplicationArguments;
 
-/** Rails rake parity: {@code ffcrm:dropbox:run[dry_run]}, {@code ffcrm:comment_replies:run[dry_run]}, {@code ffcrm:*:setup}. */
+/**
+ * Rails rake parity: {@code ffcrm:dropbox:run[dry_run]}, {@code ffcrm:comment_replies:run[dry_run]} and
+ * {@code ffcrm:*:setup}.
+ */
 class MailProcessorRunnersTest {
 
     private final MailProcessorService mailProcessorService = mock(MailProcessorService.class);
