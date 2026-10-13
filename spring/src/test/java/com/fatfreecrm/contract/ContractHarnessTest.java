@@ -5,11 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -19,7 +21,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -52,7 +53,7 @@ class ContractHarnessTest {
     @Test
     void loadsInitialCasesFromClasspath() throws Exception {
         List<ContractCase> cases = CaseLoader.load();
-        assertEquals(239, cases.size());
+        assertEquals(330, cases.size());
         ContractCase accountsIndex = cases.stream()
             .filter(contractCase -> contractCase.id().equals("accounts-index-admin"))
             .findFirst()
@@ -218,10 +219,10 @@ class ContractHarnessTest {
             StubServer.respond(exchange, 404, "application/problem+json", """
                 {"status":404}
                 """))) {
-            AuthContext context = new SpringJwtAuth(missing.url(), Map.of("alice", user("alice")))
-                .authenticate("alice");
-            assertEquals("spring auth unavailable (login returned 404)", context.note());
-            assertFalse(context.authorization() != null);
+            IOException exception = assertThrows(IOException.class, () ->
+                new SpringJwtAuth(missing.url(), Map.of("alice", user("alice")))
+                    .authenticate("alice"));
+            assertEquals("spring auth unavailable (login returned 404)", exception.getMessage());
 
             ContractCase enforced = CaseLoader.parse(YAML.readTree("""
                 - id: auth-required
@@ -230,7 +231,7 @@ class ContractHarnessTest {
                   path: /accounts
                 """)).getFirst();
             CaseResult result = new CaseResult(enforced, CaseResult.Outcome.CLEAN, null, null, null, null,
-                List.of(context.note()), List.of(), null);
+                List.of(exception.getMessage()), List.of(), null);
             assertEquals(CaseResult.Outcome.ERROR, result.failIfEnforcedAuthUnavailable().outcome());
         }
     }
@@ -345,20 +346,10 @@ class ContractHarnessTest {
                 .findFirst()
                 .orElseThrow();
             ContractClient client = new ContractClient(server.url(), server.url(), Map.of("admin", user("admin")));
-            ContractClient.RequestResult rails = client.send(enforced, true);
-            ContractClient.RequestResult spring = client.send(enforced, false);
-            List<String> notes = new ArrayList<>(rails.notes());
-            notes.addAll(spring.notes());
-
-            CaseResult result = new ContractDiffer().diff(enforced, rails.response(), spring.response(),
-                new Allowlist(List.of()), JSON.createObjectNode(), rails.url(), spring.url(), notes,
-                spring.authenticated())
-                .failIfEnforcedAuthUnavailable();
-
-            assertTrue(requestWasUnauthenticated.get());
-            assertFalse(spring.authenticated());
-            assertEquals(CaseResult.Outcome.ERROR, result.outcome());
-            assertTrue(result.enforcedFailure());
+            IOException rails = assertThrows(IOException.class, () -> client.send(enforced, true));
+            assertTrue(rails.getMessage().contains("Authentication failed"));
+            IOException spring = assertThrows(IOException.class, () -> client.send(enforced, false));
+            assertTrue(spring.getMessage().contains("spring auth unavailable (login returned 401)"));
         }
     }
 

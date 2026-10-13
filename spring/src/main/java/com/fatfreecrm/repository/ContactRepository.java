@@ -11,4 +11,6 @@ public interface ContactRepository extends JpaRepository<Contact, Long>, JpaSpec
 
     @Query("SELECT contact.id FROM Contact contact WHERE contact.user.id = :userId")
     List<Long> findIdsByUserId(@Param("userId") Long userId);
+
+    List<Contact> findByLeadId(Long leadId);
 }

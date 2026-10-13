@@ -75,6 +75,52 @@ public final class EntityAttributes {
                 attributes.put("updated_at", email.getUpdatedAt());
                 attributes.put("state", email.getState());
             }
+            case com.fatfreecrm.domain.User user -> {
+                attributes.put("id", user.getId());
+                attributes.put("username", user.getUsername());
+                attributes.put("email", user.getEmail());
+                attributes.put("first_name", user.getFirstName());
+                attributes.put("last_name", user.getLastName());
+                attributes.put("title", user.getTitle());
+                attributes.put("company", user.getCompany());
+                attributes.put("alt_email", user.getAltEmail());
+                attributes.put("phone", user.getPhone());
+                attributes.put("mobile", user.getMobile());
+                attributes.put("google", user.getGoogle());
+                attributes.put("encrypted_password", user.getEncryptedPassword());
+                attributes.put("password_salt", user.getPasswordSalt());
+                attributes.put("last_sign_in_at", user.getLastSignInAt());
+                attributes.put("current_sign_in_at", user.getCurrentSignInAt());
+                attributes.put("last_sign_in_ip", user.getLastSignInIp());
+                attributes.put("current_sign_in_ip", user.getCurrentSignInIp());
+                attributes.put("sign_in_count", user.getSignInCount());
+                attributes.put("deleted_at", user.getDeletedAt());
+                attributes.put("created_at", user.getCreatedAt());
+                attributes.put("updated_at", user.getUpdatedAt());
+                attributes.put("admin", user.isAdmin());
+                attributes.put("suspended_at", user.getSuspendedAt());
+                attributes.put("unconfirmed_email", user.getUnconfirmedEmail());
+                attributes.put("reset_password_token", user.getResetPasswordToken());
+                attributes.put("reset_password_sent_at", user.getResetPasswordSentAt());
+                attributes.put("remember_token", user.getRememberToken());
+                attributes.put("remember_created_at", user.getRememberCreatedAt());
+                attributes.put("authentication_token", user.getAuthenticationToken());
+                attributes.put("confirmation_token", user.getConfirmationToken());
+                attributes.put("confirmed_at", user.getConfirmedAt());
+                attributes.put("confirmation_sent_at", user.getConfirmationSentAt());
+                attributes.put("subscribe_to_comment_replies", user.isSubscribeToCommentReplies());
+                attributes.put("receive_assigned_notifications", user.isReceiveAssignedNotifications());
+                attributes.put("zoom", user.getZoom());
+                attributes.put("teams", user.getTeams());
+                attributes.put("signal", user.getSignal());
+                attributes.put("instagram", user.getInstagram());
+                attributes.put("facebook", user.getFacebook());
+                attributes.put("mastodon", user.getMastodon());
+                attributes.put("bluesky", user.getBluesky());
+                attributes.put("twitter", user.getTwitter());
+                attributes.put("linkedin", user.getLinkedin());
+                attributes.put("blog", user.getBlog());
+            }
             case SavedList list -> {
                 attributes.put("id", list.getId());
                 attributes.put("name", list.getName());

@@ -80,7 +80,8 @@ public final class CaseLoader {
             throw new IllegalArgumentException("Contract case compare must be json or text: " + compare);
         }
         String auth = text(node, "auth", "anonymous");
-        List<ContractCase.SetupRequest> setup = setup(node.get("setup"), auth);
+        JsonNode setupNode = node.get("setup");
+        List<ContractCase.SetupRequest> setup = setup(setupNode, auth);
         return new ContractCase(
             requiredText(node, "id"),
             text(node, "ticket", ""),
@@ -98,7 +99,8 @@ public final class CaseLoader {
             compare,
             node.path("reset").asBoolean(false),
             node.get("dbAssert"),
-            setup
+            setup,
+            setupNode
         );
     }
 
@@ -111,6 +113,12 @@ public final class CaseLoader {
         }
         List<ContractCase.SetupRequest> requests = new ArrayList<>();
         for (JsonNode request : node) {
+            if (request.isTextual()) {
+                continue;
+            }
+            if (!request.isObject()) {
+                throw new IllegalArgumentException("Contract case setup entries must be requests or SQL strings.");
+            }
             String path = requiredText(request, "path");
             requests.add(new ContractCase.SetupRequest(
                 text(request, "method", "POST").toUpperCase(Locale.ROOT),

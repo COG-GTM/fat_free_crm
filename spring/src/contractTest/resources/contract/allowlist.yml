@@ -10,6 +10,19 @@ allowlist:
       spring: 403
     reason: Spring authorization denials use 403 while Rails returns 401.
     reference: docs/migration/target-architecture.md §2.6
+  - id: admin-non-admin-302-vs-403
+    match:
+      method: "*"
+      path: "/admin/**"
+      authenticated: true
+    kind: status
+    status:
+      rails: 302
+      spring: 403
+    reason: >-
+      Rails Admin::ApplicationController#require_admin_user redirects non-admins to root (302); Spring's
+      @AdminOnly gate (AB-270 admin reads) answers 403.
+    reference: app/controllers/admin/application_controller.rb#require_admin_user
   - id: error-body-problem-json
     match:
       method: "*"

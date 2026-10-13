@@ -9,4 +9,6 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
 
     @Query(value = "SELECT id::bigint FROM tags ORDER BY id ASC", nativeQuery = true)
     List<Long> findIdsInIdOrder();
+
+    java.util.Optional<Tag> findByName(String name);
 }

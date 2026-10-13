@@ -60,7 +60,7 @@ public final class RailsSessionAuth implements AuthAdapter {
         }
         String token = token(page.body());
         if (token == null) {
-            return unavailable(client, "rails auth unavailable (CSRF token missing)");
+            throw new IOException("rails auth unavailable (CSRF token missing)");
         }
         String form = form(Map.of(
             "user[email]", user.email(),
@@ -85,17 +85,13 @@ public final class RailsSessionAuth implements AuthAdapter {
             HttpResponse<String> home = send(client, homeRequest);
             String postLoginToken = token(home.body());
             if (postLoginToken == null) {
-                return unavailable(client, "rails auth unavailable (post-login CSRF token missing)");
+                throw new IOException("rails auth unavailable (post-login CSRF token missing)");
             }
             AuthContext result = new AuthContext(client, null, postLoginToken, null);
             sessions.put(userKey, result);
             return result;
         }
-        return unavailable(client, "rails auth unavailable (login returned " + login.statusCode() + ")");
-    }
-
-    private static AuthContext unavailable(HttpClient client, String note) {
-        return new AuthContext(client, null, null, note);
+        throw new IOException("rails auth unavailable (login returned " + login.statusCode() + ")");
     }
 
     private static String token(String html) {

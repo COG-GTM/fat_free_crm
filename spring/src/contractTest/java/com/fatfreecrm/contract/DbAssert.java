@@ -68,7 +68,7 @@ public final class DbAssert {
         }
         for (JsonNode node : dbAssert) {
             String table = node.path("table").asText("");
-            if (!table.matches("[a-z][a-z0-9_]*")) {
+            if (!table.matches("[a-z][a-z0-9_]*") && !table.equals("information_schema.columns")) {
                 throw new IllegalArgumentException("dbAssert table must be a safe table name: " + table);
             }
             String where = node.path("where").asText("");

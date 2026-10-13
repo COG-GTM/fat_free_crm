@@ -23,6 +23,14 @@ public final class RailsParams {
         return new RailsParams(values);
     }
 
+    /** Rails {@code params.require(key)}: a missing or empty root hash raises → 400. */
+    public static RailsParams require(Map<String, JsonNode> values, String key) {
+        if (values == null || values.isEmpty()) {
+            throw new RailsParameterMissing(key);
+        }
+        return of(values);
+    }
+
     public boolean provided(String key) {
         return values.containsKey(key);
     }

@@ -130,6 +130,37 @@ public class VersionRecorder {
         List<String> assignedOrder,
         Map<String, Object> changeBefore
     ) {
+        return recordUpdate(user, entity, objectBefore, after, assignedOrder, changeBefore, false);
+    }
+
+    /**
+     * As above; with {@code leadUnchangedAssigned} the {@code object} also leads with assigned
+     * attributes whose value did not change (User: Devise's before_validation re-assigns
+     * {@code email}, and reconfirmable restores it, yet PaperTrail still dumps it first). Entity
+     * write paths pass the keys Rails wrote during save (e.g. the deleted_at/id/category sync an
+     * Account save performs) so they too lead the dump.
+     */
+    @Transactional
+    public Version recordUpdate(
+        AuthenticatedUser user,
+        Object entity,
+        Map<String, Object> before,
+        Map<String, Object> after,
+        java.util.List<String> assignedOrder,
+        boolean leadUnchangedAssigned
+    ) {
+        return recordUpdate(user, entity, before, after, assignedOrder, before, leadUnchangedAssigned);
+    }
+
+    private Version recordUpdate(
+        AuthenticatedUser user,
+        Object entity,
+        Map<String, Object> objectBefore,
+        Map<String, Object> after,
+        List<String> assignedOrder,
+        Map<String, Object> changeBefore,
+        boolean leadUnchangedAssigned
+    ) {
         PaperTrailOptions options = options(entity);
         Map<String, Object[]> changes = new LinkedHashMap<>();
         after.forEach((name, value) -> {
@@ -151,7 +182,7 @@ public class VersionRecorder {
         Version version = base(user, options, entity, "update");
         Map<String, Object> orderedBefore = new LinkedHashMap<>();
         assignedOrder.stream()
-            .filter(changes::containsKey)
+            .filter(name -> changes.containsKey(name) || (leadUnchangedAssigned && objectBefore.containsKey(name)))
             .forEach(name -> orderedBefore.put(name, objectBefore.get(name)));
         objectBefore.forEach(orderedBefore::putIfAbsent);
         version.setObject(PaperTrailYaml.dumpObject(orderedBefore));
@@ -185,6 +216,9 @@ public class VersionRecorder {
     @Transactional
     public Version recordDestroy(AuthenticatedUser user, Object entity, Map<String, Object> attributes) {
         PaperTrailOptions options = options(entity);
+        attributes = new LinkedHashMap<>(attributes);
+        // Rails' acts_as_taggable tag_list attribute serializes nil on destroy dumps.
+        attributes.replace("tag_list", null);
         Map<String, Object[]> changes = new LinkedHashMap<>();
         attributes.forEach((name, value) -> {
             if (!options.ignore().contains(name)) {
@@ -215,8 +249,7 @@ public class VersionRecorder {
     private Version base(AuthenticatedUser user, PaperTrailOptions options, Object entity, String event) {
         Version version = new Version();
         version.setItemType(options.itemType().railsName());
-        Long id = entity instanceof User auditUser ? auditUser.getId() : ((BaseEntity) entity).getId();
-        version.setItemId(id.intValue());
+        version.setItemId(entityId(entity).intValue());
         version.setEvent(event);
         version.setWhodunnit(whodunnit(user));
         version.setCreatedAt(now());
@@ -270,5 +303,12 @@ public class VersionRecorder {
 
     private Instant now() {
         return clock.instant().truncatedTo(ChronoUnit.MICROS);
+    }
+
+    private static Long entityId(Object entity) {
+        if (entity instanceof com.fatfreecrm.domain.User user) {
+            return user.getId();
+        }
+        return ((BaseEntity) entity).getId();
     }
 }

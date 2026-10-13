@@ -169,4 +169,56 @@ public final class ContractDbReset {
             }
         }
     }
+
+    /** Per-case {@code setup} SQL, replayed after a reset in its own transaction. */
+    public void runSetup(List<String> statements) throws SQLException {
+        if (statements.isEmpty()) {
+            return;
+        }
+        try (Connection connection = DriverManager.getConnection(jdbcUrl, user, password)) {
+            connection.setAutoCommit(false);
+            try (Statement statement = connection.createStatement()) {
+                for (String sql : statements) {
+                    statement.execute(sql);
+                }
+                connection.commit();
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            }
+        }
+    }
+
+    /**
+     * {@code table.column} for every {@code cf_*} column. Admin custom-field writes run runtime
+     * DDL that TRUNCATE + replay cannot undo, so the Spring side drops columns the Rails side added.
+     */
+    public java.util.Set<String> customFieldColumns() throws SQLException {
+        java.util.Set<String> columns = new java.util.TreeSet<>();
+        try (Connection connection = DriverManager.getConnection(jdbcUrl, user, password);
+             Statement statement = connection.createStatement();
+             java.sql.ResultSet rs = statement.executeQuery(
+                 "SELECT table_name, column_name FROM information_schema.columns"
+                     + " WHERE table_schema = current_schema() AND column_name LIKE 'cf\\_%' ESCAPE '\\'")) {
+            while (rs.next()) {
+                columns.add(rs.getString(1) + "." + rs.getString(2));
+            }
+        }
+        return columns;
+    }
+
+    public void dropCustomFieldColumnsExcept(java.util.Set<String> baseline) throws SQLException {
+        java.util.Set<String> added = new java.util.TreeSet<>(customFieldColumns());
+        added.removeAll(baseline);
+        if (added.isEmpty()) {
+            return;
+        }
+        try (Connection connection = DriverManager.getConnection(jdbcUrl, user, password);
+             Statement statement = connection.createStatement()) {
+            for (String qualified : added) {
+                String[] parts = qualified.split("\\.", 2);
+                statement.execute("ALTER TABLE \"" + parts[0] + "\" DROP COLUMN \"" + parts[1] + "\"");
+            }
+        }
+    }
 }
