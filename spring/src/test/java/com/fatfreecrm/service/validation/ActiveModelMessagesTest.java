@@ -48,4 +48,19 @@ class ActiveModelMessagesTest {
     void humanAttributeNameHumanizesUnderscores() {
         assertEquals("Due at", MESSAGES.humanAttributeName("task", "due_at"));
     }
+
+    @Test
+    void tooLongResolvesThePluralisedTemplateWithCount() {
+        assertEquals("is too long (maximum is 64 characters)",
+            MESSAGES.generateMessage("account", "name", "too_long.other", Map.of("count", 64)));
+        assertEquals("is too long (maximum is 1 character)",
+            MESSAGES.generateMessage("account", "name", "too_long.one", Map.of("count", 1)));
+    }
+
+    /** The bare key is a pluralisation node, not a template — it must not be used directly. */
+    @Test
+    void bareTooLongKeyIsNotATemplateAndFallsBackToInvalid() {
+        assertEquals("is invalid",
+            MESSAGES.generateMessage("account", "name", "too_long", Map.of("count", 64)));
+    }
 }
