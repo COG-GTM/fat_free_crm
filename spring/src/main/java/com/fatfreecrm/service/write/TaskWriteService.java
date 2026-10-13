@@ -117,7 +117,7 @@ public class TaskWriteService {
         customFieldWriteService.write(task, customFieldInput(params));
         task = taskRepository.saveAndFlush(task);
         recordUpdateVersions(user, task, before, original,
-            params.keys());
+            java.util.List.of());
     }
 
     /** Rails {@code PUT /tasks/:id/complete}: update(completed_at: now, completed_by: user). */
