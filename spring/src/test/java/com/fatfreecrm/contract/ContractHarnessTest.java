@@ -53,7 +53,7 @@ class ContractHarnessTest {
     @Test
     void loadsInitialCasesFromClasspath() throws Exception {
         List<ContractCase> cases = CaseLoader.load();
-        assertEquals(359, cases.size());
+        assertEquals(362, cases.size());
         ContractCase accountsIndex = cases.stream()
             .filter(contractCase -> contractCase.id().equals("accounts-index-admin"))
             .findFirst()
