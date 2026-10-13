@@ -623,7 +623,7 @@ public class EntityWriteService {
     private void lengthCheck(RailsErrors errors, String model, String attribute, String value,
         int max) {
         if (value != null && value.length() > max) {
-            errors.add(attribute, messages.generateMessage(model, attribute, "too_long",
+            errors.add(attribute, messages.generateMessage(model, attribute, "too_long.other",
                 Map.of("count", max)));
         }
     }
@@ -2223,10 +2223,10 @@ public class EntityWriteService {
                 throw new EntityNotFoundException(family + " " + id);
             }
             entityManager.refresh(entity, LockModeType.PESSIMISTIC_WRITE);
-            List<Long> subscribed = new ArrayList<>(entity.getSubscribedUsers());
-            subscribed.add(user.id());
-            entity.setSubscribedUsers(subscribed); // reassignment, like subscribed_users +=
             if (entitySaveable(entity, railsNameOf(entity))) {
+                List<Long> subscribed = new ArrayList<>(entity.getSubscribedUsers());
+                subscribed.add(user.id());
+                entity.setSubscribedUsers(subscribed); // reassignment, like subscribed_users +=
                 entityManager.flush();
             }
         });
@@ -2268,10 +2268,10 @@ public class EntityWriteService {
             throw new EntityNotFoundException(family + " " + id);
         }
         entityManager.refresh(entity, LockModeType.PESSIMISTIC_WRITE);
-        List<Long> subscribed = new ArrayList<>(entity.getSubscribedUsers());
-        subscribed.remove(user.id());
-        entity.setSubscribedUsers(subscribed);
         if (entitySaveable(entity, railsNameOf(entity))) {
+            List<Long> subscribed = new ArrayList<>(entity.getSubscribedUsers());
+            subscribed.remove(user.id());
+            entity.setSubscribedUsers(subscribed);
             entityManager.flush();
         }
         return jsonWriter.writeOne(resource(family), id);
