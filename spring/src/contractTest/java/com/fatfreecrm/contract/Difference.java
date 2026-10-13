@@ -21,6 +21,7 @@ public record Difference(
         TYPE,
         MISSING_IN_SPRING,
         EXTRA_IN_SPRING,
+        TEXT_BODY,
         DB
     }
 

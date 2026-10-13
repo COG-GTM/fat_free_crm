@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fatfreecrm.domain.Task;
 import com.fatfreecrm.domain.User;
 import com.fatfreecrm.domain.support.BaseEntity;
+import com.fatfreecrm.domain.support.CrmEntity;
 import com.fatfreecrm.domain.support.RailsModelType;
 import com.fatfreecrm.repository.CommentRepository;
 import com.fatfreecrm.repository.UserRepository;
@@ -12,6 +13,9 @@ import com.fatfreecrm.security.authz.AccessPolicy;
 import com.fatfreecrm.security.authz.CrmAccessPolicy;
 import com.fatfreecrm.service.audit.EntityAttributes;
 import com.fatfreecrm.service.audit.VersionRecorder;
+import com.fatfreecrm.service.jobs.RailsModelCallbacks;
+import com.fatfreecrm.service.jobs.RailsWhodunnit;
+import com.fatfreecrm.service.mail.CommentNotificationService;
 import com.fatfreecrm.service.json.RailsJsonWriter;
 import com.fatfreecrm.service.json.RailsResources;
 import com.fatfreecrm.service.validation.ActiveModelMessages;
@@ -44,8 +48,9 @@ import org.springframework.transaction.annotation.Transactional;
  *   {@code subscribe_user_to_entity} (appends the author id, duplicates allowed) — each
  *   {@code commentable.subscribed_users += id} change persists via {@code commentable.save}, which
  *   bumps commentable {@code updated_at} and re-runs the commentable's own save callbacks
- *   ({@code set_due_date} on an uncompleted Task); {@code notify_subscribers} mailer is skipped
- *   (AB-273 jobs-mail). The commentable row is locked FOR UPDATE before appending.</li>
+ *   ({@code set_due_date} on an uncompleted Task); {@code notify_subscribers} runs after
+ *   subscription and enqueues one mail job per eligible subscriber. The commentable row is locked
+ *   FOR UPDATE before appending.</li>
  *   <li>update/destroy: CanCan owner-or-admin via {@code hasPermission}; update permits
  *   {@code user_id}/{@code commentable_*} reassignment (Rails gap — mirrored, flagged).</li>
  *   <li>PaperTrail {@code meta: {related: :commentable}, ignore: [:state]}.</li>
@@ -65,6 +70,8 @@ public class CommentWriteService {
     private final ActiveModelMessages messages;
     private final EntityManager entityManager;
     private final TaskWriteService taskWriteService;
+    private final RailsModelCallbacks modelCallbacks;
+    private final CommentNotificationService commentNotificationService;
 
     public CommentWriteService(
         CommentRepository commentRepository,
@@ -75,7 +82,9 @@ public class CommentWriteService {
         RailsResources railsResources,
         ActiveModelMessages messages,
         EntityManager entityManager,
-        TaskWriteService taskWriteService
+        TaskWriteService taskWriteService,
+        RailsModelCallbacks modelCallbacks,
+        CommentNotificationService commentNotificationService
     ) {
         this.commentRepository = commentRepository;
         this.userRepository = userRepository;
@@ -86,6 +95,8 @@ public class CommentWriteService {
         this.messages = messages;
         this.entityManager = entityManager;
         this.taskWriteService = taskWriteService;
+        this.modelCallbacks = modelCallbacks;
+        this.commentNotificationService = commentNotificationService;
     }
 
     /** {@code POST /comments}: commentable must be inside {@code my(current_user)} scope → 404. */
@@ -103,10 +114,11 @@ public class CommentWriteService {
         validate(comment);
         // before_create subscribe_mentioned_users; after_create subscribe_user_to_entity.
         subscribeMentions(user, commentable, comment.getComment());
-        subscribe(user, commentable, user.id());
         comment = commentRepository.saveAndFlush(comment);
         versionRecorder.recordCreate(user, comment, EntityAttributes.of(comment),
             Map.of("title", ""));
+        subscribe(user, commentable, user.id());
+        commentNotificationService.afterCreate(comment);
         return jsonWriter.writeOne(railsResources.comment, comment.getId());
     }
 
@@ -254,6 +266,21 @@ public class CommentWriteService {
         entityManager.flush();
         versionRecorder.recordUpdate(user, locked, before, attributesOf(locked),
             java.util.List.of());
+        if (locked instanceof CrmEntity crmEntity) {
+            modelCallbacks.afterUpdate(crmEntity, assignedToId(before), stringAttribute(before, "website"),
+                stringAttribute(before, "wikidata_id"), RailsWhodunnit.integer(user.id()));
+        }
+    }
+
+    private static Long assignedToId(Map<String, Object> attributes) {
+        Object value = attributes.get("assigned_to");
+        return value instanceof Number number ? number.longValue()
+            : value == null ? null : Long.valueOf(value.toString());
+    }
+
+    private static String stringAttribute(Map<String, Object> attributes, String name) {
+        Object value = attributes.get(name);
+        return value == null ? null : value.toString();
     }
 
     /**

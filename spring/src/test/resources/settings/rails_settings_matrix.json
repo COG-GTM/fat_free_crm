@@ -1,0 +1,1334 @@
+{
+  "generated_by": "bundle exec rake ffcrm:migration:settings_matrix OUTPUT=spring/src/test/resources/settings/rails_settings_matrix.json",
+  "override_fixture": "spring/src/test/resources/settings/settings.override.yml",
+  "states": [
+    {
+      "state": "defaults_only",
+      "override_file": null,
+      "rows": [],
+      "values": {
+        "absent_key": null,
+        "account_category": [
+          ":affiliate",
+          ":competitor",
+          ":customer",
+          ":partner",
+          ":reseller",
+          ":vendor"
+        ],
+        "admin_tabs": [
+          {
+            "active": true,
+            "text": ":admin_tab_users",
+            "icon": ":fa-user",
+            "url": {
+              "controller": "admin/users"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_leads_import",
+            "icon": ":fa-upload",
+            "url": {
+              "controller": "admin/leads"
+            }
+          },
+          {
+            "active": true,
+            "text": ":admin_tab_groups",
+            "icon": ":fa-users",
+            "url": {
+              "controller": "admin/groups"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_fields",
+            "icon": ":fa-list-alt",
+            "url": {
+              "controller": "admin/fields"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_tags",
+            "icon": ":fa-tags",
+            "url": {
+              "controller": "admin/tags"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_research_tools",
+            "icon": ":fa-search",
+            "url": {
+              "controller": "admin/research_tools"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_settings",
+            "icon": ":fa-cogs",
+            "url": {
+              "controller": "admin/settings"
+            }
+          }
+        ],
+        "ai_prompts": {
+          "about_my_business": "",
+          "how_i_plan_to_use_ffcrm": ""
+        },
+        "background_info": [
+          ":account",
+          ":campaign",
+          ":contact",
+          ":lead",
+          ":opportunity"
+        ],
+        "base_url": "",
+        "campaign_status": [
+          ":planned",
+          ":started",
+          ":completed",
+          ":on_hold",
+          ":called_off"
+        ],
+        "comments_visible_on_dashboard": false,
+        "compound_address": true,
+        "default_access": "Public",
+        "email_comment_replies": {
+          "server": "",
+          "port": "",
+          "ssl": "",
+          "address": "",
+          "user": "",
+          "password": "",
+          "scan_folder": ""
+        },
+        "email_dropbox": {
+          "server": "",
+          "port": "",
+          "ssl": "",
+          "address": "",
+          "user": "",
+          "password": "",
+          "scan_folder": "",
+          "attach_to_account": ""
+        },
+        "enforce_international_phone_format": false,
+        "host": "",
+        "lead_source": [
+          ":campaign",
+          ":cold_call",
+          ":conference",
+          ":online",
+          ":referral",
+          ":self",
+          ":web",
+          ":word_of_mouth",
+          ":other"
+        ],
+        "lead_status": [
+          ":new",
+          ":contacted",
+          ":converted",
+          ":rejected"
+        ],
+        "locale": "en-US",
+        "opportunity_default_stage": ":prospecting",
+        "opportunity_stage": [
+          ":prospecting",
+          ":analysis",
+          ":presentation",
+          ":proposal",
+          ":negotiation",
+          ":final_review",
+          ":won",
+          ":lost"
+        ],
+        "per_user_locale": false,
+        "require_first_names": true,
+        "require_last_names": true,
+        "require_unique_account_names": true,
+        "tabs": [
+          {
+            "active": true,
+            "text": ":tab_dashboard",
+            "icon": ":fa-dashboard",
+            "url": {
+              "controller": "home"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_tasks",
+            "icon": ":fa-check-square-o",
+            "url": {
+              "controller": "tasks"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_campaigns",
+            "icon": ":fa-bar-chart-o",
+            "url": {
+              "controller": "campaigns"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_leads",
+            "icon": ":fa-tasks",
+            "url": {
+              "controller": "leads"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_accounts",
+            "icon": ":fa-users",
+            "url": {
+              "controller": "accounts"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_contacts",
+            "icon": ":fa-user",
+            "url": {
+              "controller": "contacts"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_opportunities",
+            "icon": ":fa-money",
+            "url": {
+              "controller": "opportunities"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_team",
+            "icon": ":fa-globe",
+            "url": {
+              "controller": "users",
+              "action": "opportunities_overview"
+            }
+          }
+        ],
+        "task_bucket": [
+          ":overdue",
+          ":due_asap",
+          ":due_today",
+          ":due_tomorrow",
+          ":due_this_week",
+          ":due_next_week",
+          ":due_later"
+        ],
+        "task_calendar_with_time": true,
+        "task_category": [
+          ":call",
+          ":email",
+          ":follow_up",
+          ":lunch",
+          ":meeting",
+          ":money",
+          ":presentation",
+          ":trip"
+        ],
+        "task_completed": [
+          ":completed_today",
+          ":completed_yesterday",
+          ":completed_last_week",
+          ":completed_this_month",
+          ":completed_last_month"
+        ],
+        "user_signup": ":not_allowed"
+      },
+      "digs": [
+        {
+          "path": [
+            "email_dropbox",
+            "server"
+          ],
+          "result": ""
+        },
+        {
+          "path": [
+            "email_dropbox",
+            "port"
+          ],
+          "result": ""
+        },
+        {
+          "path": [
+            "smtp",
+            "auth",
+            "method"
+          ],
+          "result": null
+        },
+        {
+          "path": [
+            "smtp",
+            "auth",
+            "retries"
+          ],
+          "result": null
+        },
+        {
+          "path": [
+            "absent_key",
+            "anything"
+          ],
+          "result": null
+        }
+      ]
+    },
+    {
+      "state": "with_override_file",
+      "override_file": "settings.override.yml",
+      "rows": [],
+      "values": {
+        "absent_key": null,
+        "account_category": [
+          ":customer",
+          ":partner",
+          "Custom String"
+        ],
+        "admin_tabs": [
+          {
+            "active": true,
+            "text": ":admin_tab_users",
+            "icon": ":fa-user",
+            "url": {
+              "controller": "admin/users"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_leads_import",
+            "icon": ":fa-upload",
+            "url": {
+              "controller": "admin/leads"
+            }
+          },
+          {
+            "active": true,
+            "text": ":admin_tab_groups",
+            "icon": ":fa-users",
+            "url": {
+              "controller": "admin/groups"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_fields",
+            "icon": ":fa-list-alt",
+            "url": {
+              "controller": "admin/fields"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_tags",
+            "icon": ":fa-tags",
+            "url": {
+              "controller": "admin/tags"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_research_tools",
+            "icon": ":fa-search",
+            "url": {
+              "controller": "admin/research_tools"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_settings",
+            "icon": ":fa-cogs",
+            "url": {
+              "controller": "admin/settings"
+            }
+          }
+        ],
+        "ai_prompts": {
+          "about_my_business": "",
+          "how_i_plan_to_use_ffcrm": ""
+        },
+        "background_info": [
+          ":account",
+          ":campaign",
+          ":contact",
+          ":lead",
+          ":opportunity"
+        ],
+        "base_url": "",
+        "campaign_status": [
+          ":planned",
+          ":started",
+          ":completed",
+          ":on_hold",
+          ":called_off"
+        ],
+        "comments_visible_on_dashboard": false,
+        "compound_address": false,
+        "default_access": "Public",
+        "email_comment_replies": {
+          "server": "",
+          "port": "",
+          "ssl": "",
+          "address": "",
+          "user": "",
+          "password": "",
+          "scan_folder": ""
+        },
+        "email_dropbox": {
+          "server": "override-imap.test",
+          "port": "993",
+          "ssl": "",
+          "address": "",
+          "user": "",
+          "password": "",
+          "scan_folder": "",
+          "attach_to_account": ""
+        },
+        "enforce_international_phone_format": false,
+        "host": null,
+        "lead_source": [
+          ":campaign",
+          ":cold_call",
+          ":conference",
+          ":online",
+          ":referral",
+          ":self",
+          ":web",
+          ":word_of_mouth",
+          ":other"
+        ],
+        "lead_status": [
+          ":new",
+          ":contacted",
+          ":converted",
+          ":rejected"
+        ],
+        "locale": "en-US",
+        "nested_new_hash": {
+          "level_one": {
+            "level_two": [
+              ":alpha",
+              ":beta"
+            ]
+          }
+        },
+        "opportunity_default_stage": ":prospecting",
+        "opportunity_stage": [
+          ":prospecting",
+          ":analysis",
+          ":presentation",
+          ":proposal",
+          ":negotiation",
+          ":final_review",
+          ":won",
+          ":lost"
+        ],
+        "override_only_key": ":symbol_value",
+        "per_user_locale": true,
+        "require_first_names": true,
+        "require_last_names": true,
+        "require_unique_account_names": true,
+        "tabs": [
+          {
+            "active": true,
+            "text": ":tab_dashboard",
+            "icon": ":fa-dashboard",
+            "url": {
+              "controller": "home"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_tasks",
+            "icon": ":fa-check-square-o",
+            "url": {
+              "controller": "tasks"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_campaigns",
+            "icon": ":fa-bar-chart-o",
+            "url": {
+              "controller": "campaigns"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_leads",
+            "icon": ":fa-tasks",
+            "url": {
+              "controller": "leads"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_accounts",
+            "icon": ":fa-users",
+            "url": {
+              "controller": "accounts"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_contacts",
+            "icon": ":fa-user",
+            "url": {
+              "controller": "contacts"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_opportunities",
+            "icon": ":fa-money",
+            "url": {
+              "controller": "opportunities"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_team",
+            "icon": ":fa-globe",
+            "url": {
+              "controller": "users",
+              "action": "opportunities_overview"
+            }
+          }
+        ],
+        "task_bucket": [
+          ":overdue",
+          ":due_asap",
+          ":due_today",
+          ":due_tomorrow",
+          ":due_this_week",
+          ":due_next_week",
+          ":due_later"
+        ],
+        "task_calendar_with_time": true,
+        "task_category": [
+          ":call",
+          ":email",
+          ":follow_up",
+          ":lunch",
+          ":meeting",
+          ":money",
+          ":presentation",
+          ":trip"
+        ],
+        "task_completed": [
+          ":completed_today",
+          ":completed_yesterday",
+          ":completed_last_week",
+          ":completed_this_month",
+          ":completed_last_month"
+        ],
+        "user_signup": ":not_allowed"
+      },
+      "digs": [
+        {
+          "path": [
+            "email_dropbox",
+            "server"
+          ],
+          "result": "override-imap.test"
+        },
+        {
+          "path": [
+            "email_dropbox",
+            "port"
+          ],
+          "result": "993"
+        },
+        {
+          "path": [
+            "smtp",
+            "auth",
+            "method"
+          ],
+          "result": null
+        },
+        {
+          "path": [
+            "smtp",
+            "auth",
+            "retries"
+          ],
+          "result": null
+        },
+        {
+          "path": [
+            "absent_key",
+            "anything"
+          ],
+          "result": null
+        }
+      ]
+    },
+    {
+      "state": "db_overlay_on_defaults",
+      "override_file": null,
+      "rows": [
+        {
+          "name": "base_url",
+          "value": "--- \"   \"\n"
+        },
+        {
+          "name": "campaign_status",
+          "value": "---\n- :planned\n- :custom\n"
+        },
+        {
+          "name": "comments_visible_on_dashboard",
+          "value": "--- true\n"
+        },
+        {
+          "name": "compound_address",
+          "value": "--- false\n"
+        },
+        {
+          "name": "db_bad_class",
+          "value": "--- !ruby/object:OpenStruct\ntable: {}\n"
+        },
+        {
+          "name": "db_only_float",
+          "value": "--- 1.5\n"
+        },
+        {
+          "name": "db_only_hwia",
+          "value": "--- !ruby/hash:ActiveSupport::HashWithIndifferentAccess\na: 1\n"
+        },
+        {
+          "name": "db_only_integer",
+          "value": "--- 0\n"
+        },
+        {
+          "name": "db_only_json",
+          "value": "{\"a\": [1, 2]}"
+        },
+        {
+          "name": "default_access",
+          "value": "--- Private\n"
+        },
+        {
+          "name": "email_dropbox",
+          "value": "---\n:server: imap.db.test\n:ssl: true\n"
+        },
+        {
+          "name": "host",
+          "value": "--- ''\n"
+        },
+        {
+          "name": "lead_status",
+          "value": "--- []\n"
+        },
+        {
+          "name": "opportunity_default_stage",
+          "value": "--- :analysis\n"
+        },
+        {
+          "name": "per_user_locale",
+          "value": null
+        },
+        {
+          "name": "require_first_names",
+          "value": "--- false\n"
+        },
+        {
+          "name": "smtp",
+          "value": "---\naddress: smtp.db.test\nport: 587\nauth:\n  method: :plain\n  retries:\n  - 1\n  - 2\n  - 3\n"
+        }
+      ],
+      "values": {
+        "absent_key": null,
+        "account_category": [
+          ":affiliate",
+          ":competitor",
+          ":customer",
+          ":partner",
+          ":reseller",
+          ":vendor"
+        ],
+        "admin_tabs": [
+          {
+            "active": true,
+            "text": ":admin_tab_users",
+            "icon": ":fa-user",
+            "url": {
+              "controller": "admin/users"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_leads_import",
+            "icon": ":fa-upload",
+            "url": {
+              "controller": "admin/leads"
+            }
+          },
+          {
+            "active": true,
+            "text": ":admin_tab_groups",
+            "icon": ":fa-users",
+            "url": {
+              "controller": "admin/groups"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_fields",
+            "icon": ":fa-list-alt",
+            "url": {
+              "controller": "admin/fields"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_tags",
+            "icon": ":fa-tags",
+            "url": {
+              "controller": "admin/tags"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_research_tools",
+            "icon": ":fa-search",
+            "url": {
+              "controller": "admin/research_tools"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_settings",
+            "icon": ":fa-cogs",
+            "url": {
+              "controller": "admin/settings"
+            }
+          }
+        ],
+        "ai_prompts": {
+          "about_my_business": "",
+          "how_i_plan_to_use_ffcrm": ""
+        },
+        "background_info": [
+          ":account",
+          ":campaign",
+          ":contact",
+          ":lead",
+          ":opportunity"
+        ],
+        "base_url": "",
+        "campaign_status": [
+          ":planned",
+          ":custom"
+        ],
+        "comments_visible_on_dashboard": true,
+        "compound_address": true,
+        "db_bad_class": {
+          "$error": "Psych::DisallowedClass"
+        },
+        "db_only_float": 1.5,
+        "db_only_hwia": {
+          "a": 1
+        },
+        "db_only_integer": 0,
+        "db_only_json": {
+          "a": [
+            1,
+            2
+          ]
+        },
+        "default_access": "Private",
+        "email_comment_replies": {
+          "server": "",
+          "port": "",
+          "ssl": "",
+          "address": "",
+          "user": "",
+          "password": "",
+          "scan_folder": ""
+        },
+        "email_dropbox": {
+          "server": "imap.db.test",
+          "ssl": true
+        },
+        "enforce_international_phone_format": false,
+        "host": "",
+        "lead_source": [
+          ":campaign",
+          ":cold_call",
+          ":conference",
+          ":online",
+          ":referral",
+          ":self",
+          ":web",
+          ":word_of_mouth",
+          ":other"
+        ],
+        "lead_status": [
+          ":new",
+          ":contacted",
+          ":converted",
+          ":rejected"
+        ],
+        "locale": "en-US",
+        "opportunity_default_stage": ":analysis",
+        "opportunity_stage": [
+          ":prospecting",
+          ":analysis",
+          ":presentation",
+          ":proposal",
+          ":negotiation",
+          ":final_review",
+          ":won",
+          ":lost"
+        ],
+        "per_user_locale": false,
+        "require_first_names": true,
+        "require_last_names": true,
+        "require_unique_account_names": true,
+        "smtp": {
+          "address": "smtp.db.test",
+          "port": 587,
+          "auth": {
+            "method": ":plain",
+            "retries": [
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        "tabs": [
+          {
+            "active": true,
+            "text": ":tab_dashboard",
+            "icon": ":fa-dashboard",
+            "url": {
+              "controller": "home"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_tasks",
+            "icon": ":fa-check-square-o",
+            "url": {
+              "controller": "tasks"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_campaigns",
+            "icon": ":fa-bar-chart-o",
+            "url": {
+              "controller": "campaigns"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_leads",
+            "icon": ":fa-tasks",
+            "url": {
+              "controller": "leads"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_accounts",
+            "icon": ":fa-users",
+            "url": {
+              "controller": "accounts"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_contacts",
+            "icon": ":fa-user",
+            "url": {
+              "controller": "contacts"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_opportunities",
+            "icon": ":fa-money",
+            "url": {
+              "controller": "opportunities"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_team",
+            "icon": ":fa-globe",
+            "url": {
+              "controller": "users",
+              "action": "opportunities_overview"
+            }
+          }
+        ],
+        "task_bucket": [
+          ":overdue",
+          ":due_asap",
+          ":due_today",
+          ":due_tomorrow",
+          ":due_this_week",
+          ":due_next_week",
+          ":due_later"
+        ],
+        "task_calendar_with_time": true,
+        "task_category": [
+          ":call",
+          ":email",
+          ":follow_up",
+          ":lunch",
+          ":meeting",
+          ":money",
+          ":presentation",
+          ":trip"
+        ],
+        "task_completed": [
+          ":completed_today",
+          ":completed_yesterday",
+          ":completed_last_week",
+          ":completed_this_month",
+          ":completed_last_month"
+        ],
+        "user_signup": ":not_allowed"
+      },
+      "digs": [
+        {
+          "path": [
+            "email_dropbox",
+            "server"
+          ],
+          "result": "imap.db.test"
+        },
+        {
+          "path": [
+            "email_dropbox",
+            "port"
+          ],
+          "result": null
+        },
+        {
+          "path": [
+            "smtp",
+            "auth",
+            "method"
+          ],
+          "result": ":plain"
+        },
+        {
+          "path": [
+            "smtp",
+            "auth",
+            "retries"
+          ],
+          "result": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "path": [
+            "absent_key",
+            "anything"
+          ],
+          "result": null
+        }
+      ]
+    },
+    {
+      "state": "db_overlay_on_override",
+      "override_file": "settings.override.yml",
+      "rows": [
+        {
+          "name": "base_url",
+          "value": "--- \"   \"\n"
+        },
+        {
+          "name": "campaign_status",
+          "value": "---\n- :planned\n- :custom\n"
+        },
+        {
+          "name": "comments_visible_on_dashboard",
+          "value": "--- true\n"
+        },
+        {
+          "name": "compound_address",
+          "value": "--- false\n"
+        },
+        {
+          "name": "db_bad_class",
+          "value": "--- !ruby/object:OpenStruct\ntable: {}\n"
+        },
+        {
+          "name": "db_only_float",
+          "value": "--- 1.5\n"
+        },
+        {
+          "name": "db_only_hwia",
+          "value": "--- !ruby/hash:ActiveSupport::HashWithIndifferentAccess\na: 1\n"
+        },
+        {
+          "name": "db_only_integer",
+          "value": "--- 0\n"
+        },
+        {
+          "name": "db_only_json",
+          "value": "{\"a\": [1, 2]}"
+        },
+        {
+          "name": "default_access",
+          "value": "--- Private\n"
+        },
+        {
+          "name": "email_dropbox",
+          "value": "---\n:server: imap.db.test\n:ssl: true\n"
+        },
+        {
+          "name": "host",
+          "value": "--- ''\n"
+        },
+        {
+          "name": "lead_status",
+          "value": "--- []\n"
+        },
+        {
+          "name": "opportunity_default_stage",
+          "value": "--- :analysis\n"
+        },
+        {
+          "name": "per_user_locale",
+          "value": null
+        },
+        {
+          "name": "require_first_names",
+          "value": "--- false\n"
+        },
+        {
+          "name": "smtp",
+          "value": "---\naddress: smtp.db.test\nport: 587\nauth:\n  method: :plain\n  retries:\n  - 1\n  - 2\n  - 3\n"
+        }
+      ],
+      "values": {
+        "absent_key": null,
+        "account_category": [
+          ":customer",
+          ":partner",
+          "Custom String"
+        ],
+        "admin_tabs": [
+          {
+            "active": true,
+            "text": ":admin_tab_users",
+            "icon": ":fa-user",
+            "url": {
+              "controller": "admin/users"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_leads_import",
+            "icon": ":fa-upload",
+            "url": {
+              "controller": "admin/leads"
+            }
+          },
+          {
+            "active": true,
+            "text": ":admin_tab_groups",
+            "icon": ":fa-users",
+            "url": {
+              "controller": "admin/groups"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_fields",
+            "icon": ":fa-list-alt",
+            "url": {
+              "controller": "admin/fields"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_tags",
+            "icon": ":fa-tags",
+            "url": {
+              "controller": "admin/tags"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_research_tools",
+            "icon": ":fa-search",
+            "url": {
+              "controller": "admin/research_tools"
+            }
+          },
+          {
+            "active": false,
+            "text": ":admin_tab_settings",
+            "icon": ":fa-cogs",
+            "url": {
+              "controller": "admin/settings"
+            }
+          }
+        ],
+        "ai_prompts": {
+          "about_my_business": "",
+          "how_i_plan_to_use_ffcrm": ""
+        },
+        "background_info": [
+          ":account",
+          ":campaign",
+          ":contact",
+          ":lead",
+          ":opportunity"
+        ],
+        "base_url": "",
+        "campaign_status": [
+          ":planned",
+          ":custom"
+        ],
+        "comments_visible_on_dashboard": true,
+        "compound_address": false,
+        "db_bad_class": {
+          "$error": "Psych::DisallowedClass"
+        },
+        "db_only_float": 1.5,
+        "db_only_hwia": {
+          "a": 1
+        },
+        "db_only_integer": 0,
+        "db_only_json": {
+          "a": [
+            1,
+            2
+          ]
+        },
+        "default_access": "Private",
+        "email_comment_replies": {
+          "server": "",
+          "port": "",
+          "ssl": "",
+          "address": "",
+          "user": "",
+          "password": "",
+          "scan_folder": ""
+        },
+        "email_dropbox": {
+          "server": "imap.db.test",
+          "ssl": true
+        },
+        "enforce_international_phone_format": false,
+        "host": null,
+        "lead_source": [
+          ":campaign",
+          ":cold_call",
+          ":conference",
+          ":online",
+          ":referral",
+          ":self",
+          ":web",
+          ":word_of_mouth",
+          ":other"
+        ],
+        "lead_status": [
+          ":new",
+          ":contacted",
+          ":converted",
+          ":rejected"
+        ],
+        "locale": "en-US",
+        "nested_new_hash": {
+          "level_one": {
+            "level_two": [
+              ":alpha",
+              ":beta"
+            ]
+          }
+        },
+        "opportunity_default_stage": ":analysis",
+        "opportunity_stage": [
+          ":prospecting",
+          ":analysis",
+          ":presentation",
+          ":proposal",
+          ":negotiation",
+          ":final_review",
+          ":won",
+          ":lost"
+        ],
+        "override_only_key": ":symbol_value",
+        "per_user_locale": true,
+        "require_first_names": true,
+        "require_last_names": true,
+        "require_unique_account_names": true,
+        "smtp": {
+          "address": "smtp.db.test",
+          "port": 587,
+          "auth": {
+            "method": ":plain",
+            "retries": [
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        "tabs": [
+          {
+            "active": true,
+            "text": ":tab_dashboard",
+            "icon": ":fa-dashboard",
+            "url": {
+              "controller": "home"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_tasks",
+            "icon": ":fa-check-square-o",
+            "url": {
+              "controller": "tasks"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_campaigns",
+            "icon": ":fa-bar-chart-o",
+            "url": {
+              "controller": "campaigns"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_leads",
+            "icon": ":fa-tasks",
+            "url": {
+              "controller": "leads"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_accounts",
+            "icon": ":fa-users",
+            "url": {
+              "controller": "accounts"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_contacts",
+            "icon": ":fa-user",
+            "url": {
+              "controller": "contacts"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_opportunities",
+            "icon": ":fa-money",
+            "url": {
+              "controller": "opportunities"
+            }
+          },
+          {
+            "active": false,
+            "text": ":tab_team",
+            "icon": ":fa-globe",
+            "url": {
+              "controller": "users",
+              "action": "opportunities_overview"
+            }
+          }
+        ],
+        "task_bucket": [
+          ":overdue",
+          ":due_asap",
+          ":due_today",
+          ":due_tomorrow",
+          ":due_this_week",
+          ":due_next_week",
+          ":due_later"
+        ],
+        "task_calendar_with_time": true,
+        "task_category": [
+          ":call",
+          ":email",
+          ":follow_up",
+          ":lunch",
+          ":meeting",
+          ":money",
+          ":presentation",
+          ":trip"
+        ],
+        "task_completed": [
+          ":completed_today",
+          ":completed_yesterday",
+          ":completed_last_week",
+          ":completed_this_month",
+          ":completed_last_month"
+        ],
+        "user_signup": ":not_allowed"
+      },
+      "digs": [
+        {
+          "path": [
+            "email_dropbox",
+            "server"
+          ],
+          "result": "imap.db.test"
+        },
+        {
+          "path": [
+            "email_dropbox",
+            "port"
+          ],
+          "result": null
+        },
+        {
+          "path": [
+            "smtp",
+            "auth",
+            "method"
+          ],
+          "result": ":plain"
+        },
+        {
+          "path": [
+            "smtp",
+            "auth",
+            "retries"
+          ],
+          "result": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "path": [
+            "absent_key",
+            "anything"
+          ],
+          "result": null
+        }
+      ]
+    }
+  ]
+}

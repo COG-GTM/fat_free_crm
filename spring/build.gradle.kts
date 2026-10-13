@@ -73,6 +73,7 @@ tasks.withType<Test>().configureEach {
 
 tasks.named<Test>("test") {
     systemProperty("spring.profiles.active", "test")
+    systemProperty("audit.writeFixtures", System.getProperty("audit.writeFixtures", "false"))
 }
 
 tasks.named("spotbugsTest") {
@@ -100,6 +101,33 @@ tasks.register("verifyFrozenOpenApi") {
 
 tasks.named("check") {
     dependsOn("verifyFrozenOpenApi")
+}
+
+val railsSettingsDefaults = layout.projectDirectory.file("../config/settings.default.yml")
+val packagedSettingsDefaults = layout.projectDirectory.file("src/main/resources/settings/settings.default.yml")
+
+tasks.register("verifySettingsDefaults") {
+    group = "verification"
+    description = "Checks that the packaged settings.default.yml copy matches the Rails defaults file."
+    inputs.files(railsSettingsDefaults, packagedSettingsDefaults)
+    doLast {
+        val source = railsSettingsDefaults.asFile.toPath()
+        val packaged = packagedSettingsDefaults.asFile.toPath()
+        if (!Files.exists(packaged) || Files.mismatch(source, packaged) != -1L) {
+            throw GradleException(
+                "The packaged settings defaults differ from ../config/settings.default.yml; " +
+                    "copy the Rails file to src/main/resources/settings/settings.default.yml."
+            )
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn("verifySettingsDefaults")
+}
+
+dependencies {
+    implementation("com.ibm.icu:icu4j:77.1")
 }
 val contractTest by sourceSets.creating {
     compileClasspath = configurations.getByName("contractTestCompileClasspath")
@@ -148,6 +176,14 @@ tasks.register<Test>("contractTest") {
         ).get()
     )
     outputs.upToDateWhen { false }
+}
+
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-mail")
+    implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
+    implementation("org.springframework.boot:spring-boot-starter-quartz")
+    implementation("org.jsoup:jsoup:1.21.2")
+    testImplementation("com.icegreen:greenmail-junit5:2.1.3")
 }
 
 // AB-272: contract DB coordinates for reset:true / dbAssert cases in the contractTest suite.

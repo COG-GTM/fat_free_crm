@@ -40,6 +40,53 @@ been applied to any shared database, never regenerate V1; add an additive
 into a frozen V1 comparison and a current Rails fixture comparison is follow-up work
 once V1 ships.
 
+## Jobs, mail, and IMAP ownership (AB-273)
+
+Spring's jobs owner is controlled by `FFCRM_JOBS_OWNER=rails|spring` (default
+`rails`). Keep Rails as the owner while validating the Spring deployment. For
+cutover, stop Rails workers and mail processors, set the Spring deployment to
+`FFCRM_JOBS_OWNER=spring`, then verify the Quartz scheduler and IMAP inbox
+health. Rollback by disabling Spring ownership (`FFCRM_JOBS_OWNER=rails`) and
+restarting Rails workers. Only one runtime should own mail, IMAP, and recurring
+jobs at a time.
+
+Spring Quartz uses the in-memory RAMJobStore. One-off mail and account-enrichment
+jobs are therefore lost on a process restart; recurring poll schedules are
+recreated at startup. The recurring Dropbox, comment-reply, and Solid Queue
+drain jobs use PostgreSQL session advisory locks with class ID `1179009869`
+and object IDs 1, 2, and 3, respectively. Solid Queue's bounded drain claims
+only `ActionMailer::MailDeliveryJob`, `AccountWebsiteJob`, and `WikidataJob`;
+unsupported classes remain ready in the Rails tables.
+
+Schedule cron expressions and HTTP limits are under `ffcrm.jobs` in
+`application.yml`. IMAP settings and SMTP sender values are read from the Rails
+`settings` rows first, with Spring configuration defaults as fallback.
+Attachments are intentionally ignored by the IMAP reader. Private-address
+blocking is configurable and defaults off for Rails parity; redirects are not
+followed, response bodies are capped, and HTTP connect/read timeouts are
+bounded.
+
+Rails source inventory: assignment notifications are gated by
+`app/models/observers/entity_observer.rb:22`; comment subscriptions and
+PaperTrail hooks are in `app/models/polymorphic/comment.rb:57`; account
+enrichment callbacks are in `app/models/entities/account.rb:86-87`.
+`app/mailers/user_mailer.rb:9`,
+`app/mailers/subscription_mailer.rb:9`, and
+`app/mailers/dropbox_mailer.rb:9-15` define mail headers and settings
+precedence. The source templates are under
+`app/views/{user,subscription,dropbox}_mailer/`. IMAP behavior is in
+`lib/fat_free_crm/mail_processor/{base,dropbox,comment_replies}.rb`; the
+`Net::IMAP.new` constructor is at `lib/fat_free_crm/mail_processor/base.rb:71`.
+Account website parsing is in `app/jobs/account_website_job.rb:10-25`; SPARQL
+fields and request headers are in `app/services/wikidata_service.rb:8-25`.
+
+The Rails IMAP constructor at `lib/fat_free_crm/mail_processor/base.rb:71`
+uses the deprecated positional `Net::IMAP.new(host, port, ssl)` form; installed
+`net-imap` 0.6.3 still accepts it. The shared-access predicate calls
+`Permission.exists` rather than an Active Record existence query. There is no
+Rails `config/locales/devise.en-US.yml`, so Devise strings come from the Devise
+locale.
+
 ## Gateway
 
 Start the Rails app and gateway with `docker compose -f spring/docker-compose.yml up`.
@@ -590,6 +637,155 @@ tests replay all generated list and vCard cases.
   UTC+1 and UTC+13 and writes `spring/src/test/resources/search/tasks_search_matrix.json` (27 cases, 32 tasks);
   `RailsTaskBucketsParityTest` replays it. Gateway blocks: `tasks`, `comments` (disabled).
 
+## CSV / XLS exports (AB-273, track `exports`)
+
+`ExportsController` serves Rails-identical exports on the list endpoints for accounts, campaigns, contacts,
+leads, opportunities, tasks and activities: `Accept: text/csv` or `application/vnd.ms-excel`, `?format=csv|xls`,
+or the `.csv` / `.xls` suffix. Exports are the full filtered/sorted list (Rails does not paginate them). CSV
+mirrors `FatFreeCRM::ExportCSV`; XLS is the SpreadsheetML of `app/views/*/index.xls.builder`.
+
+Regenerate the Rails goldens after changing an export (empty PostgreSQL database with the Rails schema):
+
+```sh
+DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/ffcrm_export bundle exec rake ffcrm:migration:export_goldens
+./gradlew test --tests '*RailsExportGoldenTest'
+```
+
+Atom/RSS/XML remain on Rails. Details: `docs/adr/ab-273-peripherals.md` (`## Track: exports`).
+
+## Jobs and mail (AB-273 jobs-mail)
+
+| Rails behavior | Rails source | Spring port |
+|---|---|---|
+| Assignment mail and observer trigger | `app/mailers/user_mailer.rb:9-23`, `app/models/observers/entity_observer.rb:9-28` | `MailRendererService` and owner-gated Active Job bridge |
+| Comment reply mail and callbacks | `app/mailers/subscription_mailer.rb:9-35`, `app/models/polymorphic/comment.rb:34-71` | `CommentNotificationService`, `CommentRepliesProcessor` |
+| Dropbox renderer; its caller is dead Rails code | `app/mailers/dropbox_mailer.rb:9-19`, `lib/fat_free_crm/mail_processor/dropbox.rb:258-262` | renderer only; the processor does not send it |
+| Website/Wikidata enrichment | `app/jobs/account_website_job.rb:1-73`, `app/jobs/wikidata_job.rb`, `app/services/wikidata_service.rb` | `AccountWebsiteJob`, `WikidataJob`, Solid Queue drain |
+| IMAP processing | `lib/fat_free_crm/mail_processor/{base,dropbox,comment_replies}.rb` | `MailProcessorBase`, `DropboxProcessor`, `CommentRepliesProcessor` |
+
+`FFCRM_JOBS_OWNER` defaults to `rails`. With `spring`, Quartz registers the
+Dropbox, comment-reply and Solid Queue drain schedules. PostgreSQL session
+advisory locks use class ID `1179009869` and object IDs 1, 2 and 3 respectively.
+Quartz uses RAMJobStore; scheduled one-off work is not durable across restarts.
+The bridge claims supported mail-delivery, website and Wikidata jobs; unknown
+Solid Queue rows remain ready.
+
+Configure Rails-backed `smtp`, `email_dropbox`, `email_comment_replies`, `host`,
+`locale`, and `default_access` values (database settings override YAML). IMAP
+settings include server, port, ssl, user, password, scan folder, archive folder
+and invalid folder. Never put credentials in goldens or logs. Attachments are
+ignored and are not persisted.
+
+### Cutover and rollback
+
+1. Keep owner `rails` until Spring mail, IMAP and enrichment configuration is verified.
+2. Stop Rails cron entries for `ffcrm:dropbox:run` and `ffcrm:comment_replies:run`.
+3. Stop Solid Queue workers/dispatcher (`bin/jobs` or `SOLID_QUEUE_IN_PUMA`) and confirm no claimed executions remain.
+4. Set `FFCRM_JOBS_OWNER=spring`, rolling-restart Spring, then verify scheduler, lock acquisition and queue-drain logs.
+5. Roll back by setting owner to `rails`, restarting Spring and confirming the scheduler is disabled. Allow in-memory one-off jobs to drain before stopping Spring; restart Rails queue workers and re-enable cron.
+
+The Rails IMAP constructor at `lib/fat_free_crm/mail_processor/base.rb:71`
+uses the deprecated positional `Net::IMAP.new(host, port, ssl)` form; installed
+`net-imap` 0.6.3 still accepts it. The shared-access predicate calls
+`Permission.exists`. The Dropbox notification caller is unreachable; Spring
+renders the template but does not send it. Shared-asset failures follow the
+observed discard behavior. `VersionRecorder` covers supported mail/job create,
+update, and touch paths; Rails-vs-Spring flow differences are listed in the
+AB-273 audit ADR. Devise token generation remains
+Rails-owned. MailText is en-US only pending settings-i18n, and private-address
+blocking is off by default for parity.
+
+### Known gap: orphaned Spring claims
+
+Spring inserts a `solid_queue_claimed_executions` row with `process_id` NULL
+before it runs a job. A crash between claiming and completing the job strands
+that job. Solid Queue only releases claims held by registered processes, and
+Spring does not automatically requeue an orphan because the mail or another
+side effect may already have happened and requeueing could deliver it twice.
+The `ffcrm.jobs.solid-queue-drain.stale-claim-threshold` property defaults to
+`15m`; a Spring-owned drain warns when it finds claims older than that
+threshold.
+
+Before changing a claim, check whether its mail or side effect already
+happened, for example with the recipient or the GreenMail/SMTP logs. Then
+choose one manual action for the job:
+
+- Release it to run again (mirrors `ClaimedExecution#release` →
+  `ReadyExecution`):
+
+  ```sql
+  BEGIN;
+  INSERT INTO solid_queue_ready_executions (job_id, queue_name, priority, created_at)
+    SELECT id, queue_name, priority, now() FROM solid_queue_jobs WHERE id = :job_id;
+  DELETE FROM solid_queue_claimed_executions WHERE job_id = :job_id AND process_id IS NULL;
+  COMMIT;
+  ```
+
+- Mark it failed so Rails/Mission Control retry and discard tooling can handle
+  it:
+
+  ```sql
+  BEGIN;
+  INSERT INTO solid_queue_failed_executions (job_id, error, created_at)
+    VALUES (:job_id, '{"exception_class":"OrphanedSpringClaim","message":"released manually after Spring crash","backtrace":[]}', now())
+    ON CONFLICT (job_id) DO NOTHING;
+  DELETE FROM solid_queue_claimed_executions WHERE job_id = :job_id AND process_id IS NULL;
+  COMMIT;
+  ```
+
+Failed jobs keep `finished_at` NULL and get a `failed_executions` row in Solid
+Queue's error JSON shape.
+
+## Settings and i18n (AB-273)
+
+- `SettingsService` mirrors `Setting[:key]`: a `settings` row whose decoded value is
+  present wins wholesale; blank values fall through to `yaml_settings`, the deep-merged
+  `settings/settings.default.yml` (classpath copy verified byte-for-byte against
+  `config/settings.default.yml` by `verifySettingsDefaults`) plus the overrides file
+  `${FFCRM_SETTINGS_FILE}` (ERB fails startup). Snapshots refresh every
+  `ffcrm.settings.cache-ttl` (30s).
+- `SettingValueCodec` decodes Psych YAML / strict JSON and rejects `!ruby/` class tags
+  outside `yaml_column_permitted_classes` (config/application.rb:88-99), matching
+  `Psych::DisallowedClass`. `SettingsJsonConversion` (profile `convert-settings-json`)
+  rewrites `settings.value` to strict JSON for AB-274 with a guarded update; non-dry-run
+  requires `ffcrm.settings.conversion.confirm-rails-stopped=true`.
+  AB-274 runbook (Rails stopped; `FFCRM_DB_*` and `FFCRM_JWT_SECRET` set as for the API, since
+  the profile boots the full context on an ephemeral loopback port):
+  1. Back up: `CREATE TABLE settings_yaml_backup AS SELECT id, name, value FROM settings;`
+  2. Dry run: `java -jar build/libs/fat-free-crm-api-0.1.0-SNAPSHOT.jar --spring.profiles.active=convert-settings-json`,
+     then review the report.
+  3. Convert by adding `--ffcrm.settings.conversion.dry-run=false
+     --ffcrm.settings.conversion.confirm-rails-stopped=true`. A rerun reports `alreadyJson=<total>`.
+  4. Rolling back to Rails after conversion requires the restore (with Rails stopped):
+     `UPDATE settings s SET value = b.value FROM settings_yaml_backup b WHERE s.id = b.id;`
+     The backup does not cover rows created after the conversion, so review those before
+     restarting Rails.
+
+  Why the restore is needed: Rails reads converted rows without error (JSON is valid YAML), but
+  Ruby symbols come back as strings:
+  - `{":server": …}` loads as a `HashWithIndifferentAccess` with `":server"` string keys, so
+    `Setting.email_dropbox[:server]` and `Setting.dig(:email_dropbox, :server)` return `nil`.
+  - `[":account", ":contact"]` stays a list of strings, so
+    `Setting.background_info.include?(:account)` is `false`.
+  - Plain strings, numbers and booleans read back unchanged.
+
+  This was checked with `rails runner` on a PG16 database converted by the profile and then
+  restored (AB-273). Each read ran after `Setting.clear_cache!`, as every Rails request does.
+- `I18nService` loads `i18n/messages_<tag>.properties` (generated by
+  `rake ffcrm:migration:i18n_properties`): verbatim `%{name}` strings are interpolated
+  Rails-style only when args are passed; plural hashes are ICU `{count, plural, ...}`
+  formatted with the found-locale `ULocale`. `FfcrmMessageSource` (bean `messageSource`)
+  keeps the Spring MessageSource contract; `FfcrmLocaleResolver` (bean `localeResolver`)
+  orders user preference → `Accept-Language` → `Setting[:locale]` → `en-US`.
+- Parity fixtures: `rake ffcrm:migration:settings_matrix` →
+  `settings/rails_settings_matrix.json`; `rake ffcrm:migration:i18n_matrix` →
+  `i18n/rails_i18n_matrix.json` (6265 cases + fallback chains). `RailsSettingsParityTest`
+  and `RailsI18nParityTest` replay them; known deltas are listed in the tests and in
+  `docs/adr/ab-273-peripherals.md`.
+- `rake ffcrm:migration:settings_cf_coverage` regenerates
+  `docs/migration/settings-cf-coverage.md` (229 sites); `CHECK=1` fails on unclassified
+  sites or drift.
+
 ## Write API (AB-272 Phase A)
 
 Phase A adds the shared write foundation plus the comments, emails, tasks and lists
@@ -613,8 +809,9 @@ harness can observe them.
   as the entity write, with `object`/`object_changes` rendered by `PaperTrailYaml`
   (Psych byte-parity: `key:` nil, `""` quoting, TimeWithZone tagged blocks,
   `&N`/`*N` anchors only for objects referenced more than once, column-order keys).
-  Per-model `ignore:`/`meta:` options live in `PaperTrailOptions`. Timestamp-only
-  updates produce no version, exactly like PaperTrail's notability check.
+  Per-model `ignore:`/`meta:` options live in `PaperTrailOptions`. Ordinary
+  timestamp-only updates produce no version; explicit touches write Rails-compatible
+  `update` rows with NULL `object_changes`.
 - **Partial updates**: entities use `@DynamicUpdate`, so PUT diffs only touched
   columns — mirroring ActiveRecord partial writes (no `lock_version`; Rails does
   not use optimistic locking here).
@@ -721,6 +918,28 @@ AB-271 JSONB reads and `CustomFieldWriteService` see the new metadata.
    `ContractHarnessTest` case count.
 7. Extend `dualWriteSoak` with the family's writes and per-(item_type,event)
    version assertions; report any unfixable cross-stack races as observations.
+
+## Audit (AB-273)
+
+Spring writes PaperTrail-16-compatible records to the shared `versions` table
+through `VersionRecorder`. `PaperTrailOptions` mirrors every Rails declaration;
+`PaperTrailYaml` is checked byte-for-byte against Rails-generated goldens,
+including Ruby BigDecimal precision and zero/negative encodings. Explicit touch
+paths use `recordTouch` and preserve Rails' NULL `object_changes` shape.
+
+`RailsRowAttributes` reads persisted rows in PostgreSQL column order, excludes
+the AB-271 `custom_fields` JSONB column, retains physical `cf_*` columns, and
+converts serialized/timestamp values for the recorder. CI regenerates Rails
+fixtures twice, checks for drift, runs Rails-read compatibility specs and
+RuboCop. Run the Spring replay with:
+
+```bash
+cd spring
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew test
+```
+
+See `docs/adr/ab-273-peripherals.md` under **Track: audit** for per-model
+coverage, Rails/Spring deviations, accepted YAML deltas and contract gates.
 
 ### Phase B note (entities)
 

@@ -1,6 +1,8 @@
 package com.fatfreecrm.service.audit;
 
 import com.fatfreecrm.domain.Version;
+import com.fatfreecrm.domain.AccountContact;
+import com.fatfreecrm.domain.Address;
 import com.fatfreecrm.domain.support.BaseEntity;
 import com.fatfreecrm.domain.support.RailsModelType;
 import com.fatfreecrm.repository.VersionRepository;
@@ -10,6 +12,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.springframework.stereotype.Service;
@@ -40,17 +43,23 @@ public class VersionRecorder {
     private final VersionRepository versionRepository;
     private final EntityManager entityManager;
     private final Clock clock;
+    private final ColumnDefaults columnDefaults;
 
-    public VersionRecorder(VersionRepository versionRepository, EntityManager entityManager, Clock clock) {
+    public VersionRecorder(
+        VersionRepository versionRepository,
+        EntityManager entityManager,
+        Clock clock,
+        ColumnDefaults columnDefaults
+    ) {
         this.versionRepository = versionRepository;
         this.entityManager = entityManager;
         this.clock = clock;
+        this.columnDefaults = columnDefaults;
     }
 
     /**
      * PaperTrail {@code create} version. {@code attributes} must be the post-insert attribute dump
-     * in column order (timestamps populated) and {@code defaults} the per-column defaults
-     * ({@code "name" -> ""} on Task); entries whose value equals the default are omitted.
+     * in column order (timestamps populated); provided defaults override database column defaults.
      */
     @Transactional
     public Version recordCreate(
@@ -60,12 +69,13 @@ public class VersionRecorder {
         Map<String, Object> defaults
     ) {
         PaperTrailOptions options = options(entity);
+        Map<String, Object> databaseDefaults = columnDefaults.defaults(entity);
         Map<String, Object[]> changes = new LinkedHashMap<>();
         attributes.forEach((name, value) -> {
             if (options.ignore().contains(name)) {
                 return;
             }
-            Object initial = defaults.getOrDefault(name, null);
+            Object initial = defaults.containsKey(name) ? defaults.get(name) : databaseDefaults.get(name);
             if (!Objects.equals(initial, value)) {
                 changes.put(name, new Object[] {initial, value});
             }
@@ -86,7 +96,7 @@ public class VersionRecorder {
         Map<String, Object> before,
         Map<String, Object> after
     ) {
-        return recordUpdate(user, entity, before, after, java.util.List.of());
+        return recordUpdate(user, entity, before, after, java.util.List.of(), before);
     }
 
     /**
@@ -101,9 +111,25 @@ public class VersionRecorder {
         Object entity,
         Map<String, Object> before,
         Map<String, Object> after,
-        java.util.List<String> assignedOrder
+        List<String> assignedOrder
     ) {
-        return recordUpdate(user, entity, before, after, assignedOrder, false);
+        return recordUpdate(user, entity, before, after, assignedOrder, before);
+    }
+
+    /**
+     * PaperTrail {@code update} version when an attribute's object snapshot differs from its
+     * dirty-tracking before value, as with virtual tag-list attributes.
+     */
+    @Transactional
+    public Version recordUpdate(
+        AuthenticatedUser user,
+        Object entity,
+        Map<String, Object> objectBefore,
+        Map<String, Object> after,
+        List<String> assignedOrder,
+        Map<String, Object> changeBefore
+    ) {
+        return recordUpdate(user, entity, objectBefore, after, assignedOrder, changeBefore, false);
     }
 
     /**
@@ -122,20 +148,32 @@ public class VersionRecorder {
         java.util.List<String> assignedOrder,
         boolean leadUnchangedAssigned
     ) {
+        return recordUpdate(user, entity, before, after, assignedOrder, before, leadUnchangedAssigned);
+    }
+
+    public Version recordUpdate(
+        AuthenticatedUser user,
+        Object entity,
+        Map<String, Object> objectBefore,
+        Map<String, Object> after,
+        List<String> assignedOrder,
+        Map<String, Object> changeBefore,
+        boolean leadUnchangedAssigned
+    ) {
         PaperTrailOptions options = options(entity);
         Map<String, Object[]> changes = new LinkedHashMap<>();
         after.forEach((name, value) -> {
             if (options.ignore().contains(name)) {
                 return;
             }
-            Object old = before.get(name);
+            Object old = changeBefore.get(name);
             if (!Objects.equals(old, value)) {
                 changes.put(name, new Object[] {old, value});
             }
         });
-        // Timestamp-only changes are not notable: PaperTrail writes no version when a save only
-        // bumps updated_at (verified live — commentable.save for subscribed_users writes none).
-        boolean notable = changes.keySet().stream()
+        // A timestamp-only change is notable when the caller explicitly assigned updated_at.
+        boolean explicitUpdatedAt = assignedOrder.contains("updated_at") && changes.containsKey("updated_at");
+        boolean notable = explicitUpdatedAt || changes.keySet().stream()
             .anyMatch(name -> !name.equals("updated_at") && !name.equals("created_at"));
         if (!notable) {
             return null;
@@ -143,13 +181,37 @@ public class VersionRecorder {
         Version version = base(user, options, entity, "update");
         Map<String, Object> orderedBefore = new LinkedHashMap<>();
         assignedOrder.stream()
-            .filter(name -> changes.containsKey(name) || (leadUnchangedAssigned && before.containsKey(name)))
-            .forEach(name -> orderedBefore.put(name, before.get(name)));
-        before.forEach(orderedBefore::putIfAbsent);
-        // Rails' acts_as_taggable tag_list attribute serializes nil on object dumps.
-        orderedBefore.replace("tag_list", null);
+            .filter(name -> changes.containsKey(name) || (leadUnchangedAssigned && objectBefore.containsKey(name)))
+            .forEach(name -> orderedBefore.put(name, objectBefore.get(name)));
+        objectBefore.forEach(orderedBefore::putIfAbsent);
+        Object tagList = orderedBefore.get("tag_list");
+        if (tagList != null && !(tagList instanceof PaperTrailYaml.RubyTagList)) {
+            orderedBefore.put("tag_list", null);
+        }
         version.setObject(PaperTrailYaml.dumpObject(orderedBefore));
         version.setObjectChanges(PaperTrailYaml.dumpChanges(changes));
+        return versionRepository.save(version);
+    }
+
+    /** PaperTrail {@code touch} is a forced update with the touched object and no changes YAML. */
+    @Transactional
+    public Version recordTouch(
+        AuthenticatedUser user,
+        Object entity,
+        Map<String, Object> before,
+        Map<String, Object> after
+    ) {
+        Objects.requireNonNull(after, "after");
+        PaperTrailOptions options = options(entity);
+        boolean notable = after.containsKey("updated_at") && !options.ignore().contains("updated_at")
+            || after.entrySet().stream()
+                .anyMatch(entry -> !options.ignore().contains(entry.getKey())
+                    && !Objects.equals(before.get(entry.getKey()), entry.getValue()));
+        if (!notable) {
+            return null;
+        }
+        Version version = base(user, options, entity, "update");
+        version.setObject(PaperTrailYaml.dumpObject(after));
         return versionRepository.save(version);
     }
 
@@ -158,8 +220,10 @@ public class VersionRecorder {
     public Version recordDestroy(AuthenticatedUser user, Object entity, Map<String, Object> attributes) {
         PaperTrailOptions options = options(entity);
         attributes = new LinkedHashMap<>(attributes);
-        // Rails' acts_as_taggable tag_list attribute serializes nil on destroy dumps.
-        attributes.replace("tag_list", null);
+        Object tagList = attributes.get("tag_list");
+        if (tagList != null && !(tagList instanceof PaperTrailYaml.RubyTagList)) {
+            attributes.put("tag_list", null);
+        }
         Map<String, Object[]> changes = new LinkedHashMap<>();
         attributes.forEach((name, value) -> {
             if (!options.ignore().contains(name)) {
@@ -214,10 +278,12 @@ public class VersionRecorder {
                     ? pair(comment.getCommentableType(), comment.getCommentableId()) : null;
                 case com.fatfreecrm.domain.Email email -> attribute.equals("mediator")
                     ? pair(email.getMediatorType(), email.getMediatorId()) : null;
-                case com.fatfreecrm.domain.AccountContact link -> attribute.equals("contact")
-                    ? pair("Contact", link.getContact().getId().intValue()) : null;
-                case com.fatfreecrm.domain.Address address -> attribute.equals("addressable")
+                case Address address -> attribute.equals("addressable")
                     ? pair(address.getAddressableType(), address.getAddressableId()) : null;
+                case AccountContact accountContact -> attribute.equals("contact")
+                    ? pair("Contact", accountContact.getContact() == null
+                        ? null : accountContact.getContact().getId().intValue())
+                    : null;
                 default -> null;
             };
             return value == null ? new Related(null, null) : value;

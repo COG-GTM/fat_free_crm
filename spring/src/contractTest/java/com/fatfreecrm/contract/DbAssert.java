@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * {@code dbAssert} capture + normalization for write cases. Each entry is
- * {@code {table, where, orderBy, columns, exclude, volatile, yamlVolatile: {column: [keys]}}} —
+ * {@code {table, where, orderBy, columns, exclude, volatile, yamlVolatile/jsonVolatile: {column: [keys]}}} —
  * captured rows after each side's request are normalized (volatile columns compared as
  * null/non-null, yamlVolatile masking those top-level keys inside YAML text), then diffed like a
  * JSON body: differences surface as un-allowlistable contract differences.
@@ -78,8 +78,10 @@ public final class DbAssert {
             List<String> volatileColumns = strings(node.get("volatile"));
             ObjectNode yamlVolatile = node.get("yamlVolatile") instanceof ObjectNode object
                 ? object : NODES.objectNode();
+            ObjectNode jsonVolatile = node.get("jsonVolatile") instanceof ObjectNode object
+                ? object : NODES.objectNode();
             asserts.add(new Assert(table, where, orderBy, columns, exclude, volatileColumns,
-                yamlVolatile));
+                yamlVolatile, jsonVolatile));
         }
         return asserts;
     }
@@ -126,6 +128,9 @@ public final class DbAssert {
                     } else if (assertion.yamlVolatile().has(column) && value != null) {
                         row.put(column, maskYaml(value.toString(),
                             strings(assertion.yamlVolatile().get(column))));
+                    } else if (assertion.jsonVolatile().has(column) && value != null) {
+                        row.set(column, maskJson(value.toString(),
+                            strings(assertion.jsonVolatile().get(column))));
                     } else {
                         row.put(column, value == null ? null : value.toString());
                     }
@@ -134,6 +139,25 @@ public final class DbAssert {
             }
         }
         return rows;
+    }
+
+    static JsonNode maskJson(String json, List<String> paths) {
+        try {
+            JsonNode parsed = JSON.readTree(json);
+            for (String path : paths) {
+                String[] parts = path.replaceFirst("^/", "").split("/");
+                JsonNode current = parsed;
+                for (int index = 0; index < parts.length - 1; index++) {
+                    current = current == null ? null : current.get(parts[index]);
+                }
+                if (current instanceof ObjectNode object && parts.length > 0) {
+                    object.putNull(parts[parts.length - 1]);
+                }
+            }
+            return parsed;
+        } catch (Exception exception) {
+            throw new IllegalArgumentException("jsonVolatile column is not valid JSON", exception);
+        }
     }
 
     /**
@@ -204,7 +228,8 @@ public final class DbAssert {
         List<String> columns,
         List<String> exclude,
         List<String> volatile_,
-        ObjectNode yamlVolatile
+        ObjectNode yamlVolatile,
+        ObjectNode jsonVolatile
     ) {
     }
 }

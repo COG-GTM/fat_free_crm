@@ -1,5 +1,7 @@
 package com.fatfreecrm.service.audit;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -16,17 +18,19 @@ import java.util.regex.Pattern;
  * with {@code utc}/{@code zone}/{@code time} members, and Psych anchors: objects referenced more
  * than once get {@code &N} at first use and {@code *N} later, numbered in document order. The
  * {@code ActiveSupport::TimeZone} instance is shared by every TimeWithZone in the document, and
- * Rails assigns {@code created_at}/{@code updated_at} from one {@code Time.now}, so a shared
- * {@code utc} {@code Time} anchors the same way. The {@code time:} member is always literal.
- *
- * <p>Anchors track object identity: callers must pass the same {@link Instant} instance for
- * attributes Rails populated from one {@code Time.now} so the {@code &N}/{@code *N} anchoring
- * matches Psych output.
+ * repeated UTC {@link Instant} instances share anchors. The {@code time:} member is always literal.
  */
 public final class PaperTrailYaml {
 
     private static final DateTimeFormatter TIMESTAMP =
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC);
+
+    /** Ruby's {@code ActsAsTaggableOn::TagList} array wrapper used in PaperTrail snapshots. */
+    public record RubyTagList(List<?> values) {
+        public RubyTagList {
+            values = List.copyOf(values);
+        }
+    }
 
     // Scalars Psych would parse back as non-strings must be quoted.
     private static final Pattern IMPLICIT = Pattern.compile(
@@ -81,14 +85,7 @@ public final class PaperTrailYaml {
                 if (value == null) {
                     out.append('-');
                 } else if (value instanceof List<?> list) {
-                    if (list.isEmpty()) {
-                        out.append("- []");
-                    } else {
-                        out.append("- - ").append(scalar(list.get(0)));
-                        for (int i = 1; i < list.size(); i++) {
-                            out.append("\n  - ").append(scalar(list.get(i)));
-                        }
-                    }
+                    appendListChange(out, list);
                 } else {
                     out.append('-');
                     writeValue(out, value, " ", anchors);
@@ -97,6 +94,18 @@ public final class PaperTrailYaml {
             }
         }
         return out.toString();
+    }
+
+    private static void appendListChange(StringBuilder out, List<?> list) {
+        if (list.isEmpty()) {
+            out.append("- []");
+        } else {
+            out.append("- - ").append(scalar(list.get(0)));
+            for (int index = 1; index < list.size(); index++) {
+                Object item = list.get(index);
+                out.append("\n  - ").append(scalar(item));
+            }
+        }
     }
 
     private static List<Object> values(Map<String, Object> attributes) {
@@ -108,11 +117,14 @@ public final class PaperTrailYaml {
             return;
         }
         switch (value) {
+            case RubyTagList tagList -> writeRubyTagList(out, tagList, prefix);
             case List<?> list -> {
                 for (Object item : list) {
                     out.append('\n').append("- ").append(scalar(item));
                 }
             }
+            case BigDecimal decimal -> out.append(prefix).append(bigDecimal(decimal));
+            case LocalDate date -> out.append(prefix).append(date);
             case Instant instant -> {
                 out.append(prefix);
                 writeTimeWithZone(out, instant, anchors);
@@ -123,6 +135,16 @@ public final class PaperTrailYaml {
         }
     }
 
+    private static void writeRubyTagList(StringBuilder out, RubyTagList tagList, String prefix) {
+        out.append(prefix).append("!ruby/array:ActsAsTaggableOn::TagList\n")
+            .append(prefix).append(" internal:\n");
+        for (Object item : tagList.values()) {
+            out.append(prefix).append(" - ").append(scalar(item)).append('\n');
+        }
+        out.append(prefix).append(" ivars:\n")
+            .append(prefix).append("   :@parser: !ruby/class 'ActsAsTaggableOn::DefaultParser'");
+    }
+
     private static String scalar(Object item) {
         if (item == null) {
             return "";
@@ -130,10 +152,37 @@ public final class PaperTrailYaml {
         if (item instanceof Boolean bool) {
             return bool ? "true" : "false";
         }
+        if (item instanceof BigDecimal decimal) {
+            return bigDecimal(decimal);
+        }
+        if (item instanceof LocalDate date) {
+            return date.toString();
+        }
         if (item instanceof Number number) {
             return number.toString();
         }
         return quote(item.toString());
+    }
+
+    private static String bigDecimal(BigDecimal value) {
+        BigDecimal normalized = value.stripTrailingZeros();
+        if (normalized.signum() == 0) {
+            return "!ruby/object:BigDecimal 9:0.0";
+        }
+        String digits = normalized.unscaledValue().abs().toString();
+        int exponent = digits.length() - normalized.scale();
+        int precision = bigDecimalPrecision(normalized);
+        return "!ruby/object:BigDecimal " + precision + ":"
+            + (normalized.signum() < 0 ? "-0." : "0.") + digits + "e" + exponent;
+    }
+
+    private static int bigDecimalPrecision(BigDecimal value) {
+        int digits = value.precision();
+        int scale = value.scale();
+        int words = scale > 0
+            ? (Math.max(0, digits - scale) + 8) / 9 + (scale + 8) / 9
+            : (digits + 8) / 9;
+        return Math.max(1, words) * 9;
     }
 
     private static void writeTimeWithZone(StringBuilder out, Instant instant, AnchorState anchors) {
@@ -169,6 +218,9 @@ public final class PaperTrailYaml {
         if (text.isEmpty()) {
             return true;
         }
+        if (text.codePoints().anyMatch(Character::isSupplementaryCodePoint)) {
+            return true;
+        }
         if (!text.equals(text.trim()) || text.contains(": ") || text.contains(" #")
             || text.endsWith(":") || text.contains("\n") || text.contains("\t")) {
             return true;
@@ -190,11 +242,29 @@ public final class PaperTrailYaml {
         if (text.contains("\n")) {
             return "|-\n  " + text.replace("\n", "\n  ");
         }
-        return '"' + text
-            .replace("\\", "\\\\")
-            .replace("\"", "\\\"")
-            .replace("\t", "\\t")
-            + '"';
+        if (text.startsWith(" ")
+            || text.startsWith("<")
+            || text.codePoints().anyMatch(Character::isSupplementaryCodePoint)
+            || text.codePoints().anyMatch(Character::isISOControl)) {
+            StringBuilder quoted = new StringBuilder("\"");
+            text.codePoints().forEach(codePoint -> {
+                switch (codePoint) {
+                    case '\\' -> quoted.append("\\\\");
+                    case '"' -> quoted.append("\\\"");
+                    case '\t' -> quoted.append("\\t");
+                    case '\r' -> quoted.append("\\r");
+                    default -> {
+                        if (Character.isSupplementaryCodePoint(codePoint)) {
+                            quoted.append(String.format(Locale.ROOT, "\\U%08X", codePoint));
+                        } else {
+                            quoted.appendCodePoint(codePoint);
+                        }
+                    }
+                }
+            });
+            return quoted.append('"').toString();
+        }
+        return "'" + text.replace("'", "''") + "'";
     }
 
     /** Psych only anchors objects referenced more than once; scan the document up front. */

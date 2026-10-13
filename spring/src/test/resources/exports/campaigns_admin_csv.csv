@@ -1,0 +1,7 @@
+Id,User,Assigned to,Name,Access,Status,Budget,Target leads,Target conversion,Target revenue,Leads count,Opportunities count,Revenue,Starts on,Ends on,Objectives,Deleted at,Created at,Updated at,Background info,Subscribed users,Tags
+9723,9701,,"Fall, ""Quoted""",Public,,0.0,0,0.0,,,,,,,"Grow
+pipeline",,2025-01-01 11:30:15 UTC,2025-01-01 11:30:15 UTC,,[],""
+9722,9702,,Hidden Campaign,Private,started,,,,,,,,,2025-12-31,"Grow
+pipeline",,2025-01-01 10:30:15 UTC,2025-01-01 10:30:15 UTC,,[],""
+9721,9701,9702,Spring Launch,Public,planned,1000.5,10,2.5,5000.0,1,1,,2025-02-01,,"Grow
+pipeline",,2025-01-01 09:30:15 UTC,2025-01-01 09:30:15 UTC,,[],vip

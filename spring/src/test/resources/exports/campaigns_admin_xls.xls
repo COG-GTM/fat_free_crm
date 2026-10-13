@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workbook xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40" xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office">
+<Worksheet ss:Name="Campaigns">
+  <Table>
+    <Row>
+      <Cell>
+        <Data ss:Type="String">Id</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">User</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Assigned to</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Name</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Access</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Status</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Budget</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">target leads</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Target conversion</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">target revenue</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Number of leads</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Total Opportunities</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Revenue</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">start date</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">end date</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Objectives</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Background</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Date Created</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Date Updated</Data>
+      </Cell>
+    </Row>
+    <Row>
+      <Cell>
+        <Data ss:Type="Number">9723</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Alice</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Fall, "Quoted"</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Public</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">0.0</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">0</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">0.0</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Grow
+pipeline</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-01 11:30:15 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-01 11:30:15 UTC</Data>
+      </Cell>
+    </Row>
+    <Row>
+      <Cell>
+        <Data ss:Type="Number">9722</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">bob-export</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Hidden Campaign</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Private</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">started</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-12-31</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Grow
+pipeline</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-01 10:30:15 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-01 10:30:15 UTC</Data>
+      </Cell>
+    </Row>
+    <Row>
+      <Cell>
+        <Data ss:Type="Number">9721</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Alice</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">bob-export</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Spring Launch</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Public</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">planned</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">1000.5</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">10</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">2.5</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">5000.0</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">1</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="Number">1</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-02-01</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Grow
+pipeline</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String"/>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-01 09:30:15 UTC</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">2025-01-01 09:30:15 UTC</Data>
+      </Cell>
+    </Row>
+  </Table>
+</Worksheet>
+</Workbook>

@@ -70,6 +70,7 @@ class ContractDiffTest {
                     dbReset.runSetup(contractCase.setupStatements());
                     customColumns = dbReset.customFieldColumns();
                 }
+                runSetup(client, contractCase, true);
                 ContractClient.RequestResult rails = client.send(contractCase, true);
                 JsonNode railsDb = captureDb(dbAsserts);
                 if (contractCase.reset()) {
@@ -77,6 +78,7 @@ class ContractDiffTest {
                     dbReset.dropCustomFieldColumnsExcept(customColumns);
                     dbReset.runSetup(contractCase.setupStatements());
                 }
+                runSetup(client, contractCase, false);
                 ContractClient.RequestResult spring = client.send(contractCase, false);
                 JsonNode springDb = captureDb(dbAsserts);
                 List<String> notes = new ArrayList<>(rails.notes());
@@ -102,6 +104,13 @@ class ContractDiffTest {
             }));
         }
         return tests.stream();
+    }
+
+    private static void runSetup(ContractClient client, ContractCase contractCase, boolean railsSide)
+        throws IOException, InterruptedException {
+        for (ContractCase.SetupRequest setup : contractCase.setup()) {
+            client.sendSetup(setup, railsSide);
+        }
     }
 
     @AfterAll

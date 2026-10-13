@@ -53,7 +53,7 @@ class ContractHarnessTest {
     @Test
     void loadsInitialCasesFromClasspath() throws Exception {
         List<ContractCase> cases = CaseLoader.load();
-        assertEquals(333, cases.size());
+        assertEquals(372, cases.size());
         ContractCase accountsIndex = cases.stream()
             .filter(contractCase -> contractCase.id().equals("accounts-index-admin"))
             .findFirst()
@@ -75,6 +75,14 @@ class ContractHarnessTest {
             .filter(contractCase -> contractCase.id().equals("accounts-index-self-check-admin"))
             .findFirst().orElseThrow().expect().path("status").asInt());
         assertEquals(5, FixtureUsers.load().size());
+        ContractCase auditSetup = cases.stream()
+            .filter(contractCase -> contractCase.id().equals("activity-after-task-create-alice"))
+            .findFirst()
+            .orElseThrow();
+        assertEquals(1, auditSetup.setup().size());
+        assertEquals("POST", auditSetup.setup().getFirst().method());
+        assertEquals("/tasks.json", auditSetup.setup().getFirst().rails().path());
+        assertEquals("alice", auditSetup.setup().getFirst().auth());
     }
 
     @Test

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workbook xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40" xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office">
+<Worksheet ss:Name="Tasks">
+  <Table>
+    <Row>
+      <Cell>
+        <Data ss:Type="String">Id</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Name</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Due</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Date Created</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Date Updated</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Completed</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">User</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Assigned to</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Category</Data>
+      </Cell>
+      <Cell>
+        <Data ss:Type="String">Background</Data>
+      </Cell>
+    </Row>
+  </Table>
+</Worksheet>
+</Workbook>

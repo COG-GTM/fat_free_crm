@@ -1,0 +1,8 @@
+From: sender@example.test
+To: dropbox@example.test
+Subject: HTML with charset
+Message-ID: <html-charset@example.test>
+Date: Tue, 03 Mar 2026 12:04:00 +0000
+Content-Type: text/html; charset=UTF-8
+
+<html><body><p>Only <b>HTML</b>.</p></body></html>

@@ -1,0 +1,16 @@
+{
+  "correct_sig.txt": "this is an email with a correct -- signature.",
+  "email_1_1.txt": "Hi folks\n\nWhat is the best way to clear a Riak bucket of all key, values after\nrunning a test?\nI am currently using the Java HTTP API.",
+  "email_1_2.txt": "Hi,\nOn Tue, 2011-03-01 at 18:02 +0530, Abhishek Kona wrote:\n> Hi folks\n>\n> What is the best way to clear a Riak bucket of all key, values after\n> running a test?\n> I am currently using the Java HTTP API.\n\nYou can list the keys for the bucket and call delete for each. Or if you\nput the keys (and kept track of them in your test) you can delete them\none at a time (without incurring the cost of calling list first.)\n\nSomething like:\n\n        String bucket = \"my_bucket\";\n        BucketResponse bucketResponse = riakClient.listBucket(bucket);\n        RiakBucketInfo bucketInfo = bucketResponse.getBucketInfo();\n\n        for(String key : bucketInfo.getKeys()) {\n            riakClient.delete(bucket, key);\n        }\n\n\nwould do it.\n\nSee also\n\nhttp://wiki.basho.com/REST-API.html#Bucket-operations\n\nwhich says\n\n\"At the moment there is no straightforward way to delete an entire\nBucket. There is, however, an open ticket for the feature. To delete all\nthe keys in a bucket, you’ll need to delete them all individually.\"",
+  "email_1_3.txt": "Oh thanks.\n\nHaving the function would be great.",
+  "email_1_4.txt": "Awesome! I haven't had another problem with it.",
+  "email_1_5.txt": "One: Here's what I've got.\n\n- This would be the first bullet point that wraps to the second line\nto the next\n- This is the second bullet point and it doesn't wrap\n- This is the third bullet point and I'm having trouble coming up with enough\nto say\n- This is the fourth bullet point\n\nTwo:\n- Here is another bullet point\n- And another one\n\nThis is a paragraph that talks about a bunch of stuff. It goes on and on\nfor a while.",
+  "email_1_6.txt": "I get proper rendering as well.\n\nSent from a magnificent torch of pixels",
+  "email_2_1.txt": "Outlook with a reply",
+  "email_2_2.txt": "Outlook with a reply directly above line",
+  "email_BlackBerry.txt": "Here is another email",
+  "email_bullets.txt": "test 2 this should list second\n\nand have spaces\n\nand retain this formatting\n\n\n   - how about bullets\n   - and another",
+  "email_iPhone.txt": "Here is another email",
+  "email_multi_word_sent_from_my_mobile_device.txt": "Here is another email",
+  "email_sent_from_my_not_signature.txt": "Here is another email\n\nSent from my desk, is much easier then my mobile phone."
+}

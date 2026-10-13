@@ -1,8 +1,11 @@
 package com.fatfreecrm.service.audit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,12 +55,80 @@ class PaperTrailYamlTest {
     }
 
     @Test
+    void equalButDistinctTimestampAttributesAreNotAnchored() {
+        Instant first = Instant.ofEpochSecond(1_791_431_045L, 999_999_999);
+        Instant second = Instant.ofEpochSecond(1_791_431_045L, 999_999_999);
+        assertNotSame(first, second);
+        Map<String, Object[]> changes = new LinkedHashMap<>();
+        changes.put("first_time", new Object[] {null, first});
+        changes.put("second_time", new Object[] {null, second});
+
+        String yaml = PaperTrailYaml.dumpChanges(changes);
+
+        org.junit.jupiter.api.Assertions.assertFalse(yaml.contains("utc: &"), yaml);
+        org.junit.jupiter.api.Assertions.assertFalse(yaml.contains("utc: *"), yaml);
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("zone: &1"), yaml);
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("zone: *1"), yaml);
+    }
+
+    @Test
+    void equalCreatedAndUpdatedValuesUseRailsSharedUtcAlias() {
+        Instant created = Instant.ofEpochSecond(1_791_431_045L, 999_999_999);
+        Instant updated = Instant.ofEpochSecond(1_791_431_045L, 999_999_999);
+        assertNotSame(created, updated);
+        Map<String, Object[]> changes = new LinkedHashMap<>();
+        changes.put("created_at", new Object[] {null, created});
+        changes.put("updated_at", new Object[] {null, updated});
+
+        String yaml = PaperTrailYaml.dumpChanges(changes);
+
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("utc: &"), yaml);
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("utc: *"), yaml);
+    }
+
+    @Test
     void dumpChangesQuotingMatchesPsych() {
         Map<String, Object[]> changes = new LinkedHashMap<>();
-        changes.put("body", new Object[] {"", "<b>hi</b>"});
+        changes.put("body", new Object[] {"", "yes"});
+        changes.put("notes", new Object[] {null, "a: b"});
+        changes.put("street1", new Object[] {null, "  leading"});
+        changes.put("suffix", new Object[] {null, "leading "});
+        changes.put("imap_message_id", new Object[] {null, "<contract-701@ffcrm>"});
         String yaml = PaperTrailYaml.dumpChanges(changes);
         org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- ''"));
-        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- \"<b>hi</b>\""));
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- 'yes'"));
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- 'a: b'"));
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- \"  leading\""));
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- 'leading '"));
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("- \"<contract-701@ffcrm>\""));
+    }
+
+    @Test
+    void contractEmailMessageIdMatchesRailsDestroyGolden() {
+        Map<String, Object> attributes = new LinkedHashMap<>();
+        attributes.put("id", 701L);
+        attributes.put("imap_message_id", "<contract-701@ffcrm>");
+
+        assertEquals(
+            "---\nid: 701\nimap_message_id: \"<contract-701@ffcrm>\"\n",
+            PaperTrailYaml.dumpObject(attributes));
+    }
+
+    @Test
+    void dumpsRailsDateAndBigDecimalShapes() {
+        Map<String, Object> attributes = new LinkedHashMap<>();
+        attributes.put("starts_on", LocalDate.parse("2025-02-03"));
+        attributes.put("budget", new BigDecimal("12.50"));
+        attributes.put("long_budget", new BigDecimal("12345678901234567890.123456789"));
+        attributes.put("tiny_budget", new BigDecimal("-0.000000001"));
+        attributes.put("zero_budget", BigDecimal.ZERO);
+
+        assertEquals(
+            "---\nstarts_on: 2025-02-03\nbudget: !ruby/object:BigDecimal 18:0.125e2\n"
+                + "long_budget: !ruby/object:BigDecimal 36:0.12345678901234567890123456789e20\n"
+                + "tiny_budget: !ruby/object:BigDecimal 9:-0.1e-8\n"
+                + "zero_budget: !ruby/object:BigDecimal 9:0.0\n",
+            PaperTrailYaml.dumpObject(attributes));
     }
 
     @Test
@@ -71,6 +142,36 @@ class PaperTrailYamlTest {
         assertEquals(
             "---\nid: 701\nimap_message_id:\nsent_from: alice@example.com\nsubscribed_users:\n- 2\n- 3\n",
             yaml);
+    }
+
+    @Test
+    void dumpsTagListSnapshotAsRubyArrayAndEmptyChangesAsSequences() {
+        Map<String, Object> attributes = new LinkedHashMap<>();
+        attributes.put("tag_list", new PaperTrailYaml.RubyTagList(List.of("alpha", "beta")));
+        assertEquals(
+            "---\ntag_list: !ruby/array:ActsAsTaggableOn::TagList\n"
+                + "  internal:\n  - alpha\n  - beta\n"
+                + "  ivars:\n    :@parser: !ruby/class 'ActsAsTaggableOn::DefaultParser'\n",
+            PaperTrailYaml.dumpObject(attributes));
+
+        Map<String, Object[]> changes = new LinkedHashMap<>();
+        changes.put("tag_list", new Object[] {List.of(), List.of("alpha", "beta")});
+        assertEquals(
+            "---\ntag_list:\n- []\n- - alpha\n  - beta\n",
+            PaperTrailYaml.dumpChanges(changes));
+    }
+
+    @Test
+    void destroyTagListChangesUseRubyArrayValues() {
+        PaperTrailYaml.RubyTagList tagList = new PaperTrailYaml.RubyTagList(List.of("delta", "epsilon"));
+        Map<String, Object[]> changes = new LinkedHashMap<>();
+        changes.put("tag_list", new Object[] {tagList, null});
+
+        assertEquals(
+            "---\ntag_list:\n- !ruby/array:ActsAsTaggableOn::TagList\n"
+                + "  internal:\n  - delta\n  - epsilon\n"
+                + "  ivars:\n    :@parser: !ruby/class 'ActsAsTaggableOn::DefaultParser'\n-\n",
+            PaperTrailYaml.dumpChanges(changes));
     }
 
     @Test
@@ -118,8 +219,12 @@ class PaperTrailYamlTest {
         attrs.put("created_at", same);
         attrs.put("updated_at", same);
         attrs.put("note", "it's here");
+        attrs.put("unicode", "Zoë😀");
+        String objectYaml = PaperTrailYaml.dumpObject(attrs);
+        org.junit.jupiter.api.Assertions.assertTrue(
+            objectYaml.contains("unicode: \"Zoë\\U0001F600\""), objectYaml);
         org.junit.jupiter.api.Assertions.assertDoesNotThrow(
-            () -> parseStripTags(PaperTrailYaml.dumpObject(attrs)));
+            () -> parseStripTags(objectYaml));
     }
 
     /** SnakeYAML can't construct {@code !ruby/object:} tags — strip them and parse structure. */

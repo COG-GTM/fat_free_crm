@@ -41,7 +41,10 @@ import com.fatfreecrm.security.AuthenticatedUser;
 import com.fatfreecrm.security.authz.AccessPolicy;
 import com.fatfreecrm.security.authz.CrmAccessPolicy;
 import com.fatfreecrm.service.audit.EntityAttributes;
+import com.fatfreecrm.service.audit.PaperTrailYaml;
 import com.fatfreecrm.service.audit.VersionRecorder;
+import com.fatfreecrm.service.jobs.RailsModelCallbacks;
+import com.fatfreecrm.service.jobs.RailsWhodunnit;
 import com.fatfreecrm.service.json.RailsJsonWriter;
 import com.fatfreecrm.service.json.RailsResources;
 import com.fatfreecrm.service.validation.ActiveModelMessages;
@@ -61,6 +64,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -117,6 +121,7 @@ public class EntityWriteService {
     private final TransactionTemplate requiresNew;
     private final AccessPolicy accessPolicy;
     private final Clock clock;
+    private final RailsModelCallbacks modelCallbacks;
 
     public EntityWriteService(
         AccountRepository accountRepository,
@@ -145,7 +150,8 @@ public class EntityWriteService {
         AccessPolicy accessPolicy,
         JdbcTemplate jdbcTemplate,
         PlatformTransactionManager transactionManager,
-        Clock clock
+        Clock clock,
+        RailsModelCallbacks modelCallbacks
     ) {
         this.accountRepository = accountRepository;
         this.campaignRepository = campaignRepository;
@@ -175,6 +181,7 @@ public class EntityWriteService {
         this.requiresNew = new TransactionTemplate(transactionManager);
         this.requiresNew.setPropagationBehavior(Propagation.REQUIRES_NEW.value());
         this.clock = clock;
+        this.modelCallbacks = modelCallbacks;
     }
 
     // ------------------------------------------------------------------ row attributes
@@ -506,6 +513,113 @@ public class EntityWriteService {
             delta, tagId.intValue());
     }
 
+    private void recordTaggableUpdate(
+        AuthenticatedUser user,
+        Object entity,
+        Map<String, Object> changeBefore,
+        Map<String, Object> objectBefore,
+        Map<String, Object> after,
+        List<String> assignedOrder,
+        Map<String, JsonNode> params,
+        List<String> tagListBefore,
+        boolean leadUnchangedAssigned
+    ) {
+        Map<String, Object> changesBefore = new LinkedHashMap<>(changeBefore);
+        Map<String, Object> snapshotBefore = new LinkedHashMap<>(objectBefore);
+        if (params.containsKey("tag_list")) {
+            List<String> tagListAfter = requestedTagNames(params.get("tag_list"));
+            changesBefore.put("tag_list", tagListBefore);
+            snapshotBefore.put("tag_list",
+                new PaperTrailYaml.RubyTagList(tagListAfter));
+            after.put("tag_list", tagListAfter);
+            Object updatedAt = after.get("updated_at");
+            if (Objects.equals(changeBefore.get("updated_at"), updatedAt)) {
+                Instant tagUpdatedAt = clock.instant().truncatedTo(ChronoUnit.MICROS);
+                persistTagListUpdatedAt(entity, tagUpdatedAt);
+                updatedAt = tagUpdatedAt;
+            }
+            after.put("updated_at", updatedAt);
+            if (!assignedOrder.contains("tag_list")) {
+                List<String> requestOrder = new ArrayList<>(params.keySet());
+                int tagListIndex = requestOrder.indexOf("tag_list");
+                int insertionIndex = 0;
+                while (insertionIndex < assignedOrder.size()) {
+                    int assignedIndex = requestOrder.indexOf(assignedOrder.get(insertionIndex));
+                    if (assignedIndex < 0 || assignedIndex > tagListIndex) {
+                        break;
+                    }
+                    insertionIndex++;
+                }
+                assignedOrder.add(insertionIndex, "tag_list");
+            }
+        } else {
+            changesBefore.put("tag_list", null);
+            snapshotBefore.put("tag_list", null);
+            after.put("tag_list", null);
+        }
+        versionRecorder.recordUpdate(
+            user, entity, snapshotBefore, after, assignedOrder, changesBefore, leadUnchangedAssigned);
+        if (entity instanceof CrmEntity crmEntity) {
+            modelCallbacks.afterUpdate(crmEntity, assignedToId(changeBefore),
+                stringAttribute(changeBefore, "website"), stringAttribute(changeBefore, "wikidata_id"),
+                RailsWhodunnit.integer(user.id()));
+        }
+    }
+
+    private static Long assignedToId(Map<String, Object> attributes) {
+        Object value = attributes.get("assigned_to");
+        return value instanceof Number number ? number.longValue()
+            : value == null ? null : Long.valueOf(value.toString());
+    }
+
+    private static String stringAttribute(Map<String, Object> attributes, String name) {
+        Object value = attributes.get(name);
+        return value == null ? null : value.toString();
+    }
+
+    private void persistTagListUpdatedAt(Object entity, Instant updatedAt) {
+        CrmEntity crmEntity = (CrmEntity) entity;
+        String table = entity.getClass().getAnnotation(jakarta.persistence.Table.class).name();
+        int updatedRows = entityManager.createNativeQuery(
+                "UPDATE " + table + " SET updated_at = :updatedAt WHERE id = :id")
+            .setParameter("updatedAt", updatedAt)
+            .setParameter("id", crmEntity.getId())
+            .executeUpdate();
+        if (updatedRows != 1) {
+            throw new IllegalStateException("Unable to persist tag-list timestamp for "
+                + entity.getClass().getSimpleName() + " " + crmEntity.getId());
+        }
+        entityManager.refresh(crmEntity);
+    }
+
+    private Map<String, Object> taggableCreateAttributes(
+        Map<String, Object> attributes, Map<String, JsonNode> params) {
+        Map<String, Object> snapshot = new LinkedHashMap<>(attributes);
+        if (params.containsKey("tag_list")) {
+            snapshot.put("tag_list", requestedTagNames(params.get("tag_list")));
+        } else {
+            snapshot.put("tag_list", List.of());
+        }
+        return snapshot;
+    }
+
+    private Map<String, Object> taggableDestroyAttributes(Map<String, Object> attributes) {
+        Map<String, Object> snapshot = new LinkedHashMap<>(attributes);
+        snapshot.put("tag_list", null);
+        return snapshot;
+    }
+
+    private List<String> requestedTagNames(JsonNode value) {
+        List<String> tags = new ArrayList<>();
+        for (Object raw : listValue(value)) {
+            String name = String.valueOf(raw).trim();
+            if (!name.isEmpty() && !tags.contains(name)) {
+                tags.add(name);
+            }
+        }
+        return List.copyOf(tags);
+    }
+
     // ------------------------------------------------------------------ settings
 
     private String setting(String name) {
@@ -667,7 +781,9 @@ public class EntityWriteService {
         flushPendingPermissions("Account", account.getId(), pending);
         applyTagListIfProvided(account, "Account", params);
         versionRecorder.recordCreate(user, account,
-            rowAttributes(Account.class, account.getId()), ACCOUNT_DEFAULTS);
+            taggableCreateAttributes(rowAttributes(Account.class, account.getId()), params),
+            ACCOUNT_DEFAULTS);
+        modelCallbacks.afterCreate(account, RailsWhodunnit.integer(user.id()));
         commentBody(user, "Account", account.getId(), field(request, "comment_body"));
         return jsonWriter.writeOne(railsResources.account, account.getId());
     }
@@ -700,8 +816,8 @@ public class EntityWriteService {
                 order.add(saveWrite);
             }
         }
-        versionRecorder.recordUpdate(user, account, before,
-            rowAttributes(Account.class, id), order, true);
+        recordTaggableUpdate(user, account, before, before,
+            rowAttributes(Account.class, id), order, params, List.of(), true);
     }
 
     private void cancanDefaults(CrmEntity entity, AuthenticatedUser user,
@@ -816,7 +932,8 @@ public class EntityWriteService {
         flushPendingPermissions("Campaign", campaign.getId(), pending);
         applyTagListIfProvided(campaign, "Campaign", params);
         versionRecorder.recordCreate(user, campaign,
-            rowAttributes(Campaign.class, campaign.getId()), CAMPAIGN_DEFAULTS);
+            taggableCreateAttributes(rowAttributes(Campaign.class, campaign.getId()), params),
+            CAMPAIGN_DEFAULTS);
         commentBody(user, "Campaign", campaign.getId(), field(request, "comment_body"));
         return jsonWriter.writeOne(railsResources.campaign, campaign.getId());
     }
@@ -840,8 +957,8 @@ public class EntityWriteService {
         campaignRepository.saveAndFlush(campaign);
         flushPendingPermissions("Campaign", campaign.getId(), pending);
         applyTagListIfProvided(campaign, "Campaign", params);
-        versionRecorder.recordUpdate(user, campaign, before,
-            rowAttributes(Campaign.class, id), order);
+        recordTaggableUpdate(user, campaign, before, before,
+            rowAttributes(Campaign.class, id), order, params, List.of(), false);
     }
 
     private Map<String, Consumer<JsonNode>> campaignColumns(Campaign campaign) {
@@ -926,7 +1043,9 @@ public class EntityWriteService {
         applyTagListIfProvided(contact, "Contact", params);
         linkContactOpportunity(contact, field(request, "opportunity"));
         versionRecorder.recordCreate(user, contact,
-            rowAttributes(Contact.class, contact.getId()), CONTACT_DEFAULTS);
+            taggableCreateAttributes(rowAttributes(Contact.class, contact.getId()), params),
+            CONTACT_DEFAULTS);
+        modelCallbacks.afterCreate(contact, RailsWhodunnit.integer(user.id()));
         commentBody(user, "Contact", contact.getId(), field(request, "comment_body"));
         return jsonWriter.writeOne(railsResources.contact, contact.getId());
     }
@@ -953,8 +1072,8 @@ public class EntityWriteService {
         contactRepository.saveAndFlush(contact);
         flushPendingPermissions("Contact", contact.getId(), pending);
         applyTagListIfProvided(contact, "Contact", params);
-        versionRecorder.recordUpdate(user, contact, before,
-            rowAttributes(Contact.class, id), order);
+        recordTaggableUpdate(user, contact, before, before,
+            rowAttributes(Contact.class, id), order, params, List.of(), false);
     }
 
     private Map<String, Consumer<JsonNode>> contactColumns(Contact contact) {
@@ -1089,7 +1208,9 @@ public class EntityWriteService {
             flushPendingPermissions("Account", account.getId(), pending);
             if (account.getId() != null) {
                 versionRecorder.recordCreate(user, account,
-                    rowAttributes(Account.class, account.getId()), ACCOUNT_DEFAULTS);
+                    taggableCreateAttributes(rowAttributes(Account.class, account.getId()), params),
+                    ACCOUNT_DEFAULTS);
+                modelCallbacks.afterCreate(account, RailsWhodunnit.integer(user.id()));
             }
         }
         return account;
@@ -1133,6 +1254,7 @@ public class EntityWriteService {
         // object_changes befores are the column defaults, not nil — verified live.
         versionRecorder.recordCreate(user, entity,
             rowAttributes(entity.getClass(), entity.getId()), defaultsFor(assetType));
+        modelCallbacks.afterCreate(entity, RailsWhodunnit.integer(user.id()));
     }
 
     private String railsNameOf(CrmEntity entity) {
@@ -1238,8 +1360,9 @@ public class EntityWriteService {
         leadRepository.saveAndFlush(lead);
         flushPendingPermissions("Lead", lead.getId(), pending);
         applyTagListIfProvided(lead, "Lead", params);
-        versionRecorder.recordCreate(user, lead, rowAttributes(Lead.class, lead.getId()),
-            LEAD_DEFAULTS);
+        versionRecorder.recordCreate(user, lead,
+            taggableCreateAttributes(rowAttributes(Lead.class, lead.getId()), params), LEAD_DEFAULTS);
+        modelCallbacks.afterCreate(lead, RailsWhodunnit.integer(user.id()));
         commentBody(user, "Lead", lead.getId(), field(request, "comment_body"));
         return jsonWriter.writeOne(railsResources.lead, lead.getId());
     }
@@ -1293,7 +1416,8 @@ public class EntityWriteService {
         leadRepository.saveAndFlush(lead);
         flushPendingPermissions("Lead", lead.getId(), pending);
         applyTagListIfProvided(lead, "Lead", params);
-        versionRecorder.recordUpdate(user, lead, before, rowAttributes(Lead.class, id), order);
+        recordTaggableUpdate(user, lead, before, before,
+            rowAttributes(Lead.class, id), order, params, List.of(), false);
     }
 
     private Map<String, Consumer<JsonNode>> leadColumns(Lead lead) {
@@ -1430,6 +1554,8 @@ public class EntityWriteService {
             leadRepository.saveAndFlush(lead);
             versionRecorder.recordUpdate(user, lead, before,
                 rowAttributes(Lead.class, lead.getId()), List.of("status"));
+            modelCallbacks.afterUpdate(lead, assignedToId(before), null, null,
+                RailsWhodunnit.integer(user.id()));
         } else {
             // ActiveModel::Errors#+ is undefined on Rails 8 → NoMethodError → 500.
             throw new RailsInternalError(
@@ -1496,7 +1622,10 @@ public class EntityWriteService {
             }
             if (opportunity.getId() != null) {
                 versionRecorder.recordCreate(user, opportunity,
-                    rowAttributes(Opportunity.class, opportunity.getId()), OPPORTUNITY_DEFAULTS);
+                    taggableCreateAttributes(
+                        rowAttributes(Opportunity.class, opportunity.getId()), params),
+                    OPPORTUNITY_DEFAULTS);
+                modelCallbacks.afterCreate(opportunity, RailsWhodunnit.integer(user.id()));
             }
         }
         return opportunity;
@@ -1541,7 +1670,9 @@ public class EntityWriteService {
                 contact = contactRepository.saveAndFlush(contact);
                 flushPendingPermissions("Contact", contact.getId(), pending);
                 versionRecorder.recordCreate(user, contact,
-                    rowAttributes(Contact.class, contact.getId()), CONTACT_DEFAULTS);
+                    taggableCreateAttributes(
+                        rowAttributes(Contact.class, contact.getId()), Map.of()), CONTACT_DEFAULTS);
+                modelCallbacks.afterCreate(contact, RailsWhodunnit.integer(user.id()));
             }
             if (account != null && account.getId() != null) {
                 setContactAccount(user, contact, account);
@@ -1567,6 +1698,8 @@ public class EntityWriteService {
         leadRepository.saveAndFlush(lead);
         versionRecorder.recordUpdate(user, lead, before, rowAttributes(Lead.class, id),
             List.of("status"));
+        modelCallbacks.afterUpdate(lead, assignedToId(before), null, null,
+            RailsWhodunnit.integer(user.id()));
         // LeadObserver#after_update: status → rejected logs a `reject` activity version.
         versionRecorder.recordEvent(user, RailsModelType.LEAD, id, "reject");
     }
@@ -1636,7 +1769,9 @@ public class EntityWriteService {
             contactOpportunityRepository.saveAndFlush(link);
         }
         versionRecorder.recordCreate(user, opportunity,
-            rowAttributes(Opportunity.class, opportunity.getId()), OPPORTUNITY_DEFAULTS);
+            taggableCreateAttributes(rowAttributes(Opportunity.class, opportunity.getId()), params),
+            OPPORTUNITY_DEFAULTS);
+        modelCallbacks.afterCreate(opportunity, RailsWhodunnit.integer(user.id()));
         commentBody(user, "Opportunity", opportunity.getId(), field(request, "comment_body"));
         return jsonWriter.writeOne(railsResources.opportunity, opportunity.getId());
     }
@@ -1700,8 +1835,8 @@ public class EntityWriteService {
             orderedBefore.putAll(before);
             beforeObject = orderedBefore;
         }
-        versionRecorder.recordUpdate(user, opportunity, beforeObject,
-            rowAttributes(Opportunity.class, id), objectOrder);
+        recordTaggableUpdate(user, opportunity, before, beforeObject,
+            rowAttributes(Opportunity.class, id), objectOrder, params, List.of(), false);
         runOpportunityObserver(user, opportunity, id, beforeObject, objectOrder);
     }
 
@@ -1884,7 +2019,7 @@ public class EntityWriteService {
             counter("accounts", "opportunities_count", id, -1);
         }
         destroyDependents(user, "Account", id);
-        versionRecorder.recordDestroy(user, account, attributes);
+        versionRecorder.recordDestroy(user, account, taggableDestroyAttributes(attributes));
         accountRepository.delete(account);
     }
 
@@ -1893,7 +2028,7 @@ public class EntityWriteService {
             .orElseThrow(() -> new EntityNotFoundException("Campaign " + id));
         destroyDependents(user, "Campaign", id);
         Map<String, Object> attributes = rowAttributes(Campaign.class, id);
-        versionRecorder.recordDestroy(user, campaign, attributes);
+        versionRecorder.recordDestroy(user, campaign, taggableDestroyAttributes(attributes));
         campaignRepository.delete(campaign);
     }
 
@@ -1911,7 +2046,7 @@ public class EntityWriteService {
         }
         destroyDependents(user, "Contact", id);
         Map<String, Object> attributes = rowAttributes(Contact.class, id);
-        versionRecorder.recordDestroy(user, contact, attributes);
+        versionRecorder.recordDestroy(user, contact, taggableDestroyAttributes(attributes));
         contactRepository.delete(contact);
     }
 
@@ -1927,7 +2062,7 @@ public class EntityWriteService {
         }
         destroyDependents(user, "Lead", id);
         Map<String, Object> attributes = rowAttributes(Lead.class, id);
-        versionRecorder.recordDestroy(user, lead, attributes);
+        versionRecorder.recordDestroy(user, lead, taggableDestroyAttributes(attributes));
         leadRepository.delete(lead);
         counter("campaigns", "leads_count",
             lead.getCampaign() == null ? null : lead.getCampaign().getId(), -1);
@@ -1947,7 +2082,7 @@ public class EntityWriteService {
         }
         destroyDependents(user, "Opportunity", id);
         Map<String, Object> attributes = rowAttributes(Opportunity.class, id);
-        versionRecorder.recordDestroy(user, opportunity, attributes);
+        versionRecorder.recordDestroy(user, opportunity, taggableDestroyAttributes(attributes));
         opportunityRepository.delete(opportunity);
         counter("campaigns", "opportunities_count",
             opportunity.getCampaign() == null ? null : opportunity.getCampaign().getId(), -1);

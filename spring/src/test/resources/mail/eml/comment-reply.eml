@@ -1,0 +1,13 @@
+From: sender@example.test
+To: replies@example.test
+Subject: Re: [contact:12] Re: [co:12] status
+Message-ID: <reply@example.test>
+Date: Tue, 03 Mar 2026 12:09:00 +0000
+Content-Type: text/plain; charset=UTF-8
+
+The reply text.
+
+On Monday, another person wrote:
+> quoted text
+--
+Signature
