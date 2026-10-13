@@ -939,8 +939,7 @@
 
 - id: accounts-create-custom-field
   ticket: AB-272
-  status: pending
-  description: BigDecimal YAML — reconciled in AB-273 audit track
+  status: enforced
   method: POST
   path: /accounts
   auth: alice
@@ -962,8 +961,7 @@
 
 - id: accounts-update-custom-field
   ticket: AB-272
-  status: pending
-  description: BigDecimal YAML — reconciled in AB-273 audit track
+  status: enforced
   method: PUT
   path: /accounts/101
   auth: alice
@@ -1002,8 +1000,7 @@
 
 - id: opportunities-update-won-campaign
   ticket: AB-272
-  status: pending
-  description: BigDecimal YAML — reconciled in AB-273 audit track
+  status: enforced
   method: PUT
   path: /opportunities/401
   auth: alice
@@ -1027,8 +1024,7 @@
 
 - id: opportunities-update-unwin-campaign
   ticket: AB-272
-  status: pending
-  description: BigDecimal YAML — reconciled in AB-273 audit track
+  status: enforced
   method: PUT
   path: /opportunities/402
   auth: alice
