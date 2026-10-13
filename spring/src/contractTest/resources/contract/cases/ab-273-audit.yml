@@ -26,11 +26,11 @@
 
 - id: activity-after-task-update-alice
   ticket: AB-273
-  status: pending
+  status: enforced
   path: /activities
   auth: alice
   reset: true
-  notes: "Rails TasksController#update duplicates the loaded Task and reads due_at/computed_bucket before update (app/controllers/tasks_controller.rb:94-100), so PaperTrail dumps column order; Spring TaskWriteService.update leads with assigned keys. The AB-272 writer/controller difference is not changed here."
+  notes: "Rails TasksController#update materializes attributes before update, so PaperTrail dumps column order; Spring TaskWriteService.update passes empty assignedOrder to match."
   normalize:
     ignore: ["/*/created_at", "/*/updated_at"]
     yamlVolatile: {"/*/object_changes": [updated_at]}
@@ -40,11 +40,11 @@
 
 - id: activity-after-task-update-admin
   ticket: AB-273
-  status: pending
+  status: enforced
   path: /activities
   auth: admin
   reset: true
-  notes: "Rails TasksController#update duplicates the loaded Task and reads due_at/computed_bucket before update (app/controllers/tasks_controller.rb:94-100), so PaperTrail dumps column order; Spring TaskWriteService.update leads with assigned keys. The AB-272 writer/controller difference is not changed here."
+  notes: "Rails TasksController#update materializes attributes before update, so PaperTrail dumps column order; Spring TaskWriteService.update passes empty assignedOrder to match."
   normalize:
     ignore: ["/*/created_at", "/*/updated_at"]
     yamlVolatile: {"/*/object_changes": [updated_at]}

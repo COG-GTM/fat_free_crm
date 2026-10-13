@@ -553,13 +553,13 @@ commented out.
   Rails records nil for the unassigned virtual `tag_list`, despite persisted
   taggings. Spring's entity destroy audit call follows the fresh-request
   contract behavior.
-- `activity-after-task-update-alice` and
-  `activity-after-task-update-admin` remain pending. Rails
-  `TasksController#update` duplicates the loaded Task and reads `due_at` /
-  `computed_bucket` before `update` (`app/controllers/tasks_controller.rb:94-100`),
-  so PaperTrail dumps column order; Spring `TaskWriteService.update()` emits
-  assigned-order leading. This AB-272 controller/writer divergence is not
-  changed by the audit package.
+- Rails `TasksController#update` materializes the loaded Task through `dup` and
+  reads `due_at` / `computed_bucket` before `update`
+  (`app/controllers/tasks_controller.rb:93-100`), so Spring
+  `TaskWriteService.update()` passes an empty `assignedOrder` to match the
+  column-ordered Rails snapshot. The complete/uncomplete controller actions
+  update directly after loading and do not make those pre-save reads, so their
+  assigned-order behavior remains unchanged.
 - Activity-feed comparisons mask only generated timestamp keys inside the
   YAML strings; item type, event, row order, and all other object/object_changes
   content remain compared.
