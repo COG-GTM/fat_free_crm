@@ -55,13 +55,13 @@ class PaperTrailYamlTest {
     }
 
     @Test
-    void equalButDistinctUtcTimestampsAreNotAnchored() {
+    void equalButDistinctTimestampAttributesAreNotAnchored() {
         Instant first = Instant.ofEpochSecond(1_791_431_045L, 999_999_999);
         Instant second = Instant.ofEpochSecond(1_791_431_045L, 999_999_999);
         assertNotSame(first, second);
         Map<String, Object[]> changes = new LinkedHashMap<>();
-        changes.put("created_at", new Object[] {null, first});
-        changes.put("updated_at", new Object[] {null, second});
+        changes.put("first_time", new Object[] {null, first});
+        changes.put("second_time", new Object[] {null, second});
 
         String yaml = PaperTrailYaml.dumpChanges(changes);
 
@@ -69,6 +69,21 @@ class PaperTrailYamlTest {
         org.junit.jupiter.api.Assertions.assertFalse(yaml.contains("utc: *"), yaml);
         org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("zone: &1"), yaml);
         org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("zone: *1"), yaml);
+    }
+
+    @Test
+    void equalCreatedAndUpdatedValuesUseRailsSharedUtcAlias() {
+        Instant created = Instant.ofEpochSecond(1_791_431_045L, 999_999_999);
+        Instant updated = Instant.ofEpochSecond(1_791_431_045L, 999_999_999);
+        assertNotSame(created, updated);
+        Map<String, Object[]> changes = new LinkedHashMap<>();
+        changes.put("created_at", new Object[] {null, created});
+        changes.put("updated_at", new Object[] {null, updated});
+
+        String yaml = PaperTrailYaml.dumpChanges(changes);
+
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("utc: &"), yaml);
+        org.junit.jupiter.api.Assertions.assertTrue(yaml.contains("utc: *"), yaml);
     }
 
     @Test
@@ -147,7 +162,7 @@ class PaperTrailYamlTest {
     }
 
     @Test
-    void destroyTagListChangesUseTaggedRubyArraySnapshot() {
+    void destroyTagListChangesUseRubyArrayValues() {
         PaperTrailYaml.RubyTagList tagList = new PaperTrailYaml.RubyTagList(List.of("delta", "epsilon"));
         Map<String, Object[]> changes = new LinkedHashMap<>();
         changes.put("tag_list", new Object[] {tagList, null});

@@ -3,7 +3,6 @@ package com.fatfreecrm.service.audit;
 import com.fatfreecrm.domain.Version;
 import com.fatfreecrm.domain.AccountContact;
 import com.fatfreecrm.domain.Address;
-import com.fatfreecrm.domain.User;
 import com.fatfreecrm.domain.support.BaseEntity;
 import com.fatfreecrm.domain.support.RailsModelType;
 import com.fatfreecrm.repository.VersionRepository;
@@ -152,7 +151,7 @@ public class VersionRecorder {
         return recordUpdate(user, entity, before, after, assignedOrder, before, leadUnchangedAssigned);
     }
 
-    private Version recordUpdate(
+    public Version recordUpdate(
         AuthenticatedUser user,
         Object entity,
         Map<String, Object> objectBefore,
@@ -185,6 +184,10 @@ public class VersionRecorder {
             .filter(name -> changes.containsKey(name) || (leadUnchangedAssigned && objectBefore.containsKey(name)))
             .forEach(name -> orderedBefore.put(name, objectBefore.get(name)));
         objectBefore.forEach(orderedBefore::putIfAbsent);
+        Object tagList = orderedBefore.get("tag_list");
+        if (tagList != null && !(tagList instanceof PaperTrailYaml.RubyTagList)) {
+            orderedBefore.put("tag_list", null);
+        }
         version.setObject(PaperTrailYaml.dumpObject(orderedBefore));
         version.setObjectChanges(PaperTrailYaml.dumpChanges(changes));
         return versionRepository.save(version);
@@ -217,8 +220,10 @@ public class VersionRecorder {
     public Version recordDestroy(AuthenticatedUser user, Object entity, Map<String, Object> attributes) {
         PaperTrailOptions options = options(entity);
         attributes = new LinkedHashMap<>(attributes);
-        // Rails' acts_as_taggable tag_list attribute serializes nil on destroy dumps.
-        attributes.replace("tag_list", null);
+        Object tagList = attributes.get("tag_list");
+        if (tagList != null && !(tagList instanceof PaperTrailYaml.RubyTagList)) {
+            attributes.put("tag_list", null);
+        }
         Map<String, Object[]> changes = new LinkedHashMap<>();
         attributes.forEach((name, value) -> {
             if (!options.ignore().contains(name)) {

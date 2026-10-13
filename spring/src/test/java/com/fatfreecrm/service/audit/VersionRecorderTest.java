@@ -181,6 +181,42 @@ class VersionRecorderTest {
     }
 
     @Test
+    void keepsUnassignedTagListNilInUpdateObjectSnapshots() {
+        Account account = mock(Account.class);
+        when(account.getId()).thenReturn(47L);
+        Map<String, Object> before = new LinkedHashMap<>();
+        before.put("id", 47L);
+        before.put("name", "Before");
+        before.put("tag_list", List.of("alpha"));
+        Map<String, Object> after = new LinkedHashMap<>(before);
+        after.put("name", "After");
+
+        Version version = versionRecorder.recordUpdate(null, account, before, after, List.of("name"));
+
+        assertThat(version.getObject()).contains("tag_list:\n");
+        assertThat(version.getObjectChanges()).doesNotContain("tag_list:");
+    }
+
+    @Test
+    void recordsTaggedDestroySnapshotAndRubyArrayChanges() {
+        Account account = mock(Account.class);
+        when(account.getId()).thenReturn(48L);
+        Map<String, Object> attributes = new LinkedHashMap<>();
+        attributes.put("id", 48L);
+        attributes.put("tag_list", new PaperTrailYaml.RubyTagList(List.of("delta", "epsilon")));
+
+        Version version = versionRecorder.recordDestroy(null, account, attributes);
+
+        assertThat(version.getObject()).contains(
+            "tag_list: !ruby/array:ActsAsTaggableOn::TagList\n"
+                + "  internal:\n  - delta\n  - epsilon\n");
+        assertThat(version.getObjectChanges()).contains(
+            "tag_list:\n- !ruby/array:ActsAsTaggableOn::TagList\n"
+                + "  internal:\n  - delta\n  - epsilon\n"
+                + "  ivars:\n    :@parser: !ruby/class 'ActsAsTaggableOn::DefaultParser'\n-\n");
+    }
+
+    @Test
     void recordsAnExplicitUpdatedAtOnlyChange() {
         Account account = mock(Account.class);
         when(account.getId()).thenReturn(44L);

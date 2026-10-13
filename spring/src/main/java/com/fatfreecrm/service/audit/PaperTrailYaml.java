@@ -85,15 +85,7 @@ public final class PaperTrailYaml {
                 if (value == null) {
                     out.append('-');
                 } else if (value instanceof List<?> list) {
-                    if (list.isEmpty()) {
-                        out.append("- []");
-                    } else {
-                        out.append("- - ").append(scalar(list.get(0)));
-                        for (int index = 1; index < list.size(); index++) {
-                            Object item = list.get(index);
-                            out.append("\n  - ").append(scalar(item));
-                        }
-                    }
+                    appendListChange(out, list);
                 } else {
                     out.append('-');
                     writeValue(out, value, " ", anchors);
@@ -102,6 +94,18 @@ public final class PaperTrailYaml {
             }
         }
         return out.toString();
+    }
+
+    private static void appendListChange(StringBuilder out, List<?> list) {
+        if (list.isEmpty()) {
+            out.append("- []");
+        } else {
+            out.append("- - ").append(scalar(list.get(0)));
+            for (int index = 1; index < list.size(); index++) {
+                Object item = list.get(index);
+                out.append("\n  - ").append(scalar(item));
+            }
+        }
     }
 
     private static List<Object> values(Map<String, Object> attributes) {
