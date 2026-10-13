@@ -62,6 +62,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -526,7 +527,13 @@ public class EntityWriteService {
             snapshotBefore.put("tag_list",
                 new PaperTrailYaml.RubyTagList(tagListAfter));
             after.put("tag_list", tagListAfter);
-            after.put("updated_at", clock.instant().truncatedTo(ChronoUnit.MICROS));
+            Object updatedAt = after.get("updated_at");
+            if (Objects.equals(changeBefore.get("updated_at"), updatedAt)) {
+                Instant tagUpdatedAt = clock.instant().truncatedTo(ChronoUnit.MICROS);
+                persistTagListUpdatedAt(entity, tagUpdatedAt);
+                updatedAt = tagUpdatedAt;
+            }
+            after.put("updated_at", updatedAt);
             if (!assignedOrder.contains("tag_list")) {
                 List<String> requestOrder = new ArrayList<>(params.keySet());
                 int tagListIndex = requestOrder.indexOf("tag_list");
@@ -547,6 +554,21 @@ public class EntityWriteService {
         }
         versionRecorder.recordUpdate(
             user, entity, snapshotBefore, after, assignedOrder, changesBefore, leadUnchangedAssigned);
+    }
+
+    private void persistTagListUpdatedAt(Object entity, Instant updatedAt) {
+        CrmEntity crmEntity = (CrmEntity) entity;
+        String table = entity.getClass().getAnnotation(jakarta.persistence.Table.class).name();
+        int updatedRows = entityManager.createNativeQuery(
+                "UPDATE " + table + " SET updated_at = :updatedAt WHERE id = :id")
+            .setParameter("updatedAt", updatedAt)
+            .setParameter("id", crmEntity.getId())
+            .executeUpdate();
+        if (updatedRows != 1) {
+            throw new IllegalStateException("Unable to persist tag-list timestamp for "
+                + entity.getClass().getSimpleName() + " " + crmEntity.getId());
+        }
+        entityManager.refresh(crmEntity);
     }
 
     private Map<String, Object> taggableCreateAttributes(
