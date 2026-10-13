@@ -69,7 +69,7 @@ public final class RubyFormat {
             return value > 0 ? "Infinity" : "-Infinity";
         }
         double magnitude = Math.abs(value);
-        if (magnitude != 0 && (magnitude >= 1e16 || magnitude < 1e-4)) {
+        if (magnitude != 0 && (magnitude >= 1e15 || magnitude < 1e-4)) {
             String java = Double.toString(value);
             int exponent = java.indexOf('E');
             String mantissa = java.substring(0, exponent);

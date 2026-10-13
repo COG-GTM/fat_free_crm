@@ -1,0 +1,178 @@
+- id: ab273-assigned-account-create-web-no-mail
+  ticket: AB-273
+  status: enforced
+  method: POST
+  path: /accounts
+  auth: alice
+  reset: true
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  setup:
+    - "UPDATE settings SET value = E'--- crm.contract.example\\n' WHERE name = 'host'"
+    - "INSERT INTO settings (name, value, created_at, updated_at) SELECT 'host', E'--- crm.contract.example\\n', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM settings WHERE name = 'host')"
+  body: {account: {name: "Callback Assigned Account", assigned_to: 3}}
+  dbAssert:
+    - {table: solid_queue_jobs, columns: [class_name, queue_name, priority, arguments], orderBy: id,
+       jsonVolatile: {arguments: [job_id, provider_job_id, enqueued_at, scheduled_at]}}
+    - {table: solid_queue_ready_executions, columns: [queue_name, priority], orderBy: job_id}
+  description: Web account creation with another assignee enqueues no assignment mail under Rails Integer whodunnit behavior.
+
+- id: ab273-assigned-account-reassignment-web-no-mail
+  ticket: AB-273
+  status: enforced
+  method: PUT
+  path: /accounts/101
+  auth: alice
+  reset: true
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  setup:
+    - "UPDATE settings SET value = E'--- crm.contract.example\\n' WHERE name = 'host'"
+    - "INSERT INTO settings (name, value, created_at, updated_at) SELECT 'host', E'--- crm.contract.example\\n', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM settings WHERE name = 'host')"
+  body: {account: {assigned_to: 3}}
+  dbAssert:
+    - {table: solid_queue_jobs, columns: [class_name, queue_name, priority, arguments], orderBy: id,
+       jsonVolatile: {arguments: [job_id, provider_job_id, enqueued_at, scheduled_at]}}
+    - {table: solid_queue_ready_executions, columns: [queue_name, priority], orderBy: job_id}
+  description: Web reassignment enqueues no assignment mail under Rails Integer whodunnit behavior.
+
+- id: ab273-assigned-account-self-assignment
+  ticket: AB-273
+  status: enforced
+  method: PUT
+  path: /accounts/101
+  auth: alice
+  reset: true
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  setup:
+    - "UPDATE settings SET value = E'--- crm.contract.example\\n' WHERE name = 'host'"
+    - "INSERT INTO settings (name, value, created_at, updated_at) SELECT 'host', E'--- crm.contract.example\\n', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM settings WHERE name = 'host')"
+  body: {account: {assigned_to: 2}}
+  dbAssert:
+    - {table: solid_queue_jobs, columns: [class_name, queue_name, priority, arguments], orderBy: id,
+       jsonVolatile: {arguments: [job_id, provider_job_id, enqueued_at, scheduled_at]}}
+    - {table: solid_queue_ready_executions, columns: [queue_name, priority], orderBy: job_id}
+  description: Self-assignment does not enqueue assignment mail.
+
+- id: ab273-assigned-account-opted-out
+  ticket: AB-273
+  status: enforced
+  method: POST
+  path: /accounts
+  auth: alice
+  reset: true
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  setup:
+    - "UPDATE settings SET value = E'--- crm.contract.example\\n' WHERE name = 'host'"
+    - "INSERT INTO settings (name, value, created_at, updated_at) SELECT 'host', E'--- crm.contract.example\\n', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM settings WHERE name = 'host')"
+    - "UPDATE users SET receive_assigned_notifications = FALSE WHERE id = 3"
+  body: {account: {name: "Opted Out Account", assigned_to: 3}}
+  dbAssert:
+    - {table: solid_queue_jobs, columns: [class_name, queue_name, priority, arguments], orderBy: id,
+       jsonVolatile: {arguments: [job_id, provider_job_id, enqueued_at, scheduled_at]}}
+    - {table: solid_queue_ready_executions, columns: [queue_name, priority], orderBy: job_id}
+  description: An assignee who opted out receives no assignment mail.
+
+- id: ab273-assigned-account-without-host
+  ticket: AB-273
+  status: enforced
+  method: POST
+  path: /accounts
+  auth: alice
+  reset: true
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  setup:
+    - "DELETE FROM settings WHERE name = 'host'"
+  body: {account: {name: "No Host Account", assigned_to: 3}}
+  dbAssert:
+    - {table: solid_queue_jobs, columns: [class_name, queue_name, priority, arguments], orderBy: id,
+       jsonVolatile: {arguments: [job_id, provider_job_id, enqueued_at, scheduled_at]}}
+    - {table: solid_queue_ready_executions, columns: [queue_name, priority], orderBy: job_id}
+  description: Assignment mail is not queued when Setting.host is blank.
+
+- id: ab273-assigned-opportunity-create-web-no-mail
+  ticket: AB-273
+  status: enforced
+  method: POST
+  path: /opportunities
+  auth: alice
+  reset: true
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  setup:
+    - "UPDATE settings SET value = E'--- crm.contract.example\\n' WHERE name = 'host'"
+    - "INSERT INTO settings (name, value, created_at, updated_at) SELECT 'host', E'--- crm.contract.example\\n', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM settings WHERE name = 'host')"
+  body:
+    account: {id: 101}
+    opportunity: {name: "Callback Assigned Opportunity", assigned_to: 3}
+  dbAssert:
+    - {table: solid_queue_jobs, columns: [class_name, queue_name, priority, arguments], orderBy: id,
+       jsonVolatile: {arguments: [job_id, provider_job_id, enqueued_at, scheduled_at]}}
+    - {table: solid_queue_ready_executions, columns: [queue_name, priority], orderBy: job_id}
+  description: Web opportunity creation with another assignee enqueues no assignment mail under Rails Integer whodunnit behavior.
+
+- id: ab273-account-website-create
+  ticket: AB-273
+  status: enforced
+  method: POST
+  path: /accounts
+  auth: alice
+  reset: true
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {account: {name: "Website Callback Account", website: "https://example.test"}}
+  dbAssert:
+    - {table: solid_queue_jobs, columns: [class_name, queue_name, priority, arguments], orderBy: id,
+       jsonVolatile: {arguments: [job_id, provider_job_id, enqueued_at, scheduled_at]}}
+    - {table: solid_queue_ready_executions, columns: [queue_name, priority], orderBy: job_id}
+  description: An account website change enqueues AccountWebsiteJob.
+
+- id: ab273-account-wikidata-update
+  ticket: AB-273
+  status: enforced
+  method: PUT
+  path: /accounts/101
+  auth: alice
+  reset: true
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  body: {account: {wikidata_id: Q42}}
+  dbAssert:
+    - {table: solid_queue_jobs, columns: [class_name, queue_name, priority, arguments], orderBy: id,
+       jsonVolatile: {arguments: [job_id, provider_job_id, enqueued_at, scheduled_at]}}
+    - {table: solid_queue_ready_executions, columns: [queue_name, priority], orderBy: job_id}
+  description: A Wikidata-only change with unchanged website enqueues WikidataJob.
+
+- id: ab273-comment-subscriber-mail
+  ticket: AB-273
+  status: enforced
+  method: POST
+  path: /comments
+  auth: alice
+  reset: true
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  setup:
+    - "UPDATE accounts SET subscribed_users = E'---\\n- 2\\n- 3\\n- 4\\n' WHERE id = 101"
+  body:
+    comment: {commentable_type: Account, commentable_id: 101, comment: "Callback notification"}
+  dbAssert:
+    - {table: solid_queue_jobs, columns: [class_name, queue_name, priority, arguments], orderBy: id,
+       jsonVolatile: {arguments: [job_id, provider_job_id, enqueued_at, scheduled_at]}}
+    - {table: solid_queue_ready_executions, columns: [queue_name, priority], orderBy: job_id}
+  description: Only the eligible non-commenter/non-suspended subscriber gets notification mail.
+
+- id: ab273-lead-promote-assigned-web-no-mail
+  ticket: AB-273
+  status: enforced
+  method: PUT
+  path: /leads/301/promote
+  auth: alice
+  reset: true
+  normalize: {ignore: ["/created_at", "/updated_at"]}
+  setup:
+    - "UPDATE settings SET value = E'--- crm.contract.example\\n' WHERE name = 'host'"
+    - "INSERT INTO settings (name, value, created_at, updated_at) SELECT 'host', E'--- crm.contract.example\\n', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM settings WHERE name = 'host')"
+  body:
+    account: {name: "Callback Promoted Account", assigned_to: 3}
+    opportunity: {name: "Callback Promoted Opportunity", assigned_to: 3}
+    access: Private
+  dbAssert:
+    - {table: solid_queue_jobs, columns: [class_name, queue_name, priority, arguments], orderBy: id,
+       jsonVolatile: {arguments: [job_id, provider_job_id, enqueued_at, scheduled_at]}}
+    - {table: solid_queue_ready_executions, columns: [queue_name, priority], orderBy: job_id}
+  description: Web lead promotion enqueues no assignment mail under Rails Integer whodunnit behavior.

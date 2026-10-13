@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.fatfreecrm.domain.Setting;
 import com.fatfreecrm.repository.SettingRepository;
+import com.fatfreecrm.service.settings.SettingsService;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,7 @@ class MailSettingsServiceTest {
         SettingRepository repository = mock(SettingRepository.class);
         when(repository.findByName(anyString())).thenReturn(Optional.empty());
         MailSettingsService service = new MailSettingsService(
-            repository, "", "en-US", "Public", "", "", "");
+            repository, mock(SettingsService.class), "", "en-US", "Public", "", "", "");
 
         assertEquals("", service.smtpFrom());
         assertEquals("Casey Sender <noreply@fatfreecrm.com>", service.commentReplyFrom("Casey Sender"));
@@ -33,7 +34,8 @@ class MailSettingsServiceTest {
         when(repository.findByName("email_comment_replies"))
             .thenReturn(Optional.of(commentReplies));
         MailSettingsService service = new MailSettingsService(
-            repository, "", "en-US", "Public", "yaml-smtp@example.test", "yaml-reply@example.test", "");
+            repository, mock(SettingsService.class), "", "en-US", "Public",
+            "yaml-smtp@example.test", "yaml-reply@example.test", "");
 
         assertEquals(Map.of("address", ""), service.section("email_comment_replies"));
         assertEquals("Casey Sender <smtp@example.test>", service.commentReplyFrom("Casey Sender"));
@@ -48,7 +50,7 @@ class MailSettingsServiceTest {
         when(repository.findByName("email_comment_replies"))
             .thenReturn(Optional.of(commentReplies));
         MailSettingsService service = new MailSettingsService(
-            repository, "", "en-US", "Public", "", "", "");
+            repository, mock(SettingsService.class), "", "en-US", "Public", "", "", "");
 
         assertEquals("Support Team <reply@example.test>", service.commentReplyFrom("Casey Sender"));
     }
@@ -58,10 +60,21 @@ class MailSettingsServiceTest {
         SettingRepository repository = mock(SettingRepository.class);
         when(repository.findByName(anyString())).thenReturn(Optional.empty());
         MailSettingsService service = new MailSettingsService(
-            repository, "", "en-US", "Public", "yaml-smtp@example.test", "", "");
+            repository, mock(SettingsService.class), "", "en-US", "Public", "yaml-smtp@example.test", "", "");
 
         assertEquals(Map.of("from", "yaml-smtp@example.test"), service.section("smtp"));
         assertEquals("Casey Sender <yaml-smtp@example.test>", service.commentReplyFrom("Casey Sender"));
+    }
+
+    @Test
+    void resolvesHostFromRailsSettingsBeforeSpringFallback() {
+        SettingRepository repository = mock(SettingRepository.class);
+        SettingsService railsSettings = mock(SettingsService.class);
+        when(railsSettings.string("host")).thenReturn(Optional.of("crm.example.test"));
+        MailSettingsService service = new MailSettingsService(
+            repository, railsSettings, "spring.example.test", "en-US", "Public", "", "", "");
+
+        assertEquals("crm.example.test", service.host());
     }
 
     private static Setting setting(Map<String, Object> value) {

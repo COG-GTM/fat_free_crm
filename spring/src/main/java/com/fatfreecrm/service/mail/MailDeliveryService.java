@@ -158,8 +158,19 @@ public class MailDeliveryService {
         Comment comment = (Comment) load(ids, 1, Comment.class);
         Object rawEntity = entityManager.find(entityClass(comment.getCommentableType()), comment.getCommentableId());
         CrmEntity entity = (CrmEntity) rawEntity;
-        String tags = "";
-        String from = comment.getUser() == null ? null : userName(comment.getUser());
+        List<?> tagNames = entityManager.createNativeQuery("""
+            SELECT tags.name
+            FROM tags
+            JOIN taggings ON taggings.tag_id = tags.id
+            WHERE taggings.taggable_type = :type AND taggings.taggable_id = :id
+                AND taggings.context = 'tags'
+            ORDER BY taggings.id
+            """)
+            .setParameter("type", entity.getClass().getSimpleName())
+            .setParameter("id", entity.getId().intValue())
+            .getResultList();
+        String tags = String.join(", ", tagNames.stream().map(Object::toString).toList());
+        String from = comment.getUser() == null ? null : userFullName(comment.getUser());
         return renderer.commentNotification(recipient.getEmail(), from, entityName(entity),
             entity.getClass().getSimpleName(), entity.getId(), tags, comment.getComment());
     }
@@ -222,10 +233,10 @@ public class MailDeliveryService {
 
     private static String entityName(CrmEntity entity) {
         if (entity instanceof com.fatfreecrm.domain.Contact contact) {
-            return (contact.getFirstName() + " " + contact.getLastName()).trim();
+            return joinName(contact.getFirstName(), contact.getLastName());
         }
         if (entity instanceof com.fatfreecrm.domain.Lead lead) {
-            return (lead.getFirstName() + " " + lead.getLastName()).trim();
+            return joinName(lead.getFirstName(), lead.getLastName());
         }
         try {
             return String.valueOf(entity.getClass().getMethod("getName").invoke(entity));
@@ -236,8 +247,16 @@ public class MailDeliveryService {
 
     private static String userName(User user) {
         String firstName = user.getFirstName() == null ? "" : user.getFirstName();
-        String lastName = user.getLastName() == null ? "" : user.getLastName();
-        return (firstName + " " + lastName).trim();
+        return firstName.isBlank() ? user.getUsername() : firstName;
+    }
+
+    private static String userFullName(User user) {
+        String name = joinName(user.getFirstName(), user.getLastName());
+        return name.isBlank() ? user.getEmail() : name;
+    }
+
+    private static String joinName(String firstName, String lastName) {
+        return ((firstName == null ? "" : firstName) + " " + (lastName == null ? "" : lastName)).trim();
     }
 
     private static String route(String entityType) {

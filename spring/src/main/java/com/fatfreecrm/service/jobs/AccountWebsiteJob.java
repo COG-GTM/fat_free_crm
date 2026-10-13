@@ -49,7 +49,7 @@ public class AccountWebsiteJob implements Job {
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
-    private AccountEnrichmentTrigger enrichmentTrigger;
+    private RailsModelCallbacks modelCallbacks;
 
     @Override
     public void execute(JobExecutionContext context) {
@@ -140,13 +140,13 @@ public class AccountWebsiteJob implements Job {
                 }
             }
         }
-        if (!blank(account.getWikidataId())) {
-            enrichmentTrigger.afterAccountSaved(account.getId(), false, true);
-        }
     }
 
     private void updateFromOrganization(Account account, JsonNode organization) {
         Map<String, Object> before = rowAttributes.read(account);
+        Long previousAssignee = longAttribute(before, "assigned_to");
+        String previousWebsite = stringAttribute(before, "website");
+        String previousWikidataId = stringAttribute(before, "wikidata_id");
         boolean changed = false;
         changed |= fill(account.getPhone(), organization.path("telephone").asText(null), account::setPhone);
         changed |= fill(account.getEmail(), organization.path("email").asText(null), account::setEmail);
@@ -200,11 +200,24 @@ public class AccountWebsiteJob implements Job {
             account.setUpdatedAt(Instant.now());
             accountRepository.saveAndFlush(account);
             versionRecorder.recordUpdate(null, account, before, rowAttributes.read(account));
+            modelCallbacks.afterUpdate(account, previousAssignee, previousWebsite, previousWikidataId,
+                RailsWhodunnit.nil());
         }
         JsonNode address = organization.get("address");
         if (address != null && address.isObject()) {
             saveAddress(account, address);
         }
+    }
+
+    private static Long longAttribute(Map<String, Object> attributes, String name) {
+        Object value = attributes.get(name);
+        return value instanceof Number number ? number.longValue()
+            : value == null ? null : Long.valueOf(value.toString());
+    }
+
+    private static String stringAttribute(Map<String, Object> attributes, String name) {
+        Object value = attributes.get(name);
+        return value == null ? null : value.toString();
     }
 
     private void saveAddress(Account account, JsonNode data) {

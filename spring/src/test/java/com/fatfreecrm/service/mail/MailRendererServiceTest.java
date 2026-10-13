@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fatfreecrm.repository.SettingRepository;
+import com.fatfreecrm.service.settings.SettingsService;
 import org.junit.jupiter.api.Test;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.spring6.SpringTemplateEngine;
@@ -18,7 +19,8 @@ class MailRendererServiceTest {
         MailRendererService renderer = new MailRendererService(
             templateEngine(".html", "HTML"),
             templateEngine(".txt", "TEXT"),
-            new MailSettingsService(mock(SettingRepository.class), "", "en-US", "Public", "", "", ""),
+            new MailSettingsService(
+                mock(SettingRepository.class), mock(SettingsService.class), "", "en-US", "Public", "", "", ""),
             new EnUsMailText());
 
         RenderedMail mail = renderer.assignment("taylor@example.test", "Example Account", "Account",

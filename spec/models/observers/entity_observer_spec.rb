@@ -13,6 +13,27 @@ describe EntityObserver do
     allow(PaperTrail.request).to receive(:whodunnit).and_return(assigner)
   end
 
+  describe 'whodunnit type' do
+    let(:assignee) { create(:user) }
+    let(:assigner) { create(:user) }
+    let(:entity) { build(:account, user: assigner, assignee: assignee) }
+    let(:mail) { double('mail', deliver_later: true) }
+
+    it 'resolves a String whodunnit and enqueues the assignment mail' do
+      allow(PaperTrail.request).to receive(:whodunnit).and_return(assigner.id.to_s)
+      expect(UserMailer).to receive(:assigned_entity_notification).with(entity, assigner).and_return(mail)
+
+      entity.save!
+    end
+
+    it 'does not enqueue assignment mail for an Integer whodunnit' do
+      allow(PaperTrail.request).to receive(:whodunnit).and_return(assigner.id)
+      expect(UserMailer).not_to receive(:assigned_entity_notification)
+
+      entity.save!
+    end
+  end
+
   %i[account contact lead opportunity].each do |entity_type|
     describe "on creation of #{entity_type}" do
       let(:assignee) { create(:user) }

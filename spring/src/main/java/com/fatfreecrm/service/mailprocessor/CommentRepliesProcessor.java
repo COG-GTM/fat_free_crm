@@ -9,6 +9,8 @@ import com.fatfreecrm.security.AuthenticatedUser;
 import com.fatfreecrm.service.audit.VersionRecorder;
 import com.fatfreecrm.service.history.RailsRowAttributes;
 import com.fatfreecrm.service.jobs.JobsOwner;
+import com.fatfreecrm.service.jobs.RailsModelCallbacks;
+import com.fatfreecrm.service.jobs.RailsWhodunnit;
 import com.fatfreecrm.service.mail.CommentNotificationService;
 import com.fatfreecrm.service.mail.MailSettingsService;
 import jakarta.mail.Message;
@@ -35,6 +37,7 @@ public class CommentRepliesProcessor extends MailProcessorBase {
     private final CommentNotificationService commentNotificationService;
     private final RailsRowAttributes rowAttributes;
     private final VersionRecorder versionRecorder;
+    private final RailsModelCallbacks modelCallbacks;
 
     public CommentRepliesProcessor(
         MailSettingsService settings,
@@ -47,13 +50,15 @@ public class CommentRepliesProcessor extends MailProcessorBase {
         CommentNotificationService commentNotificationService,
         JobsOwner jobsOwner,
         ImapClient imapClient,
-        PlatformTransactionManager transactionManager
+        PlatformTransactionManager transactionManager,
+        RailsModelCallbacks modelCallbacks
     ) {
         super(settings, userRepository, entityManager, jdbcTemplate, jobsOwner, imapClient, transactionManager);
         this.commentRepository = commentRepository;
         this.commentNotificationService = commentNotificationService;
         this.rowAttributes = rowAttributes;
         this.versionRecorder = versionRecorder;
+        this.modelCallbacks = modelCallbacks;
     }
 
     public void process(boolean dryRun) {
@@ -81,8 +86,12 @@ public class CommentRepliesProcessor extends MailProcessorBase {
             return;
         }
         subscribeMentionedUsers(entity, reply);
+        Map<String, Object> beforeTouch = rowAttributes.read(entity);
         entity.setUpdatedAt(Instant.now());
         entityManager.merge(entity);
+        entityManager.flush();
+        modelCallbacks.afterUpdate(entity, assignedToId(beforeTouch), stringAttribute(beforeTouch, "website"),
+            stringAttribute(beforeTouch, "wikidata_id"), RailsWhodunnit.string(sender.getId().toString()));
         Comment comment = new Comment();
         comment.setUser(sender);
         comment.setCommentableType(type.substring(0, 1).toUpperCase(Locale.ROOT) + type.substring(1));
@@ -93,12 +102,28 @@ public class CommentRepliesProcessor extends MailProcessorBase {
         comment.setCreatedAt(now);
         comment.setUpdatedAt(now);
         commentRepository.saveAndFlush(comment);
+        Map<String, Object> beforeSubscription = rowAttributes.read(entity);
         entity.getSubscribedUsers().add(sender.getId());
         entity.setUpdatedAt(Instant.now());
         entityManager.merge(entity);
+        entityManager.flush();
+        modelCallbacks.afterUpdate(entity, assignedToId(beforeSubscription),
+            stringAttribute(beforeSubscription, "website"), stringAttribute(beforeSubscription, "wikidata_id"),
+            RailsWhodunnit.string(sender.getId().toString()));
         commentNotificationService.afterCreate(comment);
         versionRecorder.recordCreate(new AuthenticatedUser(sender.getId(), null, false), comment,
             rowAttributes.read(comment), rowAttributes.defaults(comment));
+    }
+
+    private static Long assignedToId(Map<String, Object> attributes) {
+        Object value = attributes.get("assigned_to");
+        return value instanceof Number number ? number.longValue()
+            : value == null ? null : Long.valueOf(value.toString());
+    }
+
+    private static String stringAttribute(Map<String, Object> attributes, String name) {
+        Object value = attributes.get(name);
+        return value == null ? null : value.toString();
     }
 
     static List<String> subjectLine(String subject) {

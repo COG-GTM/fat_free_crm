@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -39,6 +40,17 @@ class DbAssertMaskTest {
     @Test
     void maskYamlEmptyKeysReturnsInput() {
         assertEquals("---\nx: 1\n", DbAssert.maskYaml("---\nx: 1\n", List.of()));
+    }
+
+    @Test
+    void maskJsonMasksNamedFieldsAndPreservesOtherValues() {
+        JsonNode masked = DbAssert.maskJson(
+            "{\"job_id\":\"volatile\",\"arguments\":[{\"_aj_globalid\":\"gid://app/Account/1\"}],"
+                + "\"scheduled_at\":\"volatile\"}",
+            List.of("job_id", "scheduled_at"));
+
+        assertEquals("{\"job_id\":null,\"arguments\":[{\"_aj_globalid\":\"gid://app/Account/1\"}],"
+            + "\"scheduled_at\":null}", masked.toString());
     }
 
     @Test
