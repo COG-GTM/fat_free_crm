@@ -51,6 +51,15 @@ class DualWriteSoakTest {
     record SoakResult(int writes, int errors, int serverErrors, int violations) {
     }
 
+    /** Pre-built login contexts for one worker — one per runner per side, never shared. */
+    record WorkerAuth(AuthContext writerRails, AuthContext writerSpring,
+        AuthContext toggleRails, AuthContext toggleSpring, AuthContext commenter,
+        boolean commenterIsRails,
+        AuthContext accountRails, AuthContext accountSpring,
+        AuthContext contactRails, AuthContext contactSpring,
+        AuthContext promoterRails, AuthContext promoterSpring) {
+    }
+
     @Test
     void soak() throws Exception {
         railsUrl = trimSlash(System.getProperty("contract.railsUrl", "http://localhost:3000"));
@@ -113,6 +122,7 @@ class DualWriteSoakTest {
         AtomicInteger rejects = new AtomicInteger();
         AtomicInteger errors = new AtomicInteger();
         AtomicInteger serverErrors = new AtomicInteger();
+        AtomicInteger ioFailures = new AtomicInteger();
         AtomicInteger violations = new AtomicInteger();
         ConcurrentLinkedQueue<String> failures = new ConcurrentLinkedQueue<>();
         for (String family : List.of("tasks", "tasks-toggle", "accounts", "contacts", "leads",
@@ -121,6 +131,41 @@ class DualWriteSoakTest {
                 errorsByLabel.put(family + "." + side, new AtomicInteger());
             }
         }
+
+        // Pre-authenticate every context before the deadline starts: Rails runs a single
+        // Puma worker in CI, so logins issued under write load can exceed the auth timeout
+        // and would otherwise be miscounted as soak failures.
+        long preauthStart = System.nanoTime();
+        List<WorkerAuth> workerAuths = new ArrayList<>();
+        for (int worker = 0; worker < threads; worker++) {
+            boolean commenterIsRails = switch (commentSides) {
+                case "rails" -> true;
+                case "spring" -> false;
+                default -> worker % 2 == 0;
+            };
+            workerAuths.add(new WorkerAuth(
+                preAuth(users, true, "alice", "tasks"),
+                preAuth(users, false, "alice", "tasks"),
+                preAuth(users, true, "alice", "tasks-toggle"),
+                preAuth(users, false, "alice", "tasks-toggle"),
+                preAuth(users, commenterIsRails, "alice", "comments"),
+                commenterIsRails,
+                preAuth(users, true, "alice", "accounts"),
+                preAuth(users, false, "alice", "accounts"),
+                preAuth(users, true, "alice", "contacts"),
+                preAuth(users, false, "alice", "contacts"),
+                preAuth(users, true, "alice", "leads"),
+                preAuth(users, false, "alice", "leads")));
+        }
+        AuthContext userRailsAdmin = preAuth(users, true, "admin", "user");
+        AuthContext userSpringAdmin = preAuth(users, false, "admin", "user");
+        AuthContext suspendRailsAdmin = preAuth(users, true, "admin", "suspend");
+        AuthContext suspendSpringAdmin = preAuth(users, false, "admin", "suspend");
+        AuthContext settingsRailsAdmin = preAuth(users, true, "admin", "settings");
+        AuthContext settingsSpringAdmin = preAuth(users, false, "admin", "settings");
+        int preauthContexts = threads * 11 + 6;
+        System.out.println("soak preauth contexts=" + preauthContexts + " in "
+            + (System.nanoTime() - preauthStart) / 1_000_000 + "ms");
 
         Instant deadline = Instant.now().plus(Duration.ofMinutes(minutes));
         // 7 futures per worker + 5 admin futures — undersizing starves the last submissions
@@ -133,30 +178,28 @@ class DualWriteSoakTest {
             long accountId = accountIds.get(worker);
             long contactId = contactIds.get(worker);
             long leadId = leadIds.get(worker);
-            futures.add(pool.submit(() -> runWriter(users, "alice", true, taskId,
+            WorkerAuth auth = workerAuths.get(worker);
+            futures.add(pool.submit(() -> runWriter(auth.writerRails(), true, taskId,
                 deadline, "background_info", taskWrites, errors, serverErrors, violations,
-                failures)));
-            futures.add(pool.submit(() -> runWriter(users, "alice", false, taskId,
+                ioFailures, failures)));
+            futures.add(pool.submit(() -> runWriter(auth.writerSpring(), false, taskId,
                 deadline, "priority", taskWrites, errors, serverErrors, violations,
+                ioFailures, failures)));
+            futures.add(pool.submit(() -> runToggler(auth.toggleRails(), auth.toggleSpring(),
+                toggleId, deadline, completes, uncompletes, errors, serverErrors, violations,
+                ioFailures, failures)));
+            futures.add(pool.submit(() -> runCommenter(auth.commenter(), auth.commenterIsRails(),
+                deadline, commentCreates, errors, serverErrors, violations, ioFailures,
                 failures)));
-            futures.add(pool.submit(() -> runToggler(users, "alice", toggleId,
-                deadline, completes, uncompletes, errors, serverErrors, violations,
-                failures)));
-            boolean commenterIsRails = switch (commentSides) {
-                case "rails" -> true;
-                case "spring" -> false;
-                default -> worker % 2 == 0;
-            };
-            futures.add(pool.submit(() -> runCommenter(users, "alice", commenterIsRails,
-                deadline, commentCreates, errors, serverErrors, violations, failures)));
-            futures.add(pool.submit(() -> runEntityWriter(users, "alice", "accounts",
-                "Account", accountId, deadline, entityWrites, errors,
-                serverErrors, violations, failures)));
-            futures.add(pool.submit(() -> runEntityWriter(users, "alice", "contacts",
-                "Contact", contactId, deadline, entityWrites, errors,
-                serverErrors, violations, failures)));
-            futures.add(pool.submit(() -> runPromoter(users, "alice", leadId,
-                deadline, promotes, rejects, errors, serverErrors, violations, failures)));
+            futures.add(pool.submit(() -> runEntityWriter(auth.accountRails(), auth.accountSpring(),
+                "accounts", "Account", accountId, deadline, entityWrites, errors,
+                serverErrors, violations, ioFailures, failures)));
+            futures.add(pool.submit(() -> runEntityWriter(auth.contactRails(), auth.contactSpring(),
+                "contacts", "Contact", contactId, deadline, entityWrites, errors,
+                serverErrors, violations, ioFailures, failures)));
+            futures.add(pool.submit(() -> runPromoter(auth.promoterRails(), auth.promoterSpring(),
+                leadId, deadline, promotes, rejects, errors, serverErrors, violations,
+                ioFailures, failures)));
         }
         AtomicInteger userWrites = new AtomicInteger();
         AtomicInteger suspends = new AtomicInteger();
@@ -164,20 +207,23 @@ class DualWriteSoakTest {
         AtomicInteger settingsWrites = new AtomicInteger();
         // Concurrent admin updates of different columns on carol (5) from both apps, a
         // suspend/reactivate toggler on bob (3) alternating apps, and settings writers.
-        futures.add(pool.submit(() -> runAdminWriter(users, true, "/admin/users/" + SOAK_USER + ".json",
+        futures.add(pool.submit(() -> runAdminWriter(userRailsAdmin, true,
+            "/admin/users/" + SOAK_USER + ".json",
             "/api/v1/admin/users/" + SOAK_USER, "user", "title", "user:title", deadline, userWrites,
-            errors, serverErrors, violations, failures)));
-        futures.add(pool.submit(() -> runAdminWriter(users, false, "/admin/users/" + SOAK_USER + ".json",
+            errors, serverErrors, violations, ioFailures, failures)));
+        futures.add(pool.submit(() -> runAdminWriter(userSpringAdmin, false,
+            "/admin/users/" + SOAK_USER + ".json",
             "/api/v1/admin/users/" + SOAK_USER, "user", "company", "user:company", deadline, userWrites,
-            errors, serverErrors, violations, failures)));
-        futures.add(pool.submit(() -> runSuspender(users, deadline, suspends, reactivates, errors,
-            serverErrors, violations, failures)));
-        futures.add(pool.submit(() -> runAdminWriter(users, true, "/admin/settings",
+            errors, serverErrors, violations, ioFailures, failures)));
+        futures.add(pool.submit(() -> runSuspender(suspendRailsAdmin, suspendSpringAdmin,
+            deadline, suspends, reactivates, errors, serverErrors, violations, ioFailures,
+            failures)));
+        futures.add(pool.submit(() -> runAdminWriter(settingsRailsAdmin, true, "/admin/settings",
             "/api/v1/admin/settings", "settings", "host", "setting:host", deadline, settingsWrites,
-            errors, serverErrors, violations, failures)));
-        futures.add(pool.submit(() -> runAdminWriter(users, false, "/admin/settings",
+            errors, serverErrors, violations, ioFailures, failures)));
+        futures.add(pool.submit(() -> runAdminWriter(settingsSpringAdmin, false, "/admin/settings",
             "/api/v1/admin/settings", "settings", "base_url", "setting:base_url", deadline,
-            settingsWrites, errors, serverErrors, violations, failures)));
+            settingsWrites, errors, serverErrors, violations, ioFailures, failures)));
         pool.shutdown();
         for (java.util.concurrent.Future<?> future : futures) {
             future.get();
@@ -209,9 +255,9 @@ class DualWriteSoakTest {
         StringBuilder report = new StringBuilder();
         report.append(String.format(
             "taskWrites=%d completes=%d uncompletes=%d comments=%d errors=%d 5xx=%d "
-                + "constraintViolations=%d%n",
+                + "ioFailures=%d constraintViolations=%d%n",
             taskWrites.get(), completes.get(), uncompletes.get(), commentCreates.get(),
-            errors.get(), serverErrors.get(), violations.get()));
+            errors.get(), serverErrors.get(), ioFailures.get(), violations.get()));
         report.append(String.format(
             "updateVersions=%d taskWrites+toggles=%d completeVersions=%d completes=%d%n",
             updateVersions, taskSuccessful + completes.get() + uncompletes.get(),
@@ -305,6 +351,8 @@ class DualWriteSoakTest {
         System.out.print(report);
         org.junit.jupiter.api.Assertions.assertEquals(0, serverErrors.get(),
             "5xx responses: " + failures);
+        org.junit.jupiter.api.Assertions.assertEquals(0, ioFailures.get(),
+            "I/O failures: " + failures);
         org.junit.jupiter.api.Assertions.assertEquals(0, errors.get(),
             "non-2xx write responses\n" + report);
         org.junit.jupiter.api.Assertions.assertEquals(0, violations.get(),
@@ -345,7 +393,7 @@ class DualWriteSoakTest {
     }
 
     private long seedEntity(AuthContext alice, String family, String key,
-        Map<String, String> fields) throws SoakHttpException {
+        Map<String, String> fields) throws SoakHttpException, IOException, InterruptedException {
         ObjectNode body = JSON.createObjectNode();
         ObjectNode entity = body.putObject(key);
         fields.forEach(entity::put);
@@ -354,7 +402,8 @@ class DualWriteSoakTest {
         return created.path("id").asLong();
     }
 
-    private long seedTask(AuthContext alice, String name) throws SoakHttpException {
+    private long seedTask(AuthContext alice, String name)
+        throws SoakHttpException, IOException, InterruptedException {
         ObjectNode body = JSON.createObjectNode();
         ObjectNode task = body.putObject("task");
         task.put("user_id", 2);
@@ -365,8 +414,7 @@ class DualWriteSoakTest {
     }
 
     private void runWriter(
-        Map<String, FixtureUsers.FixtureUser> users,
-        String user,
+        AuthContext auth,
         boolean railsSide,
         long taskId,
         Instant deadline,
@@ -375,11 +423,11 @@ class DualWriteSoakTest {
         AtomicInteger errors,
         AtomicInteger serverErrors,
         AtomicInteger violations,
+        AtomicInteger ioFailures,
         ConcurrentLinkedQueue<String> failures
     ) {
         String base = railsSide ? railsUrl : springUrl;
         try {
-            AuthContext auth = authWithRetry(users, railsSide, user);
             int sequence = 0;
             while (Instant.now().isBefore(deadline)) {
                 String value = (railsSide ? "rails" : "spring") + "-" + sequence++;
@@ -397,15 +445,15 @@ class DualWriteSoakTest {
                 }
             }
         } catch (IOException | InterruptedException exception) {
-            failures.add("auth failed: " + exception.getMessage());
-            serverErrors.incrementAndGet();
+            failures.add("tasks io failed: " + exception.getMessage());
+            ioFailures.incrementAndGet();
         }
     }
 
     /** Alternates complete/uncomplete on one task, switching apps each iteration. */
     private void runToggler(
-        Map<String, FixtureUsers.FixtureUser> users,
-        String user,
+        AuthContext railsContext,
+        AuthContext springContext,
         long taskId,
         Instant deadline,
         AtomicInteger completes,
@@ -413,11 +461,10 @@ class DualWriteSoakTest {
         AtomicInteger errors,
         AtomicInteger serverErrors,
         AtomicInteger violations,
+        AtomicInteger ioFailures,
         ConcurrentLinkedQueue<String> failures
     ) {
         try {
-            AuthContext railsContext = authWithRetry(users, true, user);
-            AuthContext springContext = authWithRetry(users, false, user);
             int sequence = 0;
             while (Instant.now().isBefore(deadline)) {
                 // Strict complete/uncomplete alternation (each op flips state, so Rails PaperTrail
@@ -441,8 +488,8 @@ class DualWriteSoakTest {
                 }
             }
         } catch (IOException | InterruptedException exception) {
-            failures.add("toggle auth failed: " + exception.getMessage());
-            serverErrors.incrementAndGet();
+            failures.add("tasks-toggle io failed: " + exception.getMessage());
+            ioFailures.incrementAndGet();
         }
     }
 
@@ -451,8 +498,8 @@ class DualWriteSoakTest {
      * per worker — each successful write must produce exactly one PaperTrail update version.
      */
     private void runEntityWriter(
-        Map<String, FixtureUsers.FixtureUser> users,
-        String user,
+        AuthContext railsContext,
+        AuthContext springContext,
         String family,
         String railsName,
         long entityId,
@@ -461,11 +508,10 @@ class DualWriteSoakTest {
         AtomicInteger errors,
         AtomicInteger serverErrors,
         AtomicInteger violations,
+        AtomicInteger ioFailures,
         ConcurrentLinkedQueue<String> failures
     ) {
         try {
-            AuthContext railsContext = authWithRetry(users, true, user);
-            AuthContext springContext = authWithRetry(users, false, user);
             String key = railsName.toLowerCase(java.util.Locale.ROOT);
             int sequence = 0;
             while (Instant.now().isBefore(deadline)) {
@@ -489,8 +535,8 @@ class DualWriteSoakTest {
                 }
             }
         } catch (IOException | InterruptedException exception) {
-            failures.add("entity auth failed: " + exception.getMessage());
-            serverErrors.incrementAndGet();
+            failures.add(family + " io failed: " + exception.getMessage());
+            ioFailures.incrementAndGet();
         }
     }
 
@@ -500,8 +546,8 @@ class DualWriteSoakTest {
      * promotes). Each success must produce one Lead update version and one Contact create version.
      */
     private void runPromoter(
-        Map<String, FixtureUsers.FixtureUser> users,
-        String user,
+        AuthContext railsContext,
+        AuthContext springContext,
         long leadId,
         Instant deadline,
         AtomicInteger promotes,
@@ -509,11 +555,10 @@ class DualWriteSoakTest {
         AtomicInteger errors,
         AtomicInteger serverErrors,
         AtomicInteger violations,
+        AtomicInteger ioFailures,
         ConcurrentLinkedQueue<String> failures
     ) {
         try {
-            AuthContext railsContext = authWithRetry(users, true, user);
-            AuthContext springContext = authWithRetry(users, false, user);
             // Reject/promote pairs keep flipping status so every write is notable and produces
             // exactly one Lead update version on either app; promotes add a Contact create.
             int sequence = 0;
@@ -552,25 +597,24 @@ class DualWriteSoakTest {
                 }
             }
         } catch (IOException | InterruptedException exception) {
-            failures.add("promote auth failed: " + exception.getMessage());
-            serverErrors.incrementAndGet();
+            failures.add("leads io failed: " + exception.getMessage());
+            ioFailures.incrementAndGet();
         }
     }
 
     /** Posts comment creates on shared Account 101 from one app. */
     private void runCommenter(
-        Map<String, FixtureUsers.FixtureUser> users,
-        String user,
+        AuthContext auth,
         boolean railsSide,
         Instant deadline,
         AtomicInteger commentCreates,
         AtomicInteger errors,
         AtomicInteger serverErrors,
         AtomicInteger violations,
+        AtomicInteger ioFailures,
         ConcurrentLinkedQueue<String> failures
     ) {
         try {
-            AuthContext auth = authWithRetry(users, railsSide, user);
             String base = railsSide ? railsUrl : springUrl;
             String path = railsSide ? "/comments.json" : "/api/v1/comments";
             int sequence = 0;
@@ -590,8 +634,8 @@ class DualWriteSoakTest {
                 }
             }
         } catch (IOException | InterruptedException exception) {
-            failures.add("comment auth failed: " + exception.getMessage());
-            serverErrors.incrementAndGet();
+            failures.add("comments io failed: " + exception.getMessage());
+            ioFailures.incrementAndGet();
         }
     }
 
@@ -603,7 +647,7 @@ class DualWriteSoakTest {
      * is unique so every success changes the row (users: one PaperTrail update; settings: none).
      */
     private void runAdminWriter(
-        Map<String, FixtureUsers.FixtureUser> users,
+        AuthContext auth,
         boolean railsSide,
         String railsPath,
         String springPath,
@@ -615,11 +659,11 @@ class DualWriteSoakTest {
         AtomicInteger errors,
         AtomicInteger serverErrors,
         AtomicInteger violations,
+        AtomicInteger ioFailures,
         ConcurrentLinkedQueue<String> failures
     ) {
         String side = railsSide ? "rails" : "spring";
         try {
-            AuthContext auth = authWithRetry(users, railsSide, "admin");
             String url = railsSide ? railsUrl + railsPath : springUrl + springPath;
             int sequence = 0;
             while (Instant.now().isBefore(deadline)) {
@@ -636,25 +680,25 @@ class DualWriteSoakTest {
                 }
             }
         } catch (IOException | InterruptedException exception) {
-            failures.add(root + " auth failed: " + exception.getMessage());
-            serverErrors.incrementAndGet();
+            failures.add(root + " io failed: " + exception.getMessage());
+            ioFailures.incrementAndGet();
         }
     }
 
     /** Strict suspend/reactivate alternation on bob; apps alternate in pairs of two. */
     private void runSuspender(
-        Map<String, FixtureUsers.FixtureUser> users,
+        AuthContext railsContext,
+        AuthContext springContext,
         Instant deadline,
         AtomicInteger suspends,
         AtomicInteger reactivates,
         AtomicInteger errors,
         AtomicInteger serverErrors,
         AtomicInteger violations,
+        AtomicInteger ioFailures,
         ConcurrentLinkedQueue<String> failures
     ) {
         try {
-            AuthContext railsContext = authWithRetry(users, true, "admin");
-            AuthContext springContext = authWithRetry(users, false, "admin");
             int sequence = 0;
             while (Instant.now().isBefore(deadline)) {
                 boolean suspend = sequence % 2 == 0;
@@ -676,15 +720,33 @@ class DualWriteSoakTest {
                 }
             }
         } catch (IOException | InterruptedException exception) {
-            failures.add("suspend auth failed: " + exception.getMessage());
-            serverErrors.incrementAndGet();
+            failures.add("suspend io failed: " + exception.getMessage());
+            ioFailures.incrementAndGet();
         }
     }
 
     /**
-     * Login under soak load can exceed the 10s auth timeout transiently; retry before
-     * declaring an auth failure so a slow login isn't counted as a 5xx.
+     * Login against a single-worker Rails can exceed the 10s auth timeout transiently; retry
+     * before giving up. Every context is built once via {@link #preAuth} before the deadline
+     * starts, so a failed login fails setup instead of being miscounted as a write failure.
      */
+    private AuthContext preAuth(
+        Map<String, FixtureUsers.FixtureUser> users,
+        boolean railsSide,
+        String userKey,
+        String family
+    ) {
+        try {
+            return authWithRetry(users, railsSide, userKey);
+        } catch (IOException | InterruptedException exception) {
+            if (exception instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            return org.junit.jupiter.api.Assertions.fail("soak setup: " + family + "."
+                + (railsSide ? "rails" : "spring") + " login failed: " + exception);
+        }
+    }
+
     private AuthContext authWithRetry(
         Map<String, FixtureUsers.FixtureUser> users,
         boolean railsSide,
@@ -736,16 +798,18 @@ class DualWriteSoakTest {
     }
 
     private JsonNode sendJson(HttpClient client, AuthContext auth, String method, String url,
-        ObjectNode body) throws SoakHttpException {
+        ObjectNode body) throws SoakHttpException, IOException, InterruptedException {
         return sendJson(client, auth, method, url, body, null);
     }
 
     /**
      * Write request: any non-2xx response is a failure except a 302 whose {@code Location}
      * path equals {@code expectedRedirectPath} (the settings-save redirect both apps share).
+     * I/O errors propagate so the runner counts them separately from HTTP 5xx.
      */
     private JsonNode sendJson(HttpClient client, AuthContext auth, String method, String url,
-        ObjectNode body, String expectedRedirectPath) throws SoakHttpException {
+        ObjectNode body, String expectedRedirectPath)
+        throws SoakHttpException, IOException, InterruptedException {
         HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(url))
             .timeout(Duration.ofSeconds(15))
             .header("Accept", "application/json")
@@ -756,32 +820,28 @@ class DualWriteSoakTest {
         if (auth.csrfToken() != null) {
             request.header("X-CSRF-Token", auth.csrfToken());
         }
-        try {
-            HttpResponse<String> response = client.send(
-                request.method(method, HttpRequest.BodyPublishers.ofString(
-                    body.toString(), StandardCharsets.UTF_8)).build(),
-                HttpResponse.BodyHandlers.ofString());
-            boolean success = response.statusCode() >= 200 && response.statusCode() < 300;
-            if (!success && response.statusCode() == 302 && expectedRedirectPath != null) {
-                String locationPath = response.headers().firstValue("Location")
-                    .map(location -> {
-                        try {
-                            return URI.create(location).getPath();
-                        } catch (IllegalArgumentException exception) {
-                            return null;
-                        }
-                    }).orElse(null);
-                success = expectedRedirectPath.equals(locationPath);
-            }
-            if (!success) {
-                throw new SoakHttpException(response.statusCode(),
-                    url + " " + response.body(), response.body());
-            }
-            String text = response.body();
-            return text == null || text.isBlank() ? null : JSON.readTree(text);
-        } catch (IOException | InterruptedException exception) {
-            throw new SoakHttpException(599, url + " " + exception.getMessage(), "");
+        HttpResponse<String> response = client.send(
+            request.method(method, HttpRequest.BodyPublishers.ofString(
+                body.toString(), StandardCharsets.UTF_8)).build(),
+            HttpResponse.BodyHandlers.ofString());
+        boolean success = response.statusCode() >= 200 && response.statusCode() < 300;
+        if (!success && response.statusCode() == 302 && expectedRedirectPath != null) {
+            String locationPath = response.headers().firstValue("Location")
+                .map(location -> {
+                    try {
+                        return URI.create(location).getPath();
+                    } catch (IllegalArgumentException exception) {
+                        return null;
+                    }
+                }).orElse(null);
+            success = expectedRedirectPath.equals(locationPath);
         }
+        if (!success) {
+            throw new SoakHttpException(response.statusCode(),
+                url + " " + response.body(), response.body());
+        }
+        String text = response.body();
+        return text == null || text.isBlank() ? null : JSON.readTree(text);
     }
 
     private static final class SoakHttpException extends Exception {
