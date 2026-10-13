@@ -86,7 +86,7 @@ public class WikidataJob implements Job {
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
-    private AccountEnrichmentTrigger enrichmentTrigger;
+    private RailsModelCallbacks modelCallbacks;
 
     @Override
     public void execute(JobExecutionContext context) {
@@ -126,7 +126,9 @@ public class WikidataJob implements Job {
             return;
         }
         JsonNode result = bindings.get(0);
+        Long previousAssignee = longAttribute(before, "assigned_to");
         String previousWebsite = account.getWebsite();
+        String previousWikidataId = account.getWikidataId();
         boolean changed = false;
         changed |= fill(account.getBackgroundInfo(), value(result, "description"), account::setBackgroundInfo);
         changed |= fill(account.getWebsite(), value(result, "website"), account::setWebsite);
@@ -157,10 +159,15 @@ public class WikidataJob implements Job {
             account.setUpdatedAt(Instant.now());
             accountRepository.saveAndFlush(account);
             versionRecorder.recordUpdate(null, account, before, rowAttributes.read(account));
+            modelCallbacks.afterUpdate(account, previousAssignee, previousWebsite, previousWikidataId,
+                RailsWhodunnit.nil());
         }
-        if (blank(previousWebsite) && !blank(account.getWebsite())) {
-            enrichmentTrigger.websiteChanged(accountId);
-        }
+    }
+
+    private static Long longAttribute(Map<String, Object> attributes, String name) {
+        Object value = attributes.get(name);
+        return value instanceof Number number ? number.longValue()
+            : value == null ? null : Long.valueOf(value.toString());
     }
 
     private static String value(JsonNode result, String key) {
