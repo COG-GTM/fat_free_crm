@@ -284,6 +284,20 @@
   description: "subscribe on an unsaveable entity (blank name) persists nothing — Rails' save
     fails validation so subscribed_users is untouched — yet still 500s — verified live."
 
+- id: accounts-unsubscribe-unsaveable-422
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /accounts/102/unsubscribe
+  auth: alice
+  setup:
+    - "UPDATE accounts SET name = '', subscribed_users = E'---\\n- 2\\n' WHERE id = 102"
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 102", columns: [id, name, subscribed_users]}
+  description: "unsubscribe on an unsaveable entity → 422 {errors} (respond_with renders the
+    failed save's errors), subscribed_users untouched — verified live."
+
 - id: accounts-unsubscribe
   ticket: AB-272
   status: enforced

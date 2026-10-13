@@ -2273,6 +2273,10 @@ public class EntityWriteService {
             subscribed.remove(user.id());
             entity.setSubscribedUsers(subscribed);
             entityManager.flush();
+        } else {
+            // Rails: save fails validation → respond_with renders the 422 {errors} body and
+            // nothing persists (the entity is never mutated before this point).
+            validateAny(entity, new PendingPermissions());
         }
         return jsonWriter.writeOne(resource(family), id);
     }

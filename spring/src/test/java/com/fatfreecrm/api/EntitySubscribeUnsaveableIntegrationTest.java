@@ -2,6 +2,8 @@ package com.fatfreecrm.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fatfreecrm.domain.User;
 import com.fatfreecrm.repository.UserRepository;
@@ -58,8 +60,7 @@ class EntitySubscribeUnsaveableIntegrationTest extends AbstractPostgresIntegrati
     void subscribeOnUnsaveableEntityPersistsNothing() throws Exception {
         mockMvc.perform(post("/api/v1/accounts/" + accountId + "/subscribe")
                 .header(HttpHeaders.AUTHORIZATION, aliceBearer))
-            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
-                .status().isInternalServerError());
+            .andExpect(status().isInternalServerError());
         assertThat(subscribedUsers()).isNull();
     }
 
@@ -69,8 +70,9 @@ class EntitySubscribeUnsaveableIntegrationTest extends AbstractPostgresIntegrati
             "---\n- " + alice.getId() + "\n", accountId);
         mockMvc.perform(post("/api/v1/accounts/" + accountId + "/unsubscribe")
                 .header(HttpHeaders.AUTHORIZATION, aliceBearer))
-            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
-                .status().isCreated());
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.errors.name.length()").value(1))
+            .andExpect(jsonPath("$.errors.name[0]").value("^Please specify account name."));
         assertThat(subscribedUsers()).isEqualTo("---\n- " + alice.getId() + "\n");
     }
 
