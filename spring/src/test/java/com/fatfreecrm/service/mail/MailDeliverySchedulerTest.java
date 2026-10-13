@@ -1,27 +1,25 @@
 package com.fatfreecrm.service.mail;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verify;
 
-import com.fatfreecrm.config.JobsProperties;
-import com.fatfreecrm.service.jobs.JobsOwner;
+import com.fatfreecrm.domain.Account;
+import com.fatfreecrm.domain.User;
+import com.fatfreecrm.service.jobs.RailsJobEnqueuer;
 import org.junit.jupiter.api.Test;
-import org.quartz.Scheduler;
 
 class MailDeliverySchedulerTest {
 
     @Test
-    void doesNotScheduleMailWhenRailsOwnsJobs() {
-        Scheduler scheduler = mock(Scheduler.class);
-        MailDeliveryScheduler deliveryScheduler = new MailDeliveryScheduler(
-            scheduler,
-            new JobsOwner(new JobsProperties()));
+    void enqueuesMailInTheSharedRailsQueue() {
+        RailsJobEnqueuer enqueuer = mock(RailsJobEnqueuer.class);
+        MailDeliveryScheduler deliveryScheduler = new MailDeliveryScheduler(enqueuer);
+        Account account = mock(Account.class);
+        User user = mock(User.class);
 
         deliveryScheduler.deliverLater(
-            "UserMailer",
-            "assigned_entity_notification",
-            new RenderedMail("subject", "from@example.test", "to@example.test", "text/html", "html"));
+            "UserMailer", "assigned_entity_notification", account, user);
 
-        verifyNoInteractions(scheduler);
+        verify(enqueuer).deliverLater("UserMailer", "assigned_entity_notification", account, user);
     }
 }
