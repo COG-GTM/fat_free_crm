@@ -98,6 +98,17 @@ public class CustomFieldTypeValidator {
                 && (changedFields == null || changedFields.contains(field.name()));
             Mode fieldMode = changedField ? Mode.WRITE : Mode.READ;
             Object value;
+            if (changedField && raw instanceof CharSequence lenCheck) {
+                // Rails checks the casted attribute's to_s — a numeric string that fails
+                // numericality still trips maxlength, so length runs on the raw input.
+                int len = (int) lenCheck.codePoints().count();
+                if (field.minlength() != null && field.minlength() > 0 && len < field.minlength()) {
+                    addError(errors, field.name(), "^" + field.label() + " is too short.");
+                }
+                if (field.maxlength() != null && field.maxlength() > 0 && len > field.maxlength()) {
+                    addError(errors, field.name(), "^" + field.label() + " is too long.");
+                }
+            }
             if (present) {
                 value = normalizeValue(field, raw, fieldMode, errors);
             } else {
@@ -113,15 +124,15 @@ public class CustomFieldTypeValidator {
             if (mode == Mode.WRITE && required && isBlank(value)) {
                 // Rails quirk: required uses blank? semantics, and false is blank,
                 // so a required boolean can never be submitted false. Parity.
-                addError(errors, field.name(), field.label() + " is required.");
+                addError(errors, field.name(), "^" + field.label() + " is required.");
             }
-            if (changedField && value instanceof CharSequence s) {
+            if (changedField && !(raw instanceof CharSequence) && value instanceof CharSequence s) {
                 int len = (int) s.codePoints().count();
                 if (field.minlength() != null && field.minlength() > 0 && len < field.minlength()) {
-                    addError(errors, field.name(), field.label() + " is too short.");
+                    addError(errors, field.name(), "^" + field.label() + " is too short.");
                 }
                 if (field.maxlength() != null && field.maxlength() > 0 && len > field.maxlength()) {
-                    addError(errors, field.name(), field.label() + " is too long.");
+                    addError(errors, field.name(), "^" + field.label() + " is too long.");
                 }
             }
             if (present || mode == Mode.WRITE) {
@@ -143,7 +154,7 @@ public class CustomFieldTypeValidator {
                 Object to = normalizedByName.get(field.name());
                 if (from != null && to != null && from.getClass().equals(to.getClass())
                     && isBefore(to, from)) {
-                    addError(errors, field.name(), start.label() + " cannot end before it begins.");
+                    addError(errors, field.name(), "^" + start.label() + " cannot end before it begins.");
                 }
             }
         }
@@ -328,7 +339,8 @@ public class CustomFieldTypeValidator {
         }
         BigDecimal rounded = bd.setScale(2, RoundingMode.HALF_UP); // PG numeric(15,2) rounds
         if (rounded.abs().precision() - rounded.abs().scale() > 13) {
-            throw new FieldConversionException("%s is out of range.");
+            // Rails numericality on the numeric(15,2) column emits a raw message — no %s prefix.
+            throw new FieldConversionException("must be less than 10000000000000");
         }
         return rounded;
     }

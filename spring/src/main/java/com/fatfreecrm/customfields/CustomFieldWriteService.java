@@ -62,6 +62,14 @@ public class CustomFieldWriteService {
 
     @Transactional
     public Map<String, Object> write(HasCustomFields entity, Map<String, Object> input) {
+        return write(entity, input, true);
+    }
+
+    // Rails assigns cf_* on the model inside the same save: on create there is no separate
+    // updated_at bump (created_at == updated_at), on update one shared bump.
+    @Transactional
+    public Map<String, Object> write(HasCustomFields entity, Map<String, Object> input,
+        boolean bumpUpdatedAt) {
         RailsModelType type = modelType(entity);
         List<CustomFieldDefinition> applicable = applicableDefinitions(entity, type);
         Map<String, Object> current = readService.valuesFor(entity);
@@ -123,7 +131,9 @@ public class CustomFieldWriteService {
         }
 
         if (!assignments.isEmpty()) {
-            assignments.add("updated_at = (now() AT TIME ZONE 'utc')");
+            if (bumpUpdatedAt) {
+                assignments.add("updated_at = (now() AT TIME ZONE 'utc')");
+            }
             columnParameters.addAll(jsonParameters);
             columnParameters.add(((BaseEntity) entity).getId());
             String sql = "UPDATE " + CustomFieldRegistry.tableName(type) + " SET "

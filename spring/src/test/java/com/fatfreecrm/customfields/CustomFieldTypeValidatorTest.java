@@ -51,9 +51,9 @@ class CustomFieldTypeValidatorTest {
         List<CustomFieldDefinition> fields =
             List.of(f("cf_s", "string", false, 3, 5, null, null, null));
         assertThat(write(fields, Map.of("cf_s", "ab")).errors().get("cf_s"))
-            .containsExactly("cf_s is too short.");
+            .containsExactly("^cf_s is too short.");
         assertThat(write(fields, Map.of("cf_s", "abcdef")).errors().get("cf_s"))
-            .containsExactly("cf_s is too long.");
+            .containsExactly("^cf_s is too long.");
         assertThat(write(fields, Map.of("cf_s", "abcd")).ok()).isTrue();
     }
 
@@ -132,7 +132,7 @@ class CustomFieldTypeValidatorTest {
         // Rails quirk: blank?(false) == true, so a required boolean can never be false
         List<CustomFieldDefinition> fields = List.of(f("cf_b", "boolean", true, null, null, null, null, null));
         assertThat(write(fields, Map.of("cf_b", false)).errors().get("cf_b"))
-            .containsExactly("cf_b is required.");
+            .containsExactly("^cf_b is required.");
         assertThat(write(fields, Map.of("cf_b", true)).ok()).isTrue();
     }
 
@@ -184,7 +184,7 @@ class CustomFieldTypeValidatorTest {
         assertThat(write(fields, Map.of("cf_m", 12.344)).normalized().get("cf_m"))
             .isEqualTo(new BigDecimal("12.34"));
         assertThat(write(fields, Map.of("cf_m", "12345678901234.5")).errors().get("cf_m"))
-            .containsExactly("cf_m is out of range."); // 14 integer digits > 13
+            .containsExactly("must be less than 10000000000000"); // 14 integer digits > 13
         assertThat(write(fields, Map.of("cf_m", "abc")).errors()).containsKey("cf_m");
     }
 
@@ -215,11 +215,11 @@ class CustomFieldTypeValidatorTest {
         List<CustomFieldDefinition> fields = List.of(f("cf_s", "string", true, null, null, null, null, null));
         for (Object blank : new Object[]{null, "", "   "}) {
             assertThat(write(fields, java.util.Collections.singletonMap("cf_s", blank))
-                .errors().get("cf_s")).containsExactly("cf_s is required.");
+                .errors().get("cf_s")).containsExactly("^cf_s is required.");
         }
         // absent key on WRITE behaves as null
         assertThat(write(fields, Map.of()).errors().get("cf_s"))
-            .containsExactly("cf_s is required.");
+            .containsExactly("^cf_s is required.");
         // READ never raises required errors
         assertThat(read(fields, Map.of()).ok()).isTrue();
         assertThat(read(fields, Map.of("cf_s", "")).ok()).isTrue();
@@ -255,7 +255,7 @@ class CustomFieldTypeValidatorTest {
     void datePairEndBeforeStartErrors() {
         assertThat(write(datePair(),
             Map.of("cf_from", "2024-02-01", "cf_to", "2024-01-01")).errors().get("cf_to"))
-            .containsExactly("cf_from cannot end before it begins.");
+            .containsExactly("^cf_from cannot end before it begins.");
     }
 
     @Test
@@ -279,7 +279,7 @@ class CustomFieldTypeValidatorTest {
         assertThat(write(fields, Map.of(
             "cf_start", "2024-01-31T10:00:00",
             "cf_end", "2024-01-31T09:00:00")).errors().get("cf_end"))
-            .containsExactly("cf_start cannot end before it begins.");
+            .containsExactly("^cf_start cannot end before it begins.");
         assertThat(write(fields, Map.of(
             "cf_start", "2024-01-31T10:00:00",
             "cf_end", "2024-01-31T11:00:00")).ok()).isTrue();

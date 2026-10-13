@@ -279,6 +279,26 @@ module ContractFixtures
                               { tag_id: 2, taggable_id: 201, taggable_type: "Contact", tagger_id: 3, tagger_type: "User",
                                 context: "tags", created_at: time_for(1031) }
                             ])
+        Email.insert_all!([
+                            { id: 701, imap_message_id: "<contract-701@ffcrm>", user_id: 2, mediator_type: "Account",
+                              mediator_id: 101, sent_from: "alice@contract.example", sent_to: "account-101@contract.example",
+                              cc: nil, bcc: nil, subject: "Contract email on account 101", body: "Alice email body",
+                              header: nil, sent_at: time_for(1040), received_at: time_for(1040), deleted_at: nil,
+                              state: "Expanded", created_at: time_for(1040), updated_at: time_for(1040) },
+                            { id: 702, imap_message_id: "<contract-702@ffcrm>", user_id: 3, mediator_type: "Contact",
+                              mediator_id: 203, sent_from: "bob@contract.example", sent_to: "contact-203@contract.example",
+                              cc: nil, bcc: nil, subject: "Contract email on shared contact", body: "Bob email body",
+                              header: nil, sent_at: time_for(1041), received_at: time_for(1041), deleted_at: nil,
+                              state: "Expanded", created_at: time_for(1041), updated_at: time_for(1041) }
+                          ])
+        List.insert_all!([
+                           { id: 801, user_id: 2, name: "Alice Contract List", url: "/accounts?query=alice",
+                             created_at: time_for(1050), updated_at: time_for(1050) },
+                           { id: 802, user_id: 3, name: "Bob Contract List", url: "/tasks?view=pending",
+                             created_at: time_for(1051), updated_at: time_for(1051) },
+                           { id: 803, user_id: nil, name: "Global Contract List", url: "/leads",
+                             created_at: time_for(1052), updated_at: time_for(1052) }
+                         ])
       end
 
       def reset_sequences!
@@ -286,7 +306,7 @@ module ContractFixtures
         return unless connection.adapter_name == "PostgreSQL"
 
         tables = %w[users groups settings accounts contacts leads opportunities campaigns tasks permissions comments
-                    addresses tags taggings versions]
+                    emails lists addresses tags taggings versions]
         tables.each do |table|
           quoted = connection.quote_table_name(table)
           connection.execute(

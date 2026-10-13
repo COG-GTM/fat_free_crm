@@ -13,4 +13,10 @@ public interface AccountContactRepository extends JpaRepository<AccountContact, 
 
     @Query("SELECT link.account.id FROM AccountContact link WHERE link.contact.id = :contactId")
     List<Long> findAccountIdsByContactId(@Param("contactId") Long contactId);
+
+    @Query("SELECT link FROM AccountContact link WHERE link.account.id = :accountId")
+    List<AccountContact> findByAccountId(@Param("accountId") Long accountId);
+
+    @Query("SELECT link FROM AccountContact link WHERE link.contact.id = :contactId")
+    List<AccountContact> findByContactId(@Param("contactId") Long contactId);
 }

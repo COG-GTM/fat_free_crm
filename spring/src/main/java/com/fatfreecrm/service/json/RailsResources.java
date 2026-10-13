@@ -9,6 +9,7 @@ import com.fatfreecrm.domain.Group;
 import com.fatfreecrm.domain.Lead;
 import com.fatfreecrm.domain.Opportunity;
 import com.fatfreecrm.domain.ResearchTool;
+import com.fatfreecrm.domain.SavedList;
 import com.fatfreecrm.domain.Tag;
 import com.fatfreecrm.domain.Task;
 import com.fatfreecrm.domain.User;
@@ -48,6 +49,7 @@ public class RailsResources {
     public final RailsResource tag;
     public final RailsResource researchTool;
     public final RailsResource version;
+    public final RailsResource savedList;
 
     public RailsResources(
         AccountRepository accountRepository,
@@ -239,6 +241,10 @@ public class RailsResources {
         );
         version = new RailsResource(
             "Version", "versions", Version.class, Set.of(), false, Set.of(), "activities", entity -> null, Map.of()
+        );
+        savedList = new RailsResource(
+            "List", "lists", SavedList.class, Set.of(), false, Set.of(), "lists",
+            entity -> ((SavedList) entity).getName(), Map.of()
         );
     }
 

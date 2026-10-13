@@ -48,6 +48,8 @@ RSpec.describe ContractFixtures, :truncate do
     expect(AccountOpportunity.count).to eq(1)
     expect(ContactOpportunity.count).to eq(1)
     expect(Comment.count).to eq(2)
+    expect(Email.count).to eq(2)
+    expect(List.count).to eq(3)
     expect(Address.count).to eq(1)
     expect(Tag.count).to eq(2)
     expect(Tagging.count).to eq(2)

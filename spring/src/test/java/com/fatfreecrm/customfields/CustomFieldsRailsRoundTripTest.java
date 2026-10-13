@@ -134,9 +134,10 @@ class CustomFieldsRailsRoundTripTest extends AbstractPostgresIntegrationTest {
         matrix.path("validation_errors").path("errors").properties().forEach(entry -> {
             List<String> messages = new ArrayList<>();
             entry.getValue().forEach(message ->
-                messages.add(message.asText().replaceFirst("^\\^", "")));
+                messages.add(message.asText()));
             railsErrors.put(entry.getKey(), messages);
         });
+        // Golden messages are raw Rails errors.messages values — `^%{field}` prefix included.
         JsonNode actualErrors = objectMapper.valueToTree(result.errors());
         JsonNode expectedErrors = objectMapper.valueToTree(railsErrors);
         assertThat(actualErrors).isEqualTo(expectedErrors);

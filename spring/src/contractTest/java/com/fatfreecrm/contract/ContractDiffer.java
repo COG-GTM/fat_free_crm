@@ -38,12 +38,28 @@ public final class ContractDiffer {
         List<String> notes,
         boolean springAuthenticated
     ) {
-        List<Difference> differences = new ArrayList<>();
+        return diff(contractCase, rails, spring, allowlist, globalNormalize, railsUrl, springUrl,
+            notes, springAuthenticated, List.of());
+    }
+
+    public CaseResult diff(
+        ContractCase contractCase,
+        CapturedResponse rails,
+        CapturedResponse spring,
+        Allowlist allowlist,
+        JsonNode globalNormalize,
+        String railsUrl,
+        String springUrl,
+        List<String> notes,
+        boolean springAuthenticated,
+        List<Difference> dbDifferences
+    ) {
+        List<Difference> differences = new ArrayList<>(dbDifferences);
         List<String> resultNotes = new ArrayList<>(notes);
         boolean authenticated = springAuthenticated && !contractCase.auth().equals("anonymous");
         List<AllowlistEntry> matching = allowlist.matching(contractCase, authenticated);
         boolean problemBodyAllowed = matching.stream().anyMatch(entry ->
-            entry.kind().equals("errorBody") && springBodyAllowed(entry, rails, spring));
+            entry.kind().equals("errorBody") && springBodyAllowed(entry, rails, spring, matching));
         if (rails.status() != spring.status()) {
             JsonNode left = JSON.getNodeFactory().numberNode(rails.status());
             JsonNode right = JSON.getNodeFactory().numberNode(spring.status());
@@ -260,8 +276,13 @@ public final class ContractDiffer {
         differences.add(new Difference(pointer, kind, railsValue, springValue, allowedBy));
     }
 
-    private static boolean springBodyAllowed(AllowlistEntry entry, CapturedResponse rails, CapturedResponse spring) {
-        return rails.status() >= 400 && spring.status() >= 400
+    private static boolean springBodyAllowed(AllowlistEntry entry, CapturedResponse rails, CapturedResponse spring,
+        List<AllowlistEntry> matching) {
+        // A Rails redirect (e.g. admin gate → /) whose status pair is itself allow-listed may differ
+        // from Spring's problem body too.
+        boolean allowedRedirect = rails.status() >= 300 && rails.status() < 400
+            && matching.stream().anyMatch(candidate -> candidate.kind().equals("status"));
+        return (rails.status() >= 400 || allowedRedirect) && spring.status() >= 400
             && spring.mediaType().equals("application/problem+json");
     }
 
