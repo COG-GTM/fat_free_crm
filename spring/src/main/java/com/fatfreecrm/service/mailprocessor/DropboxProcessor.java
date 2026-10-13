@@ -13,6 +13,8 @@ import com.fatfreecrm.repository.UserRepository;
 import com.fatfreecrm.security.AuthenticatedUser;
 import com.fatfreecrm.service.audit.VersionRecorder;
 import com.fatfreecrm.service.jobs.JobsOwner;
+import com.fatfreecrm.service.jobs.RailsModelCallbacks;
+import com.fatfreecrm.service.jobs.RailsWhodunnit;
 import com.fatfreecrm.service.history.RailsRowAttributes;
 import com.fatfreecrm.service.mail.MailSettingsService;
 import jakarta.mail.Message;
@@ -39,6 +41,7 @@ public class DropboxProcessor extends MailProcessorBase {
 
     private final RailsRowAttributes rowAttributes;
     private final VersionRecorder versionRecorder;
+    private final RailsModelCallbacks modelCallbacks;
 
     public DropboxProcessor(
         MailSettingsService settings,
@@ -49,11 +52,13 @@ public class DropboxProcessor extends MailProcessorBase {
         VersionRecorder versionRecorder,
         JobsOwner jobsOwner,
         ImapClient imapClient,
-        PlatformTransactionManager transactionManager
+        PlatformTransactionManager transactionManager,
+        RailsModelCallbacks modelCallbacks
     ) {
         super(settings, userRepository, entityManager, jdbcTemplate, jobsOwner, imapClient, transactionManager);
         this.rowAttributes = rowAttributes;
         this.versionRecorder = versionRecorder;
+        this.modelCallbacks = modelCallbacks;
     }
 
     public void process(boolean dryRun) {
@@ -257,6 +262,8 @@ public class DropboxProcessor extends MailProcessorBase {
         entityManager.flush();
         versionRecorder.recordTouch(new AuthenticatedUser(sender.getId(), null, false), asset, beforeTouch,
             rowAttributes.read(asset));
+        modelCallbacks.afterUpdate(asset, assignedToId(beforeTouch), stringAttribute(beforeTouch, "website"),
+            stringAttribute(beforeTouch, "wikidata_id"), RailsWhodunnit.string(sender.getId().toString()));
         if (asset instanceof Lead lead && "new".equals(lead.getStatus())) {
             Map<String, Object> beforeStatus = rowAttributes.read(lead);
             lead.setStatus("contacted");
@@ -265,6 +272,8 @@ public class DropboxProcessor extends MailProcessorBase {
             entityManager.flush();
             versionRecorder.recordUpdate(new AuthenticatedUser(sender.getId(), null, false), lead, beforeStatus,
                 rowAttributes.read(lead));
+            modelCallbacks.afterUpdate(lead, assignedToId(beforeStatus), stringAttribute(beforeStatus, "website"),
+                stringAttribute(beforeStatus, "wikidata_id"), RailsWhodunnit.string(sender.getId().toString()));
         }
         Integer accountId = relatedAccountId(asset);
         if (accountId != null) {
@@ -276,6 +285,9 @@ public class DropboxProcessor extends MailProcessorBase {
             entityManager.flush();
             versionRecorder.recordTouch(new AuthenticatedUser(sender.getId(), null, false), account,
                 beforeAccountTouch, rowAttributes.read(account));
+            modelCallbacks.afterUpdate(account, assignedToId(beforeAccountTouch),
+                stringAttribute(beforeAccountTouch, "website"), stringAttribute(beforeAccountTouch, "wikidata_id"),
+                RailsWhodunnit.string(sender.getId().toString()));
         }
     }
 
@@ -335,6 +347,20 @@ public class DropboxProcessor extends MailProcessorBase {
     private void recordCreate(Object entity, User sender) {
         versionRecorder.recordCreate(new AuthenticatedUser(sender.getId(), null, false), entity,
             rowAttributes.read(entity), rowAttributes.defaults(entity));
+        if (entity instanceof CrmEntity crmEntity) {
+            modelCallbacks.afterCreate(crmEntity, RailsWhodunnit.string(sender.getId().toString()));
+        }
+    }
+
+    private static Long assignedToId(Map<String, Object> attributes) {
+        Object value = attributes.get("assigned_to");
+        return value instanceof Number number ? number.longValue()
+            : value == null ? null : Long.valueOf(value.toString());
+    }
+
+    private static String stringAttribute(Map<String, Object> attributes, String name) {
+        Object value = attributes.get(name);
+        return value == null ? null : value.toString();
     }
 
     static List<String> explicitKeyword(String body) {

@@ -1,57 +1,55 @@
 package com.fatfreecrm.service.mail;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import com.fatfreecrm.domain.User;
 import com.fatfreecrm.domain.support.CrmEntity;
+import com.fatfreecrm.service.jobs.RailsJobEnqueuer;
 import org.springframework.stereotype.Service;
 
 @Service
+@SuppressFBWarnings(
+    value = "EI_EXPOSE_REP2",
+    justification = "Spring-managed collaborators are intentionally retained by this service."
+)
 public class AssignmentNotificationService {
 
-    private final MailRendererService renderer;
-    private final MailDeliveryScheduler deliveryScheduler;
+    private final MailSettingsService settings;
+    private final RailsJobEnqueuer enqueuer;
 
     public AssignmentNotificationService(
-        MailRendererService renderer,
-        MailDeliveryScheduler deliveryScheduler
+        MailSettingsService settings,
+        RailsJobEnqueuer enqueuer
     ) {
-        this.renderer = renderer;
-        this.deliveryScheduler = deliveryScheduler;
+        this.settings = settings;
+        this.enqueuer = enqueuer;
     }
 
     public void afterCreate(CrmEntity entity, User currentUser) {
-        if (!eligible(entity, currentUser)) {
+        User assignee = entity.getAssignedTo();
+        if (assignee != null && (currentUser == null || !assignee.getId().equals(currentUser.getId()))) {
+            enqueueIfEligible(entity, currentUser);
+        }
+    }
+
+    public void afterUpdate(CrmEntity entity, Long previousAssignedToId, User currentUser) {
+        User assignee = entity.getAssignedTo();
+        if (assignee != null
+            && !java.util.Objects.equals(previousAssignedToId, assignee.getId())
+            && (currentUser == null || !assignee.getId().equals(currentUser.getId()))) {
+            enqueueIfEligible(entity, currentUser);
+        }
+    }
+
+    private void enqueueIfEligible(CrmEntity entity, User currentUser) {
+        if (!(entity instanceof com.fatfreecrm.domain.Account
+            || entity instanceof com.fatfreecrm.domain.Contact
+            || entity instanceof com.fatfreecrm.domain.Lead
+            || entity instanceof com.fatfreecrm.domain.Opportunity)) {
             return;
         }
         User assignee = entity.getAssignedTo();
-        String entityType = entity.getClass().getSimpleName();
-        String route = entityType.toLowerCase(java.util.Locale.ROOT) + "s";
-        String host = renderer.host();
-        String url = host.isBlank() ? "" : host.replaceAll("/+$", "") + "/" + route + "/" + entity.getId();
-        String entityName = entity.getClass().getSimpleName();
-        if (entity instanceof com.fatfreecrm.domain.Account account) {
-            entityName = account.getName();
-        } else if (entity instanceof com.fatfreecrm.domain.Contact contact) {
-            entityName = contact.getFirstName() + " " + contact.getLastName();
-        } else if (entity instanceof com.fatfreecrm.domain.Lead lead) {
-            entityName = lead.getFirstName() + " " + lead.getLastName();
+        if (currentUser != null && assignee.isReceiveAssignedNotifications() && !settings.host().isBlank()) {
+            enqueuer.deliverLater("UserMailer", "assigned_entity_notification", entity, currentUser);
         }
-        deliveryScheduler.deliverLater(
-            "UserMailer",
-            "assigned_entity_notification",
-            renderer.assignment(assignee.getEmail(), entityName, entityType, url, currentUserName(currentUser)));
-    }
-
-    private boolean eligible(CrmEntity entity, User currentUser) {
-        return currentUser != null && entity.getAssignedTo() != null
-            && !entity.getAssignedTo().getId().equals(currentUser.getId())
-            && entity.getAssignedTo().isReceiveAssignedNotifications()
-            && !renderer.host().isBlank()
-            && entity.getAssignedTo().getEmail() != null;
-    }
-
-    private static String currentUserName(User user) {
-        String firstName = user.getFirstName() == null ? "" : user.getFirstName();
-        String lastName = user.getLastName() == null ? "" : user.getLastName();
-        return (firstName + " " + lastName).trim();
     }
 }

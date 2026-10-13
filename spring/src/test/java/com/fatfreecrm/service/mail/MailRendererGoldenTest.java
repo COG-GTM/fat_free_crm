@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fatfreecrm.domain.Setting;
 import com.fatfreecrm.repository.SettingRepository;
+import com.fatfreecrm.service.settings.SettingsService;
 import jakarta.mail.Message;
 import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
@@ -102,7 +103,8 @@ class MailRendererGoldenTest {
                 when(repository.findByName(String.valueOf(name))).thenReturn(Optional.of(setting));
             });
         }
-        return new MailSettingsService(repository, "https://crm.example.test", "en-US", "Public",
+        return new MailSettingsService(repository, mock(SettingsService.class),
+            "https://crm.example.test", "en-US", "Public",
             "", "", "");
     }
 

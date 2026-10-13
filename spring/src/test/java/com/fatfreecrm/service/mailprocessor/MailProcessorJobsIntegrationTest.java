@@ -7,19 +7,25 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.fatfreecrm.config.JobsProperties;
+import com.fatfreecrm.domain.Account;
 import com.fatfreecrm.domain.Setting;
+import com.fatfreecrm.domain.User;
+import com.fatfreecrm.domain.support.CrmEntity;
 import com.fatfreecrm.repository.AccountRepository;
 import com.fatfreecrm.repository.AddressRepository;
 import com.fatfreecrm.repository.CommentRepository;
 import com.fatfreecrm.repository.SettingRepository;
 import com.fatfreecrm.repository.UserRepository;
-import com.fatfreecrm.service.jobs.AccountEnrichmentTrigger;
 import com.fatfreecrm.service.jobs.AccountWebsiteJob;
+import com.fatfreecrm.service.jobs.AccountEnrichmentTrigger;
 import com.fatfreecrm.service.jobs.JobLockKey;
 import com.fatfreecrm.service.jobs.JobLockService;
 import com.fatfreecrm.service.jobs.JobsHttpClient;
 import com.fatfreecrm.service.jobs.JobsOwner;
+import com.fatfreecrm.service.jobs.RailsModelCallbacks;
+import com.fatfreecrm.service.jobs.RailsWhodunnit;
 import com.fatfreecrm.service.jobs.WikidataJob;
+import com.fatfreecrm.service.mail.AssignmentNotificationService;
 import com.fatfreecrm.service.mail.CommentNotificationService;
 import com.fatfreecrm.service.mail.MailDeliveryScheduler;
 import com.fatfreecrm.service.mail.MailSettingsService;
@@ -56,6 +62,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.junit.jupiter.api.Assertions;
 
@@ -64,9 +71,12 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
 
     private static final String SENDER_USERNAME = "ab273-jobs-mail-sender";
     private static final String SENDER_EMAIL = "ab273-sender@example.test";
+    private static final String ASSIGNED_MESSAGE_ID = "<ab273-assigned-dropbox@example.test>";
     private static final String DROPBOX_EMAIL = "ab273-dropbox@example.test";
     private static final String REPLY_EMAIL = "ab273-reply@example.test";
     private static final String MENTION_USERNAME = "ab273-mentioned";
+    private static final String ASSIGNEE_USERNAME = "ab273-assignment-recipient";
+    private static final String ASSIGNEE_EMAIL = "ab273-assignment-recipient@example.test";
     private static final String MESSAGE_ID = "<ab273-jobs-mail@example.test>";
     private static final int LOCK_CLASS_ID = 1179009869;
     private static final int DROPBOX_LOCK_OBJECT_ID = 1;
@@ -104,6 +114,12 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
     private RailsRowAttributes rowAttributes;
     @Autowired
     private VersionRecorder versionRecorder;
+    @Autowired
+    private RailsModelCallbacks modelCallbacks;
+    @Autowired
+    private AssignmentNotificationService assignmentNotifications;
+    @Autowired
+    private AccountEnrichmentTrigger accountEnrichment;
 
     @Test
     void railsOwnerDoesNotScheduleDeliverOrConnectToImap() throws Exception {
@@ -117,11 +133,26 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
             assertFalse(scheduler.isStarted());
             assertTrue(scheduler.getJobKeys(GroupMatcher.anyGroup()).isEmpty());
             int incomingBeforeDelivery = greenMail.getReceivedMessages().length;
-            mailDeliveryScheduler.deliverLater(
-                "UserMailer", "assigned_entity_notification",
-                new com.fatfreecrm.service.mail.RenderedMail(
-                    "subject", "sender@example.test", "recipient@example.test", "text/html", "<p>body</p>"));
+            String queuedJobId = new TransactionTemplate(transactionManager).execute(status -> {
+                mailDeliveryScheduler.deliverLater("UserMailer", "assigned_entity_notification",
+                    accountWithId(), userWithId());
+                return jdbcTemplate.queryForObject(
+                    """
+                        SELECT active_job_id FROM solid_queue_jobs
+                        WHERE class_name = 'ActionMailer::MailDeliveryJob'
+                        ORDER BY id DESC LIMIT 1
+                        """, String.class);
+            });
             assertEquals(incomingBeforeDelivery, greenMail.getReceivedMessages().length);
+            assertEquals(1, jdbcTemplate.queryForObject("""
+                SELECT count(*) FROM solid_queue_jobs
+                WHERE active_job_id = ? AND class_name = 'ActionMailer::MailDeliveryJob'
+                """, Integer.class, queuedJobId));
+            jdbcTemplate.update("""
+                DELETE FROM solid_queue_ready_executions
+                WHERE job_id = (SELECT id FROM solid_queue_jobs WHERE active_job_id = ?)
+                """, queuedJobId);
+            jdbcTemplate.update("DELETE FROM solid_queue_jobs WHERE active_job_id = ?", queuedJobId);
 
             ImapClient imapClient = mock(ImapClient.class);
             DropboxProcessor processor = new DropboxProcessor(
@@ -133,7 +164,8 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
                 versionRecorder,
                 jobsOwner,
                 imapClient,
-                transactionManager);
+                transactionManager,
+                modelCallbacks);
             processor.process(false);
             verifyNoInteractions(imapClient);
             assertEquals(1, unseenMessages(greenMail));
@@ -141,6 +173,96 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
                 Integer.class, "Must Not Be Processed"));
         } finally {
             greenMail.stop();
+        }
+    }
+
+    @Test
+    void dropboxCreatedAssignedEntityUsesStringWhodunnitAndEnqueuesExactMailArguments() throws Exception {
+        clearFixtures();
+        GreenMail greenMail = greenMail();
+        greenMail.start();
+        String existingHost = settingValue("host");
+        long lastJobId = jdbcTemplate.queryForObject("SELECT COALESCE(MAX(id), 0) FROM solid_queue_jobs", Long.class);
+        try {
+            greenMail.setUser(DROPBOX_EMAIL, "dropbox", "secret");
+            insertSender();
+            insertAssignee();
+            insertDropboxSetting(greenMail.getImap().getPort());
+            setHost("crm.contract.example");
+            sendMessage(greenMail, SENDER_EMAIL, DROPBOX_EMAIL, ASSIGNED_MESSAGE_ID,
+                "Assigned Dropbox account", "Account: Assigned Dropbox account\nEmail body",
+                "text/plain", null, DROPBOX_EMAIL);
+
+            long senderId = jdbcTemplate.queryForObject(
+                "SELECT id FROM users WHERE username = ?", Long.class, SENDER_USERNAME);
+            long assigneeId = jdbcTemplate.queryForObject(
+                "SELECT id FROM users WHERE username = ?", Long.class, ASSIGNEE_USERNAME);
+            User assignee = userRepository.findById(assigneeId).orElseThrow();
+            RailsModelCallbacks assignedCallbacks = new RailsModelCallbacks(
+                userRepository, assignmentNotifications, accountEnrichment) {
+                @Override
+                public void afterCreate(CrmEntity entity, RailsWhodunnit whodunnit) {
+                    entity.setAssignedTo(assignee);
+                    super.afterCreate(entity, whodunnit);
+                }
+            };
+            JobsProperties properties = new JobsProperties();
+            properties.setOwner("spring");
+            DropboxProcessor processor = new DropboxProcessor(
+                mailSettings,
+                userRepository,
+                entityManager,
+                jdbcTemplate,
+                rowAttributes,
+                versionRecorder,
+                new JobsOwner(properties),
+                new ImapClient(),
+                transactionManager,
+                assignedCallbacks);
+
+            processor.process(false);
+
+            long accountId = jdbcTemplate.queryForObject(
+                "SELECT id FROM accounts WHERE name = ?", Long.class, "Assigned Dropbox account");
+            String arguments = jdbcTemplate.queryForObject("""
+                SELECT arguments::text FROM solid_queue_jobs
+                WHERE class_name = 'ActionMailer::MailDeliveryJob'
+                ORDER BY id DESC LIMIT 1
+                """, String.class);
+            JsonNode payload = JSON.readTree(arguments);
+            JsonNode expectedArguments = JSON.readTree("""
+                [
+                  "UserMailer",
+                  "assigned_entity_notification",
+                  "deliver_now",
+                  {
+                    "_aj_ruby2_keywords": ["args"],
+                    "args": [
+                      {"_aj_globalid": "gid://fat-free-crm/Account/%d"},
+                      {"_aj_globalid": "gid://fat-free-crm/User/%d"}
+                    ]
+                  }
+                ]
+                """.formatted(accountId, senderId));
+            assertEquals("ActionMailer::MailDeliveryJob", payload.path("job_class").asText());
+            assertEquals(expectedArguments, payload.path("arguments"));
+            assertEquals(1, jdbcTemplate.queryForObject("""
+                SELECT count(*) FROM solid_queue_jobs
+                WHERE class_name = 'ActionMailer::MailDeliveryJob'
+                  AND arguments::jsonb #>> '{arguments,3,args,0,_aj_globalid}' = ?
+                """, Integer.class, "gid://fat-free-crm/Account/" + accountId));
+            assertEquals(1, jdbcTemplate.queryForObject("""
+                SELECT count(*) FROM solid_queue_ready_executions
+                WHERE job_id = (SELECT id FROM solid_queue_jobs WHERE class_name = 'ActionMailer::MailDeliveryJob'
+                    AND arguments::jsonb #>> '{arguments,3,args,0,_aj_globalid}' = ?)
+                """, Integer.class, "gid://fat-free-crm/Account/" + accountId));
+            assertEquals(assigneeId, jdbcTemplate.queryForObject(
+                "SELECT assigned_to FROM accounts WHERE id = ?", Long.class, accountId));
+        } finally {
+            greenMail.stop();
+            clearFixtures();
+            clearQueueJobsAfter(lastJobId);
+            restoreHost(existingHost);
         }
     }
 
@@ -168,7 +290,8 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
                 versionRecorder,
                 springOwner,
                 new ImapClient(),
-                transactionManager);
+                transactionManager,
+                modelCallbacks);
 
             try (Connection connection = dataSource.getConnection();
                  Statement statement = connection.createStatement()) {
@@ -228,7 +351,8 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
                 commentNotificationService,
                 new JobsOwner(properties),
                 new ImapClient(),
-                transactionManager);
+                transactionManager,
+                modelCallbacks);
             processor.process(false);
 
             Long senderId = jdbcTemplate.queryForObject(
@@ -639,7 +763,7 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
         ReflectionTestUtils.setField(job, "versionRecorder", versionRecorder);
         ReflectionTestUtils.setField(job, "rowAttributes", rowAttributes);
         ReflectionTestUtils.setField(job, "objectMapper", JSON);
-        ReflectionTestUtils.setField(job, "enrichmentTrigger", mock(AccountEnrichmentTrigger.class));
+        ReflectionTestUtils.setField(job, "modelCallbacks", mock(RailsModelCallbacks.class));
         return job;
     }
 
@@ -652,7 +776,7 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
         ReflectionTestUtils.setField(job, "versionRecorder", versionRecorder);
         ReflectionTestUtils.setField(job, "rowAttributes", rowAttributes);
         ReflectionTestUtils.setField(job, "objectMapper", JSON);
-        ReflectionTestUtils.setField(job, "enrichmentTrigger", mock(AccountEnrichmentTrigger.class));
+        ReflectionTestUtils.setField(job, "modelCallbacks", mock(RailsModelCallbacks.class));
         return job;
     }
 
@@ -676,7 +800,20 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
             versionRecorder,
             new JobsOwner(properties),
             new ImapClient(),
-            transactionManager);
+            transactionManager,
+            modelCallbacks);
+    }
+
+    private static Account accountWithId() {
+        Account account = new Account();
+        ReflectionTestUtils.setField(account, "id", 101L);
+        return account;
+    }
+
+    private static User userWithId() {
+        User user = new User();
+        ReflectionTestUtils.setField(user, "id", 2L);
+        return user;
     }
 
     private void assertRailsScenario(String scenarioName, java.util.List<String> actual) throws Exception {
@@ -759,6 +896,9 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
             + "(SELECT id FROM emails WHERE imap_message_id = ?)", MESSAGE_ID);
         jdbcTemplate.update("DELETE FROM emails WHERE imap_message_id = ?", MESSAGE_ID);
         jdbcTemplate.update("DELETE FROM versions WHERE item_type = 'Email' AND item_id IN "
+            + "(SELECT id FROM emails WHERE imap_message_id = ?)", ASSIGNED_MESSAGE_ID);
+        jdbcTemplate.update("DELETE FROM emails WHERE imap_message_id = ?", ASSIGNED_MESSAGE_ID);
+        jdbcTemplate.update("DELETE FROM versions WHERE item_type = 'Email' AND item_id IN "
             + "(SELECT id FROM emails WHERE mediator_type = 'Account' AND mediator_id IN "
             + "(SELECT id FROM accounts WHERE name = 'Mention Account'))");
         jdbcTemplate.update("DELETE FROM emails WHERE mediator_type = 'Account' AND mediator_id IN "
@@ -767,11 +907,15 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
             + "(SELECT id FROM accounts WHERE name = 'Lock Example')");
         jdbcTemplate.update("DELETE FROM emails WHERE mediator_type = 'Account' AND mediator_id IN "
             + "(SELECT id FROM accounts WHERE name = 'Lock Example')");
-        jdbcTemplate.update("DELETE FROM accounts WHERE name IN ('Lock Example', 'Must Not Be Processed')");
+        jdbcTemplate.update("DELETE FROM versions WHERE item_type = 'Account' AND item_id IN "
+            + "(SELECT id FROM accounts WHERE name = 'Assigned Dropbox account')");
+        jdbcTemplate.update("DELETE FROM accounts WHERE name IN "
+            + "('Lock Example', 'Must Not Be Processed', 'Assigned Dropbox account')");
         jdbcTemplate.update("DELETE FROM settings WHERE name IN "
             + "('email_dropbox', 'email_comment_replies', 'default_access')");
         jdbcTemplate.update("DELETE FROM users WHERE username = ?", SENDER_USERNAME);
         jdbcTemplate.update("DELETE FROM users WHERE username = ?", MENTION_USERNAME);
+        jdbcTemplate.update("DELETE FROM users WHERE username = ?", ASSIGNEE_USERNAME);
     }
 
     private void insertSender() {
@@ -779,6 +923,47 @@ class MailProcessorJobsIntegrationTest extends AbstractPostgresIntegrationTest {
             INSERT INTO users (username, email, encrypted_password, password_salt, created_at, updated_at)
             VALUES (?, ?, '', '', now(), now())
             """, SENDER_USERNAME, SENDER_EMAIL);
+    }
+
+    private void insertAssignee() {
+        jdbcTemplate.update("""
+            INSERT INTO users (username, email, encrypted_password, password_salt,
+                receive_assigned_notifications, created_at, updated_at)
+            VALUES (?, ?, '', '', TRUE, now(), now())
+            """, ASSIGNEE_USERNAME, ASSIGNEE_EMAIL);
+    }
+
+    private String settingValue(String name) {
+        return jdbcTemplate.query(
+            "SELECT value FROM settings WHERE name = ?",
+            resultSet -> resultSet.next() ? resultSet.getString(1) : null,
+            name);
+    }
+
+    private void setHost(String host) {
+        jdbcTemplate.update("DELETE FROM settings WHERE name = 'host'");
+        jdbcTemplate.update("""
+            INSERT INTO settings (name, value, created_at, updated_at)
+            VALUES ('host', ?, now(), now())
+            """, "--- " + host + "\n");
+    }
+
+    private void restoreHost(String host) {
+        jdbcTemplate.update("DELETE FROM settings WHERE name = 'host'");
+        if (host != null) {
+            jdbcTemplate.update("""
+                INSERT INTO settings (name, value, created_at, updated_at)
+                VALUES ('host', ?, now(), now())
+                """, host);
+        }
+    }
+
+    private void clearQueueJobsAfter(long lastJobId) {
+        jdbcTemplate.update("""
+            DELETE FROM solid_queue_ready_executions
+            WHERE job_id IN (SELECT id FROM solid_queue_jobs WHERE id > ?)
+            """, lastJobId);
+        jdbcTemplate.update("DELETE FROM solid_queue_jobs WHERE id > ?", lastJobId);
     }
 
     private void insertDropboxSetting(int imapPort) {

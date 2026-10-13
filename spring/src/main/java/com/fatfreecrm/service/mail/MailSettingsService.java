@@ -2,6 +2,7 @@ package com.fatfreecrm.service.mail;
 
 import com.fatfreecrm.domain.Setting;
 import com.fatfreecrm.repository.SettingRepository;
+import com.fatfreecrm.service.settings.SettingsService;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 public class MailSettingsService {
 
     private final SettingRepository settingRepository;
+    private final SettingsService railsSettings;
     private final String host;
     private final String locale;
     private final String defaultAccess;
@@ -21,6 +23,7 @@ public class MailSettingsService {
 
     public MailSettingsService(
         SettingRepository settingRepository,
+        SettingsService railsSettings,
         @Value("${ffcrm.mail.settings.host:}") String host,
         @Value("${ffcrm.mail.settings.locale:en-US}") String locale,
         @Value("${ffcrm.mail.settings.default-access:Public}") String defaultAccess,
@@ -29,6 +32,7 @@ public class MailSettingsService {
         @Value("${ffcrm.mail.settings.email-dropbox.address:}") String dropboxAddress
     ) {
         this.settingRepository = settingRepository;
+        this.railsSettings = railsSettings;
         this.host = host;
         this.locale = locale;
         this.defaultAccess = defaultAccess;
@@ -92,7 +96,9 @@ public class MailSettingsService {
     }
 
     public String host() {
-        return scalarSetting("host", host);
+        return railsSettings.string("host")
+            .filter(value -> !value.isBlank())
+            .orElse(host);
     }
 
     private String scalarSetting(String name, String fallback) {

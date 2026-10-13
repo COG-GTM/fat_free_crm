@@ -47,7 +47,7 @@ class EnrichmentJobsHttpServerTest {
             when(accounts.findById(51L)).thenReturn(Optional.of(account));
             AddressRepository addresses = mock(AddressRepository.class);
             when(addresses.findByAddressableTypeAndAddressableId("Account", 51)).thenReturn(List.of());
-            AccountEnrichmentTrigger trigger = mock(AccountEnrichmentTrigger.class);
+            RailsModelCallbacks modelCallbacks = mock(RailsModelCallbacks.class);
             AccountWebsiteJob job = new AccountWebsiteJob();
             ReflectionTestUtils.setField(job, "jobsOwner", springOwner());
             ReflectionTestUtils.setField(job, "httpClient", new JobsHttpClient(properties));
@@ -55,7 +55,7 @@ class EnrichmentJobsHttpServerTest {
             ReflectionTestUtils.setField(job, "addressRepository", addresses);
             wireAuditMocks(job);
             ReflectionTestUtils.setField(job, "objectMapper", new ObjectMapper());
-            ReflectionTestUtils.setField(job, "enrichmentTrigger", trigger);
+            ReflectionTestUtils.setField(job, "modelCallbacks", modelCallbacks);
 
             job.perform(51L);
 
@@ -66,7 +66,7 @@ class EnrichmentJobsHttpServerTest {
             verify(accounts).saveAndFlush(account);
             verify(addresses).saveAndFlush(org.mockito.ArgumentMatchers.argThat(address ->
                 "10 Main St".equals(address.getStreet1()) && "Hartford".equals(address.getCity())));
-            verify(trigger).afterAccountSaved(51L, false, true);
+            verify(modelCallbacks).afterUpdate(account, null, null, null, RailsWhodunnit.nil());
         } finally {
             server.stop(0);
         }
@@ -93,7 +93,7 @@ class EnrichmentJobsHttpServerTest {
             account.setWikidataId("Q42");
             AccountRepository accounts = mock(AccountRepository.class);
             when(accounts.findById(52L)).thenReturn(Optional.of(account));
-            AccountEnrichmentTrigger trigger = mock(AccountEnrichmentTrigger.class);
+            RailsModelCallbacks modelCallbacks = mock(RailsModelCallbacks.class);
             WikidataJob job = new WikidataJob();
             ReflectionTestUtils.setField(job, "jobsOwner", springOwner());
             ReflectionTestUtils.setField(job, "httpClient", new JobsHttpClient(properties));
@@ -101,7 +101,7 @@ class EnrichmentJobsHttpServerTest {
             ReflectionTestUtils.setField(job, "accountRepository", accounts);
             wireAuditMocks(job);
             ReflectionTestUtils.setField(job, "objectMapper", new ObjectMapper());
-            ReflectionTestUtils.setField(job, "enrichmentTrigger", trigger);
+            ReflectionTestUtils.setField(job, "modelCallbacks", modelCallbacks);
 
             job.perform(52L);
 
@@ -112,7 +112,7 @@ class EnrichmentJobsHttpServerTest {
             assertEquals("application/x-www-form-urlencoded", contentType.get());
             org.junit.jupiter.api.Assertions.assertTrue(requestBody.get().contains("query="));
             verify(accounts).saveAndFlush(account);
-            verify(trigger).websiteChanged(52L);
+            verify(modelCallbacks).afterUpdate(account, null, null, "Q42", RailsWhodunnit.nil());
         } finally {
             server.stop(0);
         }
@@ -143,8 +143,8 @@ class EnrichmentJobsHttpServerTest {
             AccountRepository accounts = mock(AccountRepository.class);
             when(accounts.findById(53L)).thenReturn(Optional.of(account));
             AddressRepository addresses = mock(AddressRepository.class);
-            AccountEnrichmentTrigger trigger = mock(AccountEnrichmentTrigger.class);
-            AccountWebsiteJob job = websiteJob(properties, accounts, addresses, trigger);
+            RailsModelCallbacks modelCallbacks = mock(RailsModelCallbacks.class);
+            AccountWebsiteJob job = websiteJob(properties, accounts, addresses, modelCallbacks);
 
             String origin = "http://127.0.0.1:" + server.getAddress().getPort();
             account.setWebsite(origin + "/redirect");
@@ -157,7 +157,7 @@ class EnrichmentJobsHttpServerTest {
 
             org.junit.jupiter.api.Assertions.assertNull(account.getPhone());
             org.mockito.Mockito.verify(accounts, org.mockito.Mockito.never()).save(account);
-            org.mockito.Mockito.verifyNoInteractions(trigger);
+            org.mockito.Mockito.verifyNoInteractions(modelCallbacks);
         } finally {
             server.stop(0);
         }
@@ -186,7 +186,7 @@ class EnrichmentJobsHttpServerTest {
 
             assertThrows(HttpTimeoutException.class,
                 () -> websiteJob(properties, accounts, mock(AddressRepository.class),
-                    mock(AccountEnrichmentTrigger.class)).perform(54L));
+                    mock(RailsModelCallbacks.class)).perform(54L));
         } finally {
             server.stop(0);
         }
@@ -216,7 +216,7 @@ class EnrichmentJobsHttpServerTest {
             AccountRepository accounts = mock(AccountRepository.class);
             when(accounts.findById(55L)).thenReturn(Optional.of(account));
             AddressRepository addresses = mock(AddressRepository.class);
-            AccountEnrichmentTrigger trigger = mock(AccountEnrichmentTrigger.class);
+            RailsModelCallbacks modelCallbacks = mock(RailsModelCallbacks.class);
             WikidataJob wikidataJob = new WikidataJob();
             ReflectionTestUtils.setField(wikidataJob, "jobsOwner", springOwner());
             ReflectionTestUtils.setField(wikidataJob, "httpClient", new JobsHttpClient(properties));
@@ -224,12 +224,12 @@ class EnrichmentJobsHttpServerTest {
             ReflectionTestUtils.setField(wikidataJob, "accountRepository", accounts);
             wireAuditMocks(wikidataJob);
             ReflectionTestUtils.setField(wikidataJob, "objectMapper", new ObjectMapper());
-            ReflectionTestUtils.setField(wikidataJob, "enrichmentTrigger", trigger);
+            ReflectionTestUtils.setField(wikidataJob, "modelCallbacks", modelCallbacks);
 
             wikidataJob.perform(55L);
-            verify(trigger).websiteChanged(55L);
+            verify(modelCallbacks).afterUpdate(account, null, null, "Q42", RailsWhodunnit.nil());
             assertEquals(originHolder[0] + "/site", account.getWebsite());
-            websiteJob(properties, accounts, addresses, trigger).perform(55L);
+            websiteJob(properties, accounts, addresses, modelCallbacks).perform(55L);
 
             assertEquals("+1-555-0100", account.getPhone());
         } finally {
@@ -241,7 +241,7 @@ class EnrichmentJobsHttpServerTest {
         JobsProperties properties,
         AccountRepository accounts,
         AddressRepository addresses,
-        AccountEnrichmentTrigger trigger
+        RailsModelCallbacks modelCallbacks
     ) {
         AccountWebsiteJob job = new AccountWebsiteJob();
         ReflectionTestUtils.setField(job, "jobsOwner", springOwner());
@@ -250,7 +250,7 @@ class EnrichmentJobsHttpServerTest {
         ReflectionTestUtils.setField(job, "addressRepository", addresses);
         wireAuditMocks(job);
         ReflectionTestUtils.setField(job, "objectMapper", new ObjectMapper());
-        ReflectionTestUtils.setField(job, "enrichmentTrigger", trigger);
+        ReflectionTestUtils.setField(job, "modelCallbacks", modelCallbacks);
         return job;
     }
 

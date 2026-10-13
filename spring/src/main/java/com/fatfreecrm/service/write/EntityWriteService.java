@@ -43,6 +43,8 @@ import com.fatfreecrm.security.authz.CrmAccessPolicy;
 import com.fatfreecrm.service.audit.EntityAttributes;
 import com.fatfreecrm.service.audit.PaperTrailYaml;
 import com.fatfreecrm.service.audit.VersionRecorder;
+import com.fatfreecrm.service.jobs.RailsModelCallbacks;
+import com.fatfreecrm.service.jobs.RailsWhodunnit;
 import com.fatfreecrm.service.json.RailsJsonWriter;
 import com.fatfreecrm.service.json.RailsResources;
 import com.fatfreecrm.service.validation.ActiveModelMessages;
@@ -119,6 +121,7 @@ public class EntityWriteService {
     private final TransactionTemplate requiresNew;
     private final AccessPolicy accessPolicy;
     private final Clock clock;
+    private final RailsModelCallbacks modelCallbacks;
 
     public EntityWriteService(
         AccountRepository accountRepository,
@@ -147,7 +150,8 @@ public class EntityWriteService {
         AccessPolicy accessPolicy,
         JdbcTemplate jdbcTemplate,
         PlatformTransactionManager transactionManager,
-        Clock clock
+        Clock clock,
+        RailsModelCallbacks modelCallbacks
     ) {
         this.accountRepository = accountRepository;
         this.campaignRepository = campaignRepository;
@@ -177,6 +181,7 @@ public class EntityWriteService {
         this.requiresNew = new TransactionTemplate(transactionManager);
         this.requiresNew.setPropagationBehavior(Propagation.REQUIRES_NEW.value());
         this.clock = clock;
+        this.modelCallbacks = modelCallbacks;
     }
 
     // ------------------------------------------------------------------ row attributes
@@ -554,6 +559,22 @@ public class EntityWriteService {
         }
         versionRecorder.recordUpdate(
             user, entity, snapshotBefore, after, assignedOrder, changesBefore, leadUnchangedAssigned);
+        if (entity instanceof CrmEntity crmEntity) {
+            modelCallbacks.afterUpdate(crmEntity, assignedToId(changeBefore),
+                stringAttribute(changeBefore, "website"), stringAttribute(changeBefore, "wikidata_id"),
+                RailsWhodunnit.integer(user.id()));
+        }
+    }
+
+    private static Long assignedToId(Map<String, Object> attributes) {
+        Object value = attributes.get("assigned_to");
+        return value instanceof Number number ? number.longValue()
+            : value == null ? null : Long.valueOf(value.toString());
+    }
+
+    private static String stringAttribute(Map<String, Object> attributes, String name) {
+        Object value = attributes.get(name);
+        return value == null ? null : value.toString();
     }
 
     private void persistTagListUpdatedAt(Object entity, Instant updatedAt) {
@@ -716,7 +737,7 @@ public class EntityWriteService {
     private void lengthCheck(RailsErrors errors, String model, String attribute, String value,
         int max) {
         if (value != null && value.length() > max) {
-            errors.add(attribute, messages.generateMessage(model, attribute, "too_long",
+            errors.add(attribute, messages.generateMessage(model, attribute, "too_long.other",
                 Map.of("count", max)));
         }
     }
@@ -762,6 +783,7 @@ public class EntityWriteService {
         versionRecorder.recordCreate(user, account,
             taggableCreateAttributes(rowAttributes(Account.class, account.getId()), params),
             ACCOUNT_DEFAULTS);
+        modelCallbacks.afterCreate(account, RailsWhodunnit.integer(user.id()));
         commentBody(user, "Account", account.getId(), field(request, "comment_body"));
         return jsonWriter.writeOne(railsResources.account, account.getId());
     }
@@ -1023,6 +1045,7 @@ public class EntityWriteService {
         versionRecorder.recordCreate(user, contact,
             taggableCreateAttributes(rowAttributes(Contact.class, contact.getId()), params),
             CONTACT_DEFAULTS);
+        modelCallbacks.afterCreate(contact, RailsWhodunnit.integer(user.id()));
         commentBody(user, "Contact", contact.getId(), field(request, "comment_body"));
         return jsonWriter.writeOne(railsResources.contact, contact.getId());
     }
@@ -1187,6 +1210,7 @@ public class EntityWriteService {
                 versionRecorder.recordCreate(user, account,
                     taggableCreateAttributes(rowAttributes(Account.class, account.getId()), params),
                     ACCOUNT_DEFAULTS);
+                modelCallbacks.afterCreate(account, RailsWhodunnit.integer(user.id()));
             }
         }
         return account;
@@ -1230,6 +1254,7 @@ public class EntityWriteService {
         // object_changes befores are the column defaults, not nil — verified live.
         versionRecorder.recordCreate(user, entity,
             rowAttributes(entity.getClass(), entity.getId()), defaultsFor(assetType));
+        modelCallbacks.afterCreate(entity, RailsWhodunnit.integer(user.id()));
     }
 
     private String railsNameOf(CrmEntity entity) {
@@ -1337,6 +1362,7 @@ public class EntityWriteService {
         applyTagListIfProvided(lead, "Lead", params);
         versionRecorder.recordCreate(user, lead,
             taggableCreateAttributes(rowAttributes(Lead.class, lead.getId()), params), LEAD_DEFAULTS);
+        modelCallbacks.afterCreate(lead, RailsWhodunnit.integer(user.id()));
         commentBody(user, "Lead", lead.getId(), field(request, "comment_body"));
         return jsonWriter.writeOne(railsResources.lead, lead.getId());
     }
@@ -1528,6 +1554,8 @@ public class EntityWriteService {
             leadRepository.saveAndFlush(lead);
             versionRecorder.recordUpdate(user, lead, before,
                 rowAttributes(Lead.class, lead.getId()), List.of("status"));
+            modelCallbacks.afterUpdate(lead, assignedToId(before), null, null,
+                RailsWhodunnit.integer(user.id()));
         } else {
             // ActiveModel::Errors#+ is undefined on Rails 8 → NoMethodError → 500.
             throw new RailsInternalError(
@@ -1597,6 +1625,7 @@ public class EntityWriteService {
                     taggableCreateAttributes(
                         rowAttributes(Opportunity.class, opportunity.getId()), params),
                     OPPORTUNITY_DEFAULTS);
+                modelCallbacks.afterCreate(opportunity, RailsWhodunnit.integer(user.id()));
             }
         }
         return opportunity;
@@ -1643,6 +1672,7 @@ public class EntityWriteService {
                 versionRecorder.recordCreate(user, contact,
                     taggableCreateAttributes(
                         rowAttributes(Contact.class, contact.getId()), Map.of()), CONTACT_DEFAULTS);
+                modelCallbacks.afterCreate(contact, RailsWhodunnit.integer(user.id()));
             }
             if (account != null && account.getId() != null) {
                 setContactAccount(user, contact, account);
@@ -1668,6 +1698,8 @@ public class EntityWriteService {
         leadRepository.saveAndFlush(lead);
         versionRecorder.recordUpdate(user, lead, before, rowAttributes(Lead.class, id),
             List.of("status"));
+        modelCallbacks.afterUpdate(lead, assignedToId(before), null, null,
+            RailsWhodunnit.integer(user.id()));
         // LeadObserver#after_update: status → rejected logs a `reject` activity version.
         versionRecorder.recordEvent(user, RailsModelType.LEAD, id, "reject");
     }
@@ -1739,6 +1771,7 @@ public class EntityWriteService {
         versionRecorder.recordCreate(user, opportunity,
             taggableCreateAttributes(rowAttributes(Opportunity.class, opportunity.getId()), params),
             OPPORTUNITY_DEFAULTS);
+        modelCallbacks.afterCreate(opportunity, RailsWhodunnit.integer(user.id()));
         commentBody(user, "Opportunity", opportunity.getId(), field(request, "comment_body"));
         return jsonWriter.writeOne(railsResources.opportunity, opportunity.getId());
     }
@@ -2325,10 +2358,10 @@ public class EntityWriteService {
                 throw new EntityNotFoundException(family + " " + id);
             }
             entityManager.refresh(entity, LockModeType.PESSIMISTIC_WRITE);
-            List<Long> subscribed = new ArrayList<>(entity.getSubscribedUsers());
-            subscribed.add(user.id());
-            entity.setSubscribedUsers(subscribed); // reassignment, like subscribed_users +=
             if (entitySaveable(entity, railsNameOf(entity))) {
+                List<Long> subscribed = new ArrayList<>(entity.getSubscribedUsers());
+                subscribed.add(user.id());
+                entity.setSubscribedUsers(subscribed); // reassignment, like subscribed_users +=
                 entityManager.flush();
             }
         });
@@ -2370,11 +2403,15 @@ public class EntityWriteService {
             throw new EntityNotFoundException(family + " " + id);
         }
         entityManager.refresh(entity, LockModeType.PESSIMISTIC_WRITE);
-        List<Long> subscribed = new ArrayList<>(entity.getSubscribedUsers());
-        subscribed.remove(user.id());
-        entity.setSubscribedUsers(subscribed);
         if (entitySaveable(entity, railsNameOf(entity))) {
+            List<Long> subscribed = new ArrayList<>(entity.getSubscribedUsers());
+            subscribed.remove(user.id());
+            entity.setSubscribedUsers(subscribed);
             entityManager.flush();
+        } else {
+            // Rails: save fails validation → respond_with renders the 422 {errors} body and
+            // nothing persists (the entity is never mutated before this point).
+            validateAny(entity, new PendingPermissions());
         }
         return jsonWriter.writeOne(resource(family), id);
     }

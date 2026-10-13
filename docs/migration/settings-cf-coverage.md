@@ -7,7 +7,7 @@
 
 | kind | status | count |
 | --- | --- | --- |
-| cf | n/a | 32 |
+| cf | n/a | 57 |
 | cf | not_ported | 3 |
 | cf | ported | 1 |
 | setting | n/a | 1 |
@@ -30,6 +30,31 @@
 | cf | lib/fat_free_crm/migration/column_census.rb:32 |  | `# A +cf_*+ column with no +fields+ row: data left behind by a deleted field.` | n/a | migration tooling |
 | cf | lib/fat_free_crm/migration/column_census.rb:270 |  | `# Custom field (`cf_*`) column census` | n/a | migration tooling |
 | cf | lib/fat_free_crm/migration/column_census.rb:293 |  | `return "#{heading}\nNo `cf_*` columns.\n" if table[:columns].empty?` | n/a | migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:94 |  | `[68_992, account_group, "cf_audit_string", "Audit String", "string", 1],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:95 |  | `[68_993, account_group, "cf_audit_decimal", "Audit Decimal", "decimal", 2],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:96 |  | `[68_994, account_group, "cf_audit_date", "Audit Date", "date", 3],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:97 |  | `[68_995, account_group, "cf_audit_datetime", "Audit Datetime", "datetime", 4],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:98 |  | `[68_996, account_group, "cf_audit_boolean", "Audit Boolean", "boolean", 5],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:99 |  | `[68_997, account_group, "cf_audit_check_boxes", "Audit Check Boxes", "check_boxes", 6],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:100 |  | `[68_998, contact_group, "cf_audit_contact_string", "Contact String", "string", 1],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:101 |  | `[68_999, contact_group, "cf_audit_contact_decimal", "Contact Decimal", "decimal", 2],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:102 |  | `[69_010, contact_group, "cf_audit_contact_date", "Contact Date", "date", 3],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:103 |  | `[69_011, contact_group, "cf_audit_contact_datetime", "Contact Datetime", "datetime", 4],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:104 |  | `[69_012, contact_group, "cf_audit_contact_boolean", "Contact Boolean", "boolean", 5],` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:105 |  | `[69_013, contact_group, "cf_audit_contact_check_boxes", "Contact Check Boxes", "check_boxes", 6]` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:112 |  | `ActiveRecord::Base.connection.change_column :accounts, :cf_audit_decimal, :decimal, precision: 30, scale: 9` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:113 |  | `ActiveRecord::Base.connection.change_column :contacts, :cf_audit_contact_decimal, :decimal,` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:280 |  | `background_info: "Line one\nLine two", cf_audit_string: "a: b",` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:281 |  | `cf_audit_decimal: BigDecimal("12345678901234567890.123456789"),` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:282 |  | `cf_audit_date: Date.new(2025, 2, 3),` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:283 |  | `cf_audit_datetime: time, cf_audit_boolean: true, cf_audit_check_boxes: %w[yes alpha] }` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:295 |  | `born_on: Date.new(1990, 1, 2), do_not_call: true, cf_audit_contact_string: "2025-01-01",` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:296 |  | `cf_audit_contact_decimal: BigDecimal("-0.000000001"),` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:297 |  | `cf_audit_contact_date: Date.new(2024, 12, 31),` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:298 |  | `cf_audit_contact_datetime: time, cf_audit_contact_boolean: false,` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:299 |  | `cf_audit_contact_check_boxes: %w[123 alpha] }` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:365 |  | `attributes[:cf_audit_string] = "multi\nline" if record.has_attribute?(:cf_audit_string)` | n/a | Rails-only ops/migration tooling |
+| cf | lib/tasks/ffcrm/audit_goldens.rake:366 |  | `attributes[:cf_audit_decimal] = BigDecimal("42.125") if record.has_attribute?(:cf_audit_decimal)` | n/a | Rails-only ops/migration tooling |
 | cf | lib/tasks/ffcrm/custom_fields_matrix.rake:32 |  | `tables.any? { \|table\| connection.columns(table).any? { \|column\| column.name.start_with?("cf_ab271_") } }` | n/a | Rails-only ops/migration tooling |
 | cf | lib/tasks/ffcrm/custom_fields_matrix.rake:172 |  | `"0" => { "id" => next_id, "name" => "cf_ab271_#{as}_start", "position" => definitions.length + 1 },` | n/a | Rails-only ops/migration tooling |
 | cf | lib/tasks/ffcrm/custom_fields_matrix.rake:173 |  | `"1" => { "id" => next_id + 1, "name" => "cf_ab271_#{as}_end", "position" => definitions.length + 2 }` | n/a | Rails-only ops/migration tooling |

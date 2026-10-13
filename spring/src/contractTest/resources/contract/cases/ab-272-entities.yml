@@ -99,6 +99,20 @@
     - {table: accounts, where: "id = 108", exclude: [custom_fields]}
   description: require_unique_account_names → 422 taken.
 
+- id: accounts-create-name-too-long-422
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /accounts
+  auth: alice
+  body: {account: {name: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}}
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 108", exclude: [custom_fields]}
+    - {table: versions, where: "item_type = 'Account' AND item_id = 108", exclude: [id],
+       volatile: [created_at]}
+  description: 65-char name → 422 too_long (validates_lengths_from_database); nothing persists.
+
 - id: accounts-create-bad-category-422
   ticket: AB-272
   status: enforced
@@ -255,6 +269,34 @@
        volatile: [created_at, updated_at]}
   description: "subscribe persists subscribed_users then 500s (respond_with @entity nil ivar →
     UrlGenerationError 'Nil location provided. Can't build URI.') — verified live."
+
+- id: accounts-subscribe-unsaveable-500
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /accounts/101/subscribe
+  auth: alice
+  setup:
+    - "UPDATE accounts SET name = '' WHERE id = 101"
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 101", columns: [id, name, subscribed_users]}
+  description: "subscribe on an unsaveable entity (blank name) persists nothing — Rails' save
+    fails validation so subscribed_users is untouched — yet still 500s — verified live."
+
+- id: accounts-unsubscribe-unsaveable-422
+  ticket: AB-272
+  status: enforced
+  method: POST
+  path: /accounts/102/unsubscribe
+  auth: alice
+  setup:
+    - "UPDATE accounts SET name = '', subscribed_users = E'---\\n- 2\\n' WHERE id = 102"
+  reset: true
+  dbAssert:
+    - {table: accounts, where: "id = 102", columns: [id, name, subscribed_users]}
+  description: "unsubscribe on an unsaveable entity → 422 {errors} (respond_with renders the
+    failed save's errors), subscribed_users untouched — verified live."
 
 - id: accounts-unsubscribe
   ticket: AB-272
