@@ -52,6 +52,25 @@ the AB-270 list endpoints so the gateway can move export traffic without changin
    route produces them; `RailsExportGoldenTest` asserts `Accept: application/atom+xml|application/rss+xml|
    application/xml` never reaches `ExportsController`.
 
+### AB-272 reconciliation
+
+| Contested rule | Selected behavior | Rails-golden evidence |
+| --- | --- | --- |
+| Model registrations and options | Keep the deduplicated union of the Rails declarations, including User, Address, AccountContact, and AccountOpportunity; ignored and related attributes match their Rails models. | `User/create/69123/68999`, `Address/create/69079/68999`, `AccountContact/create/69056/68999`, `AccountOpportunity/create/69067/68999` |
+| List values in `object_changes` | Preserve nested YAML sequences for list-valued attributes; creates use plain arrays in `object_changes`, while assigned update object snapshots use `RubyTagList`. | `Account/create/69001/68999`, `Account/update_tag_list/69134/68999`, `Account/update_tag_list_existing/69136/68999`, `Account/destroy_tagged/69137/68999`, contracts `accounts-create-tag-list` and `account-update-tag-list` |
+| Shared timestamp anchors | Generic anchors follow object identity; equal `created_at`/`updated_at` values in `object_changes` use Rails' dedicated shared-UTC alias rule. Other equal-valued distinct timestamps remain unanchored. | `Account/create/69001/68999`, distinct update times in `Account/update/69003/68999`, and serializer tests for shared versus distinct identities |
+| YAML scalar quoting | Keep Psych-compatible single/double-quote selection and the public `PaperTrailYaml.quote` entry point used by admin YAML. | `Account/create/69001/68999`, `Campaign/create/69012/68999`, `Contact/create/69045/68999`, `Address/create/69079/68999` |
+| Create defaults | Omit values equal to the database column default; use `ColumnDefaults` when no caller default is provided. | `Account/create/69001/68999` |
+| BigDecimal precision | Derive the Ruby 9-digit-word precision rather than hardcoding a prefix. | `Account/create/69001/68999` (`36:`) and the zero/tiny-negative serializer unit cases |
+| Assigned update ordering | Emit changed assigned attributes first, then remaining columns; keep `object_changes` column-ordered. | Fresh `Account/update/69003/68999` versus materialized `Account/update_materialized/69011/68999` |
+| Tag-list update/destroy snapshots | Keep `RubyTagList` in assigned update snapshots, plain nested lists in `object_changes`, and `[]` as the before value when a fresh request assigns `tag_list`. A fresh destroy request leaves the virtual attribute nil even when database taggings exist; an in-memory object that already holds an assigned `TagList` retains it through destroy. | `Account/update_tag_list/69134/68999`, `Account/update_tag_list_and_name/69135/68999`, `Account/update_tag_list_existing/69136/68999`, `Account/destroy_tagged/69137/68999`, `Contact/update_tag_list/69138/68999`, contracts `accounts-create-tag-list`, `accounts-destroy`, and `account-update-tag-list` |
+| Touch rows | Preserve Rails' NULL `object_changes` for forced touch versions. | `Task/touch/69118/68999`; the Rails fixture covers touch for every declared model |
+
+The AB-272 write overloads, `leadUnchangedAssigned`, entity attribute
+mappings, and create/update/destroy call shapes remain available to the merged
+write services. `CaseLoader` retains both typed HTTP setup requests and SQL
+fixture setup statements.
+
 ### Tests and gates
 
 - `rake ffcrm:migration:export_goldens` (`lib/tasks/ffcrm/export_goldens.rake`) seeds a fixed corpus inside a
@@ -443,6 +462,13 @@ cover every declared model. Rails emits no row for the ignored-only
 - For creates, caller-provided defaults take precedence (including explicit
   null); otherwise `ColumnDefaults` uses the cached table column default.
   Expression defaults such as `nextval` and `now()` remain null.
+- `tag_list` is an assigned virtual attribute, not the persisted taggings
+  association. Tag-only updates use `[]` as the Rails before value and record
+  the update timestamp; create changes use plain lists while update snapshots
+  use `RubyTagList`. Fresh HTTP destroy call sites pass nil for the unassigned
+  virtual attribute; the recorder retains an explicitly supplied
+  `RubyTagList` for a same-instance destroy. The enforced
+  `account-update-tag-list` database assertion pins the Rails row.
 - Use `RailsRowAttributes` outside `service/audit/` for persisted database
   column order. It excludes `custom_fields`, retains `cf_*`, and converts
   persisted serialized and JDBC temporal values to the types the recorder uses.
@@ -465,6 +491,14 @@ cover every declared model. Rails emits no row for the ignored-only
 - Jobs/mail scenario tests compare Spring row sequences with the Rails scenario
   goldens. The contract harness runs enforced Phase-A writes followed by Rails
   and Spring activity-feed reads for alice and admin.
+- `accounts-create-custom-field`, `accounts-update-custom-field`,
+  `opportunities-update-won-campaign`, and
+  `opportunities-update-unwin-campaign` are enforced without YAML allowlisting
+  or normalizer changes.
+- The live Rails/Spring contracts `accounts-create-tag-list`,
+  `accounts-destroy`, and `account-update-tag-list` assert the `versions` rows;
+  `activity-after-task-comment-alice` and
+  `activity-after-task-comment-admin` enforce callback ordering and feed parity.
 - CI runs the golden task twice, the two Rails compatibility specs, and RuboCop
   on changed Ruby files. The full local gate additionally includes the Spring
   build, reset contract database, and live contract suite.
@@ -508,11 +542,24 @@ commented out.
   existing Spring flow differences. The notification caller is unreachable in
   the observed Rails path and Spring does not send it. These are not broadened
   into audit fixes.
-- The task-comment activity cases remain pending: Rails writes the Comment
-  version before its `after_create` callback saves the Task and records the
-  `set_due_date` update, while Spring `CommentWriteService.create()` invokes
-  `subscribe()` before the Comment is persisted, reversing those version IDs
-  and activity-feed order. Their case notes capture the exact service path.
+- Task-comment activity writes preserve Rails' callback sequence:
+  `CommentWriteService.create()` persists and records the Comment before
+  `subscribe()` records the Task update. Rails produces the same version-row
+  order in `activity-after-task-comment-alice` and
+  `activity-after-task-comment-admin`; the feed orders by `created_at DESC`,
+  so the later Task update appears first.
+- The in-memory `Account/destroy_tagged` golden retains its assigned
+  `RubyTagList`; the HTTP `accounts-destroy` contract loads a fresh record and
+  Rails records nil for the unassigned virtual `tag_list`, despite persisted
+  taggings. Spring's entity destroy audit call follows the fresh-request
+  contract behavior.
+- `activity-after-task-update-alice` and
+  `activity-after-task-update-admin` remain pending. Rails
+  `TasksController#update` duplicates the loaded Task and reads `due_at` /
+  `computed_bucket` before `update` (`app/controllers/tasks_controller.rb:94-100`),
+  so PaperTrail dumps column order; Spring `TaskWriteService.update()` emits
+  assigned-order leading. This AB-272 controller/writer divergence is not
+  changed by the audit package.
 - Activity-feed comparisons mask only generated timestamp keys inside the
   YAML strings; item type, event, row order, and all other object/object_changes
   content remain compared.
