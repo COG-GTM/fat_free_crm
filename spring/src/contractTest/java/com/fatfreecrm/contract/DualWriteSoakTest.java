@@ -18,7 +18,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -42,12 +41,10 @@ class DualWriteSoakTest {
     private String railsUrl;
     private String springUrl;
 
-    // Write responses that must be non-2xx to be counted as successes; keep empty unless a soak
-    // scenario documents a Rails-mandated non-2xx path. Listed in the soak summary.
-    private static final Set<Integer> EXPECTED_NON_2XX = Set.of();
     // Rails settings#update persists the save then `redirect_to admin_settings_path`, and Spring
-    // mirrors that — its success response is 302 by design, so the settings writes allow it.
-    private static final Set<Integer> SETTINGS_REDIRECT = Set.of(302);
+    // mirrors that — its success response is 302 by design, so settings writes may follow a 302
+    // whose Location path is exactly /admin/settings. Any other redirect is an error.
+    private static final String SETTINGS_REDIRECT_PATH = "/admin/settings";
     private final ConcurrentHashMap<String, AtomicInteger> errorsByLabel = new ConcurrentHashMap<>();
 
 
@@ -105,7 +102,7 @@ class DualWriteSoakTest {
         ObjectNode seedSettings = JSON.createObjectNode();
         seedSettings.putObject("settings").put("host", "seed").put("base_url", "seed");
         sendJson(railsAdmin.client(), railsAdmin, "PUT", railsUrl + "/admin/settings",
-            seedSettings, SETTINGS_REDIRECT);
+            seedSettings, SETTINGS_REDIRECT_PATH);
 
         AtomicInteger taskWrites = new AtomicInteger();
         AtomicInteger completes = new AtomicInteger();
@@ -118,6 +115,12 @@ class DualWriteSoakTest {
         AtomicInteger serverErrors = new AtomicInteger();
         AtomicInteger violations = new AtomicInteger();
         ConcurrentLinkedQueue<String> failures = new ConcurrentLinkedQueue<>();
+        for (String family : List.of("tasks", "tasks-toggle", "accounts", "contacts", "leads",
+                "comments", "user", "settings", "suspend")) {
+            for (String side : List.of("rails", "spring")) {
+                errorsByLabel.put(family + "." + side, new AtomicInteger());
+            }
+        }
 
         Instant deadline = Instant.now().plus(Duration.ofMinutes(minutes));
         // 7 futures per worker + 5 admin futures — undersizing starves the last submissions
@@ -193,6 +196,10 @@ class DualWriteSoakTest {
         long contactVersions = versionCount("Contact", contactIds, "update", null);
         long leadPromoteVersions = versionCount("Lead", leadIds, "update", null);
         long promoteContactVersions = versionCount("Contact", null, "create", startedAt);
+        long promoteAccounts = queryLong(
+            "SELECT count(*) FROM accounts WHERE name LIKE 'soak-promo-acct-%'");
+        long promoteOpportunities = queryLong(
+            "SELECT count(*) FROM opportunities WHERE name LIKE 'soak-promo-opp-%'");
         long commentVersions = versionCount("Comment", null, "create", startedAt);
         long userUpdateVersions = versionCount("User", List.of((long) SOAK_USER), "update", startedAt);
         long suspendVersions = versionCount("User", List.of((long) SUSPEND_USER), "update", startedAt);
@@ -213,9 +220,10 @@ class DualWriteSoakTest {
             commentRows, commentVersions));
         report.append(String.format(
             "entityWrites=%d accountVersions=%d contactVersions=%d promotes=%d "
-                + "rejects=%d leadVersions=%d promoteContactVersions=%d%n",
+                + "rejects=%d leadVersions=%d promoteContactVersions=%d "
+                + "promoteAccounts=%d promoteOpportunities=%d%n",
             entityWrites.get(), accountVersions, contactVersions, promotes.get(), rejects.get(),
-            leadPromoteVersions, promoteContactVersions));
+            leadPromoteVersions, promoteContactVersions, promoteAccounts, promoteOpportunities));
         report.append(String.format(
             "userWrites=%d userUpdateVersions=%d suspends=%d reactivates=%d suspendVersions=%d "
                 + "settingsWrites=%d settingVersions=%d%n",
@@ -230,8 +238,9 @@ class DualWriteSoakTest {
             .sorted(Map.Entry.comparingByKey())
             .map(entry -> entry.getKey() + "=" + entry.getValue().get())
             .collect(java.util.stream.Collectors.joining(", ", "{", "}")))
-            .append(" expectedNon2xx=").append(EXPECTED_NON_2XX)
-            .append(" (+302 on PUT /admin/settings, both apps)").append('\n');
+            .append(" expectedNon2xx=[]")
+            .append(" (+302 Location:=").append(SETTINGS_REDIRECT_PATH)
+            .append(" on PUT /admin/settings, both apps)").append('\n');
         int lost = 0;
         for (long taskId : taskIds) {
             for (String field : List.of("background_info", "priority")) {
@@ -243,6 +252,36 @@ class DualWriteSoakTest {
                         .append(" expected=").append(expected).append(" actual=").append(actual)
                         .append('\n');
                 }
+            }
+        }
+        for (long accountId : accountIds) {
+            String expected = LastWrites.LAST.get(accountId + ":account");
+            String actual = column("accounts", accountId, "background_info");
+            if (expected != null && !expected.equals(actual)) {
+                lost++;
+                report.append("LOST accounts/").append(accountId).append("/background_info")
+                    .append(" expected=").append(expected).append(" actual=").append(actual)
+                    .append('\n');
+            }
+        }
+        for (long contactId : contactIds) {
+            String expected = LastWrites.LAST.get(contactId + ":contact");
+            String actual = column("contacts", contactId, "background_info");
+            if (expected != null && !expected.equals(actual)) {
+                lost++;
+                report.append("LOST contacts/").append(contactId).append("/background_info")
+                    .append(" expected=").append(expected).append(" actual=").append(actual)
+                    .append('\n');
+            }
+        }
+        for (long leadId : leadIds) {
+            String expected = LastWrites.LAST.get("lead:" + leadId);
+            String actual = column("leads", leadId, "status");
+            if (expected != null && !expected.equals(actual)) {
+                lost++;
+                report.append("LOST leads/").append(leadId).append("/status")
+                    .append(" expected=").append(expected).append(" actual=").append(actual)
+                    .append('\n');
             }
         }
         for (String field : List.of("title", "company")) {
@@ -286,16 +325,10 @@ class DualWriteSoakTest {
         org.junit.jupiter.api.Assertions.assertEquals(promotes.get() + rejects.get(),
             leadPromoteVersions,
             "lead update versions vs successful promotes+rejects\n" + report);
-        org.junit.jupiter.api.Assertions.assertEquals(commentCreates.get(), commentVersions,
-            "comment create versions vs successful comments\n" + report);
-        org.junit.jupiter.api.Assertions.assertEquals(commentCreates.get(), commentRows,
-            "comment rows vs successful comments\n" + report);
-        org.junit.jupiter.api.Assertions.assertEquals(entityWrites.get(),
-            accountVersions + contactVersions,
-            "entity update versions vs successful entity writes\n" + report);
-        org.junit.jupiter.api.Assertions.assertEquals(promotes.get() + rejects.get(),
-            leadPromoteVersions,
-            "lead update versions vs successful promote+reject writes\n" + report);
+        org.junit.jupiter.api.Assertions.assertEquals(promotes.get(), promoteAccounts,
+            "promote-created accounts vs successful promotes\n" + report);
+        org.junit.jupiter.api.Assertions.assertEquals(promotes.get(), promoteOpportunities,
+            "promote-created opportunities vs successful promotes\n" + report);
         // startedAt precedes seeding, so the seeded contacts' create versions are included.
         org.junit.jupiter.api.Assertions.assertEquals(promotes.get(),
             promoteContactVersions - contactIds.size(),
@@ -512,6 +545,7 @@ class DualWriteSoakTest {
                             springUrl + springPath, body);
                     }
                     (promote ? promotes : rejects).incrementAndGet();
+                    LastWrites.LAST.put("lead:" + leadId, promote ? "converted" : "rejected");
                 } catch (SoakHttpException exception) {
                     recordFailure("leads." + (railsSide ? "rails" : "spring"), exception,
                         errors, serverErrors, violations, failures);
@@ -594,7 +628,7 @@ class DualWriteSoakTest {
                 body.putObject(root).put(field, value);
                 try {
                     sendJson(auth.client(), auth, "PUT", url, body,
-                        "settings".equals(root) ? SETTINGS_REDIRECT : EXPECTED_NON_2XX);
+                        "settings".equals(root) ? SETTINGS_REDIRECT_PATH : null);
                     writes.incrementAndGet();
                     LastWrites.LAST.put(lastKey, value);
                 } catch (SoakHttpException exception) {
@@ -703,11 +737,15 @@ class DualWriteSoakTest {
 
     private JsonNode sendJson(HttpClient client, AuthContext auth, String method, String url,
         ObjectNode body) throws SoakHttpException {
-        return sendJson(client, auth, method, url, body, EXPECTED_NON_2XX);
+        return sendJson(client, auth, method, url, body, null);
     }
 
+    /**
+     * Write request: any non-2xx response is a failure except a 302 whose {@code Location}
+     * path equals {@code expectedRedirectPath} (the settings-save redirect both apps share).
+     */
     private JsonNode sendJson(HttpClient client, AuthContext auth, String method, String url,
-        ObjectNode body, Set<Integer> expectedNon2xx) throws SoakHttpException {
+        ObjectNode body, String expectedRedirectPath) throws SoakHttpException {
         HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(url))
             .timeout(Duration.ofSeconds(15))
             .header("Accept", "application/json")
@@ -723,8 +761,19 @@ class DualWriteSoakTest {
                 request.method(method, HttpRequest.BodyPublishers.ofString(
                     body.toString(), StandardCharsets.UTF_8)).build(),
                 HttpResponse.BodyHandlers.ofString());
-            if ((response.statusCode() < 200 || response.statusCode() >= 300)
-                && !expectedNon2xx.contains(response.statusCode())) {
+            boolean success = response.statusCode() >= 200 && response.statusCode() < 300;
+            if (!success && response.statusCode() == 302 && expectedRedirectPath != null) {
+                String locationPath = response.headers().firstValue("Location")
+                    .map(location -> {
+                        try {
+                            return URI.create(location).getPath();
+                        } catch (IllegalArgumentException exception) {
+                            return null;
+                        }
+                    }).orElse(null);
+                success = expectedRedirectPath.equals(locationPath);
+            }
+            if (!success) {
                 throw new SoakHttpException(response.statusCode(),
                     url + " " + response.body(), response.body());
             }
