@@ -18,6 +18,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,6 +42,14 @@ class DualWriteSoakTest {
     private String railsUrl;
     private String springUrl;
 
+    // Write responses that must be non-2xx to be counted as successes; keep empty unless a soak
+    // scenario documents a Rails-mandated non-2xx path. Listed in the soak summary.
+    private static final Set<Integer> EXPECTED_NON_2XX = Set.of();
+    // Rails settings#update persists the save then `redirect_to admin_settings_path`, and Spring
+    // mirrors that — its success response is 302 by design, so the settings writes allow it.
+    private static final Set<Integer> SETTINGS_REDIRECT = Set.of(302);
+    private final ConcurrentHashMap<String, AtomicInteger> errorsByLabel = new ConcurrentHashMap<>();
+
 
     record SoakResult(int writes, int errors, int serverErrors, int violations) {
     }
@@ -52,6 +62,20 @@ class DualWriteSoakTest {
         int threads = Integer.parseInt(System.getProperty("soak.threads", "4"));
         // soak.commentSides: both (rails+spring alternated), spring, or rails.
         String commentSides = System.getProperty("soak.commentSides", "both");
+        System.out.println("soak urls rails=" + railsUrl + " spring=" + springUrl);
+        // Fail fast if springUrl does not point at the Spring API — e.g. the default :8080 host
+        // nginx answers 302 for everything, which would silently count as successful writes.
+        HttpResponse<String> probe = HttpClient.newHttpClient().send(
+            HttpRequest.newBuilder(URI.create(springUrl + "/api/v1/tasks"))
+                .timeout(Duration.ofSeconds(10))
+                .GET()
+                .build(),
+            HttpResponse.BodyHandlers.ofString());
+        if (probe.statusCode() != 401) {
+            throw new IllegalStateException("springUrl " + springUrl
+                + " probe returned HTTP " + probe.statusCode()
+                + " — expected 401 from the Spring API");
+        }
         Map<String, FixtureUsers.FixtureUser> users = FixtureUsers.load();
         ContractDbReset.fromProperties().reset();
         Instant startedAt = Instant.now();
@@ -80,7 +104,8 @@ class DualWriteSoakTest {
         AuthContext railsAdmin = railsAuth.authenticate("admin");
         ObjectNode seedSettings = JSON.createObjectNode();
         seedSettings.putObject("settings").put("host", "seed").put("base_url", "seed");
-        sendJson(railsAdmin.client(), railsAdmin, "PUT", railsUrl + "/admin/settings", seedSettings);
+        sendJson(railsAdmin.client(), railsAdmin, "PUT", railsUrl + "/admin/settings",
+            seedSettings, SETTINGS_REDIRECT);
 
         AtomicInteger taskWrites = new AtomicInteger();
         AtomicInteger completes = new AtomicInteger();
@@ -201,6 +226,12 @@ class DualWriteSoakTest {
                 + "comment-subscription appends persisted (lost=%d; Rails read-modify-write race,"
                 + " Spring locks FOR UPDATE)%n",
             subscribed, expectedSubscriptions, Math.max(0, expectedSubscriptions - subscribed)));
+        report.append("errors").append(errorsByLabel.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(entry -> entry.getKey() + "=" + entry.getValue().get())
+            .collect(java.util.stream.Collectors.joining(", ", "{", "}")))
+            .append(" expectedNon2xx=").append(EXPECTED_NON_2XX)
+            .append(" (+302 on PUT /admin/settings, both apps)").append('\n');
         int lost = 0;
         for (long taskId : taskIds) {
             for (String field : List.of("background_info", "priority")) {
@@ -235,6 +266,8 @@ class DualWriteSoakTest {
         System.out.print(report);
         org.junit.jupiter.api.Assertions.assertEquals(0, serverErrors.get(),
             "5xx responses: " + failures);
+        org.junit.jupiter.api.Assertions.assertEquals(0, errors.get(),
+            "non-2xx write responses\n" + report);
         org.junit.jupiter.api.Assertions.assertEquals(0, violations.get(),
             "constraint violations");
         org.junit.jupiter.api.Assertions.assertEquals(0, lost, "lost updates\n" + report);
@@ -243,6 +276,16 @@ class DualWriteSoakTest {
             "task update versions vs successful task writes\n" + report);
         org.junit.jupiter.api.Assertions.assertEquals(completes.get(), completeVersions,
             "complete observer versions vs successful completes\n" + report);
+        org.junit.jupiter.api.Assertions.assertEquals(commentCreates.get(), commentRows,
+            "comment rows vs successful creates\n" + report);
+        org.junit.jupiter.api.Assertions.assertEquals(commentCreates.get(), commentVersions,
+            "comment create versions vs successful creates\n" + report);
+        org.junit.jupiter.api.Assertions.assertEquals(entityWrites.get(),
+            accountVersions + contactVersions,
+            "entity update versions vs successful entity writes\n" + report);
+        org.junit.jupiter.api.Assertions.assertEquals(promotes.get() + rejects.get(),
+            leadPromoteVersions,
+            "lead update versions vs successful promotes+rejects\n" + report);
         org.junit.jupiter.api.Assertions.assertEquals(commentCreates.get(), commentVersions,
             "comment create versions vs successful comments\n" + report);
         org.junit.jupiter.api.Assertions.assertEquals(commentCreates.get(), commentRows,
@@ -316,15 +359,8 @@ class DualWriteSoakTest {
                     writes.incrementAndGet();
                     LastWrites.LAST.put(taskId + ":" + field, value);
                 } catch (SoakHttpException exception) {
-                    if (isConstraintViolation(exception)) {
-                        violations.incrementAndGet();
-                    }
-                    if (exception.status >= 500) {
-                        serverErrors.incrementAndGet();
-                        failures.add((railsSide ? "rails" : "spring") + " " + exception.getMessage());
-                    } else {
-                        errors.incrementAndGet();
-                    }
+                    recordFailure("tasks." + (railsSide ? "rails" : "spring"), exception,
+                        errors, serverErrors, violations, failures);
                 }
             }
         } catch (IOException | InterruptedException exception) {
@@ -367,15 +403,8 @@ class DualWriteSoakTest {
                     }
                     (complete ? completes : uncompletes).incrementAndGet();
                 } catch (SoakHttpException exception) {
-                    if (isConstraintViolation(exception)) {
-                        violations.incrementAndGet();
-                    }
-                    if (exception.status >= 500) {
-                        serverErrors.incrementAndGet();
-                        failures.add("toggle " + exception.getMessage());
-                    } else {
-                        errors.incrementAndGet();
-                    }
+                    recordFailure("tasks-toggle." + (railsSide ? "rails" : "spring"), exception,
+                        errors, serverErrors, violations, failures);
                 }
             }
         } catch (IOException | InterruptedException exception) {
@@ -422,15 +451,8 @@ class DualWriteSoakTest {
                     writes.incrementAndGet();
                     LastWrites.LAST.put(entityId + ":" + key, value);
                 } catch (SoakHttpException exception) {
-                    if (isConstraintViolation(exception)) {
-                        violations.incrementAndGet();
-                    }
-                    if (exception.status >= 500) {
-                        serverErrors.incrementAndGet();
-                        failures.add("entity " + exception.getMessage());
-                    } else {
-                        errors.incrementAndGet();
-                    }
+                    recordFailure(family + "." + (railsSide ? "rails" : "spring"), exception,
+                        errors, serverErrors, violations, failures);
                 }
             }
         } catch (IOException | InterruptedException exception) {
@@ -491,15 +513,8 @@ class DualWriteSoakTest {
                     }
                     (promote ? promotes : rejects).incrementAndGet();
                 } catch (SoakHttpException exception) {
-                    if (isConstraintViolation(exception)) {
-                        violations.incrementAndGet();
-                    }
-                    if (exception.status >= 500) {
-                        serverErrors.incrementAndGet();
-                        failures.add("promote/reject " + exception.getMessage());
-                    } else {
-                        errors.incrementAndGet();
-                    }
+                    recordFailure("leads." + (railsSide ? "rails" : "spring"), exception,
+                        errors, serverErrors, violations, failures);
                 }
             }
         } catch (IOException | InterruptedException exception) {
@@ -536,15 +551,8 @@ class DualWriteSoakTest {
                     sendJson(auth.client(), auth, "POST", base + path, body);
                     commentCreates.incrementAndGet();
                 } catch (SoakHttpException exception) {
-                    if (isConstraintViolation(exception)) {
-                        violations.incrementAndGet();
-                    }
-                    if (exception.status >= 500) {
-                        serverErrors.incrementAndGet();
-                        failures.add("comment " + exception.getMessage());
-                    } else {
-                        errors.incrementAndGet();
-                    }
+                    recordFailure("comments." + (railsSide ? "rails" : "spring"), exception,
+                        errors, serverErrors, violations, failures);
                 }
             }
         } catch (IOException | InterruptedException exception) {
@@ -585,11 +593,12 @@ class DualWriteSoakTest {
                 ObjectNode body = JSON.createObjectNode();
                 body.putObject(root).put(field, value);
                 try {
-                    sendJson(auth.client(), auth, "PUT", url, body);
+                    sendJson(auth.client(), auth, "PUT", url, body,
+                        "settings".equals(root) ? SETTINGS_REDIRECT : EXPECTED_NON_2XX);
                     writes.incrementAndGet();
                     LastWrites.LAST.put(lastKey, value);
                 } catch (SoakHttpException exception) {
-                    countFailure(exception, side + " " + root, errors, serverErrors, violations, failures);
+                    recordFailure(root + "." + side, exception, errors, serverErrors, violations, failures);
                 }
             }
         } catch (IOException | InterruptedException exception) {
@@ -628,7 +637,8 @@ class DualWriteSoakTest {
                     }
                     (suspend ? suspends : reactivates).incrementAndGet();
                 } catch (SoakHttpException exception) {
-                    countFailure(exception, "suspend", errors, serverErrors, violations, failures);
+                    recordFailure("suspend." + (railsSide ? "rails" : "spring"), exception,
+                        errors, serverErrors, violations, failures);
                 }
             }
         } catch (IOException | InterruptedException exception) {
@@ -660,8 +670,10 @@ class DualWriteSoakTest {
         throw last;
     }
 
-    private static void countFailure(SoakHttpException exception, String label, AtomicInteger errors,
+    /** Counts a failed write under its {@code family.side} label plus errors/5xx/violations. */
+    private void recordFailure(String label, SoakHttpException exception, AtomicInteger errors,
         AtomicInteger serverErrors, AtomicInteger violations, ConcurrentLinkedQueue<String> failures) {
+        errorsByLabel.computeIfAbsent(label, key -> new AtomicInteger()).incrementAndGet();
         if (isConstraintViolation(exception)) {
             violations.incrementAndGet();
         }
@@ -691,6 +703,11 @@ class DualWriteSoakTest {
 
     private JsonNode sendJson(HttpClient client, AuthContext auth, String method, String url,
         ObjectNode body) throws SoakHttpException {
+        return sendJson(client, auth, method, url, body, EXPECTED_NON_2XX);
+    }
+
+    private JsonNode sendJson(HttpClient client, AuthContext auth, String method, String url,
+        ObjectNode body, Set<Integer> expectedNon2xx) throws SoakHttpException {
         HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(url))
             .timeout(Duration.ofSeconds(15))
             .header("Accept", "application/json")
@@ -706,7 +723,8 @@ class DualWriteSoakTest {
                 request.method(method, HttpRequest.BodyPublishers.ofString(
                     body.toString(), StandardCharsets.UTF_8)).build(),
                 HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() >= 400) {
+            if ((response.statusCode() < 200 || response.statusCode() >= 300)
+                && !expectedNon2xx.contains(response.statusCode())) {
                 throw new SoakHttpException(response.statusCode(),
                     url + " " + response.body(), response.body());
             }
