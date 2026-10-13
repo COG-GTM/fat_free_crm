@@ -21,9 +21,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 /**
  * {@code EntitiesController#subscribe/#unsubscribe} run {@code entity.save}, so the
  * {@code subscribed_users} change only lands when the entity passes its own validations. The
- * AB-272 review fix moved the list mutation inside the saveable check; these tests pin that for
- * every family (the PR's own test covers a blank-name Account only), for the
- * {@code users_for_shared_access} failure, and that saveable entities still persist the change.
+ * AB-272 review fix moved the list mutation inside the saveable check and made unsubscribe render
+ * the Rails 422 {@code {errors}} body; these tests pin that for every family (the PR's own test
+ * covers a blank-name Account only), for the {@code users_for_shared_access} failure, and that
+ * saveable entities still persist the change.
  */
 class EntitySubscribeSaveabilityIntegrationTest extends AbstractPostgresIntegrationTest {
 
@@ -86,10 +87,21 @@ class EntitySubscribeSaveabilityIntegrationTest extends AbstractPostgresIntegrat
             jdbcTemplate.update("UPDATE " + table + " SET subscribed_users = ?", aliceOnly);
         }
 
-        unsubscribe("campaigns", campaignId).andExpect(status().isCreated());
-        unsubscribe("contacts", contactId).andExpect(status().isCreated());
-        unsubscribe("leads", leadId).andExpect(status().isCreated());
-        unsubscribe("opportunities", opportunityId).andExpect(status().isCreated());
+        // Rails: entity.save fails → respond_with renders 422 {errors} (unlike subscribe's 500).
+        unsubscribe("campaigns", campaignId)
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.errors.name[0]").value("^Please specify campaign name."));
+        unsubscribe("contacts", contactId)
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.errors.first_name[0]").value("^Please specify first name."))
+            .andExpect(jsonPath("$.errors.last_name[0]").value("^Please specify last name."));
+        unsubscribe("leads", leadId)
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.errors.first_name[0]").value("^Please specify first name."))
+            .andExpect(jsonPath("$.errors.last_name[0]").value("^Please specify last name."));
+        unsubscribe("opportunities", opportunityId)
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.errors.name[0]").value("^Please specify opportunity name."));
 
         assertThat(subscribedUsers("campaigns", campaignId)).isEqualTo(aliceOnly);
         assertThat(subscribedUsers("contacts", contactId)).isEqualTo(aliceOnly);
@@ -118,7 +130,10 @@ class EntitySubscribeSaveabilityIntegrationTest extends AbstractPostgresIntegrat
         String both = yaml(alice.getId(), bob.getId());
         jdbcTemplate.update("UPDATE accounts SET subscribed_users = ? WHERE id = ?", both, accountId);
 
-        unsubscribe("accounts", accountId).andExpect(status().isCreated());
+        unsubscribe("accounts", accountId)
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.errors.access[0]")
+                .value("^Please specify users with whom to share the account."));
 
         assertThat(subscribedUsers("accounts", accountId)).isEqualTo(both);
     }
