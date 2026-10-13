@@ -165,10 +165,32 @@ namespace :ffcrm do
             "input" => { "kind" => "assignment" }.merge(special_assignment_input),
             "output" => mail_payload.call(UserMailer.assigned_entity_notification(special_account, assigner))
           }
+          blank_first_assigner = assigner.dup
+          blank_first_assigner.first_name = ""
+          blank_first_assigner.last_name = ""
+          blank_first_assignment_input = assignment_input.call(account, "accounts")
+          blank_first_assignment_input["assigner_name"] = blank_first_assigner.name
+          mailers["assigned_account_blank_first_name"] = {
+            "input" => { "kind" => "assignment" }.merge(blank_first_assignment_input),
+            "output" => mail_payload.call(
+              UserMailer.assigned_entity_notification(account, blank_first_assigner)
+            )
+          }
+          opportunity_assignment_input = assignment_input.call(opportunity, "opportunities")
+          mailers["assigned_opportunity_callback"] = {
+            "input" => { "kind" => "assignment" }.merge(opportunity_assignment_input),
+            "output" => mail_payload.call(
+              UserMailer.assigned_entity_notification(opportunity, assigner)
+            )
+          }
 
           comment_input = comment_input_for.call(recipient, comment)
           mailers["comment_notification"] = {
             "input" => comment_input,
+            "output" => mail_payload.call(SubscriptionMailer.comment_notification(recipient, comment))
+          }
+          mailers["comment_notification_tagged"] = {
+            "input" => comment_input_for.call(recipient, comment),
             "output" => mail_payload.call(SubscriptionMailer.comment_notification(recipient, comment))
           }
           untagged_comment = Comment.new(

@@ -31,6 +31,38 @@
       ]
     }
   },
+  "assigned_account_blank_first_name": {
+    "input": {
+      "assigner_name": "golden-assigner",
+      "entity_name": "Example Account",
+      "entity_type": "Account",
+      "entity_url": "https://crm.example.test/accounts/970003",
+      "kind": "assignment",
+      "settings": {
+        "email_comment_replies": {
+          "address": "reply@example.test"
+        },
+        "smtp": {
+          "from": "crm@example.test"
+        }
+      },
+      "to": "taylor@example.test"
+    },
+    "output": {
+      "body": "Your colleague golden-assigner has assigned the Example Account Account to you.\nhttps://crm.example.test/accounts/970003\n\n",
+      "charset": "UTF-8",
+      "content_type": "text/html",
+      "from": [
+        "crm@example.test"
+      ],
+      "raw_from": "crm@example.test",
+      "raw_to": "taylor@example.test",
+      "subject": "Fat Free CRM: You have been assigned Example Account Account",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
+  },
   "assigned_account_no_mail_settings": {
     "input": {
       "assigner_name": "Casey",
@@ -153,6 +185,38 @@
     }
   },
   "assigned_opportunity": {
+    "input": {
+      "assigner_name": "Casey",
+      "entity_name": "Fixed Opportunity",
+      "entity_type": "Opportunity",
+      "entity_url": "https://crm.example.test/opportunities/970007",
+      "kind": "assignment",
+      "settings": {
+        "email_comment_replies": {
+          "address": "reply@example.test"
+        },
+        "smtp": {
+          "from": "crm@example.test"
+        }
+      },
+      "to": "taylor@example.test"
+    },
+    "output": {
+      "body": "Your colleague Casey has assigned the Fixed Opportunity Opportunity to you.\nhttps://crm.example.test/opportunities/970007\n\n",
+      "charset": "UTF-8",
+      "content_type": "text/html",
+      "from": [
+        "crm@example.test"
+      ],
+      "raw_from": "crm@example.test",
+      "raw_to": "taylor@example.test",
+      "subject": "Fat Free CRM: You have been assigned Fixed Opportunity Opportunity",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
+  },
+  "assigned_opportunity_callback": {
     "input": {
       "assigner_name": "Casey",
       "entity_name": "Fixed Opportunity",
@@ -374,6 +438,40 @@
         "fallback@example.test"
       ],
       "raw_from": "Casey Sender <fallback@example.test>",
+      "raw_to": "taylor@example.test",
+      "subject": "RE: [account:970003] Example Account (customer, priority)",
+      "to": [
+        "taylor@example.test"
+      ]
+    }
+  },
+  "comment_notification_tagged": {
+    "input": {
+      "comment": "Golden <b>comment</b> & tea",
+      "entity_id": 970003,
+      "entity_name": "Example Account",
+      "entity_type": "Account",
+      "from_user_name": "Casey Sender",
+      "kind": "comment",
+      "settings": {
+        "email_comment_replies": {
+          "address": "reply@example.test"
+        },
+        "smtp": {
+          "from": "crm@example.test"
+        }
+      },
+      "tags": "customer, priority",
+      "to": "taylor@example.test"
+    },
+    "output": {
+      "body": "Casey Sender commented on Account: Example Account\n\nGolden <b>comment</b> &amp; tea\n\n\n--\nReply to this email directly to add a new comment, or view the account online: https://crm.example.test/accounts/970003\n",
+      "charset": "UTF-8",
+      "content_type": "text/plain",
+      "from": [
+        "reply@example.test"
+      ],
+      "raw_from": "Casey Sender <reply@example.test>",
       "raw_to": "taylor@example.test",
       "subject": "RE: [account:970003] Example Account (customer, priority)",
       "to": [
