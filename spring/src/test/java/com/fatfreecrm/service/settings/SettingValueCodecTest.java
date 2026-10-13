@@ -22,7 +22,8 @@ class SettingValueCodecTest {
     @Test
     void railsYamlDocumentsDecodeSymbolsAsColonStrings() {
         assertThat(SettingValueCodec.decode("--- :planned\n")).isEqualTo(":planned");
-        assertThat(SettingValueCodec.decode("  --- 7\n")).isEqualTo(7);
+        assertThat(SettingValueCodec.decode("--- 7\n")).isEqualTo(7);
+        assertThat(SettingValueCodec.decode("\n--- 7\n")).isEqualTo(7);
         assertThat(SettingValueCodec.decode("--- false\n")).isEqualTo(false);
         assertThat(SettingValueCodec.decode("---\n- :a\n- plain\n")).isEqualTo(List.of(":a", "plain"));
         Object hash = SettingValueCodec.decode("---\n:server: imap.test\n:port: 993\n");
@@ -45,7 +46,8 @@ class SettingValueCodecTest {
     void nonJsonTextWithoutDocumentMarkerFallsBackToYaml() {
         assertThat(SettingValueCodec.decode("- :a\n- :b\n")).isEqualTo(List.of(":a", ":b"));
         assertThat(SettingValueCodec.decode("server: imap.test\n")).isEqualTo(Map.of("server", "imap.test"));
-        assertThat(SettingValueCodec.decode("{\"a\": 1} trailing")).isNotNull();
+        // Not JSON and not YAML either: surfaces as a parse error, like Psych::SyntaxError in Rails.
+        assertThatThrownBy(() -> SettingValueCodec.decode("{\"a\": 1} trailing")).isInstanceOf(RuntimeException.class);
     }
 
     @Test
