@@ -59,8 +59,8 @@ below was verified against the running app.
 | `validates_presence_of :user, :commentable, :comment` | app/models/polymorphic/comment.rb:30 | `CommentWriteService#validate` | Ported |
 | `Comment#before_create :subscribe_mentioned_users` (`@username` exact-match) | app/models/polymorphic/comment.rb:34,63-68 | `CommentWriteService#subscribeMentions` | Ported |
 | `Comment#after_create :subscribe_user_to_entity` (`commentable.subscribed_users << id; commentable.save`) | app/models/polymorphic/comment.rb:35,48-51 | `CommentWriteService#subscribe` (FOR UPDATE lock on commentable) | Ported |
-| `Comment#after_create :notify_subscribers` (SubscriptionMailer) | app/models/polymorphic/comment.rb:35,54-58 | — | Deliberately skipped → AB-273 jobs/mail |
-| `EntityObserver` after_create/after_update → `UserMailer.assigned_entity_notification` on commentable.save | app/models/observers/entity_observer.rb:11-16 | `CommentWriteService#commentableSaveValid` reproduces the *save* (validations + set_due_date) but sends no mail | Deliberately skipped → AB-273 jobs/mail |
+| `Comment#after_create :notify_subscribers` (SubscriptionMailer) | app/models/polymorphic/comment.rb:35,54-58 | `CommentWriteService` and `CommentRepliesProcessor` notify after subscription through `CommentNotificationService` / `RailsJobEnqueuer` | Wired in AB-273 |
+| `EntityObserver` after_create/after_update → `UserMailer.assigned_entity_notification` on commentable.save | app/models/observers/entity_observer.rb:11-16 | `RailsModelCallbacks` invoked by entity writes, commentable saves, mail processors, and jobs | Wired in AB-273 |
 | `ListsController#create`/`destroy` (lower(name)+user_id upsert, `is_global!="1"`→current user, destroy has no authz) | app/controllers/lists_controller.rb:11,27 | `ListsController` + `ListWriteService` | Ported (incl. missing authz) |
 | `List validates_presence_of :name, :url`; no paper trail | app/models/list.rb:9-10 | `ListWriteService` 422s; no `List` version rows | Ported |
 | `EmailsController#destroy` | app/controllers/emails_controller.rb:15 | `EmailsController` + `EmailWriteService` | Ported |
@@ -199,9 +199,11 @@ Rails semantics mirrored (verified live on the contract corpus):
   `tags.taggings_count`; `comment_body` → `comments.create` via the Phase A
   comment service (author subscribed); `cf_*` → AB-271 JSONB writes.
 
-Skipped (AB-273 jobs/mail): `enqueue_website_job`/`enqueue_wikidata_job`
-(account.rb:86-87), comment subscriber notifications, `update_recently_viewed`
-(entities_controller.rb:186-188 is show-only anyway).
+AB-273 wires `enqueue_website_job`/`enqueue_wikidata_job` (account.rb:86-87)
+through `RailsModelCallbacks` and `RailsJobEnqueuer`, and comment subscriber
+notifications through `CommentNotificationService`. `update_recently_viewed`
+(entities_controller.rb:186-188) remains show-only and is not part of write
+callback parity.
 
 Callbacks ported: presence/inclusion/uniqueness/dates validations in Rails
 declaration order, `users_for_shared_access`, `nullify_blank_category`,
@@ -234,8 +236,10 @@ Ported:
 | comment.rb:34-35 (`subscribe_mentioned_users`, `subscribe_user_to_entity`) | `comment_body` via Phase A CommentWriteService |
 | entities_controller.rb:23 / 33 / 43 / 54 | attach / discard / subscribe / unsubscribe JSON actions |
 
-Skipped (AB-273 jobs/mail track): account.rb:86-87 (`enqueue_website_job`, `enqueue_wikidata_job`),
-entity_observer.rb:11-16 (`assigned_entity_notification` mail), comment.rb:35 (`notify_subscribers`).
+Wired in AB-273: account.rb:86-87 (`enqueue_website_job`, `enqueue_wikidata_job`) through
+`RailsModelCallbacks`/`RailsJobEnqueuer`; entity_observer.rb:11-16
+(`assigned_entity_notification`) through shared write callbacks; comment.rb:35
+(`notify_subscribers`) after comment subscription.
 
 ### Phase B entities: custom fields
 

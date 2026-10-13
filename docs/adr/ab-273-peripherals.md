@@ -153,6 +153,71 @@ reply parser ports `email_reply_parser_ffcrm` 0.5.0; its upstream MIT license
 and fixture emails are shipped with the JUnit goldens. Rails generates the
 sorted JSON parity fixtures through `rake ffcrm:migration:mail_golden`.
 
+### Write callbacks and queue bridge
+
+| Rails callback/source | Spring path | Status |
+| --- | --- | --- |
+| `EntityObserver#after_create/#after_update` (`app/models/observers/entity_observer.rb:11-28`) | `RailsModelCallbacks` called from `EntityWriteService`, nested account/lead promotion, `CommentWriteService`, `DropboxProcessor`, and enrichment jobs | parity: Rails drops (Integer whodunnit) — see follow-up; mail processors use String IDs; jobs use nil; Campaign excluded |
+| `Comment#after_create :subscribe_user_to_entity, :notify_subscribers` (`app/models/polymorphic/comment.rb:35,48-58`) | `CommentWriteService` and `CommentRepliesProcessor` call `CommentNotificationService` after subscription | Wired; PostgreSQL's unordered `WHERE id IN (...)` recipient order is retained |
+| Account `after_save_commit` (`app/models/entities/account.rb:86-87`) | `RailsModelCallbacks` → `AccountEnrichmentTrigger` from entity writes, comments, mail processors, and both enrichment jobs | Wired for website-first, Wikidata-only, and chained saves |
+| `Setting.host` precedence (`app/models/setting.rb:55-65`, `config/settings.default.yml`) | `MailSettingsService.host()` | Wired; database, YAML, then Spring default |
+| Mail processor whodunnit (`lib/fat_free_crm/mail_processor/base.rb:166`) | Callback calls in `CommentRepliesProcessor` and `DropboxProcessor` with sender ID | Wired; enrichment job saves use nil whodunnit |
+
+#### Follow-up: assignment mail on web writes
+
+The Rails `EntityObserver` currently drops assignment mail on authenticated web
+writes. `ApplicationController` calls `set_paper_trail_whodunnit`
+(`app/controllers/application_controller.rb:13`), and PaperTrail's default
+`user_for_paper_trail` returns `current_user.try(:id)` (in
+`paper_trail/frameworks/rails/controller.rb:26-29`), an Integer. The
+observer's `current_user` resolver accepts a `User` or String ID only
+(`app/models/observers/entity_observer.rb:30-37`), so an Integer resolves to
+nil and the `current_user.present?` mail gate fails. The existing observer spec
+stubs `PaperTrail.request.whodunnit` to return a User object
+(`spec/models/observers/entity_observer_spec.rb:13`), hiding the web-write
+behavior. Spring now preserves the Ruby whodunnit type at each boundary:
+web writes use Integer and enqueue no assignment mail, mail processors use
+String sender IDs and can enqueue it, and jobs use nil.
+
+Spring writes Rails-compatible Active Job envelopes directly into
+`solid_queue_jobs` and `solid_queue_ready_executions` through
+`RailsJobEnqueuer`, using the same PostgreSQL database and caller transaction.
+The existing owner switch selects the consumer: Rails when owner is `rails`,
+or Spring's `SolidQueueDrainService` and `SolidQueueJobExecutor` when owner is
+`spring`. This adds no queue store, database, vendor, or runtime dependency.
+T4 applies: Spring inserts Active Job rows into Rails Solid Queue tables,
+creating a cross-runtime asynchronous contract. The insertion uses the existing
+shared PostgreSQL database and adds no new store or vendor.
+
+```mermaid
+flowchart LR
+  Producer["Rails or Spring producer"] -->|same transaction| Queue[("PostgreSQL Solid Queue tables")]
+  Queue --> Owner{"FFCRM_JOBS_OWNER"}
+  Owner -->|rails| Rails["Rails Solid Queue worker"]
+  Owner -->|spring| Spring["Spring drain and executor"]
+```
+
+### Queue bridge NFR and controls
+
+- Availability and recovery inherit the existing PostgreSQL/Solid Queue service
+  targets and backups; this ADR does not establish new numeric SLO or RPO
+  targets. Confirm the existing targets before changing ownership.
+- Each notification or enrichment request adds a job row and ready-execution
+  row. The Spring drain remains batch-bounded; monitor queue growth and drain
+  latency during cutover.
+- Job arguments contain Rails-compatible model GlobalIDs and job metadata,
+  classified and retained under the existing CRM database controls. They do not
+  contain mail bodies, SMTP/IMAP credentials, or new customer data categories.
+- Producers use the existing PostgreSQL connection and transaction boundary;
+  no new database, network endpoint, or credential is introduced. Do not log
+  job arguments or credentials.
+- Incremental infrastructure/vendor cost is zero; database storage and I/O
+  scale with queued work. The application runtime team owns the owner switch
+  and rollback runbook in this ADR's Operations section.
+
+Devise confirmation/reset/password-change mail ownership remains an open
+question; this callback wiring does not add new Devise mail producers.
+
 ### Alternatives
 
 - Keep Rails as the sole owner permanently: safest initial deployment, but
@@ -244,11 +309,16 @@ bodies are bounded and redirects are not followed.
 ### Architecture review (jobs-mail)
 
 ARB triage: ARB_REQUIRED
-Detector (heuristic, `detect_arb_triggers.py --base origin/devin/ab-273-peripherals`): ARB_LIGHT — T3 new outbound HTTP hosts (query.wikidata.org; social-URL prefixes; test/fixture URLs are false positives).
-Manual review against the trigger table raises it to ARB_REQUIRED:
-- New external integrations: outbound SMTP (JavaMailSender), IMAP polling (Jakarta Mail) of the Dropbox and comment-reply mailboxes, outbound HTTP to arbitrary account websites and to query.wikidata.org.
-- New runtime dependencies/frameworks: spring-boot-starter-mail (Jakarta Mail/Angus), spring-boot-starter-thymeleaf, spring-boot-starter-quartz (Quartz 2.5.2, RAMJobStore), org.jsoup:jsoup 1.21.2; test-only com.icegreen:greenmail-junit5 2.1.3.
-- Cross-system data integration: Spring claims and completes rows in Rails' Solid Queue tables (solid_queue_jobs / ready_executions / failed_executions) and takes PostgreSQL advisory locks (classid 1179009869) on the shared database.
+The detector (`detect_arb_triggers.py --base afd3e4b`) returned ARB_LIGHT
+from one T3 URL in `MailRendererGoldenTest`; that is fixture data and not a
+new outbound integration. Manual review adds T4: Spring writes Rails-compatible
+Active Job rows into the shared Solid Queue tables, creating a new cross-runtime
+asynchronous contract even though PostgreSQL is already shared and there is no
+new store or vendor.
+
+Not triggered for this callback/queue change: T1, T2, T3, T5, T6, T7, T8, T9.
+Required next steps: this ADR records the decision and controls; create an ARB
+ticket and obtain review before changing production queue ownership.
 ARB ticket: TO BE CREATED
 ## Track: settings-i18n
 
