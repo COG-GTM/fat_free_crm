@@ -13,4 +13,33 @@ describe HomeHelper do
     included_modules = (class << helper; self; end).send :included_modules
     expect(included_modules).to include(HomeHelper)
   end
+
+  describe "activity feed memoization" do
+    let(:user) { create(:user, first_name: "Ada", last_name: "Lovelace") }
+
+    it "renders the same user link as link_to and builds it once per user" do
+      expect(helper.activity_user_link(user)).to eq(helper.link_to(user.full_name, helper.user_path(user)))
+      expect(helper).not_to receive(:user_path)
+      helper.activity_user_link(user)
+    end
+
+    it "renders the same avatar link as avatar_for and builds it once per user" do
+      expected = helper.link_to(helper.avatar_for(user, size: :thumb), helper.user_path(user))
+      expect(helper.activity_avatar_link(user)).to eq(expected)
+      expect(helper).not_to receive(:avatar_for)
+      helper.activity_avatar_link(user)
+    end
+
+    it "returns the same translation as t, including the default for unknown keys" do
+      expect(helper.activity_translation("action_create", default: 0)).to eq(helper.t("action_create", default: 0))
+      expect(helper.activity_translation("action_unknown_event", default: 0)).to eq(0)
+      expect(helper.activity_translation("subject_account")).to eq(helper.t("subject_account"))
+    end
+
+    it "keeps separate entries for different users" do
+      other = create(:user, first_name: "Grace", last_name: "Hopper")
+      expect(helper.activity_user_link(user)).to include("Ada Lovelace")
+      expect(helper.activity_user_link(other)).to include("Grace Hopper")
+    end
+  end
 end

@@ -6,6 +6,23 @@
 # See MIT-LICENSE file or http://www.opensource.org/licenses/mit-license.php
 #------------------------------------------------------------------------------
 module HomeHelper
+  # The activity feed renders up to 500 rows that share a handful of users,
+  # events and item types, so memoize their per-row markup for this render.
+  #----------------------------------------------------------------------------
+  def activity_user_link(user)
+    activity_memo(:user_link, user.id) { link_to(user.full_name, user_path(user)) }
+  end
+
+  #----------------------------------------------------------------------------
+  def activity_avatar_link(user)
+    activity_memo(:avatar_link, user.id) { link_to(avatar_for(user, size: :thumb), user_path(user)) }
+  end
+
+  #----------------------------------------------------------------------------
+  def activity_translation(key, **options)
+    activity_memo(:translation, [key, options]) { t(key, **options) }
+  end
+
   def sort_by_assets
     Version::ASSETS.map do |asset|
       %[{ name: "#{t(asset.singularize)}", on_select: function() { #{redraw(:asset, [asset, t(asset.singularize).downcase], url_for(action: :redraw))} } }]
@@ -64,5 +81,12 @@ module HomeHelper
         t(:not_showing_hidden_entities, entity: entity_string, count: hidden_count)
       end
     end
+  end
+
+  private
+
+  def activity_memo(kind, key)
+    memo = (@activity_memo ||= Hash.new { |hash, k| hash[k] = {} })[kind]
+    memo.fetch(key) { memo[key] = yield }
   end
 end
