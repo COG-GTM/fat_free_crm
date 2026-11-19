@@ -82,10 +82,10 @@ cp config/database.postgres.yml config/database.yml  # or database.sqlite.yml / 
 bundle exec rake ffcrm:setup                         # creates the schema and asks for an admin user
 bundle exec rake ffcrm:demo:load                     # optional demo data
 bundle exec rails server                             # http://localhost:3000
-bin/jobs                                             # Solid Queue worker for email and account-enrichment jobs
+bin/jobs                                             # in a second terminal: Solid Queue worker for email and account-enrichment jobs
 ```
 
-If you use `CI=1 DB=...`, set it for every `bundle` command. `ffcrm:setup` asks for confirmation before it migrates. To create the admin user without being asked, run `bundle exec rake ffcrm:setup:admin USERNAME=... PASSWORD=... EMAIL=...`.
+If you use `CI=1 DB=...`, export it in every terminal, including the one running `bin/jobs`. `ffcrm:setup` asks for confirmation before it migrates. To create the admin user without being asked, run `bundle exec rake ffcrm:setup:admin USERNAME=... PASSWORD=... EMAIL=...`.
 
 ### Docker
 

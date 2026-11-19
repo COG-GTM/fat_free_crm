@@ -32,7 +32,7 @@ run `docs/diagrams/render.sh` (needs Graphviz) to regenerate the PNG and SVG.
 5. **Controllers**:
    - `EntitiesController` subclasses in `app/controllers/entities/` handle the five CRM entities, with Ransack search, saved filters, tags and exports.
    - `HomeController` serves the dashboard and activity timeline (built from `versions`).
-   - `Admin::*` controllers manage users, groups, custom fields and field groups, tags, research tools, settings and plugins.
+   - `Admin::*` controllers manage users, groups, custom fields and field groups, tags, research tools, settings and plugins. The Plugins tab is commented out under `admin_tabs` in `config/settings.default.yml`, so a fresh install doesn't show it, but `/admin/plugins` is still routed.
 6. **Views**: HAML templates in `app/views`, with `.js.haml` responses for Ajax and builder templates for XLS and RSS. Assets come from Sprockets (`app/assets`: CoffeeScript, jQuery/jQuery UI, Select2, Bootstrap 5.2 SCSS).
 
 ## Domain model
