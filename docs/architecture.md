@@ -64,7 +64,7 @@ run `docs/diagrams/render.sh` (needs Graphviz) to regenerate the PNG and SVG.
 |---|---|---|
 | `Account` `after_save_commit` when `website` changes | `AccountWebsiteJob` fetches the site, parses JSON-LD `Organization` data and fills in blank contact, social, geo and address fields. It then enqueues `WikidataJob` if a `wikidata_id` is set. | Account website (HTTP GET) |
 | `Account` `after_save_commit` when only `wikidata_id` changes, or `rake ffcrm:wikidata` | `WikidataJob` → `WikidataService` sends a SPARQL query and fills in blank fields | `https://query.wikidata.org/sparql` |
-| `EntityObserver`, `Comment` subscriptions, dropbox processing | `UserMailer`, `SubscriptionMailer` and `DropboxMailer` `deliver_later`. Email is only sent when `Setting.host` is set. | SMTP (`Setting.smtp`) |
+| `EntityObserver`, `Comment` subscriptions, dropbox processing | `UserMailer`, `SubscriptionMailer` and `DropboxMailer` `deliver_later`. Only assignment notifications check `Setting.host`; comment-subscription mail is sent without it. | SMTP (`Setting.smtp`) |
 | `rake ffcrm:dropbox:run` | `FatFreeCRM::MailProcessor::Dropbox` reads an IMAP folder and attaches the emails to matching entities, creating contacts when needed | IMAP (`Setting.email_dropbox`) |
 | `rake ffcrm:comment_replies:run` | `FatFreeCRM::MailProcessor::CommentReplies` turns email replies into comments | IMAP (`Setting.email_comment_replies`) |
 | Browser rendering of avatars | Gravatar image URLs when no avatar is uploaded | Gravatar |

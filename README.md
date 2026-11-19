@@ -79,17 +79,18 @@ See [docs/architecture.md](docs/architecture.md) for how the application is put 
 ```bash
 bundle install                                       # PostgreSQL; use CI=1 DB=sqlite (or DB=mysql) to swap the adapter gem
 cp config/database.postgres.yml config/database.yml  # or database.sqlite.yml / database.mysql.yml
+bundle exec rake db:create                           # ffcrm:setup only migrates; it doesn't create the database
 bundle exec rake ffcrm:setup                         # creates the schema and asks for an admin user
-bundle exec rake ffcrm:demo:load                     # optional demo data
+bundle exec rake ffcrm:demo:load                     # optional demo data; replaces all users, including your admin
 bundle exec rails server                             # http://localhost:3000
 bin/jobs                                             # in a second terminal: Solid Queue worker for email and account-enrichment jobs
 ```
 
-If you use `CI=1 DB=...`, export it in every terminal, including the one running `bin/jobs`. `ffcrm:setup` asks for confirmation before it migrates. To create the admin user without being asked, run `bundle exec rake ffcrm:setup:admin USERNAME=... PASSWORD=... EMAIL=...`.
+If you use `CI=1 DB=...`, export it in every terminal, including the one running `bin/jobs`. `ffcrm:setup` asks for confirmation before it migrates. `ffcrm:demo:load` loads `db/demo/users.yml` as fixtures, which replaces the admin user created by `ffcrm:setup`. Run `ffcrm:setup:admin` again afterwards to get your login back. To create the admin user without being asked, run `bundle exec rake ffcrm:setup:admin USERNAME=... PASSWORD=... EMAIL=...`.
 
 ### Docker
 
-`docker compose up` builds the app image and runs it in production mode on port 3000 with a `postgres:16` service. The `postgres:16` image won't start unless `POSTGRES_PASSWORD` (with a matching `DB_PASSWORD`) or `POSTGRES_HOST_AUTH_METHOD=trust` is set on the `db` service, and `docker-compose.yml` doesn't set either. The first time, run `docker compose exec web bundle exec rake ffcrm:setup` to create the schema and admin user. The compose file doesn't start a job worker.
+`docker compose up` builds the app image and runs it in production mode on port 3000 with a `postgres:16` service. The `postgres:16` image won't start unless `POSTGRES_PASSWORD` (with a matching `DB_PASSWORD`) or `POSTGRES_HOST_AUTH_METHOD=trust` is set on the `db` service, and `docker-compose.yml` doesn't set either. The first time, run `docker compose exec web bundle exec rake db:create ffcrm:setup` to create the database, schema and admin user. The compose file doesn't start a job worker.
 
 ### Setup guides
 
