@@ -42,4 +42,23 @@ describe HomeHelper do
       expect(helper.activity_user_link(other)).to include("Grace Hopper")
     end
   end
+
+  describe "activity translation cache keys" do
+    it "keeps the same missing key with and without a default separate" do
+      key = "action_missing_dashboard_event"
+      expected = helper.t(key)
+
+      expect(helper.activity_translation(key, default: 0)).to eq(0)
+      expect(helper.activity_translation(key)).to eq(expected)
+      expect(helper.activity_translation(key, default: 0)).to eq(0)
+      expect(helper.activity_translation(key)).to eq(expected)
+    end
+
+    it "does not reuse a missing translation when a default is supplied later" do
+      key = "action_another_missing_dashboard_event"
+
+      expect(helper.activity_translation(key)).to eq(helper.t(key))
+      expect(helper.activity_translation(key, default: 0)).to eq(0)
+    end
+  end
 end
