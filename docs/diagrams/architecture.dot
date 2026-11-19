@@ -1,0 +1,79 @@
+// Fat Free CRM - current-state architecture of the code on `master`.
+// Edit this file, then run ./render.sh to regenerate architecture.png and architecture.svg.
+digraph ffcrm {
+  graph [rankdir=TB, fontname="DejaVu Sans", fontsize=18, nodesep=0.45, ranksep=0.6, pad=0.3, labelloc=t,
+         label="Fat Free CRM (Rails 8.0) - what runs on master today"];
+  node  [shape=box, style="rounded,filled", fillcolor=white, fontname="DejaVu Sans", fontsize=16, margin="0.18,0.10"];
+  edge  [fontname="DejaVu Sans", fontsize=13, color="#555555"];
+
+  browser [label="Browser\nHAML views + jQuery / CoffeeScript (Sprockets)\nmostly Ajax (format.js) requests", fillcolor="#e8f0fe"];
+  apiclient [label="API client\n.json / .xml / .csv / .xls / .atom / .rss\n(same routes, Devise session cookie)", fillcolor="#e8f0fe"];
+
+  subgraph cluster_web {
+    label="Web process: Puma (Procfile `web`, :3000)"; style="rounded"; color="#4a7bd0"; fontsize=17;
+    rack [label="Rack middleware\nRack::Attack (5 POST/min/IP on /users)"];
+    {rank=same; auth; routes;}
+    auth [label="Devise (+ devise-security, encryptable)\nsessions, sign-up, confirm, reset\nCanCanCan Ability: Public / Private / Shared"];
+    routes [label="config/routes.rb"];
+    {rank=same; entities; others; admin;}
+    entities [label="EntitiesController subclasses\naccounts, campaigns, contacts,\nleads, opportunities\n(Ransack search, filters, tags, export)"];
+    others [label="home (dashboard, activity timeline),\ntasks, comments, emails, lists,\nusers / profile"];
+    admin [label="admin/*\nusers, groups, fields & field groups,\ntags, research tools, settings, plugins"];
+    {rank=same; models; observers;}
+    models [label="ActiveRecord models\nentities + polymorphic Task, Comment, Address,\nEmail, Tag, Avatar, Version; custom fields (has_fields)\npaper_trail, acts_as_taggable_on, acts_as_commentable", fillcolor="#fff7e0"];
+    observers [label="Observers\nentity / lead / opportunity / task\n+ FatFreeCRM::Callback plugin hooks"];
+    settings [label="Setting\nsettings.default.yml -> settings.yml -> settings table"];
+  }
+
+  subgraph cluster_worker {
+    label="Job worker: bin/jobs (Solid Queue) - not in Procfile"; style="rounded,dashed"; color="#b07a1a"; fontsize=17;
+    {rank=same; webjob; wdjob; mailjob;}
+    webjob [label="AccountWebsiteJob\nscrape JSON-LD from account website"];
+    wdjob [label="WikidataJob\n-> WikidataService (SPARQL)"];
+    mailjob [label="ActionMailer deliver_later\nassignment + comment notifications"];
+  }
+
+  subgraph cluster_rake {
+    label="Rake tasks (run by cron / by hand)"; style="rounded,dashed"; color="#6a8f3a"; fontsize=17;
+    {rank=same; dropbox; replies;}
+    {rank=same; rakewd; setup;}
+    dropbox -> rakewd [style=invis]; replies -> setup [style=invis];
+    dropbox [label="ffcrm:dropbox:run\nIMAP dropbox -> attach email\nto entities"];
+    replies [label="ffcrm:comment_replies:run\nIMAP replies -> Comments"];
+    rakewd [label="ffcrm:wikidata\nrefresh all accounts"];
+    setup [label="ffcrm:setup / ffcrm:demo:load\nschema, admin user, demo data"];
+  }
+
+  db [label="Relational database (config/database.yml)\nPostgreSQL (Gemfile default) / MySQL / SQLite\nCRM tables + settings + versions\n+ solid_queue_* job tables", shape=cylinder, fillcolor="#e6f4ea"];
+  storage [label="Active Storage (Disk)\nstorage/ - avatar images", shape=cylinder, fillcolor="#e6f4ea"];
+
+  subgraph cluster_ext {
+    label="External services"; style="rounded"; color="#888888"; fontsize=17;
+    {rank=same; smtp; sites; wikidata;}
+    {rank=same; imap; gravatar;}
+    smtp [label="SMTP server\n(Setting.smtp)", fillcolor="#f3f3f3"];
+    imap [label="IMAP mailbox\n(Setting.email_dropbox /\nemail_comment_replies)", fillcolor="#f3f3f3"];
+    sites [label="Account websites\n(HTTP GET)", fillcolor="#f3f3f3"];
+    wikidata [label="query.wikidata.org\nSPARQL endpoint", fillcolor="#f3f3f3"];
+    gravatar [label="Gravatar\n(image URLs in browser)", fillcolor="#f3f3f3"];
+  }
+
+  browser -> rack [label="HTTPS"];
+  apiclient -> rack;
+  rack -> routes;
+  routes -> auth [dir=none, style=dotted];
+  routes -> entities; routes -> others; routes -> admin;
+  entities -> models; others -> models; admin -> models; admin -> settings;
+  models -> observers [label="after_create /\nafter_update"];
+  models -> db [label="ActiveRecord"];
+  settings -> db;
+  models -> storage [label="avatars"];
+  models -> db [label="after_save_commit\nenqueue job", style=dashed, color="#b07a1a", fontcolor="#b07a1a"];
+  observers -> db [label="deliver_later", style=dashed, color="#b07a1a", fontcolor="#b07a1a"];
+  db -> webjob [label="poll", style=dashed, color="#b07a1a", fontcolor="#b07a1a"];
+  webjob -> wdjob [style=dashed, color="#b07a1a"];
+  webjob -> sites; wdjob -> wikidata; mailjob -> smtp;
+  dropbox -> imap; replies -> imap; rakewd -> wikidata;
+  dropbox -> db; replies -> db; setup -> db;
+  browser -> gravatar [style=dotted];
+}
