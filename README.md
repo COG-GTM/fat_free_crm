@@ -59,33 +59,46 @@ Visit our website at http://www.fatfreecrm.com/ or check out the [documentation]
 
 ## System Requirements
 
-* Ruby 3.1+ recommended
-* MySQL v4.1.1 or later (v5+ is recommended), SQLite v3.4 or later, or Postgres 8.4.8 or later.
+* Ruby 3.4 (what CI and the `Dockerfile` use; the gemspec allows `>= 3.1`)
+* Ruby on Rails 8.0 and the other gems, installed by Bundler
+* PostgreSQL (the Gemfile default), MySQL or SQLite 3 (the Gemfile switches to these only when `CI` is set, e.g. `CI=1 DB=sqlite`)
 * ImageMagick (optional, only needed if you would like to use avatars)
 
-(Ruby on Rails and other gem dependencies will be installed automatically by Bundler.)
+
+## Architecture
+
+See [docs/architecture.md](docs/architecture.md) for how the application is put together today: processes, request path, domain model, background jobs and external integrations. The diagram ([PNG](docs/diagrams/architecture.png), [SVG](docs/diagrams/architecture.svg)) is generated from the editable [Graphviz source](docs/diagrams/architecture.dot) by `docs/diagrams/render.sh`.
+
+[docs/migration/](docs/migration/) holds a proposal for a Spring Boot rewrite. It is not implemented.
 
 
 ## Installation
 
-Please view one of the following installation guides:
+### Quick start (local development)
 
-### [Setup Linux or Mac OS](http://guides.fatfreecrm.com/Setup-Linux-or-Mac-OS)
+```bash
+bundle install                                       # PostgreSQL; use CI=1 DB=sqlite (or DB=mysql) to swap the adapter gem
+cp config/database.postgres.yml config/database.yml  # or database.sqlite.yml / database.mysql.yml
+bundle exec rake ffcrm:setup                         # creates the schema and asks for an admin user
+bundle exec rake ffcrm:demo:load                     # optional demo data
+bundle exec rails server                             # http://localhost:3000
+bin/jobs                                             # Solid Queue worker for email and account-enrichment jobs
+```
 
-Installing Fat Free CRM on Linux or Mac OS X
+If you use `CI=1 DB=...`, set it for every `bundle` command. `ffcrm:setup` asks for confirmation before it migrates. To create the admin user without being asked, run `bundle exec rake ffcrm:setup:admin USERNAME=... PASSWORD=... EMAIL=...`.
 
-### [Setup Heroku](http://guides.fatfreecrm.com/Setup-Heroku)
+### Docker
 
-Setting up a Heroku instance for Fat Free CRM
+`docker compose up` builds the app image and runs it in production mode on port 3000 with a `postgres:16` service. The `postgres:16` image won't start unless `POSTGRES_PASSWORD` (with a matching `DB_PASSWORD`) or `POSTGRES_HOST_AUTH_METHOD=trust` is set on the `db` service, and `docker-compose.yml` doesn't set either. The first time, run `docker compose exec web bundle exec rake ffcrm:setup` to create the schema and admin user. The compose file doesn't start a job worker.
 
-### [Setup Microsoft Windows](http://guides.fatfreecrm.com/Setup-Microsoft-Windows)
+### Setup guides
 
-Installing Fat Free CRM on Microsoft Windows (Deprecated)
+These guides are older and may still describe earlier Ruby and Rails versions:
 
-### [Running Fat Free CRM as a Rails Engine](http://guides.fatfreecrm.com/Running-as-a-Rails-Engine)
-
-Run the Fat Free CRM gem within a separate Rails application.
-This is the best way to deploy Fat Free CRM if you need to add plugins or make any customizations. Note that it is not yet simple to 'bolt' Fat Free CRM into your existing rails project, but we're heading in that direction.
+* [Setup Linux or Mac OS](https://github.com/fatfreecrm/fat_free_crm/wiki/Setup-Linux-or-Mac-OS)
+* [Setup Heroku](https://github.com/fatfreecrm/fat_free_crm/wiki/Setup-Heroku)
+* [Setup Microsoft Windows](https://github.com/fatfreecrm/fat_free_crm/wiki/Setup-Microsoft-Windows) (deprecated)
+* [Running Fat Free CRM as a Rails Engine](https://github.com/fatfreecrm/fat_free_crm/wiki/Running-as-a-Rails-Engine): run the Fat Free CRM gem inside a separate Rails application. This is the best way to deploy Fat Free CRM if you need to add plugins or make customizations.
 
 
 ## Upgrading from previous versions of Fat Free CRM
@@ -98,7 +111,7 @@ Please read the [Release notes](https://github.com/fatfreecrm/fat_free_crm/relea
 |||
 |-----------------------------------:|:--------------------------|
 |                 **Home Page**: | http://www.fatfreecrm.com |
-|                    **Guides**: | http://guides.fatfreecrm.com |
+|                    **Guides**: | https://github.com/fatfreecrm/fat_free_crm/wiki |
 |       **Github Project Page**: | http://github.com/fatfreecrm/fat_free_crm |
 | **Feature Requests and Bugs**: | http://github.com/fatfreecrm/fat_free_crm/issues |
 |                  **Ruby gem**: | https://rubygems.org/gems/fat_free_crm |
@@ -111,7 +124,16 @@ Fat Free CRM is released under the MIT license and is freely available for you t
 
 Specific features that are not 'Fat Free' in nature, can be added by creating Rails Engines. See the [wiki](http://github.com/fatfreecrm/fat_free_crm/wiki) for information on how to do this.
 
-Tests can easily be run by typing 'rake' but please note that they do take a while to run!
+Tests are RSpec specs in `spec/`. `bundle exec rake` runs the whole suite, which takes a while. CI (`.github/workflows/ruby.yml`) runs it like this:
+
+```bash
+cp config/database.sqlite.yml config/database.yml
+export CI=1 DB=sqlite
+bundle install
+bundle exec rake spec:preparedb
+bundle exec rake spec:models spec:controllers spec:views spec:features   # also spec:helpers, spec:routing, spec:mailers, spec:lib
+bundle exec rubocop
+```
 
 
 ## Main contributors
