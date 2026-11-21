@@ -70,7 +70,7 @@ Visit our website at http://www.fatfreecrm.com/ or check out the [documentation]
 
 ### Quick start (SQLite)
 
-The quickest way to run Fat Free CRM locally on Linux or macOS. You need Ruby, Git, a C compiler and the YAML headers for the native gems (`build-essential libyaml-dev` on Debian/Ubuntu).
+The quickest way to run Fat Free CRM locally on Linux or macOS. You need Ruby, Git, a C and C++ compiler and the YAML headers for the native gems (`build-essential libyaml-dev` on Debian/Ubuntu). The `sqlite3` gem is in the `Gemfile`'s `test` group, so don't exclude that group with `BUNDLE_WITHOUT`.
 
 ```bash
 git clone https://github.com/COG-GTM/fat_free_crm.git
@@ -88,7 +88,7 @@ Background jobs, such as account enrichment after you set a website, run only wh
 
 To load sample data instead, run `bin/rails ffcrm:demo:load` before starting the server. It deletes all existing records, including your admin user, and creates demo users with published passwords, some of them admins. Sign in as `aaron` / `aaron`. Use demo data only on a machine nobody else can reach.
 
-To use MySQL or PostgreSQL instead, copy `config/database.mysql.yml` or `config/database.postgres.yml` to `config/database.yml` and edit the credentials. The `Gemfile` installs `pg` by default. It switches to `mysql2` only when both `CI` and `DB=mysql` are set, and Bundler re-reads the `Gemfile` each time Rails starts, so for MySQL keep both variables set for `bundle install` and every `bin/rails` command.
+To use MySQL or PostgreSQL instead, copy `config/database.mysql.yml` (`config/database.mysql.mac.yml` on macOS) or `config/database.postgres.yml` to `config/database.yml` and edit the credentials. The `Gemfile` installs `pg` by default. It switches to `mysql2` only when both `CI` and `DB=mysql` are set, and Bundler re-reads the `Gemfile` each time Rails starts, so for MySQL keep both variables set for `bundle install`, `bin/rails` and `bin/jobs`. Building `mysql2` also needs the MySQL client headers (`libmysqlclient-dev` or `default-libmysqlclient-dev` on Debian/Ubuntu).
 
 ### Other installation guides
 
