@@ -59,7 +59,7 @@ Visit our website at http://www.fatfreecrm.com/ or check out the [documentation]
 
 ## System Requirements
 
-* Ruby 3.1+ recommended
+* Ruby 3.2 or later (`.ruby-version` pins 4.0.2). Ruby 3.1 cannot install the bundle: `Gemfile.lock` needs Bundler 4.
 * MySQL v4.1.1 or later (v5+ is recommended), SQLite v3.4 or later, or Postgres 8.4.8 or later.
 * ImageMagick (optional, only needed if you would like to use avatars)
 
@@ -68,7 +68,31 @@ Visit our website at http://www.fatfreecrm.com/ or check out the [documentation]
 
 ## Installation
 
-Please view one of the following installation guides:
+### Quick start (SQLite)
+
+The quickest way to run Fat Free CRM locally on Linux or macOS. You need Ruby, Git, a C and C++ compiler and the YAML headers for the native gems (`build-essential libyaml-dev` on Debian/Ubuntu). The `sqlite3` gem is in the `Gemfile`'s `test` group, so don't exclude that group with `BUNDLE_WITHOUT`.
+
+```bash
+git clone https://github.com/COG-GTM/fat_free_crm.git
+cd fat_free_crm
+cp config/database.sqlite.yml config/database.yml
+bundle install
+bin/rails db:create db:schema:load
+bin/rails ffcrm:setup          # answer "yes", then enter an admin username, password and email
+bin/rails server
+```
+
+Open http://localhost:3000 and sign in with your admin user.
+
+Background jobs, such as account enrichment after you set a website, run only while a worker is running. Start one in a second terminal with `bin/jobs`.
+
+To load sample data instead, run `bin/rails ffcrm:demo:load` before starting the server. It deletes all existing records, including your admin user, and creates demo users with published passwords, some of them admins. Sign in as `aaron` / `aaron`. Use demo data only on a machine nobody else can reach.
+
+To use MySQL or PostgreSQL instead, copy `config/database.mysql.yml` (`config/database.mysql.mac.yml` on macOS) or `config/database.postgres.yml` to `config/database.yml` and edit the credentials. The `Gemfile` installs `pg` by default. It switches to `mysql2` only when both `CI` and `DB=mysql` are set, and Bundler re-reads the `Gemfile` each time Rails starts, so for MySQL keep both variables set for `bundle install`, `bin/rails` and `bin/jobs`. Building `mysql2` also needs the MySQL client headers (`libmysqlclient-dev` or `default-libmysqlclient-dev` on Debian/Ubuntu).
+
+### Other installation guides
+
+The guides below are on the upstream Fat Free CRM wiki and clone the upstream repository:
 
 ### [Setup Linux or Mac OS](http://guides.fatfreecrm.com/Setup-Linux-or-Mac-OS)
 
