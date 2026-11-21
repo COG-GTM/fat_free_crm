@@ -79,13 +79,16 @@ cp config/database.sqlite.yml config/database.yml
 bundle install
 bin/rails db:create db:schema:load
 bin/rails ffcrm:setup          # answer "yes", then enter an admin username, password and email
-bin/rails ffcrm:demo:load      # optional: sample data; deletes all existing records, including the admin user
 bin/rails server
 ```
 
-Open http://localhost:3000 and sign in with your admin user. If you loaded the demo data, the admin user is gone: sign in as a demo user such as `aaron` / `aaron`.
+Open http://localhost:3000 and sign in with your admin user.
 
-To use MySQL or PostgreSQL instead, copy `config/database.mysql.yml` or `config/database.postgres.yml` to `config/database.yml` and edit the credentials. The `Gemfile` installs `pg` by default and only switches to `mysql2` when both `CI` and `DB=mysql` are set.
+Background jobs, such as account enrichment after you set a website, run only while a worker is running. Start one in a second terminal with `bin/jobs`.
+
+To load sample data instead, run `bin/rails ffcrm:demo:load` before starting the server. It deletes all existing records, including your admin user, and creates demo users with published passwords, some of them admins. Sign in as `aaron` / `aaron`. Use demo data only on a machine nobody else can reach.
+
+To use MySQL or PostgreSQL instead, copy `config/database.mysql.yml` or `config/database.postgres.yml` to `config/database.yml` and edit the credentials. The `Gemfile` installs `pg` by default. It switches to `mysql2` only when both `CI` and `DB=mysql` are set, and Bundler re-reads the `Gemfile` each time Rails starts, so for MySQL keep both variables set for `bundle install` and every `bin/rails` command.
 
 ### Other installation guides
 
