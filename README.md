@@ -59,7 +59,7 @@ Visit our website at http://www.fatfreecrm.com/ or check out the [documentation]
 
 ## System Requirements
 
-* Ruby 3.1+ recommended
+* Ruby 3.2 or later (`.ruby-version` pins 4.0.2). Ruby 3.1 cannot install the bundle: `Gemfile.lock` needs Bundler 4.
 * MySQL v4.1.1 or later (v5+ is recommended), SQLite v3.4 or later, or Postgres 8.4.8 or later.
 * ImageMagick (optional, only needed if you would like to use avatars)
 
@@ -68,7 +68,28 @@ Visit our website at http://www.fatfreecrm.com/ or check out the [documentation]
 
 ## Installation
 
-Please view one of the following installation guides:
+### Quick start (SQLite)
+
+The quickest way to run Fat Free CRM locally on Linux or macOS. You need Ruby, Git, a C compiler and the YAML headers for the native gems (`build-essential libyaml-dev` on Debian/Ubuntu).
+
+```bash
+git clone https://github.com/COG-GTM/fat_free_crm.git
+cd fat_free_crm
+cp config/database.sqlite.yml config/database.yml
+bundle install
+bin/rails db:create db:schema:load
+bin/rails ffcrm:setup          # answer "yes", then enter an admin username, password and email
+bin/rails ffcrm:demo:load      # optional: sample data; deletes all existing records, including the admin user
+bin/rails server
+```
+
+Open http://localhost:3000 and sign in with your admin user. If you loaded the demo data, the admin user is gone: sign in as a demo user such as `aaron` / `aaron`.
+
+To use MySQL or PostgreSQL instead, copy `config/database.mysql.yml` or `config/database.postgres.yml` to `config/database.yml` and edit the credentials. The `Gemfile` installs `pg` by default and only switches to `mysql2` when both `CI` and `DB=mysql` are set.
+
+### Other installation guides
+
+The guides below are on the upstream Fat Free CRM wiki and clone the upstream repository:
 
 ### [Setup Linux or Mac OS](http://guides.fatfreecrm.com/Setup-Linux-or-Mac-OS)
 
